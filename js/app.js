@@ -1,0 +1,2791 @@
+(() => {
+  const utils = window.SoftenPerformanceUtils;
+  if(!utils) throw new Error('SoftenPerformanceUtils não carregado. Verifique js/core-utils.js.');
+  const {MONTHS_PT,MONTH_SHEET,$,$$,fmtInt,fmtPct,fmtMoney,fmtNum,clamp,HISTORY_COLORS,safe,roundTo,clone,firstRelation}=utils;
+  const DEFAULT_FINANCE_SETTINGS = {
+    attendanceTiers:[
+      {min:50,amount:750},{min:40,amount:637.50},{min:32,amount:541.88},{min:25.6,amount:460.59},{min:20.5,amount:391.50},
+      {min:16.4,amount:332.78},{min:13.1,amount:282.86},{min:10.5,amount:240.43},{min:8.4,amount:204.37},{min:6.7,amount:0}
+    ],
+    notes5Tiers:[
+      {min:1,amount:750},{min:.70,amount:600},{min:.49,amount:480},{min:.343,amount:384},{min:.24,amount:307.20},
+      {min:.168,amount:245.76},{min:.118,amount:196.61},{min:.083,amount:0},{min:.058,amount:0},{min:.04,amount:0}
+    ],
+    cancelTiers:[
+      {max:.004,mult:2},{max:.008,mult:1.760},{max:.012,mult:1.549},{max:.016,mult:1.363},{max:.020,mult:1.199},
+      {max:.024,mult:1.055},{max:.028,mult:0},{max:.032,mult:0},{max:.036,mult:0},{max:.040,mult:0}
+    ],
+    topAttendancePrize:100,topNotes5Prize:100,belowDiscount:200
+  };
+
+  const DEFAULT_FAVICON = 'assets/favicon-dragon.png';
+  const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
+  const DEFAULT_SOUNDTRACK_NAME = 'Fogo & Conquista';
+  const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
+  const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
+  const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
+  const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,favicon:DEFAULT_FAVICON,name:'Casa do Dragão',campaignTitle:'Casa do Dragão',campaignTagline:'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.',preset:'vermithor',colors:{dark:clone(DEFAULT_DARK_COLORS),light:clone(DEFAULT_LIGHT_COLORS)},accent:DEFAULT_DARK_COLORS.accent,secondary:DEFAULT_DARK_COLORS.secondary,bg:DEFAULT_DARK_COLORS.bg,bg2:DEFAULT_DARK_COLORS.bg2,panel:DEFAULT_DARK_COLORS.panel,text:DEFAULT_DARK_COLORS.text,background:'assets/vermithor.png',opacity:.28};
+  const DEMO_USERS = Array.isArray(window.SOFTEN_DEMO_USERS) ? [...window.SOFTEN_DEMO_USERS] : [];
+
+  function loadDemoCreatedUsers(){
+    try{const v=JSON.parse(localStorage.getItem('squadDashboardDemoUsersV21')||'[]');return Array.isArray(v)?v:[]}catch(e){return []}
+  }
+  function allDemoUsers(){
+    const extra=loadDemoCreatedUsers();
+    const map=new Map();
+    [...DEMO_USERS,...extra].forEach(u=>map.set(String(u.email||'').toLowerCase(),u));
+    return [...map.values()];
+  }
+  function saveDemoCreatedUsers(list){localStorage.setItem('squadDashboardDemoUsersV21',JSON.stringify(list||[]))}
+  function findDemoUser(email){return allDemoUsers().find(x=>String(x.email).toLowerCase()===String(email).toLowerCase())}
+
+  const state = {
+    user:null,
+    supabase:null,
+    squads:loadDemoSquads(),
+    squadCode:'D',
+    currentId:null,
+    techName:null,
+    theme:clone(DEFAULT_THEME),
+    colorMode:loadColorModePreference(),
+    currentView:'individual',
+    adminSection:'operation',
+    userDirectory:[],
+    userDirectoryLoaded:false,
+    recoveryMode:false,
+    pendingCsv:null,
+    indicatorStartId:null,
+    indicatorEndId:null,
+    analysisStartDate:null,
+    analysisEndDate:null,
+    analysisPreset:'month',
+    orgOverview:[],
+    orgTechnicianOverview:[],
+    orgDailyOverview:[],
+    orgTechnicianDailyOverview:[],
+    allTechniciansMetric:'points',
+    allTechniciansRangeIds:[],
+    dailyTechniciansMetric:'points',
+    indicatorSection:'performance',
+    businessDaysBaseId:null,
+    businessDaysCompareCount:6,
+    businessDaysCutoff:null,
+    businessDaysLowType:'service',
+    reconciliationCache:{},
+    feedbackCache:{},
+    feedbackLoading:{},
+    feedbackEditor:null,
+    myFeedbacks:null,
+    myFeedbackLoading:false,
+    superAdminCommissions:[],
+    financeRankingCache:{},
+    financeRankingLoading:{},
+    gameRankingCache:{},
+    gameRankingLoading:{},
+    supportCostMonthId:null,
+    supportCostCache:{},
+    supportCostLoading:{},
+    financialImpactMonthId:null,
+    financialImpactCache:{},
+    financialImpactLoaded:false,
+    financialImpactLoading:null,
+    audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
+  };
+
+  function loadDemoSquads(){
+    const base={
+      A:{code:'A',name:'Squad A',dbId:null,months:{}},
+      B:{code:'B',name:'Squad B',dbId:null,months:{}},
+      D:{code:'D',name:'Squad D',dbId:null,months:{[window.DEFAULT_SQUAD_DATA.id]:clone(window.DEFAULT_SQUAD_DATA)}},
+      E:{code:'E',name:'Squad E',dbId:null,months:{}}
+    };
+    try{
+      const saved=JSON.parse(localStorage.getItem('squadDashboardDataV2')||'null');
+      if(saved&&typeof saved==='object'){
+        for(const code of Object.keys(base)) if(saved[code]?.months) base[code].months=saved[code].months;
+      }
+    }catch(e){}
+    return base;
+  }
+  function saveDemoSquads(){
+    if((window.APP_CONFIG?.mode||'demo')!=='demo') return;
+    const payload={}; Object.values(state.squads).forEach(s=>payload[s.code]={months:s.months});
+    localStorage.setItem('squadDashboardDataV2',JSON.stringify(payload));
+  }
+  function allThemes(){try{return JSON.parse(localStorage.getItem('squadDashboardThemesV2')||'{}')}catch(e){return {}}}
+  function systemColorMode(){return window.matchMedia?.('(prefers-color-scheme: light)').matches?'light':'dark'}
+  function loadColorModePreference(){try{const saved=localStorage.getItem(COLOR_MODE_KEY);if(saved==='light'||saved==='dark')return saved}catch(e){}return systemColorMode()}
+  function hasStoredColorMode(){try{return ['light','dark'].includes(localStorage.getItem(COLOR_MODE_KEY))}catch(e){return false}}
+  function loadThemeForSquad(code){const t=allThemes()[code];return normalizeThemePayload(t||DEFAULT_THEME)}
+  function saveTheme(){
+    if(!state.squadCode||state.squadCode==='all')return;
+    const themes=allThemes(); themes[state.squadCode]=state.theme; try{localStorage.setItem('squadDashboardThemesV2',JSON.stringify(themes));}catch(err){console.warn('Tema grande demais para o cache local; mantendo persistência no Supabase.',err);}
+    if(state.supabase) persistThemeToSupabase().catch(console.error);
+  }
+
+  function showBoot(message='Validando sua sessão e carregando os dados...'){
+    const el=$('#bootScreen');if(!el)return;el.classList.remove('hidden');if($('#bootMessage'))$('#bootMessage').textContent=message;
+  }
+  function hideBoot(){const el=$('#bootScreen');if(el)el.classList.add('hidden')}
+
+  async function boot(){
+    applyColorMode(state.colorMode,{persist:false,reapplyTheme:true});
+    bindSystemColorMode();
+    showBoot();
+    bindStaticEvents();
+    if((window.APP_CONFIG?.mode||'demo')==='supabase'){
+      try{
+        if($('#bootMessage'))$('#bootMessage').textContent='Conectando com segurança...';
+        await initSupabase();
+        if($('#bootMessage'))$('#bootMessage').textContent='Validando sua sessão...';
+        const {data}=await state.supabase.auth.getSession();
+        if(state.recoveryMode){showLogin('Link de recuperação validado. Defina sua nova senha.');openModal('recoveryModal');return;}
+        if(data?.session) return await enterSupabaseSession(data.session.user);
+        showLogin();
+      }
+      catch(err){console.error(err); showLogin('Não foi possível conectar ao Supabase. Confira js/config.js.');}
+    }else{
+      try{const saved=JSON.parse(sessionStorage.getItem('squadDemoSession')||'null'); if(saved?.email){const u=findDemoUser(saved.email);if(u) return enterApp({...u});}}catch(e){}
+      showLogin();
+    }
+  }
+
+  function bindStaticEvents(){
+    $('#loginForm').addEventListener('submit',handleLogin);
+    $('#forgotPasswordBtn').addEventListener('click',handleForgotPassword);
+    $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
+    $('#logoutBtn').addEventListener('click',logout);
+    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view,btn.dataset.adminSection||null)));
+    ['#topUserProfileBtn'].forEach(sel=>{const el=$(sel);if(!el)return;el.addEventListener('click',()=>showView('profile'));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('profile')}})});
+    $('#profilePasswordForm').addEventListener('submit',handleProfilePasswordChange);
+    $('#mobileMenu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));
+    $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
+    $('#monthSelect').addEventListener('change',e=>{state.currentId=e.target.value; chooseDefaultTech(); refreshSelectors(); render();});
+    $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
+    $('#adminImportBtn').addEventListener('click',()=>openImport('service'));
+    if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>openImport('quality'));
+    if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>openImport('quality'));
+    $('#adminThemeBtn').addEventListener('click',()=>{if(requireSpecificSquad())openModal('themeModal')});
+    if($('#openUsersBtn'))$('#openUsersBtn').addEventListener('click',()=>showView('users'));
+    $('#newUserBtn').addEventListener('click',openCreateUser);
+    $('#createUserForm').addEventListener('submit',handleCreateUser);
+    $('#newUserRole').addEventListener('change',syncCreateUserFields);
+    $('#editUserForm').addEventListener('submit',handleEditUser);
+    $('#editUserRole').addEventListener('change',syncEditUserFields);
+    $('#editUserSquad').addEventListener('change',syncEditUserFields);
+    $('#userSearchInput').addEventListener('input',renderUserRows);
+    $('#userRoleFilter').addEventListener('change',renderUserRows);
+    $('#chooseFileBtn').addEventListener('click',()=>$('#csvInput').click());
+    $('#csvInput').addEventListener('change',handleCsvFile);
+    $('#confirmCsvImportBtn').addEventListener('click',confirmCsvImport);
+    $('#saveMonthlyMetricsBtn').addEventListener('click',saveMonthlyMetrics);
+    if($('#saveFinanceBtn'))$('#saveFinanceBtn').addEventListener('click',saveFinanceConfiguration);
+    if($('#saveFinanceTechniciansBtn'))$('#saveFinanceTechniciansBtn').addEventListener('click',saveFinanceTechnicians);
+    if($('#copyFinanceRulesBtn'))$('#copyFinanceRulesBtn').addEventListener('click',copyFinanceRulesFromPreviousMonth);
+    if($('#exportFinanceExcelBtn'))$('#exportFinanceExcelBtn').addEventListener('click',exportFinanceExcel);
+    if($('#exportFinancePdfBtn'))$('#exportFinancePdfBtn').addEventListener('click',exportFinancePdf);
+    if($('#saveSuperAdminCommissionBtn'))$('#saveSuperAdminCommissionBtn').addEventListener('click',saveSuperAdminCommission);
+    if($('#financeModelSquad'))$('#financeModelSquad').addEventListener('change',previewFinanceModelChange);
+    if($('#financeModelIndividual'))$('#financeModelIndividual').addEventListener('change',previewFinanceModelChange);
+    if($('#financeCompareToggle'))$('#financeCompareToggle').addEventListener('change',previewFinanceModelChange);
+    if($('#financeTechnicianCompareToggle'))$('#financeTechnicianCompareToggle').addEventListener('change',previewFinanceModelChange);
+    if($('#financeIndividualCap'))$('#financeIndividualCap').addEventListener('change',previewFinanceModelChange);
+    if($('#supportCostMonthSelect'))$('#supportCostMonthSelect').addEventListener('change',e=>{state.supportCostMonthId=e.target.value;renderSupportCosts();});
+    if($('#copyPreviousSupportCostsBtn'))$('#copyPreviousSupportCostsBtn').addEventListener('click',copyPreviousSupportCosts);
+    if($('#saveSupportCostsBtn'))$('#saveSupportCostsBtn').addEventListener('click',saveSupportCosts);
+    ['#supportPayrollCost','#supportOtherCosts','#supportTechnicianCount','#supportHoursPerDay'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',updateSupportCostPreview)});
+    if($('#financialImpactMonthSelect'))$('#financialImpactMonthSelect').addEventListener('change',e=>{state.financialImpactMonthId=e.target.value;renderFinancialImpactIndicators();});
+    if($('#financialImpactActiveClients'))$('#financialImpactActiveClients').addEventListener('input',updateFinancialImpactPreview);
+    if($('#financialImpactAvgTicket'))$('#financialImpactAvgTicket').addEventListener('input',updateFinancialImpactPreview);
+    if($('#importFinancialQualityCsvBtn'))$('#importFinancialQualityCsvBtn').addEventListener('click',()=>$('#financialQualityCsvInput')?.click());
+    if($('#financialQualityCsvInput'))$('#financialQualityCsvInput').addEventListener('change',handleFinancialQualityCsvFile);
+    if($('#saveFinancialImpactParamsBtn'))$('#saveFinancialImpactParamsBtn').addEventListener('click',saveFinancialImpactParameters);
+    $('#copyPreviousGoalsBtn').addEventListener('click',copyGoalsFromPreviousMonth);
+    $('#saveScoreSettingsBtn').addEventListener('click',saveScoreSettings);
+    $$('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+    if($('#confirmDialogConfirm'))$('#confirmDialogConfirm').addEventListener('click',()=>settleConfirmDialog(true));
+    if($('#confirmDialogCancel'))$('#confirmDialogCancel').addEventListener('click',()=>settleConfirmDialog(false));
+    if($('#confirmDialogClose'))$('#confirmDialogClose').addEventListener('click',()=>settleConfirmDialog(false));
+    $$('.modal').forEach(m=>{
+      let backdropDown=false;
+      m.addEventListener('pointerdown',e=>{backdropDown=e.target===m;});
+      m.addEventListener('pointerup',e=>{
+        const staticBackdrop=m.dataset.staticBackdrop==='true';
+        if(!staticBackdrop&&backdropDown&&e.target===m)closeModal(m.id);
+        backdropDown=false;
+      });
+      m.addEventListener('pointercancel',()=>{backdropDown=false});
+    });
+    $$('[data-color-mode-toggle]').forEach(b=>b.addEventListener('click',toggleColorMode));
+    $$('[data-theme-edit-mode]').forEach(b=>b.addEventListener('click',()=>applyColorMode(b.dataset.themeEditMode,{persist:true,reapplyTheme:true})));
+    $$('.preset').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.theme)));
+    $('#accentColor').addEventListener('input',e=>{if(!isAdmin())return;setThemePaletteColor('accent',e.target.value);state.theme.name='Personalizado';state.theme.preset='custom';saveTheme();updateThemeName();});
+    $('#secondaryColor').addEventListener('input',e=>{if(!isAdmin())return;setThemePaletteColor('secondary',e.target.value);state.theme.name='Personalizado';state.theme.preset='custom';saveTheme();updateThemeName();});
+    $('#backgroundFile').addEventListener('change',handleBackground);
+    if($('#chooseFaviconBtn'))$('#chooseFaviconBtn').addEventListener('click',()=>$('#faviconFile')?.click());
+    if($('#faviconFile'))$('#faviconFile').addEventListener('change',handleFavicon);
+    if($('#resetFavicon'))$('#resetFavicon').addEventListener('click',resetFavicon);
+    if($('#chooseSoundtrackBtn'))$('#chooseSoundtrackBtn').addEventListener('click',()=>$('#soundtrackFile')?.click());
+    if($('#soundtrackFile'))$('#soundtrackFile').addEventListener('change',handleSoundtrackFile);
+    if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').addEventListener('click',previewThemeSoundtrack);
+    if($('#resetSoundtrack'))$('#resetSoundtrack').addEventListener('click',resetSoundtrack);
+    if($('#removeSoundtrack'))$('#removeSoundtrack').addEventListener('click',removeSoundtrack);
+    if($('#soundtrackNameInput'))$('#soundtrackNameInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.soundtrackName=e.target.value.trim()||DEFAULT_SOUNDTRACK_NAME;state.theme.preset='custom';saveTheme();syncSoundPlayerUi();});
+    if($('#soundtrackDefaultVolume')){$('#soundtrackDefaultVolume').addEventListener('input',e=>{if(!isAdmin())return;const v=clamp(safe(e.target.value)/100,0,1);state.theme.soundtrackVolume=v;if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(v*100)}%`;});$('#soundtrackDefaultVolume').addEventListener('change',()=>{if(!isAdmin())return;state.theme.preset='custom';saveTheme();});}
+    if($('#soundToggleBtn'))$('#soundToggleBtn').addEventListener('click',toggleSoundPlayback);
+    if($('#soundMuteBtn'))$('#soundMuteBtn').addEventListener('click',toggleSoundMute);
+    if($('#soundVolume'))$('#soundVolume').addEventListener('input',handleSoundVolume);
+    if($('#soundEnterOn'))$('#soundEnterOn').addEventListener('click',()=>chooseSoundWelcome(true));
+    if($('#soundEnterOff'))$('#soundEnterOff').addEventListener('click',()=>chooseSoundWelcome(false));
+    $('#campaignNameInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTitle=e.target.value;state.theme.name=e.target.value||'Personalizado';state.theme.preset='custom';saveTheme();applyTheme(state.theme);});
+    $('#campaignTaglineInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTagline=e.target.value;state.theme.preset='custom';saveTheme();applyTheme(state.theme);});
+    $('#saveGoalsBtn').addEventListener('click',saveTeamGoals);
+    $('#autoGoalBtn').addEventListener('click',useAutomaticTeamGoal);
+    $('#importThemeBtn').addEventListener('click',()=>{if(requireSpecificSquad())$('#themeJsonInput').click()});
+    $('#themeJsonInput').addEventListener('change',handleThemeJson);
+    $('#exportThemeBtn').addEventListener('click',exportTheme);
+    $('#removeBg').addEventListener('click',()=>{if(!isAdmin())return;state.theme.background=null;state.theme.preset='custom';document.documentElement.style.setProperty('--hero-img','none');saveTheme();toast('Fundo removido.');});
+    [
+      ['analysisStartDate','analysisStartDatePicker','start'],
+      ['analysisEndDate','analysisEndDatePicker','end'],
+      ['indicatorStartDate','indicatorStartDatePicker','start'],
+      ['indicatorEndDate','indicatorEndDatePicker','end']
+    ].forEach(([textId,pickerId,which])=>bindAnalysisDateField(textId,pickerId,which));
+    $$('[data-analysis-preset]').forEach(btn=>btn.addEventListener('click',()=>setAnalysisPreset(btn.dataset.analysisPreset)));
+    if($('#openAllTechniciansChartBtn'))$('#openAllTechniciansChartBtn').addEventListener('click',()=>openAllTechniciansChart('indicator'));
+    if($('#openAllTechniciansChartTeamBtn'))$('#openAllTechniciansChartTeamBtn').addEventListener('click',()=>openAllTechniciansChart('team'));
+    if($('#openDailyTechniciansChartBtn'))$('#openDailyTechniciansChartBtn').addEventListener('click',openDailyTechniciansChart);
+    $$('[data-indicator-section]').forEach(btn=>btn.addEventListener('click',()=>setIndicatorSection(btn.dataset.indicatorSection)));
+    if($('#businessDaysBaseMonth'))$('#businessDaysBaseMonth').addEventListener('change',e=>{state.businessDaysBaseId=e.target.value;state.businessDaysCutoff=null;renderIndicators();});
+    if($('#businessDaysCompareCount'))$('#businessDaysCompareCount').addEventListener('change',e=>{state.businessDaysCompareCount=Math.max(2,safe(e.target.value)||6);renderIndicators();});
+    if($('#businessDaysCutoff'))$('#businessDaysCutoff').addEventListener('change',e=>{state.businessDaysCutoff=Math.max(1,safe(e.target.value)||1);renderIndicators();});
+    if($('#businessDaysLowType'))$('#businessDaysLowType').addEventListener('change',e=>{state.businessDaysLowType=['service','product','company'].includes(e.target.value)?e.target.value:'service';renderIndicators();});
+    if($('#qualityReconciliationRows'))$('#qualityReconciliationRows').addEventListener('click',e=>{const btn=e.target.closest('[data-reconcile-id]');if(btn)openReconciliationDetail(btn.dataset.reconcileId);});
+    if($('#adminReconciliationRows'))$('#adminReconciliationRows').addEventListener('click',e=>{const btn=e.target.closest('[data-reconcile-id]');if(btn)openReconciliationDetail(btn.dataset.reconcileId);});
+    if($('#allTechniciansMetric'))$('#allTechniciansMetric').addEventListener('change',e=>{state.allTechniciansMetric=e.target.value;renderAllTechniciansFullscreenChart(state.allTechniciansRangeIds);});
+    if($('#dailyTechniciansMetric'))$('#dailyTechniciansMetric').addEventListener('change',e=>{state.dailyTechniciansMetric=e.target.value;renderDailyTechniciansFullscreenChart();});
+    if($('#generateSquadFeedbacksBtn'))$('#generateSquadFeedbacksBtn').addEventListener('click',generateSquadFeedbacks);
+    if($('#regenerateSquadFeedbacksBtn'))$('#regenerateSquadFeedbacksBtn').addEventListener('click',regenerateSquadFeedbacks);
+    if($('#feedbackRegenerateBtn'))$('#feedbackRegenerateBtn').addEventListener('click',()=>regenerateSingleFeedback(state.feedbackEditor?.t?.name));
+    if($('#feedbackSaveDraftBtn'))$('#feedbackSaveDraftBtn').addEventListener('click',()=>saveFeedbackEditor('draft'));
+    if($('#feedbackFinalizeBtn'))$('#feedbackFinalizeBtn').addEventListener('click',()=>saveFeedbackEditor('finalized'));
+    let allTechResizeTimer=null;window.addEventListener('resize',()=>{const monthlyOpen=$('#allTechniciansModal')?.classList.contains('open'),dailyOpen=$('#dailyTechniciansModal')?.classList.contains('open');if(!monthlyOpen&&!dailyOpen)return;clearTimeout(allTechResizeTimer);allTechResizeTimer=setTimeout(()=>{if(monthlyOpen)renderAllTechniciansFullscreenChart(state.allTechniciansRangeIds);if(dailyOpen)renderDailyTechniciansFullscreenChart();},120);});
+  }
+
+  async function handleLogin(e){
+    e.preventDefault(); $('#loginError').textContent='';
+    const email=$('#loginEmail').value.trim().toLowerCase(), password=$('#loginPassword').value;
+    const btn=$('.login-submit'); btn.disabled=true; btn.textContent='Entrando...';
+    try{
+      if((window.APP_CONFIG?.mode||'demo')==='supabase'){
+        const {data,error}=await state.supabase.auth.signInWithPassword({email,password}); if(error)throw error; await enterSupabaseSession(data.user);
+      }else{
+        const u=allDemoUsers().find(x=>String(x.email).toLowerCase()===email&&x.password===password); if(!u)throw new Error('E-mail ou senha inválidos.'); sessionStorage.setItem('squadDemoSession',JSON.stringify({email:u.email})); await enterApp({...u});
+      }
+    }catch(err){$('#loginError').textContent=humanAuthError(err);}finally{btn.disabled=false;btn.textContent='Entrar';}
+  }
+  function humanAuthError(err){
+    const m=String(err?.message||err||'');
+    if(/invalid login|invalid.*credential/i.test(m))return'E-mail ou senha inválidos.';
+    if(/email not confirmed/i.test(m))return'Confirme seu e-mail antes de entrar.';
+    if(/rate limit/i.test(m))return'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+    return m||'Não foi possível entrar.';
+  }
+  function authRedirectUrl(){return window.location.origin+window.location.pathname;}
+  async function handleForgotPassword(){
+    $('#loginError').textContent='';
+    const email=$('#loginEmail').value.trim().toLowerCase();
+    if(!email){$('#loginError').textContent='Informe seu e-mail primeiro.';$('#loginEmail').focus();return;}
+    if((window.APP_CONFIG?.mode||'demo')!=='supabase'){$('#loginError').textContent='A recuperação de senha fica disponível no modo Supabase.';return;}
+    const btn=$('#forgotPasswordBtn');btn.disabled=true;btn.textContent='Enviando...';
+    try{
+      const {error}=await state.supabase.auth.resetPasswordForEmail(email,{redirectTo:authRedirectUrl()});
+      if(error)throw error;
+      $('#loginError').classList.add('success');
+      $('#loginError').textContent='E-mail de recuperação enviado. Abra o link neste mesmo navegador.';
+    }catch(err){$('#loginError').classList.remove('success');$('#loginError').textContent=humanAuthError(err)}
+    finally{btn.disabled=false;btn.textContent='Esqueci minha senha';}
+  }
+  async function handleRecoveryPassword(e){
+    e.preventDefault();
+    const p1=$('#recoveryPassword').value,p2=$('#recoveryPasswordConfirm').value,errEl=$('#recoveryError');errEl.textContent='';
+    if(p1.length<8){errEl.textContent='A senha precisa ter pelo menos 8 caracteres.';return;}
+    if(p1!==p2){errEl.textContent='As senhas não conferem.';return;}
+    const btn=$('#recoverySubmit');btn.disabled=true;btn.textContent='Salvando...';
+    try{
+      const {data,error}=await state.supabase.auth.updateUser({password:p1});if(error)throw error;
+      state.recoveryMode=false;closeModal('recoveryModal');
+      window.history.replaceState({},document.title,authRedirectUrl());
+      $('#loginError').classList.add('success');$('#loginError').textContent='Senha alterada com sucesso. Entrando...';
+      if(data?.user) await enterSupabaseSession(data.user); else {const {data:sess}=await state.supabase.auth.getSession();if(sess?.session?.user)await enterSupabaseSession(sess.session.user);}
+    }catch(err){errEl.textContent=humanAuthError(err)}
+    finally{btn.disabled=false;btn.textContent='Salvar nova senha';}
+  }
+  function showLogin(message=''){ hideBoot();$('#loginScreen').classList.remove('hidden');$('#appShell').classList.add('hidden');if(message)$('#loginError').textContent=message; }
+  async function logout(){
+    stopThemeAudio();if(state.supabase) await state.supabase.auth.signOut(); sessionStorage.removeItem('squadDemoSession'); state.user=null;showLogin();
+  }
+
+  async function enterApp(user){
+    state.user=user;
+    state.userDirectoryLoaded=false;state.userDirectory=[];state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;
+    state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
+    chooseLatestMonth(); chooseDefaultTech();
+    state.theme=state.squads[state.squadCode]?.theme||loadThemeForSquad(state.squadCode); applyTheme(state.theme);
+    if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
+    resetAnalysisRange(true);
+    applyPermissions(); refreshSelectors(); render();
+    hideBoot();$('#loginScreen').classList.add('hidden');$('#appShell').classList.remove('hidden');
+    initializeThemeAudio();
+  }
+  function applyPermissions(){
+    const admin=isAdmin(), superAdmin=isSuperAdmin();
+    $$('.admin-only').forEach(el=>el.classList.toggle('hidden',!admin));
+    $$('.super-only').forEach(el=>el.classList.toggle('hidden',!superAdmin));
+    $$('.tech-only').forEach(el=>el.classList.toggle('hidden',!isTechnician()));
+    $$('.admin-help').forEach(el=>el.classList.toggle('hidden',!admin));
+    $$('.super-help').forEach(el=>el.classList.toggle('hidden',!superAdmin));
+    const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
+    $('.technician-control').classList.toggle('hidden',isTechnician()||state.currentView!=='individual'||state.squadCode==='all'||costAdminView);
+    const analyticalView=['individual','team','indicators'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
+    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
+    syncAnalysisDateControls();
+    if($('#topUserName'))$('#topUserName').textContent=state.user.fullName;
+    if($('#topUserScope'))$('#topUserScope').textContent=state.user.role==='super_admin'?'Acesso geral':`Squad ${state.user.squadCode}`;
+    const initial=(state.user.fullName||'U').charAt(0).toUpperCase();if($('#topAvatar'))$('#topAvatar').textContent=initial;
+  }
+  function isTechnician(){return state.user?.role==='technician'}
+  function isAdmin(){return ['squad_admin','super_admin'].includes(state.user?.role)}
+  function isSuperAdmin(){return state.user?.role==='super_admin'}
+  function roleLabel(r){return r==='super_admin'?'Admin geral':r==='squad_admin'?'Admin do Squad':'Técnico'}
+
+  function currentSquad(){return state.squadCode==='all'?null:state.squads[state.squadCode]}
+  function currentMonths(){return currentSquad()?.months||{}}
+  function currentMonth(){return currentMonths()[state.currentId]||null}
+  function currentTech(){const m=currentMonth();if(!m)return null;return m.technicians.find(t=>samePersonName(t.name,state.techName))||m.technicians[0]||null}
+  function chooseLatestMonth(){const ids=Object.keys(currentMonths()).sort().reverse();state.currentId=ids[0]||null}
+  function chooseDefaultTech(){const m=currentMonth();if(!m){state.techName='';return}if(isTechnician()){const own=m.technicians.find(t=>samePersonName(t.name,state.user.techName));state.techName=own?.name||state.user.techName||m.technicians[0]?.name||'';return}if(!m.technicians.some(t=>samePersonName(t.name,state.techName)))state.techName=m.technicians[0]?.name||''}
+
+
+  function isoDateParts(year,month,day){return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`}
+  function parseIsoAnalysisDate(value){const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return null;const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));return Number.isNaN(d.getTime())?null:d}
+  function isoToBrDate(value){const d=parseIsoAnalysisDate(value);return d?`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`:''}
+  function maskBrDate(value){const digits=String(value||'').replace(/\D/g,'').slice(0,8);if(digits.length<=2)return digits;if(digits.length<=4)return `${digits.slice(0,2)}/${digits.slice(2)}`;return `${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`}
+  function brDateToIso(value){const m=String(value||'').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return null;const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(year,month-1,day);if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;return isoDateParts(year,month,day)}
+  function setDateFieldError(textId,message=''){const field=$(`[data-date-field="${textId}"]`),error=$('#'+textId+'Error'),input=$('#'+textId);if(field)field.classList.toggle('invalid',!!message);if(input)input.setAttribute('aria-invalid',message?'true':'false');if(error)error.textContent=message}
+  function openNativeDatePicker(picker){if(!picker)return;try{if(typeof picker.showPicker==='function')picker.showPicker();else picker.click();}catch(err){try{picker.click()}catch(_){}}}
+  function commitAnalysisTextDate(textId,which){const input=$('#'+textId);if(!input)return false;const iso=brDateToIso(input.value);if(!iso){setDateFieldError(textId,'Informe uma data válida.');return false}setDateFieldError(textId);handleAnalysisDateInput(which,iso);return true}
+  function bindAnalysisDateField(textId,pickerId,which){const input=$('#'+textId),picker=$('#'+pickerId),button=$(`[data-date-picker-for="${textId}"]`);if(!input||!picker)return;input.addEventListener('input',()=>{input.value=maskBrDate(input.value);setDateFieldError(textId)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitAnalysisTextDate(textId,which)}else if(e.key==='Escape'){e.preventDefault();syncAnalysisDateControls();input.blur()}});input.addEventListener('blur',()=>{if(input.value.trim())commitAnalysisTextDate(textId,which);else syncAnalysisDateControls()});picker.addEventListener('change',()=>{if(!picker.value)return;setDateFieldError(textId);handleAnalysisDateInput(which,picker.value)});if(button)button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const current=which==='start'?state.analysisStartDate:state.analysisEndDate;picker.value=current||'';openNativeDatePicker(picker)});}
+  function localIsoDate(d){return isoDateParts(d.getFullYear(),d.getMonth()+1,d.getDate())}
+  function monthIdForDate(value){const d=parseIsoAnalysisDate(value);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:null}
+  function addCalendarDays(value,delta){const d=parseIsoAnalysisDate(value);if(!d)return value;d.setDate(d.getDate()+delta);return localIsoDate(d)}
+  function dateBetween(value,start=state.analysisStartDate,end=state.analysisEndDate){return !!value&&(!start||value>=start)&&(!end||value<=end)}
+  function analysisScopeSquads(){return state.squadCode==='all'?Object.values(state.squads||{}).filter(Boolean):(currentSquad()?[currentSquad()]:[])}
+  function importedDateBounds(squads=analysisScopeSquads()){
+    let min=null,max=null;
+    for(const squad of squads||[]){for(const m of Object.values(squad?.months||{})){if(!m)continue;const last=Math.max(1,Math.min(safe(m.latestDay)||1,new Date(m.year,m.month,0).getDate()));const start=isoDateParts(m.year,m.month,1),end=isoDateParts(m.year,m.month,last);if(!min||start<min)min=start;if(!max||end>max)max=end;}}
+    return{min,max};
+  }
+  function currentCalendarMonthLatest(bounds=importedDateBounds()){
+    if(!bounds.max)return null;const now=new Date(),currentId=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    let latest=null;for(const squad of analysisScopeSquads()){const m=squad?.months?.[currentId];if(!m)continue;const d=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay)||1));if(!latest||d>latest)latest=d;}
+    return latest||bounds.max;
+  }
+  function resetAnalysisRange(force=false){
+    const bounds=importedDateBounds();if(!bounds.max){state.analysisStartDate=null;state.analysisEndDate=null;syncAnalysisDateControls();return;}
+    if(!force&&state.analysisStartDate&&state.analysisEndDate)return;
+    const end=currentCalendarMonthLatest(bounds)||bounds.max,dt=parseIsoAnalysisDate(end);state.analysisEndDate=end;state.analysisStartDate=isoDateParts(dt.getFullYear(),dt.getMonth()+1,1);state.analysisPreset='month';syncCurrentMonthToAnalysisEnd();syncAnalysisDateControls();
+  }
+  function clampAnalysisRange(start,end){
+    const bounds=importedDateBounds();if(!bounds.max)return{start:null,end:null};let s=start||bounds.min,e=end||bounds.max;if(s<bounds.min)s=bounds.min;if(e>bounds.max)e=bounds.max;if(s>e)s=e;return{start:s,end:e};
+  }
+  function syncCurrentMonthToAnalysisEnd(){
+    if(state.squadCode==='all'||!state.analysisEndDate)return;const id=monthIdForDate(state.analysisEndDate);if(id&&currentMonths()[id]){state.currentId=id;chooseDefaultTech();}
+  }
+  function syncAnalysisDateControls(){
+    const bounds=importedDateBounds();
+    [['analysisStartDate','analysisStartDatePicker'],['indicatorStartDate','indicatorStartDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisStartDate);if(picker){picker.value=state.analysisStartDate||'';picker.min=bounds.min||'';picker.max=bounds.max||'';}setDateFieldError(textId);});
+    [['analysisEndDate','analysisEndDatePicker'],['indicatorEndDate','indicatorEndDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisEndDate);if(picker){picker.value=state.analysisEndDate||'';picker.min=bounds.min||'';picker.max=bounds.max||'';}setDateFieldError(textId);});
+    $$('[data-analysis-preset]').forEach(b=>b.classList.toggle('active',b.dataset.analysisPreset===state.analysisPreset));
+  }
+  function handleAnalysisDateInput(which,value){
+    const next=clampAnalysisRange(which==='start'?value:state.analysisStartDate,which==='end'?value:state.analysisEndDate);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();
+  }
+  function setAnalysisPreset(preset){
+    const bounds=importedDateBounds();if(!bounds.max)return;let end=currentCalendarMonthLatest(bounds)||bounds.max,start=end;
+    if(preset==='today'){const today=localIsoDate(new Date());end=today<bounds.min?bounds.min:today>bounds.max?bounds.max:today;start=end;}
+    else if(preset==='7d'){start=addCalendarDays(end,-6);}
+    else if(preset==='15d'){start=addCalendarDays(end,-14);}
+    else if(preset==='prev-month'){const d=parseIsoAnalysisDate(end);d.setDate(1);d.setMonth(d.getMonth()-1);const y=d.getFullYear(),m=d.getMonth()+1,id=`${y}-${String(m).padStart(2,'0')}`;let last=new Date(y,m,0).getDate();const latestDays=analysisScopeSquads().map(s=>safe(s.months?.[id]?.latestDay)).filter(Boolean);if(latestDays.length)last=Math.max(...latestDays);start=isoDateParts(y,m,1);end=isoDateParts(y,m,last);}
+    else {const d=parseIsoAnalysisDate(end);start=isoDateParts(d.getFullYear(),d.getMonth()+1,1);preset='month';}
+    const next=clampAnalysisRange(start,end);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset=preset;syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();
+  }
+  function analysisRangeLabel(){if(!state.analysisStartDate||!state.analysisEndDate)return'Sem período';const a=parseIsoAnalysisDate(state.analysisStartDate),b=parseIsoAnalysisDate(state.analysisEndDate),fmt=d=>d.toLocaleDateString('pt-BR');return state.analysisStartDate===state.analysisEndDate?fmt(a):`${fmt(a)} até ${fmt(b)}`}
+  function analysisMonthIds(){
+    if(!state.analysisStartDate||!state.analysisEndDate)return[];const start=parseIsoAnalysisDate(state.analysisStartDate),end=parseIsoAnalysisDate(state.analysisEndDate),ids=[];const d=new Date(start.getFullYear(),start.getMonth(),1);while(d<=end){ids.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);d.setMonth(d.getMonth()+1);}return ids;
+  }
+  function isBusinessDateIso(value){const d=parseIsoAnalysisDate(value),dow=d?.getDay();return dow>=1&&dow<=5}
+  function dailyRowsForTechnician(squad,techName,start=state.analysisStartDate,end=state.analysisEndDate){
+    const out=[];if(!squad||!techName)return out;for(const id of Object.keys(squad.months||{}).sort()){const m=squad.months[id];if(!m)continue;const t=(m.technicians||[]).find(x=>samePersonName(x.name,techName));if(!t)continue;for(const d of t.daily||[]){if(safe(d.day)>safe(m.latestDay))continue;const date=isoDateParts(m.year,m.month,safe(d.day));if(!dateBetween(date,start,end))continue;out.push({date,year:m.year,month:m.month,day:safe(d.day),off:!!d.off,att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1)});}}
+    return out.sort((a,b)=>a.date.localeCompare(b.date));
+  }
+  function aggregateDailyRows(rows){
+    const r={att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,totalEval:0,avg:0,evalPct:0};for(const d of rows||[]){r.att+=safe(d.att);r.notes5+=safe(d.notes5);r.notes4+=safe(d.notes4);r.notes3+=safe(d.notes3);r.notes2+=safe(d.notes2);r.notes1+=safe(d.notes1);}r.totalEval=r.notes5+r.notes4+r.notes3+r.notes2+r.notes1;r.avg=r.totalEval?truncate2((r.notes5*5+r.notes4*4+r.notes3*3+r.notes2*2+r.notes1)/r.totalEval):0;r.evalPct=r.att?roundTo(r.totalEval/r.att,4):0;return r;
+  }
+  function technicianPeriodAggregate(squad,techName,start=state.analysisStartDate,end=state.analysisEndDate){
+    const result={att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,totalEval:0,avg:0,evalPct:0,evaluationExcludedAtt:0,eligibleAtt:0,daily:[],excludeFromGroupCount:false,excludedMonths:[],countedMonths:[]};
+    let activeSegments=0,countedSegments=0;
+    for(const id of analysisMonthIds()){
+      const m=squad?.months?.[id];if(!m)continue;const t=(m.technicians||[]).find(x=>samePersonName(x.name,techName));if(!t)continue;
+      const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay)||1));
+      const from=!start||start<monthStart?monthStart:start,to=!end||end>monthEnd?monthEnd:end;if(from>to)continue;
+      const fullCompetence=from===monthStart&&to===monthEnd;
+      let agg;
+      const rows=dailyRowsForTechnician(squad,techName,from,to);result.daily.push(...rows);
+      if(fullCompetence){
+        // O consolidado mensal e a fonte oficial da competencia. O diario continua anexado
+        // para graficos e detalhamento, mas nao substitui N1-N5/total quando houver divergencia historica.
+        // O ajuste de atendimentos sem e-mail e mensal; por isso ele so e aplicado quando o
+        // recorte cobre a competencia inteira. Em periodos parciais a taxa permanece bruta.
+        agg={att:safe(t.att),notes5:safe(t.notes5),notes4:safe(t.notes4),notes3:safe(t.notes3),notes2:safe(t.notes2),notes1:safe(t.notes1),evaluationExcludedAtt:normalizedEvaluationExcludedAtt(t)};
+      }else{
+        agg=aggregateDailyRows(rows);agg.evaluationExcludedAtt=0;
+      }
+      const totalEval=safe(agg.notes5)+safe(agg.notes4)+safe(agg.notes3)+safe(agg.notes2)+safe(agg.notes1);
+      if(safe(agg.att)>0||totalEval>0){activeSegments++;if(t.excludeFromGroupCount)result.excludedMonths.push(id);else{countedSegments++;result.countedMonths.push(id)}}
+      result.att+=safe(agg.att);result.notes5+=safe(agg.notes5);result.notes4+=safe(agg.notes4);result.notes3+=safe(agg.notes3);result.notes2+=safe(agg.notes2);result.notes1+=safe(agg.notes1);result.evaluationExcludedAtt+=safe(agg.evaluationExcludedAtt);
+    }
+    result.totalEval=result.notes5+result.notes4+result.notes3+result.notes2+result.notes1;
+    result.avg=result.totalEval?truncate2((result.notes5*5+result.notes4*4+result.notes3*3+result.notes2*2+result.notes1)/result.totalEval):0;
+    result.evaluationExcludedAtt=Math.min(Math.max(0,safe(result.evaluationExcludedAtt)),Math.max(0,result.att-result.totalEval));
+    result.eligibleAtt=Math.max(0,result.att-result.evaluationExcludedAtt);
+    result.evalPct=result.eligibleAtt?roundTo(result.totalEval/result.eligibleAtt,4):0;
+    result.excludeFromGroupCount=activeSegments>0&&countedSegments===0;
+    return result;
+  }
+  function technicianVacationMonths(squad,techName,ids=analysisMonthIds()){
+    if(!squad||!techName)return[];
+    return (ids||[]).filter(id=>{
+      const m=squad?.months?.[id];if(!m)return false;
+      const t=(m.technicians||[]).find(x=>samePersonName(x.name,techName));
+      return !!t?.vacation;
+    });
+  }
+  function vacationBadgeHtml(monthIds,{compact=false}={}){
+    const ids=[...(monthIds||[])];if(!ids.length)return'';
+    const title=`Férias registradas em: ${ids.map(monthLabelFromId).join(', ')}`;
+    return `<span class="vacation-badge${compact?' compact':''}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">🏖${compact?'':' FÉRIAS'}</span>`;
+  }
+  function groupCountBadgeHtml(excluded,{compact=false}={}){
+    if(!excluded)return'';const title='Competência parcial: produção e status são mantidos. O técnico não entra no divisor da Base do Squad e fica fora do desconto/redistribuição financeira.';
+    return `<span class="group-count-badge${compact?' compact':''}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${compact?'Ø':'FORA DA MÉDIA'}</span>`;
+  }
+  function periodTechniciansForSquad(squad,start=state.analysisStartDate,end=state.analysisEndDate){
+    const ids=analysisMonthIds();
+    const names=new Map();for(const id of ids){const m=squad?.months?.[id];for(const t of m?.technicians||[]){const key=nameLinkKey(t.name);if(!names.has(key))names.set(key,t.name);}}
+    const rows=[...names.values()].map(name=>{const agg=technicianPeriodAggregate(squad,name,start,end),vacationMonths=technicianVacationMonths(squad,name,ids);return{name,...agg,vacationMonths,vacation:vacationMonths.length>0};}).filter(t=>safe(t.att)>0||safe(t.totalEval)>0);
+    if(!rows.length)return[];const refs={...scoreRefsFromRows(rows),bonusAtt:20,bonusTotalEval:30,bonusAvg:40,bonusEvalPct:35};for(const t of rows){const scored=calculateScore(t,refs);t.periodPoints=scored.points;t.periodStatus=scored.status;t.periodGoalsHit=scored.goalsHit;t.points=scored.points;t.status=scored.status;}rows.sort((a,b)=>safe(b.periodPoints)-safe(a.periodPoints)||safe(b.att)-safe(a.att)||String(a.name).localeCompare(String(b.name),'pt-BR'));rows.forEach((t,i)=>t.periodRank=i+1);return rows;
+  }
+  function gameRankingCacheKey(squadCode=state.squadCode,start=state.analysisStartDate,end=state.analysisEndDate){return `${squadCode}|${start||''}|${end||''}`;}
+  async function loadGameRankingForTechnician(squadCode=state.squadCode,start=state.analysisStartDate,end=state.analysisEndDate){
+    if(!state.supabase||!isTechnician()||!squadCode||!start||!end)return;
+    const key=gameRankingCacheKey(squadCode,start,end);if(state.gameRankingCache[key]||state.gameRankingLoading[key])return;state.gameRankingLoading[key]=true;
+    try{
+      const {data,error}=await state.supabase.rpc('get_my_squad_game_ranking',{p_start_date:start,p_end_date:end});if(error)throw error;
+      state.gameRankingCache[key]=(data||[]).map(r=>({name:r.technician_name||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct),periodPoints:safe(r.points),periodStatus:String(r.status||''),periodGoalsHit:safe(r.goals_hit),periodRank:safe(r.ranking)||null,points:safe(r.points),status:String(r.status||''),excludeFromGroupCount:!!r.exclude_from_group_count}));
+    }catch(err){console.warn('Ranking do game do Squad indisponível. Confira a migração V2.29.2.',err);state.gameRankingCache[key]=[];}
+    finally{delete state.gameRankingLoading[key];if(state.currentView==='individual'&&state.squadCode===squadCode&&state.analysisStartDate===start&&state.analysisEndDate===end)renderIndividual();}
+  }
+  function gameRankingRowsForCurrentPeriod(squadCode=state.squadCode,start=state.analysisStartDate,end=state.analysisEndDate){
+    if(isTechnician()&&state.supabase){const key=gameRankingCacheKey(squadCode,start,end),cached=state.gameRankingCache[key];if(cached)return cached;loadGameRankingForTechnician(squadCode,start,end);return[];}
+    // Para gestores, usa a mesma rotina do ranking da equipe. Em competencias completas ela
+    // prioriza o consolidado mensal; em recortes parciais usa o detalhe diario.
+    return periodTechniciansForSquad(state.squads?.[squadCode],start,end);
+  }
+  function periodTechnicianForCurrent(){const squad=currentSquad(),name=state.techName||currentTech()?.name;return periodTechniciansForSquad(squad).find(t=>samePersonName(t.name,name))||null}
+  function selectedBusinessDays(){let c=0;if(!state.analysisStartDate||!state.analysisEndDate)return 0;for(let d=state.analysisStartDate;d<=state.analysisEndDate;d=addCalendarDays(d,1))if(isBusinessDateIso(d))c++;return c}
+  function periodGoalForTechnician(t,squad=currentSquad()){
+    if(!t||!squad)return{att:0,notes5:0};let att=0,notes5=0;for(const id of analysisMonthIds()){const m=squad.months?.[id];if(!m)continue;const mt=(m.technicians||[]).find(x=>samePersonName(x.name,t.name));if(!mt)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;const totalDays=Math.max(1,businessDaysMonFri(m.year,m.month));att+=safe(mt.goalAtt)*(days/totalDays);notes5+=safe(mt.goalEval)*(days/totalDays);}return{att,notes5};
+  }
+  function periodTeamGoal(squad){let total=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;total+=safe(teamSettings(m).teamGoalAtt)*(days/Math.max(1,businessDaysMonFri(m.year,m.month)));}return total;}
+
+  async function selectSquad(code){
+    if(!isSuperAdmin())return; state.squadCode=code;
+    if(code==='all'){state.currentId=null;state.techName='';state.theme=clone(DEFAULT_THEME);applyTheme(state.theme);if(state.currentView==='individual')showView('team');}
+    else{chooseLatestMonth();chooseDefaultTech();state.theme=state.squads[code]?.theme||loadThemeForSquad(code);applyTheme(state.theme);}
+    resetAnalysisRange(true);refreshSelectors();render();applyPermissions();
+  }
+  function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
+
+  function resetViewScroll(){
+    const goTop=()=>{
+      try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){window.scrollTo(0,0);}
+      document.documentElement.scrollTop=0;
+      document.body.scrollTop=0;
+      const main=$('.main');if(main&&main.scrollTop)main.scrollTop=0;
+    };
+    goTop();
+    requestAnimationFrame(goTop);
+  }
+
+  function showView(name,adminSection=null){
+    if((name==='admin'||name==='users'||name==='feedbacks')&&!isAdmin())return;
+    if(name==='my-feedbacks'&&!isTechnician())return;
+    if(name==='indicators'&&!isSuperAdmin())return;
+    if(name==='admin'&&adminSection==='costs'&&!isSuperAdmin())return;
+    if(name==='individual'&&state.squadCode==='all')name='team';
+    if(name==='admin'&&adminSection)state.adminSection=adminSection;
+    state.currentView=name;
+    $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
+    $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;b.classList.toggle('active',sameView&&sameSection)});
+    const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
+    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',feedbacks:'Feedbacks',users:'Usuários',admin:adminTitles[state.adminSection]||'Gestão',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    $('#pageTitle').textContent=titles[name]||'Performance Hub';
+    const costAdminView=name==='admin'&&state.adminSection==='costs';
+    $('.technician-control').classList.toggle('hidden',name!=='individual'||isTechnician()||state.squadCode==='all'||costAdminView);
+    const analytical=name==='individual'||name==='team'||name==='indicators';
+    $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='users'||name==='profile'||name==='my-feedbacks'||name==='help');
+    if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!(name==='individual'||name==='team'));
+    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
+    syncAnalysisDateControls();
+    $('.sidebar').classList.remove('open');
+    render();
+    resetViewScroll();
+  }
+
+  function refreshSelectors(){
+    if(isSuperAdmin()) $('#squadSelect').innerHTML=`<option value="all" ${state.squadCode==='all'?'selected':''}>Todos os Squads</option>`+Object.values(state.squads).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${s.code}" ${s.code===state.squadCode?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
+    const m=currentMonth(), ids=Object.keys(currentMonths()).sort().reverse();
+    $('#monthSelect').disabled=!ids.length||state.squadCode==='all';
+    $('#monthSelect').innerHTML=ids.length?ids.map(id=>{const mm=currentMonths()[id];return `<option value="${id}" ${id===state.currentId?'selected':''}>${mm.monthName} ${mm.year}${mm.isClosed?' • Fechado':''}</option>`}).join(''):'<option>Sem dados</option>';
+    if(m){chooseDefaultTech();$('#techSelect').innerHTML=m.technicians.map(t=>`<option ${t.name===state.techName?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}else $('#techSelect').innerHTML='<option>Sem dados</option>';
+    const label=state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`;$('#squadEyebrow').textContent=label;syncAnalysisDateControls();
+  }
+
+  function render(){
+    applyPermissions();
+    if(state.currentView==='feedbacks'){renderFeedbacks();return;}
+    if(state.currentView==='my-feedbacks'){renderMyFeedbacks();return;}
+    if(state.currentView==='users')renderUsers().catch(err=>{console.error(err);toast('Não foi possível carregar os usuários.')});
+    if(state.currentView==='help')renderHelp();
+    if(state.currentView==='profile')renderProfile();
+    if(state.currentView==='indicators')renderIndicators();
+    if(state.squadCode==='all'){renderTeam();renderAdmin();return}
+    const m=currentMonth();
+    $('#individualEmpty').classList.toggle('hidden',!!m);$('#individualContent').classList.toggle('hidden',!m);
+    $('#teamEmpty').classList.toggle('hidden',!!m);$('#teamContent').classList.toggle('hidden',!m);
+    if(m){renderIndividual();renderTeam();}
+    renderAdmin();
+  }
+
+  function renderIndividual(){
+    const m=currentMonth(),t=currentTech();if(!m||!t)return;const periodRows=gameRankingRowsForCurrentPeriod(),periodFromRanking=periodRows.find(r=>samePersonName(r.name,t.name)),localPeriod=periodTechnicianForCurrent(),period={...(periodFromRanking||localPeriod||{name:t.name,att:0,notes5:0,totalEval:0,avg:0,evalPct:0}),evaluationExcludedAtt:safe(localPeriod?.evaluationExcludedAtt),eligibleAtt:safe(localPeriod?.eligibleAtt)||safe(periodFromRanking?.att),daily:localPeriod?.daily||[]},periodGoal=periodGoalForTechnician(t);
+    const attPct=t.goalAtt?safe(t.att)/t.goalAtt:0,notePct=t.goalEval?safe(t.notes5)/t.goalEval:0,hasGoals=safe(t.goalAtt)>0&&safe(t.goalEval)>0;
+    const audit=technicianStatusAudit(t,m),rules=audit.rules;
+    $('#heroName').textContent=firstName(t.name);$('#heroStatus').textContent=t.status?`STATUS ${t.status}`:(hasGoals?overallLabel(attPct,notePct):'METAS PENDENTES');$('#heroStatus').style.color=String(t.status).toUpperCase()==='ACIMA'?'var(--success)':String(t.status).toUpperCase()==='ABAIXO'?'var(--danger)':(hasGoals?overallColor(attPct,notePct):'var(--warn)');$('#heroMessage').textContent=`Período analisado: ${analysisRangeLabel()}. A pontuação, status, metas e bonificação continuam oficiais por competência mensal.`;
+    $('#lastUpdate').textContent=`Filtro diário • ${analysisRangeLabel()}`;$('#sourceFile').textContent=`Competência oficial: ${m.monthName} ${m.year}`;
+    $('#rankNumber').textContent=period.periodRank?`#${period.periodRank}`:'—';$('#rankContext').textContent=`de ${periodRows.length} no período • Squad ${state.squadCode}`;
+    $('#kpiAtt').textContent=fmtInt(period.att);$('#kpiAttGoal').textContent=periodGoal.att?`/ ${fmtInt(periodGoal.att)}`:'';$('#attBar').style.width=clamp((periodGoal.att?period.att/periodGoal.att:0)*100,0,100)+'%';$('#attProgress').textContent=periodGoal.att?fmtPct(period.att/periodGoal.att):'—';$('#attRemaining').textContent=periodGoal.att?(period.att>=periodGoal.att?`+${fmtInt(period.att-periodGoal.att)} acima no período`:`Faltam ${fmtInt(periodGoal.att-period.att)} no período`):'Meta mensal preservada';if($('#kpiAttMonthlyGoal'))$('#kpiAttMonthlyGoal').textContent=safe(t.goalAtt)>0?fmtInt(t.goalAtt):'—';
+    $('#kpiNotes').textContent=fmtInt(period.notes5);$('#kpiNotesGoal').textContent=periodGoal.notes5?`/ ${fmtInt(periodGoal.notes5)}`:'';$('#noteBar').style.width=clamp((periodGoal.notes5?period.notes5/periodGoal.notes5:0)*100,0,100)+'%';$('#noteProgress').textContent=periodGoal.notes5?fmtPct(period.notes5/periodGoal.notes5):'—';$('#noteRemaining').textContent=periodGoal.notes5?(period.notes5>=periodGoal.notes5?`+${fmtInt(period.notes5-periodGoal.notes5)} acima no período`:`Faltam ${fmtInt(periodGoal.notes5-period.notes5)} no período`):'Meta mensal preservada';if($('#kpiNotesMonthlyGoal'))$('#kpiNotesMonthlyGoal').textContent=safe(t.goalEval)>0?fmtInt(t.goalEval):'—';
+    $('#kpiEvalPct').textContent=fmtPct(period.evalPct);$('#evalCount').textContent=`${fmtInt(period.totalEval)} avaliações no período${safe(period.evaluationExcludedAtt)>0?` • ${fmtInt(period.evaluationExcludedAtt)} atend. sem avaliação descontados`:''}`;$('#avgRating').textContent=`Média ${safe(period.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;const evalTarget=teamSettings(m).teamGoalEvalPct;if($('#kpiEvalMonthlyGoal'))$('#kpiEvalMonthlyGoal').textContent=evalTarget>0?fmtPct(evalTarget):'—';$('#evalQuality').textContent=period.evalPct>=evalTarget?'Meta de avaliação atingida no período':period.avg>=4.9?'Qualidade excelente no período':'Acompanhar qualidade no período';
+    const avgAbove=safe(period.avg)>=rules.refAvg;$('#kpiAvgRating').textContent=safe(period.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});$('#avgRatingBar').style.width=clamp((safe(period.avg)/5)*100,0,100)+'%';$('#avgRatingStatus').textContent=avgAbove?'Acima da referência mensal':'Abaixo da referência mensal';$('#avgRatingStatus').style.color=avgAbove?'var(--success)':'var(--danger)';$('#avgRatingReference').textContent=`Ref. mensal ${safe(rules.refAvg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    $('#kpiPoints').textContent=fmtNum(t.points);$('#goalsHit').textContent=`${fmtInt(t.goalsHit)}/4 critérios • acumulado ${fmtNum(cumulativePointsForTech(t))} pts`;if($('#pointsStatusFoot')){$('#pointsStatusFoot').textContent=`Status oficial ${t.status||'—'}`;$('#pointsStatusFoot').style.color=String(t.status).toUpperCase()==='ACIMA'?'var(--success)':String(t.status).toUpperCase()==='ABAIXO'?'var(--danger)':'var(--muted)'}if($('#pointsRankFoot'))$('#pointsRankFoot').textContent=t.rank?`Ranking mensal #${t.rank}`:'Ranking mensal —';
+    $('#attGoalPct').textContent=fmtPct(attPct);$('#noteGoalPct').textContent=fmtPct(notePct);$('#attGoalText').textContent=goalLine('atendimentos',t.att,t.goalAtt);$('#noteGoalText').textContent=goalLine('notas',t.notes5,t.goalEval);
+    $('#goalOrb').style.background=overallColor(attPct,notePct);$('#goalOrb').style.boxShadow=`0 0 18px ${overallColor(attPct,notePct)}`;const coach=coachText(t,m,attPct,notePct);$('#coachTitle').textContent=coach.title;$('#coachText').textContent=coach.text;
+    renderStatusAudit(t,m,audit);renderFinanceSummary(t,m);renderGamification(t,m,attPct,notePct);renderChart(period,m,true);renderDaily(period,m,true);renderMiniRankingPeriod(periodRows,t.name);renderFinanceRanking(m,t.name);
+  }
+
+  function technicianStatusAudit(t,m){
+    const rules=displayScoreRules(m),criteria=[
+      {key:'att',label:'Atendimentos',value:safe(t.att),ref:safe(rules.refAtt),format:v=>fmtNum(v),source:rules.attSource||'Referência do mês'},
+      {key:'eval',label:'Total de avaliações',value:safe(t.totalEval),ref:safe(rules.refTotalEval),format:v=>fmtNum(v),source:rules.evalSource||'Referência do mês'},
+      {key:'avg',label:'Nota média',value:safe(t.avg),ref:safe(rules.refAvg),format:v=>safe(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),source:rules.avgSource||'Referência do mês'},
+      {key:'pct',label:'% avaliado',value:safe(t.evalPct),ref:safe(rules.refEvalPct),format:v=>fmtPct(v),source:rules.pctSource||'Referência do mês'}
+    ];
+    const active=safe(t.att)>0;criteria.forEach(c=>c.hit=active&&c.value>=c.ref);
+    const hits=criteria.filter(c=>c.hit).length;return{rules,criteria,hits,status:active?(hits>=2?'ACIMA':'ABAIXO'):''};
+  }
+  function renderStatusAudit(t,m,audit=technicianStatusAudit(t,m)){
+    const badge=$('#auditStatusBadge'),word=$('#auditStatusWord');if(!badge||!word)return;
+    word.textContent=audit.status;badge.textContent=audit.status;badge.classList.toggle('above',audit.status==='ACIMA');badge.classList.toggle('below',audit.status==='ABAIXO');
+    const r=audit.rules,progressText=m.isClosed?'mês fechado':'médias atuais do Squad';
+    $('#auditExplainer').textContent=m.isClosed?'Referências congeladas no fechamento do mês.':'O status usa sempre as médias atuais do próprio Squad, exatamente como a planilha. A cada importação essas quatro referências são recalculadas.';
+    $('#statusAuditGrid').innerHTML=audit.criteria.map(c=>`<div class="audit-item ${c.hit?'hit':'miss'}"><div class="audit-top"><strong>${escapeHtml(c.label)}</strong><span class="audit-check">${c.hit?'✓':'✕'}</span></div><div class="audit-values"><b>${c.format(c.value)}</b><span>vs ${c.format(c.ref)}</span></div><small>${escapeHtml(c.source)}</small></div>`).join('');
+    $('#statusAuditFooter').innerHTML=audit.status?`<strong>${audit.hits}/4 critérios atendidos → ${audit.status}.</strong> Referência: ${progressText}. ${m.isClosed?'Os valores não mudam mais até o mês ser reaberto.':'2 ou mais critérios = ACIMA; 0 ou 1 = ABAIXO.'}`:'<strong>Sem status.</strong> O técnico ainda não possui atendimentos no mês.';
+  }
+
+  function renderGamification(t,m,attPct,notePct){
+    const levels=[{min:0,name:'Recruta'},{min:250,name:'Explorador'},{min:400,name:'Guardião'},{min:550,name:'Mestre'},{min:700,name:'Lenda'}];
+    let idx=0;for(let i=0;i<levels.length;i++)if(safe(t.points)>=levels[i].min)idx=i;
+    const cur=levels[idx],next=levels[Math.min(idx+1,levels.length-1)],toNext=idx===levels.length-1?1:clamp((safe(t.points)-cur.min)/(next.min-cur.min),0,1);
+    const rhythm=clamp(((attPct+notePct)/2)*100,0,100);$('#xpRing').style.setProperty('--p',rhythm);$('#xpPercent').textContent=Math.round(rhythm)+'%';$('#levelBadge').textContent=`NÍVEL ${idx+1}`;$('#levelName').textContent=cur.name;$('#levelBar').style.width=(toNext*100)+'%';$('#nextLevelText').textContent=idx===levels.length-1?'Nível máximo da campanha':`Faltam ${fmtInt(next.min-safe(t.points))} pts para ${next.name}`;$('#levelText').textContent=`${fmtNum(t.points)} pontos no mês • ranking #${t.rank||'—'} do Squad ${state.squadCode}.`;
+    let mission;if(attPct>=1&&notePct>=1)mission=['Defenda sua posição','As duas metas foram atingidas. Sustente qualidade e volume até o fechamento.'];else if(attPct<notePct)mission=['Conquiste atendimentos',goalLine('atendimentos',t.att,t.goalAtt)];else mission=['Busque notas 5',goalLine('notas',t.notes5,t.goalEval)];$('#missionTitle').textContent=mission[0];$('#missionText').textContent=mission[1];
+    const productive=(t.daily||[]).filter(d=>d.day<=m.latestDay&&!d.off&&safe(d.att)>=10).length;
+    const badges=[
+      {icon:'🏆',name:'Top 3',desc:'Ranking do Squad',ok:safe(t.rank)>0&&safe(t.rank)<=3},
+      {icon:'⭐',name:'Qualidade',desc:'Média ≥ 4,95',ok:safe(t.avg)>=4.95},
+      {icon:'%',name:'Avaliações',desc:`≥ ${fmtPct(teamSettings(m).teamGoalEvalPct)}`,ok:safe(t.evalPct)>=teamSettings(m).teamGoalEvalPct},
+      {icon:'☎',name:'Volume',desc:'Meta de atend.',ok:attPct>=1},
+      {icon:'◆',name:'Notas 5',desc:'Meta de notas',ok:notePct>=1},
+      {icon:'🔥',name:'Constância',desc:'3 dias com 10+',ok:productive>=3}
+    ];
+    $('#achievementBadges').innerHTML=badges.map(b=>`<div class="achievement ${b.ok?'unlocked':'locked'}"><i>${b.icon}</i><b>${b.name}</b><span>${b.ok?'CONQUISTADO':b.desc}</span></div>`).join('');
+  }
+
+  function renderChart(t,m,periodMode=false){
+    const el=$('#dailyChart');if(!el)return;
+    const data=(periodMode?(t.daily||[]):(t.daily||[]).filter(d=>d.day<=Math.max(m.latestDay||31,1)&&!d.off)).filter(d=>!d.off);
+    if(!data.length){el.innerHTML='<div class="muted">Sem lançamentos diários disponíveis no período.</div>';return;}
+    el.classList.add('interactive-chart','chart-modern','daily-premium-chart');
+    const chartId=nextChartRenderId('daily'),w=720,h=230,p={l:34,r:16,t:15,b:30};
+    const maxVal=Math.max(5,...data.flatMap(d=>[safe(d.att),safe(d.notes5)]));
+    const x=i=>p.l+(data.length<=1?(w-p.l-p.r)/2:i*(w-p.l-p.r)/(data.length-1));
+    const y=v=>p.t+(h-p.t-p.b)-(safe(v)/maxVal)*(h-p.t-p.b),baseline=h-p.b;
+    const attPoints=data.map((d,i)=>({x:x(i),y:y(d.att),index:i,value:safe(d.att)}));
+    const notePoints=data.map((d,i)=>({x:x(i),y:y(d.notes5),index:i,value:safe(d.notes5)}));
+    const yTicks=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),v=Math.round(maxVal*f);return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="2" y="${yy+4}" class="axis-label">${v}</text>`}).join('');
+    const step=Math.max(1,Math.ceil(data.length/8));
+    const labels=data.map(d=>periodMode?String(d.date||'').slice(5).replace('-','/'):String(d.day).padStart(2,'0'));
+    const xLabels=labels.map((label,i)=>i%step===0?`<text x="${x(i)-10}" y="${h-7}" class="axis-label">${escapeHtml(label)}</text>`:'').join('');
+    const zones=data.map((_,i)=>{const span=data.length<=1?(w-p.l-p.r):(w-p.l-p.r)/(data.length-1),zx=data.length<=1?p.l:Math.max(p.l,x(i)-span/2),zw=data.length<=1?w-p.l-p.r:(i===0||i===data.length-1?span/2:span);return `<rect x="${zx}" y="${p.t}" width="${zw}" height="${h-p.t-p.b}" class="chart-hover-zone" data-chart-index="${i}"></rect>`}).join('');
+    const rulers=data.map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
+    const dots=(points,color,seriesIndex)=>points.map(pt=>`<circle cx="${pt.x}" cy="${pt.y}" r="4" fill="${color}" class="chart-point chart-series-shape" style="--series-color:${color}" data-series-index="${seriesIndex}" data-point-index="${pt.index}"></circle>`).join('');
+    const defs=`<defs>${svgSeriesGradient(`${chartId}-att`,'var(--accent)',.24)}${svgSeriesGradient(`${chartId}-note`,'var(--success)',.12)}</defs>`;
+    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${defs}${yTicks}<path d="${smoothAreaPath(attPoints,baseline)}" fill="url(#${chartId}-att)" class="chart-series-area"></path><path d="${smoothAreaPath(notePoints,baseline)}" fill="url(#${chartId}-note)" class="chart-series-area secondary-area"></path><path d="${smoothSvgPath(attPoints)}" class="att-line chart-series-line chart-series-shape" style="--series-color:var(--accent)" data-series-index="0"></path><path d="${smoothSvgPath(notePoints)}" class="note-line chart-series-line chart-series-shape" style="--series-color:var(--success)" data-series-index="1"></path>${dots(attPoints,'var(--accent)',0)}${dots(notePoints,'var(--success)',1)}${rulers}${zones}${xLabels}</svg>`;
+    bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[
+      {name:'Atendimentos',value:safe(data[i]?.att),text:fmtInt(data[i]?.att),color:'var(--accent)'},
+      {name:'Notas 5',value:safe(data[i]?.notes5),text:fmtInt(data[i]?.notes5),color:'var(--success)'}
+    ]});
+  }
+  function renderDaily(t,m,periodMode=false){const rows=(periodMode?(t.daily||[]):(t.daily||[]).filter(d=>d.day<=m.latestDay)).filter(d=>!d.off&&(d.att||d.notes5||d.notes4||d.notes3||d.notes2||d.notes1)).sort((a,b)=>periodMode?String(b.date).localeCompare(String(a.date)):b.day-a.day);const avgAtt=rows.length?rows.reduce((sum,d)=>sum+safe(d.att),0)/rows.length:0;$('#dailySummary').textContent=`${analysisRangeLabel()} • média ${avgAtt.toLocaleString('pt-BR',{maximumFractionDigits:1})} atend./dia`;$('#dailyRows').innerHTML=rows.map(d=>{const totalEval=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1),pct=d.att?totalEval/safe(d.att):0,goal=periodMode&&m?((currentTech()?.goalAtt||0)/Math.max(1,businessDaysMonFri(m.year,m.month))):avgAtt,pace=safe(d.att)>=goal?'good':safe(d.att)>=goal*.72?'mid':'low',label=pace==='good'?'FORTE':pace==='mid'?'OK':'ATENÇÃO',labelDate=periodMode?parseIsoAnalysisDate(d.date)?.toLocaleDateString('pt-BR'):`${String(d.day).padStart(2,'0')}/${String(m.month).padStart(2,'0')}`;return `<tr><td><strong>${labelDate}</strong></td><td>${fmtInt(d.att)}</td><td>${fmtInt(d.notes5)}</td><td>${fmtPct(pct)}</td><td><span class="pace ${pace}">${label}</span></td></tr>`}).join('')||'<tr><td colspan="5" class="muted">Nenhum lançamento diário encontrado no período.</td></tr>'}
+  function renderMiniRankingPeriod(list,selected){const el=$('#miniRanking');if(!el)return;if(isTechnician()&&state.supabase&&state.gameRankingLoading[gameRankingCacheKey()]){el.innerHTML='<div class="muted finance-ranking-loading">Carregando ranking do Squad...</div>';return}el.innerHTML=(list||[]).slice(0,8).map(t=>{const vacationMonths=t.vacationMonths||technicianVacationMonths(currentSquad(),t.name);return `<div class="rank-row ${samePersonName(t.name,selected)?'selected':''}"><span class="rank-pos">${t.periodRank||'—'}</span><div><strong>${escapeHtml(shortName(t.name))}${vacationBadgeHtml(vacationMonths,{compact:true})}${groupCountBadgeHtml(t.excludeFromGroupCount,{compact:true})}</strong><small>${fmtInt(t.att)} atend. • ${fmtInt(t.notes5)} notas 5</small></div><span class="rank-score">${fmtNum(t.periodPoints)} pts*</span></div>`}).join('')||'<div class="muted">Sem dados do ranking no período.</div>';}
+
+  function localFinanceRankingRows(m){
+    return (m?.technicians||[]).map(t=>({technicianName:t.name,amount:safe(t.financeData?.final),model:financeModelForMonth(m)})).sort((a,b)=>safe(b.amount)-safe(a.amount)||String(a.technicianName).localeCompare(String(b.technicianName),'pt-BR')).map((r,i)=>({...r,rank:i+1}));
+  }
+  async function loadFinanceRankingForTechnician(m){
+    if(!state.supabase||!isTechnician()||!m)return;const key=`${state.squadCode}|${m.id}`;if(state.financeRankingCache[key]||state.financeRankingLoading[key])return;state.financeRankingLoading[key]=true;
+    try{const {data,error}=await state.supabase.rpc('get_my_squad_finance_ranking',{p_year:m.year,p_month:m.month});if(error)throw error;state.financeRankingCache[key]=(data||[]).map(r=>({technicianName:r.technician_name,amount:safe(r.amount),rank:safe(r.ranking)||null,model:r.finance_model||financeModelForMonth(m)}));}
+    catch(err){console.warn('Ranking financeiro do Squad indisponível. Confira a migração V2.20.0.',err);state.financeRankingCache[key]=[];}finally{delete state.financeRankingLoading[key];if(currentMonth()?.id===m.id)renderFinanceRanking(m,state.techName)}
+  }
+  function renderFinanceRanking(m,selected){
+    const el=$('#financeRanking'),label=$('#financeRankingModel');if(!el||!m)return;const key=`${state.squadCode}|${m.id}`;let rows;
+    if(isTechnician()&&state.supabase){rows=state.financeRankingCache[key];if(!rows){el.innerHTML='<div class="muted finance-ranking-loading">Carregando valores do Squad...</div>';loadFinanceRankingForTechnician(m);return}}else rows=localFinanceRankingRows(m);
+    if(label)label.textContent=`${financeModelLabel(financeModelForMonth(m))} • ${m.monthName}`;
+    el.innerHTML=(rows||[]).map((r,i)=>`<div class="rank-row ${samePersonName(r.technicianName,selected)?'selected':''}"><span class="rank-pos">${r.rank||i+1}</span><div><strong>${escapeHtml(shortName(r.technicianName))}</strong><small>${m.isClosed?'Valor final da competência':'Valor oficial estimado'}</small></div><span class="rank-score finance-rank-value">${fmtMoney(r.amount)}</span></div>`).join('')||'<div class="muted">Nenhum valor financeiro disponível.</div>';
+  }
+
+  function renderTeam(){
+    const all=state.squadCode==='all';$('#allSquadsPanel').classList.toggle('hidden',!all);$('#singleSquadPanel').classList.toggle('hidden',all);if(all){renderPortfolioPeriod();renderTeamSquadOverview();renderTeamOrgDailyComparison();return}
+    const m=currentMonth();if(!m)return;const periodRows=periodTechniciansForSquad(currentSquad()),totals=deriveTotals(periodRows),cfg=teamSettings(m),periodGoal=periodTeamGoal(currentSquad()),attProgress=periodGoal?totals.att/periodGoal:0,evalProgress=cfg.teamGoalEvalPct?totals.evalPct/cfg.teamGoalEvalPct:0;
+    const avgPoints=periodRows.length?meanOf(periodRows,t=>t.periodPoints):0,teamStatus=teamStatusFromTechnicianStatuses(periodRows,{period:true}),aboveCount=teamStatus.aboveCount,ratio=teamStatus.ratio,periodStatus=teamStatus.status||'—';
+    const teamResultBox=$('#teamResult')?.closest('.team-result');$('#teamResult').textContent=periodStatus;if(teamResultBox){teamResultBox.classList.toggle('above',periodStatus==='ACIMA');teamResultBox.classList.toggle('below',periodStatus==='ABAIXO');teamResultBox.classList.toggle('neutral',!['ACIMA','ABAIXO'].includes(periodStatus))}$('#teamAtt').textContent=fmtInt(totals.att);$('#teamAttGoal').textContent=fmtInt(periodGoal);$('#teamEval').textContent=fmtInt(totals.eval);$('#teamPct').textContent=fmtPct(totals.evalPct);$('#teamPctGoal').textContent=fmtPct(cfg.teamGoalEvalPct);$('#teamAttBar').style.width=clamp(attProgress*100,0,100)+'%';$('#teamPctBar').style.width=clamp(evalProgress*100,0,100)+'%';$('#teamAttNote').textContent=`${analysisRangeLabel()} • ${fmtPct(attProgress)} da meta proporcional`;$('#teamPctNote').textContent=(totals.evalPct>=cfg.teamGoalEvalPct?`${((totals.evalPct-cfg.teamGoalEvalPct)*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p. acima da meta`:`Faltam ${((cfg.teamGoalEvalPct-totals.evalPct)*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p. para a meta`)+(safe(totals.evaluationExcludedAtt)>0?` • ${fmtInt(totals.evaluationExcludedAtt)} atend. sem avaliação descontados`:'');$('#teamHeroTitle').textContent=`Squad ${state.squadCode} • ${analysisRangeLabel()}`;
+    $('#teamAvgPoints').textContent=fmtNum(avgPoints);$('#teamAvgPointsNote').textContent='Pontuação média do período • não define o status da equipe';$('#teamStatusAudit').textContent=teamStatus.count?`${aboveCount} de ${teamStatus.count} técnicos com produção estão ACIMA • ${fmtPct(ratio)} • mínimo 50%`:'Sem técnicos classificados no período';
+    $('#teamLeaderboard').innerHTML=periodRows.map(t=>`<div class="leader-item ${t.periodRank===1?'top1':''}"><div class="place">#${t.periodRank||'—'}</div><div class="name">${escapeHtml(t.name)}${vacationBadgeHtml(t.vacationMonths,{compact:true})}${groupCountBadgeHtml(t.excludeFromGroupCount,{compact:true})}</div><div class="metric"><span>Atend.</span><strong>${fmtInt(t.att)}</strong></div><div class="metric"><span>Notas 5</span><strong>${fmtInt(t.notes5)}</strong></div><div class="metric hide-md"><span>% Aval.</span><strong>${fmtPct(t.evalPct)}</strong></div><div class="metric points"><span>Pontos período*</span><strong>${fmtNum(t.periodPoints)}</strong></div><div><span class="status ${String(t.periodStatus).toUpperCase()==='ACIMA'?'above':'below'}">${escapeHtml(t.periodStatus||'—')}</span></div></div>`).join('')||'<div class="muted">Sem dados no período selecionado.</div>';
+    renderTeamHistoricalAnalytics(currentSquad());renderTeamSquadOverview();renderTeamOrgDailyComparison();
+  }
+  function renderPortfolioPeriod(){
+    $('#squadPortfolio').innerHTML=Object.values(state.squads).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>{const rows=periodTechniciansForSquad(s),totals=deriveTotals(rows);if(!rows.length)return `<article class="card squad-card" data-squad-card="${s.code}"><div class="squad-card-head"><div class="squad-letter">${s.code}</div><span class="status-line">SEM DADOS</span></div><h3>${escapeHtml(s.name)}</h3><div class="squad-empty">Sem produção no período selecionado.</div></article>`;const teamStatus=teamStatusFromTechnicianStatuses(rows,{period:true}),status=teamStatus.status||'—';return `<article class="card squad-card" data-squad-card="${s.code}"><div class="squad-card-head"><div class="squad-letter">${s.code}</div><span class="status ${status==='ACIMA'?'above':status==='ABAIXO'?'below':''}">${status}</span></div><h3>${escapeHtml(s.name)}</h3><div class="status-line">${analysisRangeLabel()} • ${rows.length} técnicos</div><div class="squad-summary"><div><span>Atend.</span><strong>${fmtInt(totals.att)}</strong></div><div><span>Aval.</span><strong>${fmtInt(totals.eval)}</strong></div><div><span>% Aval.</span><strong>${fmtPct(totals.evalPct)}</strong></div></div></article>`}).join('');$$('[data-squad-card]').forEach(el=>el.addEventListener('click',()=>selectSquad(el.dataset.squadCard)));
+  }
+
+  function renderPortfolio(){
+    $('#squadPortfolio').innerHTML=Object.values(state.squads).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>{const ids=Object.keys(s.months||{}).sort().reverse(),m=ids.length?s.months[ids[0]]:null;if(!m)return `<article class="card squad-card" data-squad-card="${s.code}"><div class="squad-card-head"><div class="squad-letter">${s.code}</div><span class="status-line">SEM DADOS</span></div><h3>${escapeHtml(s.name)}</h3><div class="squad-empty">Aguardando a primeira importação.</div></article>`;const totals=m.teamTotals||deriveTotals(m.technicians);return `<article class="card squad-card" data-squad-card="${s.code}"><div class="squad-card-head"><div class="squad-letter">${s.code}</div><span class="status ${String(m.teamResult).toUpperCase()==='ACIMA'?'above':'below'}">${escapeHtml(m.teamResult||'—')}</span></div><h3>${escapeHtml(s.name)}</h3><div class="status-line">${m.monthName} ${m.year} • ${m.technicians.length} técnicos</div><div class="squad-summary"><div><span>Atend.</span><strong>${fmtInt(totals.att)}</strong></div><div><span>Aval.</span><strong>${fmtInt(totals.eval)}</strong></div><div><span>% Aval.</span><strong>${fmtPct(totals.evalPct)}</strong></div></div></article>`}).join('');
+    $$('[data-squad-card]').forEach(el=>el.addEventListener('click',()=>selectSquad(el.dataset.squadCard)));
+  }
+
+
+function indicatorScopeSquads(){
+  if(state.squadCode==='all') return Object.values(state.squads).sort((a,b)=>a.code.localeCompare(b.code));
+  return [currentSquad()].filter(Boolean);
+}
+function monthLabelFromId(id){
+  if(!id)return '—';
+  const [y,m]=String(id).split('-').map(Number);
+  return `${MONTHS_PT[(m||1)-1]} ${y}`;
+}
+function indicatorMonthIds(squads=indicatorScopeSquads()){
+  const set=new Set();
+  squads.forEach(s=>Object.keys(s?.months||{}).forEach(id=>set.add(id)));
+  return [...set].sort();
+}
+function indicatorRangeIds(monthIds){
+  if(!monthIds.length){state.indicatorStartId=null;state.indicatorEndId=null;return [];}
+  if(!state.indicatorEndId||!monthIds.includes(state.indicatorEndId)) state.indicatorEndId=monthIds[monthIds.length-1];
+  if(!state.indicatorStartId||!monthIds.includes(state.indicatorStartId)) state.indicatorStartId=monthIds[Math.max(0,monthIds.length-3)]||monthIds[0];
+  let startIndex=monthIds.indexOf(state.indicatorStartId), endIndex=monthIds.indexOf(state.indicatorEndId);
+  if(startIndex===-1) startIndex=0;
+  if(endIndex===-1) endIndex=monthIds.length-1;
+  if(startIndex>endIndex){startIndex=endIndex;state.indicatorStartId=monthIds[startIndex];}
+  return monthIds.slice(startIndex,endIndex+1);
+}
+function fillIndicatorSelect(el,monthIds,selected){
+  if(!el)return;
+  el.innerHTML=monthIds.map(id=>`<option value="${id}" ${id===selected?'selected':''}>${escapeHtml(monthLabelFromId(id))}</option>`).join('');
+  el.disabled=!monthIds.length;
+}
+function renderIndicatorSafely(label,renderFn,targetIds=[]){
+  try{
+    renderFn();
+    return true;
+  }catch(error){
+    console.error(`[Indicadores] Falha ao renderizar ${label}:`,error);
+    (targetIds||[]).forEach(id=>{
+      const el=$('#'+id);
+      if(el)el.innerHTML='<div class="chart-empty">Não foi possível renderizar este gráfico. Atualize a página e tente novamente.</div>';
+    });
+    return false;
+  }
+}
+
+function setIndicatorSection(section){
+  const allowed=new Set(['performance','quality','financial-impact','business-days','detail']);
+  state.indicatorSection=allowed.has(section)?section:'performance';
+  if(state.currentView==='indicators')renderIndicators();
+}
+function syncIndicatorSectionUi(){
+  const section=state.indicatorSection;
+  $$('#view-indicators [data-indicator-section]').forEach(btn=>{const active=btn.dataset.indicatorSection===section;btn.classList.toggle('active',active);btn.setAttribute('aria-selected',active?'true':'false')});
+  if($('#indicatorPerformancePanel'))$('#indicatorPerformancePanel').classList.toggle('hidden',section!=='performance');
+  if($('#indicatorQualityPanel'))$('#indicatorQualityPanel').classList.toggle('hidden',section!=='quality');
+  if($('#indicatorFinancialImpactPanel'))$('#indicatorFinancialImpactPanel').classList.toggle('hidden',section!=='financial-impact');
+  if($('#indicatorBusinessDaysPanel'))$('#indicatorBusinessDaysPanel').classList.toggle('hidden',section!=='business-days');
+  if($('#indicatorDetailPanel'))$('#indicatorDetailPanel').classList.toggle('hidden',section!=='detail');
+  if($('#indicatorPerformanceActions'))$('#indicatorPerformanceActions').classList.toggle('hidden',section!=='performance');
+  if($('#indicatorGlobalToolbar'))$('#indicatorGlobalToolbar').classList.toggle('hidden',section==='business-days'||section==='financial-impact');
+  const titles={performance:'Indicadores gerais',quality:'Indicadores de qualidade','financial-impact':'Impacto financeiro da qualidade','business-days':'Comparativo por dias úteis',detail:'Detalhamento de qualidade'};
+  const texts={performance:'Leitura consolidada para o Admin geral com calendário diário, visão semanal/mensal, produtividade por tempo trabalhado e histórico comparativo entre técnicos ou Squads.',quality:'Serviço, Produto e Empresa analisados separadamente, preservando a origem de cada avaliação e os gráficos usados na reunião semanal.','financial-impact':'Leitura corporativa da qualidade em valores estimados, sem armazenar clientes individualmente. O cálculo usa clientes ativos, ticket médio e um CSV previamente deduplicado.','business-days':'Compare competências diferentes usando o mesmo número de dias úteis, sem colocar um mês parcial contra outro mês completo.',detail:'Identifique os técnicos com maior acúmulo de notas baixas de Serviço, Produto e Empresa dentro do período selecionado.'};
+  if($('#indicatorHeroTitle'))$('#indicatorHeroTitle').textContent=titles[section]||titles.performance;
+  if($('#indicatorHeroText'))$('#indicatorHeroText').textContent=texts[section]||texts.performance;
+}
+
+function renderIndicators(){
+  if(!isSuperAdmin()||!$('#view-indicators'))return;syncAnalysisDateControls();const squads=indicatorScopeSquads(),rangeIds=analysisMonthIds().filter(id=>indicatorMonthIds(squads).includes(id));
+  $('#indicatorScopeTitle').textContent=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;$('#indicatorScopeText').textContent=state.squadCode==='all'?'Comparativo consolidado entre todos os grupos disponíveis.':`Leitura executiva aprofundada do Squad ${state.squadCode}.`;$('#indicatorPeriodLabel').textContent=analysisRangeLabel();syncIndicatorSectionUi();
+  if(state.indicatorSection==='financial-impact'){if($('#indicatorScopeTitle'))$('#indicatorScopeTitle').textContent='Suporte técnico completo';if($('#indicatorScopeText'))$('#indicatorScopeText').textContent='Visão corporativa sem divisão por Squad e sem armazenamento de clientes individuais.';renderFinancialImpactIndicators();return;}
+  if(state.indicatorSection==='quality'){renderQualityIndicators(squads,rangeIds);return;}
+  if(state.indicatorSection==='business-days'){renderBusinessDaysIndicators(squads);return;}
+  if(state.indicatorSection==='detail'){renderDetailIndicators(squads,rangeIds);return;}
+  renderIndicatorSafely('consolidado por Squad',()=>renderIndicatorSquadOverview(rangeIds),['indicatorSquadAttendanceChart','indicatorSquadEvaluationChart']);renderIndicatorSafely('ritmo diário do setor',()=>renderIndicatorOrgDailyComparison(rangeIds),['indicatorOrgDailyChart']);
+  if(!rangeIds.length){['indicatorStatusChart','indicatorMonthlyChart','indicatorWeeklyChart','indicatorHistoryAttChart','indicatorHistoryDailyAvgChart','indicatorHistoryEvalChart'].forEach(id=>{if($('#'+id))$('#'+id).innerHTML='<div class="chart-empty">Não há dados no período selecionado.</div>';});if($('#indicatorInsights'))$('#indicatorInsights').innerHTML='<div class="insight-item"><strong>Sem dados</strong><small>Escolha um período com dados importados.</small></div>';return;}
+  const palette=['var(--accent)','var(--success)','#78b7ff','#ef5a29','#b18cff'],statusItems=[];let totalAtt=0,totalNotes5=0,totalEval=0,totalWorkedDays=0,totalPoints=0,totalTechRecords=0,totalAbove=0,totalBelow=0,squadMonthHits=0,squadMonthTotal=0;const distinctTechs=new Set(),techTotals=new Map();
+  const dailySeries=[];
+  squads.forEach((squad,sIndex)=>{const periodRows=periodTechniciansForSquad(squad);const totals=deriveTotals(periodRows);totalAtt+=totals.att;totalEval+=totals.eval;totalNotes5+=periodRows.reduce((sum,t)=>sum+safe(t.notes5),0);totalPoints+=periodRows.reduce((sum,t)=>sum+safe(t.periodPoints),0);totalTechRecords+=periodRows.length;const above=periodRows.filter(t=>String(t.periodStatus||t.status||'').toUpperCase()==='ACIMA').length,below=periodRows.filter(t=>String(t.periodStatus||t.status||'').toUpperCase()==='ABAIXO').length,teamStatus=teamStatusFromTechnicianStatuses(periodRows,{period:true});totalAbove+=above;totalBelow+=below;periodRows.forEach(t=>{distinctTechs.add(`${squad.code}|${nameLinkKey(t.name)}`);const key=`${squad.code}|${nameLinkKey(t.name)}`,prev=techTotals.get(key)||{name:t.name,squad:squad.code,points:0,months:1,evalPct:0};prev.points=safe(t.periodPoints);prev.evalPct=safe(t.evalPct);techTotals.set(key,prev);totalWorkedDays+=(t.daily||[]).filter(d=>isBusinessDateIso(d.date)).length;});if(teamStatus.count){squadMonthTotal++;if(teamStatus.status==='ACIMA')squadMonthHits++;}
+    const byDate=new Map();periodRows.forEach(t=>(t.daily||[]).forEach(d=>{const b=byDate.get(d.date)||{att:0,eval:0};b.att+=safe(d.att);b.eval+=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1);byDate.set(d.date,b)}));const labels=analysisDateLabels();dailySeries.push({squad:squad.code,color:palette[sIndex%palette.length],evalValues:labels.map(x=>{const b=byDate.get(x.date);return b&&b.att?(b.eval/b.att)*100:null;})});
+  });
+  rangeIds.forEach(id=>{let above=0,below=0;squads.forEach(s=>{const m=s.months?.[id];if(!m)return;(m.technicians||[]).forEach(t=>{if(String(t.status).toUpperCase()==='ACIMA')above++;else if(String(t.status).toUpperCase()==='ABAIXO')below++;});});statusItems.push({label:monthLabelFromId(id),above,below});});
+  const totalHours=totalWorkedDays*8,totalMinutes=totalHours*60,attPerHour=totalHours?totalAtt/totalHours:0,attPerMinute=totalMinutes?totalAtt/totalMinutes:0,aboveRatio=(totalAbove+totalBelow)?totalAbove/(totalAbove+totalBelow):0,excellence=totalAtt?totalNotes5/totalAtt:0,avgPointsPerTech=totalTechRecords?totalPoints/totalTechRecords:0;$('#indicatorAttPerHour').textContent=fmtNum(attPerHour);$('#indicatorAttPerMinute').textContent=`${fmtNum(attPerMinute)} por minuto`;$('#indicatorWorkedHours').textContent=`${fmtInt(totalHours)} horas consideradas entre ${analysisRangeLabel()}`;$('#indicatorAboveRatio').textContent=fmtPct(aboveRatio);$('#indicatorAboveCount').textContent=`${fmtInt(totalAbove)} acima • ${fmtInt(totalBelow)} abaixo`;$('#indicatorTechVolume').textContent=`${fmtInt(totalTechRecords)} técnicos com produção no período`;const periodAbove=squadMonthHits,periodBelow=Math.max(0,squadMonthTotal-squadMonthHits),periodStatus=periodAbove>periodBelow?'ACIMA':periodBelow>periodAbove?'ABAIXO':'EMPATE';$('#indicatorPeriodStatus').textContent=periodStatus;$('#indicatorPeriodStatus').className=periodStatus==='ACIMA'?'period-status-above':periodStatus==='ABAIXO'?'period-status-below':'period-status-tie';$('#indicatorPeriodStatusDetail').textContent=`${fmtInt(periodAbove)} equipes acima • ${fmtInt(periodBelow)} abaixo`;$('#indicatorPeriodStatusSupport').textContent=`Status das equipes calculado pela proporção de técnicos ACIMA (2 de 4 critérios), sem usar pontuação média.`;$('#indicatorExcellence').textContent=fmtPct(excellence);$('#indicatorAvgPoints').textContent=`${fmtNum(avgPointsPerTech)} pts simulados médios no período`;$('#indicatorExcellenceSupport').textContent=`${fmtInt(distinctTechs.size)} técnicos únicos no período`;
+  renderIndicatorSafely('status oficial por competência',()=>renderTechnicianStatusMatrix($('#indicatorStatusChart'),squads,rangeIds),['indicatorStatusChart']);
+  const competencyEvalLabels=rangeIds.map(shortHistoryMonth),competencyEvalSeries=squads.map((squad,sIndex)=>({name:`Squad ${squad.code}`,color:palette[sIndex%palette.length],values:rangeIds.map(id=>{const rows=squad.months?.[id]?.technicians||[];const totals=deriveTotals(rows);return totals.att?totals.evalPct*100:null;})}));renderIndicatorSafely('% de avaliação por grupo',()=>{renderIndicatorLineChart($('#indicatorMonthlyChart'),competencyEvalLabels,competencyEvalSeries,{maxValue:100,percent:true,height:340,fitWidth:true});$('#indicatorMonthlyLegend').textContent=rangeIds.length===1?'Taxa de avaliação da competência selecionada por Squad.':`Comparativo por competência entre ${monthLabelFromId(rangeIds[0])} e ${monthLabelFromId(rangeIds[rangeIds.length-1])}.`;},['indicatorMonthlyChart']);
+  const weekly=weeklyBucketsForAnalysis(squads);renderIndicatorSafely('avaliação semanal por grupo',()=>{renderIndicatorLineChart($('#indicatorWeeklyChart'),weekly.labels,weekly.series,{maxValue:100,percent:true});$('#indicatorWeeklyNote').textContent=`Semanas construídas entre ${analysisRangeLabel()} • avaliações totais ÷ atendimentos.`;},['indicatorWeeklyChart']);
+  const techList=[...techTotals.values()],bestTech=techList.sort((a,b)=>safe(b.points)-safe(a.points))[0];let bestSquad={code:'—',score:-1};squads.forEach(s=>{const rows=periodTechniciansForSquad(s),tot=deriveTotals(rows);if(tot.evalPct>bestSquad.score)bestSquad={code:s.code,score:tot.evalPct};});const strongestMonth=[...statusItems].sort((a,b)=>(b.above-b.below)-(a.above-a.below))[0],weakestMonth=[...statusItems].sort((a,b)=>(a.above-a.below)-(b.above-b.below))[0];$('#indicatorInsights').innerHTML=`<div class="insight-item"><strong>Squad destaque</strong><small>${bestSquad.code==='—'?'Sem base suficiente.':`Squad ${bestSquad.code} lidera em % de avaliação com ${fmtPct(bestSquad.score)} no período.`}</small></div><div class="insight-item"><strong>Técnico destaque do período</strong><small>${bestTech?`${escapeHtml(titleWords(bestTech.name))} • Squad ${escapeHtml(bestTech.squad)} • ${fmtNum(bestTech.points)} pts simulados.`:'Sem dados suficientes.'}</small></div><div class="insight-item"><strong>Status mensal oficial</strong><small>${strongestMonth?`${escapeHtml(strongestMonth.label)} teve o melhor saldo entre ACIMA e ABAIXO dentre as competências tocadas pelo filtro.`:'Sem dados suficientes.'}</small></div><div class="insight-item"><strong>Ponto de atenção</strong><small>${weakestMonth?`${escapeHtml(weakestMonth.label)} teve o menor saldo mensal oficial dentro do período.`:'Sem dados suficientes.'}</small></div>`;
+  renderIndicatorSafely('ranking financeiro',()=>renderIndicatorFinanceRanking(squads,rangeIds),['indicatorFinanceRanking']);renderIndicatorSafely('histórico analítico',()=>renderIndicatorHistoricalAnalytics(squads,rangeIds),['indicatorHistoryAttChart','indicatorHistoryDailyAvgChart','indicatorHistoryEvalChart']);
+}
+
+
+function analysisDateLabels(){const out=[];if(!state.analysisStartDate||!state.analysisEndDate)return out;let i=0;for(let d=state.analysisStartDate;d<=state.analysisEndDate;d=addCalendarDays(d,1),i++){const dt=parseIsoAnalysisDate(d);out.push({date:d,label:`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`});}return out;}
+function weeklyBucketsForAnalysis(squads){const dates=analysisDateLabels(),buckets=[];dates.forEach((x,i)=>{const idx=Math.floor(i/7);if(!buckets[idx])buckets[idx]={start:x.date,end:x.date,bySquad:new Map()};buckets[idx].end=x.date;});(squads||[]).forEach(squad=>{const rows=periodTechniciansForSquad(squad);rows.forEach(t=>(t.daily||[]).forEach(d=>{if(!dateBetween(d.date))return;const offset=Math.floor((parseIsoAnalysisDate(d.date)-parseIsoAnalysisDate(state.analysisStartDate))/86400000),idx=Math.max(0,Math.floor(offset/7)),b=buckets[idx];if(!b)return;const v=b.bySquad.get(squad.code)||{att:0,eval:0};v.att+=safe(d.att);v.eval+=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1);b.bySquad.set(squad.code,v);}));});const labels=buckets.map(b=>{const a=parseIsoAnalysisDate(b.start),z=parseIsoAnalysisDate(b.end);return `${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}–${String(z.getDate()).padStart(2,'0')}/${String(z.getMonth()+1).padStart(2,'0')}`}),palette=['var(--accent)','var(--success)','#78b7ff','#ef5a29','#b18cff'],series=(squads||[]).map((s,i)=>({name:`Squad ${s.code}`,color:palette[i%palette.length],values:buckets.map(b=>{const v=b.bySquad.get(s.code);return v&&v.att?(v.eval/v.att)*100:null;})}));return{labels,series};}
+
+
+function renderIndicatorFinanceRanking(squads,rangeIds){
+  const el=$('#indicatorFinanceRanking'),note=$('#indicatorFinanceRankingNote');if(!el)return;const map=new Map();
+  (squads||[]).forEach(squad=>(rangeIds||[]).forEach(id=>{const m=squad.months?.[id];if(!m)return;(m.technicians||[]).forEach(t=>{const key=`${squad.code}|${nameLinkKey(t.name)}`,prev=map.get(key)||{name:t.name,squad:squad.code,amount:0,months:0};prev.amount+=safe(t.financeData?.final);prev.months+=1;map.set(key,prev)})}));
+  const rows=[...map.values()].sort((a,b)=>safe(b.amount)-safe(a.amount)||String(a.name).localeCompare(String(b.name),'pt-BR'));
+  if(note)note.textContent=rangeIds.length===1?`Financeiro mensal • valor oficial de ${monthLabelFromId(rangeIds[0])}`:`Financeiro permanece por competência • soma de ${monthLabelFromId(rangeIds[0])} a ${monthLabelFromId(rangeIds[rangeIds.length-1])}`;
+  el.innerHTML=rows.map((r,i)=>`<div class="finance-ranking-item"><span class="finance-ranking-pos">#${i+1}</span><div><strong>${escapeHtml(titleWords(r.name))}</strong><small>${state.squadCode==='all'?`Squad ${escapeHtml(r.squad)} • `:''}${r.months} competência(s)</small></div><b>${fmtMoney(r.amount)}</b></div>`).join('')||'<div class="chart-empty">Sem valores financeiros no período.</div>';
+}
+
+
+function buildOrgOverviewFromState(){
+  const rows=[];
+  Object.values(state.squads||{}).filter(Boolean).forEach(squad=>{
+    Object.values(squad.months||{}).forEach(m=>{
+      if(!m)return;
+      const totals=m.teamTotals||deriveTotals(m.technicians||[]);
+      rows.push({squadCode:squad.code,squadName:squad.name||`Squad ${squad.code}`,id:m.id||`${m.year}-${String(m.month).padStart(2,'0')}`,year:safe(m.year),month:safe(m.month),totalAtt:safe(totals.att),totalEval:safe(totals.eval),evalPct:safe(totals.evalPct),technicianCount:(m.technicians||[]).length});
+    });
+  });
+  return rows.sort((a,b)=>String(a.id).localeCompare(String(b.id))||String(a.squadCode).localeCompare(String(b.squadCode)));
+}
+function orgOverviewRows(){
+  if((window.APP_CONFIG?.mode||'demo')==='demo'||isSuperAdmin())return buildOrgOverviewFromState();
+  return (state.orgOverview||[]).length?state.orgOverview:buildOrgOverviewFromState();
+}
+function buildOrgTechnicianOverviewFromState(){
+  const rows=[];
+  Object.values(state.squads||{}).filter(Boolean).forEach(squad=>{
+    Object.values(squad.months||{}).forEach(m=>{
+      (m.technicians||[]).forEach(t=>rows.push({
+        squadCode:squad.code,squadName:squad.name,id:m.id,year:m.year,month:m.month,
+        technicianName:t.name,att:safe(t.att),totalEval:safe(t.totalEval),avg:safe(t.avg),
+        evalPct:safe(t.evalPct),points:safe(t.points),status:String(t.status||'').toUpperCase()
+      }));
+    });
+  });
+  return rows.sort((a,b)=>String(a.id).localeCompare(String(b.id))||String(a.squadCode).localeCompare(String(b.squadCode))||String(a.technicianName).localeCompare(String(b.technicianName),'pt-BR'));
+}
+function orgTechnicianRows(){
+  if((window.APP_CONFIG?.mode||'demo')==='demo')return buildOrgTechnicianOverviewFromState();
+  return (state.orgTechnicianOverview||[]).length?state.orgTechnicianOverview:buildOrgTechnicianOverviewFromState();
+}
+function orgTechnicianMonthIds(rows=orgTechnicianRows(),limit=12){
+  const ids=[...new Set((rows||[]).map(r=>r.id).filter(Boolean))].sort();
+  return limit&&ids.length>limit?ids.slice(-limit):ids;
+}
+function orgOverviewMonthIds(rows=orgOverviewRows(),limit=12){
+  const ids=[...new Set((rows||[]).map(r=>r.id).filter(Boolean))].sort();
+  return limit&&ids.length>limit?ids.slice(-limit):ids;
+}
+function buildOrgSquadSeries(ids,rows=orgOverviewRows()){
+  const palette=['#f0a33a','#36c98f','#46a4ff','#d879ff','#ef5a29','#46d7d0','#f2c14e','#ff6d92'];
+  const codes=[...new Set((rows||[]).map(r=>r.squadCode).filter(Boolean))].sort();
+  const attendance=codes.map((code,i)=>({name:`Squad ${code}`,color:palette[i%palette.length],values:ids.map(id=>{const r=rows.find(x=>x.id===id&&x.squadCode===code);return r?safe(r.totalAtt):null})}));
+  const evaluation=codes.map((code,i)=>({name:`Squad ${code}`,color:palette[i%palette.length],values:ids.map(id=>{const r=rows.find(x=>x.id===id&&x.squadCode===code);return r?safe(r.evalPct)*100:null})}));
+  return{codes,attendance,evaluation};
+}
+function buildOrgDailyOverviewFromState(){
+  const rows=[];Object.values(state.squads||{}).filter(Boolean).forEach(squad=>{Object.values(squad.months||{}).forEach(m=>{if(!m)return;const byDay=new Map();(m.technicians||[]).forEach(t=>(t.daily||[]).forEach(d=>{if(safe(d.day)>safe(m.latestDay)||d.off)return;const v=byDay.get(safe(d.day))||{att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};v.att+=safe(d.att);v.notes5+=safe(d.notes5);v.notes4+=safe(d.notes4);v.notes3+=safe(d.notes3);v.notes2+=safe(d.notes2);v.notes1+=safe(d.notes1);byDay.set(safe(d.day),v);}));[...byDay.entries()].forEach(([day,v])=>{const totalEval=v.notes5+v.notes4+v.notes3+v.notes2+v.notes1;rows.push({squadCode:squad.code,id:m.id,year:safe(m.year),month:safe(m.month),day:safe(day),date:isoDateParts(m.year,m.month,day),totalAtt:v.att,notes5:v.notes5,notes4:v.notes4,notes3:v.notes3,notes2:v.notes2,notes1:v.notes1,totalEval,evalPct:v.att?totalEval/v.att:0});});});});return rows.sort((a,b)=>a.date.localeCompare(b.date)||String(a.squadCode).localeCompare(String(b.squadCode)));}
+function buildOrgTechnicianDailyOverviewFromState(){const rows=[];Object.values(state.squads||{}).filter(Boolean).forEach(squad=>Object.values(squad.months||{}).forEach(m=>(m.technicians||[]).forEach(t=>(t.daily||[]).forEach(d=>{if(safe(d.day)>safe(m.latestDay)||d.off)return;const totalEval=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1),avg=totalEval?((safe(d.notes5)*5+safe(d.notes4)*4+safe(d.notes3)*3+safe(d.notes2)*2+safe(d.notes1))/totalEval):0;rows.push({squadCode:squad.code,id:m.id,year:m.year,month:m.month,day:safe(d.day),date:isoDateParts(m.year,m.month,d.day),technicianName:t.name,att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),totalEval,avg,evalPct:safe(d.att)?totalEval/safe(d.att):0});}))));return rows.sort((a,b)=>a.date.localeCompare(b.date)||a.squadCode.localeCompare(b.squadCode)||a.technicianName.localeCompare(b.technicianName,'pt-BR'));}
+function orgDailyRows(){if((window.APP_CONFIG?.mode||'demo')==='demo'||isSuperAdmin())return buildOrgDailyOverviewFromState();return (state.orgDailyOverview||[]).length?state.orgDailyOverview:buildOrgDailyOverviewFromState();}
+function orgTechnicianDailyRows(){if((window.APP_CONFIG?.mode||'demo')==='demo'||isSuperAdmin())return buildOrgTechnicianDailyOverviewFromState();return (state.orgTechnicianDailyOverview||[]).length?state.orgTechnicianDailyOverview:buildOrgTechnicianDailyOverviewFromState();}
+function filteredOrgDailyRows(){return orgDailyRows().filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day)));}
+function buildOrgDailyComparison(){const rows=filteredOrgDailyRows(),map=new Map();rows.forEach(r=>{const date=r.date||isoDateParts(r.year,r.month,r.day);map.set(date,(map.get(date)||0)+safe(r.totalAtt));});const days=[...map.entries()].map(([date,value])=>({date,value})).sort((a,b)=>a.date.localeCompare(b.date)),values=days.map(x=>x.value),average=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;return{labels:days.map(x=>{const d=parseIsoAnalysisDate(x.date);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`}),series:[{name:'Atendimentos diários do setor',color:'var(--accent)',values},{name:'Média diária do período',color:'var(--accent2)',dashed:true,values:days.map(()=>average)}],average,days:days.length};}
+function renderTeamOrgDailyComparison(){const el=$('#teamOrgDailyChart');if(!el)return;const data=buildOrgDailyComparison();if($('#teamOrgDailyNote'))$('#teamOrgDailyNote').textContent=`${analysisRangeLabel()} • média ${fmtNum(data.average)} atend./dia • A+B+D+E`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:null,percent:false,decimals:0,height:390});}
+function renderIndicatorOrgDailyComparison(){const el=$('#indicatorOrgDailyChart');if(!el)return;const data=buildOrgDailyComparison();if($('#indicatorOrgDailyNote'))$('#indicatorOrgDailyNote').textContent=`${analysisRangeLabel()} • média ${fmtNum(data.average)} atend./dia`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:null,percent:false,decimals:0,height:390});}
+function buildOrgSquadMonthlySeries(){
+  // Os dois gráficos executivos do setor são mensais por definição.
+  // O calendário continua definindo quais competências entram no recorte, mas cada ponto
+  // representa a competência consolidada (e não cada dia), evitando dezenas de pontos
+  // comprimidos quando o usuário seleciona vários meses.
+  const allRows=orgOverviewRows(),available=orgOverviewMonthIds(allRows,0),ids=analysisMonthIds().filter(id=>available.includes(id));
+  const data=buildOrgSquadSeries(ids,allRows);
+  return{ids,labels:ids.map(shortHistoryMonth),attendance:data.attendance,evaluation:data.evaluation};
+}
+function renderTeamSquadOverview(){
+  if(!$('#teamSquadAttendanceChart'))return;
+  const data=buildOrgSquadMonthlySeries();
+  $('#teamSectorPeriod').textContent=analysisRangeLabel();
+  renderIndicatorLineChart($('#teamSquadAttendanceChart'),data.labels,data.attendance,{maxValue:null,percent:false,decimals:0,height:280,fitWidth:true});
+  renderIndicatorLineChart($('#teamSquadEvaluationChart'),data.labels,data.evaluation,{maxValue:null,percent:true,decimals:1,height:280,fitWidth:true});
+}
+function renderIndicatorSquadOverview(){
+  if(!$('#indicatorSquadAttendanceChart'))return;
+  const data=buildOrgSquadMonthlySeries();
+  $('#indicatorSectorPeriod').textContent=analysisRangeLabel();
+  renderIndicatorLineChart($('#indicatorSquadAttendanceChart'),data.labels,data.attendance,{maxValue:null,percent:false,decimals:0,height:280,fitWidth:true});
+  renderIndicatorLineChart($('#indicatorSquadEvaluationChart'),data.labels,data.evaluation,{maxValue:null,percent:true,decimals:1,height:280,fitWidth:true});
+}
+
+function allTechnicianMetricConfig(metric=state.allTechniciansMetric){
+  const configs={
+    points:{label:'Pontuação',get:t=>safe(t.points),percent:false,maxValue:null,decimals:1,suffix:' pts'},
+    att:{label:'Atendimentos',get:t=>safe(t.att),percent:false,maxValue:null,decimals:0,suffix:' atend.'},
+    evalPct:{label:'% de avaliação',get:t=>safe(t.evalPct)*100,percent:true,maxValue:null,decimals:1,suffix:''},
+    avg:{label:'Nota média',get:t=>safe(t.avg),percent:false,maxValue:5,decimals:2,suffix:''}
+  };
+  return configs[metric]||configs.points;
+}
+function allTechnicianSeries(rangeIds,metric=state.allTechniciansMetric){
+  // V2.28.0: mantém a fonte mensal consolidada e adiciona o contexto de férias
+  // diretamente ao ponto daquela competência, sem alterar nenhum cálculo.
+  const rows=orgTechnicianRows(),ids=rangeIds||analysisMonthIds(),getColor=i=>`hsl(${Math.round((i*137.508)%360)} 78% 64%)`,map=new Map();
+  (rows||[]).filter(r=>ids.includes(r.id)).forEach(r=>{
+    const key=`${r.squadCode}|${nameLinkKey(r.technicianName)}`;
+    if(!map.has(key))map.set(key,{squad:r.squadCode,name:titleWords(r.technicianName),values:new Map(),vacations:new Map()});
+    let value=null;
+    if(metric==='points')value=safe(r.points);
+    else if(metric==='att')value=safe(r.att);
+    else if(metric==='evalPct')value=safe(r.evalPct)*100;
+    else if(metric==='avg')value=safe(r.avg);
+    const m=state.squads?.[r.squadCode]?.months?.[r.id];
+    const mt=(m?.technicians||[]).find(t=>samePersonName(t.name,r.technicianName));
+    map.get(key).values.set(r.id,value);
+    map.get(key).vacations.set(r.id,!!mt?.vacation);
+  });
+  return [...map.values()]
+    .sort((a,b)=>a.squad.localeCompare(b.squad)||a.name.localeCompare(b.name,'pt-BR'))
+    .map((e,i)=>({name:`Squad ${e.squad} • ${e.name}`,color:getColor(i),values:ids.map(id=>e.values.has(id)?e.values.get(id):null),vacations:ids.map(id=>!!e.vacations.get(id))}));
+}
+function allTechnicianSeriesMonthlyPoints(ids,getColor,rows=orgTechnicianRows()){const map=new Map();(rows||[]).filter(r=>ids.includes(r.id)).forEach(r=>{const key=`${r.squadCode}|${nameLinkKey(r.technicianName)}`;if(!map.has(key))map.set(key,{squad:r.squadCode,name:titleWords(r.technicianName),values:new Map()});map.get(key).values.set(r.id,safe(r.points));});return[...map.values()].sort((a,b)=>a.squad.localeCompare(b.squad)||a.name.localeCompare(b.name,'pt-BR')).map((e,i)=>({name:`Squad ${e.squad} • ${e.name}`,color:getColor(i),values:ids.map(id=>e.values.has(id)?e.values.get(id):null)}));}
+
+function currentIndicatorRangeForFullscreen(source='team'){const available=orgTechnicianMonthIds(orgTechnicianRows(),0);const ids=analysisMonthIds().filter(id=>available.includes(id));return ids.length?ids:available.slice(-1);}
+
+function openAllTechniciansChart(source='team'){
+  const rangeIds=currentIndicatorRangeForFullscreen(source);
+  if(!rangeIds.length){toast('Não há dados de técnicos disponíveis para o período.');return;}
+  state.allTechniciansRangeIds=[...rangeIds];
+  state.allTechniciansMetric=$('#allTechniciansMetric')?.value||state.allTechniciansMetric||'points';
+  openModal('allTechniciansModal');
+  // Renderiza depois que o modal estiver visível para usar toda a largura real da tela.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>renderAllTechniciansFullscreenChart(rangeIds)));
+}
+function responsiveFullscreenPlotHeight(el){
+  const canvasHeight=Math.max(0,Math.floor(el?.clientHeight||el?.getBoundingClientRect?.().height||0));
+  if(canvasHeight)return Math.max(240,canvasHeight-118);
+  return Math.max(260,Math.min(650,(window.innerHeight||900)-320));
+}
+function renderAllTechniciansFullscreenChart(explicitRange=null){
+  const el=$('#allTechniciansFullscreenChart');if(!el)return;
+  const rangeIds=(explicitRange&&explicitRange.length)?explicitRange:(state.allTechniciansRangeIds?.length?state.allTechniciansRangeIds:currentIndicatorRangeForFullscreen('team'));
+  const cfg=allTechnicianMetricConfig(state.allTechniciansMetric),series=allTechnicianSeries(rangeIds,state.allTechniciansMetric),labels=rangeIds.map(shortHistoryMonth);
+  $('#allTechniciansMetric').value=state.allTechniciansMetric;
+  $('#allTechniciansPeriod').textContent=analysisRangeLabel();
+  $('#allTechniciansSubtitle').textContent=`${cfg.label} de todos os técnicos dos Squads A, B, D e E por competência dentro do período selecionado.`;
+  $('#allTechniciansCount').textContent=`${series.length} ${series.length===1?'técnico':'técnicos'} • ${analysisRangeLabel()}`;
+  renderIndicatorLineChart(el,labels,series,{maxValue:cfg.maxValue,percent:cfg.percent,decimals:cfg.decimals,height:responsiveFullscreenPlotHeight(el),fitWidth:true,emphasis:true});
+}
+
+function dailyTechnicianMetricConfig(metric=state.dailyTechniciansMetric){
+  const configs={
+    points:{label:'Pontuação diária simulada',percent:false,maxValue:null,decimals:1},
+    att:{label:'Atendimentos por dia',percent:false,maxValue:null,decimals:0},
+    evalPct:{label:'% de avaliação por dia',percent:true,maxValue:100,decimals:1},
+    avg:{label:'Nota média por dia',percent:false,maxValue:5,decimals:2}
+  };
+  return configs[metric]||configs.points;
+}
+function dailyTechnicianPointMap(rows){
+  const grouped=new Map(),out=new Map();
+  (rows||[]).forEach(r=>{const key=`${r.squadCode}|${r.date}`,list=grouped.get(key)||[];list.push(r);grouped.set(key,list)});
+  grouped.forEach((list,key)=>{
+    const metrics=list.map(r=>{const totalEval=safe(r.totalEval)||safe(r.notes5)+safe(r.notes4)+safe(r.notes3)+safe(r.notes2)+safe(r.notes1),avg=totalEval?truncate2((safe(r.notes5)*5+safe(r.notes4)*4+safe(r.notes3)*3+safe(r.notes2)*2+safe(r.notes1))/totalEval):0,evalPct=safe(r.att)?roundTo(totalEval/safe(r.att),4):0;return{...r,totalEval,avg,evalPct}}).filter(r=>safe(r.att)>0||safe(r.totalEval)>0);
+    if(!metrics.length)return;
+    const refs={refAtt:roundTo(meanOf(metrics,t=>t.att),0),refTotalEval:roundTo(meanOf(metrics,t=>t.totalEval),0),refAvg:truncate2(meanOf(metrics,t=>t.avg)),refEvalPct:roundTo(meanOf(metrics,t=>t.evalPct),4),bonusAtt:20,bonusTotalEval:30,bonusAvg:40,bonusEvalPct:35};
+    metrics.forEach(r=>out.set(`${key}|${nameLinkKey(r.technicianName)}`,calculateScore(r,refs).points));
+  });
+  return out;
+}
+function dailyTechnicianSeries(metric=state.dailyTechniciansMetric){
+  const scoped=orgTechnicianDailyRows().filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day))&&(state.squadCode==='all'||String(r.squadCode)===String(state.squadCode)));
+  const labels=analysisDateLabels(),pointMap=metric==='points'?dailyTechnicianPointMap(scoped):null,map=new Map();
+  scoped.forEach(r=>{const name=r.technicianName||'',key=`${r.squadCode}|${nameLinkKey(name)}`;if(!name)return;const entry=map.get(key)||{squad:r.squadCode,name:titleWords(name),values:new Map()};let value=null;if(metric==='att')value=safe(r.att);else if(metric==='evalPct')value=safe(r.att)?safe(r.evalPct)*100:null;else if(metric==='avg')value=safe(r.totalEval)?safe(r.avg):null;else value=pointMap.get(`${r.squadCode}|${r.date}|${nameLinkKey(name)}`);entry.values.set(r.date,value);map.set(key,entry)});
+  const color=i=>`hsl(${Math.round((i*137.508)%360)} 78% 64%)`;
+  const series=[...map.values()].sort((a,b)=>String(a.squad).localeCompare(String(b.squad))||a.name.localeCompare(b.name,'pt-BR')).map((e,i)=>({name:`Squad ${e.squad} • ${e.name}`,color:color(i),values:labels.map(x=>e.values.has(x.date)?e.values.get(x.date):null)}));
+  return{labels:labels.map(x=>x.label),series};
+}
+function openDailyTechniciansChart(){
+  if(!isSuperAdmin())return;const data=dailyTechnicianSeries(state.dailyTechniciansMetric);if(!data.series.length){toast('Não há dados diários de técnicos no período selecionado.');return;}openModal('dailyTechniciansModal');requestAnimationFrame(()=>requestAnimationFrame(renderDailyTechniciansFullscreenChart));
+}
+function renderDailyTechniciansFullscreenChart(){
+  const el=$('#dailyTechniciansFullscreenChart');if(!el)return;const cfg=dailyTechnicianMetricConfig(state.dailyTechniciansMetric),data=dailyTechnicianSeries(state.dailyTechniciansMetric);$('#dailyTechniciansMetric').value=state.dailyTechniciansMetric;$('#dailyTechniciansPeriod').textContent=analysisRangeLabel();$('#dailyTechniciansSubtitle').textContent=state.dailyTechniciansMetric==='points'?`${cfg.label} dentro do calendário selecionado. É uma leitura analítica diária e não altera a pontuação oficial da competência.`:`${cfg.label} dentro do calendário diário selecionado.`;$('#dailyTechniciansCount').textContent=`${data.series.length} ${data.series.length===1?'técnico':'técnicos'} • ${analysisRangeLabel()}`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:cfg.maxValue,percent:cfg.percent,decimals:cfg.decimals,height:responsiveFullscreenPlotHeight(el),fitWidth:true,emphasis:true});
+}
+
+function shortHistoryMonth(id){
+  if(!id)return '—';
+  const [year,month]=String(id).split('-').map(Number);
+  const short=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][Math.max(0,(month||1)-1)];
+  return `${short}/${String(year).slice(-2)}`;
+}
+function historyMonthIdsForSquad(squad,limit=12){
+  const ids=Object.keys(squad?.months||{}).sort();
+  return limit&&ids.length>limit?ids.slice(-limit):ids;
+}
+function historyTechKey(t){return `n:${nameLinkKey(t?.name)}`}
+function historyBusinessDays(m){
+  if(!m)return 0;
+  const latest=Math.max(1,Math.min(safe(m.latestDay)||new Date(m.year,m.month,0).getDate(),new Date(m.year,m.month,0).getDate()));
+  return businessDaysElapsed(m.year,m.month,latest);
+}
+function buildTechnicianHistory(squad,ids){
+  const techMap=new Map();
+  (ids||[]).forEach(id=>(squad?.months?.[id]?.technicians||[]).forEach(t=>{const key=historyTechKey(t);if(!techMap.has(key))techMap.set(key,{key,name:t.name});}));
+  const entities=[...techMap.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR'));
+  const makeSeries=(e,i)=>({name:titleWords(e.name),color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[],vacations:[]});
+  const attendance=entities.map(makeSeries),daily=entities.map(makeSeries),evaluation=entities.map(makeSeries),totals=[];
+  (ids||[]).forEach(id=>{
+    let monthTotal=0;
+    entities.forEach((e,idx)=>{
+      const rows=dailyRowsForTechnician(squad,e.name).filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id),agg=aggregateDailyRows(rows),workDays=Math.max(1,new Set(rows.filter(d=>isBusinessDateIso(d.date)).map(d=>d.date)).size);
+      const monthlyTech=(squad?.months?.[id]?.technicians||[]).find(t=>samePersonName(t.name,e.name));
+      const vacation=!!monthlyTech?.vacation;
+      attendance[idx].values.push(rows.length?agg.att:null);attendance[idx].vacations.push(vacation);
+      daily[idx].values.push(rows.length?agg.att/workDays:null);daily[idx].vacations.push(vacation);
+      evaluation[idx].values.push(rows.length?agg.evalPct*100:null);evaluation[idx].vacations.push(vacation);
+      monthTotal+=agg.att;
+    });
+    totals.push(monthTotal);
+  });
+  const dailyTechSeries=[...daily];
+  daily.unshift({name:'Média Squad',color:'var(--accent2)',dashed:true,vacations:(ids||[]).map(()=>false),values:(ids||[]).map((id,ix)=>{const vals=dailyTechSeries.map(s=>s.values[ix]).filter(v=>v!=null);return vals.length?meanOf(vals,x=>x):null;})});
+  evaluation.unshift({name:'Total geral',color:'var(--accent2)',dashed:true,vacations:(ids||[]).map(()=>false),values:(ids||[]).map((id,ix)=>{let att=0,ev=0;entities.forEach(e=>{const rows=dailyRowsForTechnician(squad,e.name).filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id),agg=aggregateDailyRows(rows);att+=agg.att;ev+=agg.totalEval;});return att?(ev/att)*100:null;})});
+  return{ids,labels:(ids||[]).map(shortHistoryMonth),totals,attendance,daily,evaluation,entityCount:entities.length};
+}
+function buildSquadHistory(squads,ids){const active=(squads||[]).filter(Boolean).sort((a,b)=>a.code.localeCompare(b.code)),totals=[],attendance=active.map((s,i)=>({name:`Squad ${s.code}`,color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[]})),daily=active.map((s,i)=>({name:`Squad ${s.code}`,color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[]})),evaluation=active.map((s,i)=>({name:`Squad ${s.code}`,color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[]}));(ids||[]).forEach((id,ix)=>{let overall=0;active.forEach((s,si)=>{const rows=periodTechniciansForSquad(s).filter(t=>(t.daily||[]).some(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id)),monthDaily=[];rows.forEach(t=>monthDaily.push(...(t.daily||[]).filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id)));const agg=aggregateDailyRows(monthDaily),workDays=Math.max(1,new Set(monthDaily.filter(d=>isBusinessDateIso(d.date)).map(d=>d.date)).size),techCount=Math.max(1,rows.length);attendance[si].values.push(monthDaily.length?agg.att:null);daily[si].values.push(monthDaily.length?agg.att/(workDays*techCount):null);evaluation[si].values.push(monthDaily.length?agg.evalPct*100:null);overall+=agg.att;});totals.push(overall);});daily.unshift({name:'Média geral',color:'var(--accent2)',dashed:true,values:(ids||[]).map((_,ix)=>{const vals=daily.slice(1).map(s=>s.values[ix]).filter(v=>v!=null);return vals.length?meanOf(vals,x=>x):null;})});evaluation.unshift({name:'Total geral',color:'var(--accent2)',dashed:true,values:(ids||[]).map((_,ix)=>{let att=0,weighted=0;attendance.forEach((a,si)=>{const av=a.values[ix],ep=evaluation[si]?.values[ix];if(av!=null&&ep!=null){att+=av;weighted+=av*(ep/100);}});return att?(weighted/att)*100:null;})});return{ids,labels:(ids||[]).map(shortHistoryMonth),totals,attendance,daily,evaluation,entityCount:active.length};}
+
+function renderTeamHistoricalAnalytics(squad){
+  if(!squad||!$('#teamHistoryAttChart'))return;
+  const ids=analysisMonthIds().filter(id=>squad?.months?.[id]),data=buildTechnicianHistory(squad,ids);
+  $('#teamHistoryPeriod').textContent=analysisRangeLabel();
+  $('#teamHistorySubtitle').textContent=`${analysisRangeLabel()} • ${data.entityCount} técnicos encontrados no período.`;
+  renderHistoryAttendanceChart($('#teamHistoryAttChart'),data.labels,data.totals,data.attendance);
+  renderIndicatorLineChart($('#teamHistoryDailyAvgChart'),data.labels,data.daily,{maxValue:null,percent:false,decimals:1});
+  renderIndicatorLineChart($('#teamHistoryEvalChart'),data.labels,data.evaluation,{maxValue:null,percent:true});
+}
+function renderIndicatorHistoricalAnalytics(squads,rangeIds){
+  if(!$('#indicatorHistoryAttChart'))return;
+  const ids=[...(rangeIds||[])];
+  const specific=state.squadCode!=='all'&&squads.length===1;
+  const data=specific?buildTechnicianHistory(squads[0],ids):buildSquadHistory(squads,ids);
+  $('#indicatorHistoryTitle').textContent=specific?`Histórico dos técnicos do Squad ${state.squadCode}`:'Histórico comparativo dos Squads';
+  $('#indicatorHistorySubtitle').textContent=specific?'As linhas representam cada técnico do Squad dentro do período filtrado.':'No escopo geral, as linhas representam cada Squad para manter a leitura clara.';
+  $('#indicatorHistoryPeriod').textContent=analysisRangeLabel();
+  $('#indicatorHistoryAttTitle').textContent=specific?'Total de atendimentos por técnico / mês':'Total de atendimentos por Squad / mês';
+  $('#indicatorHistoryDailyTitle').textContent=specific?'Média de atendimentos por técnico / dia útil':'Média de atendimentos por técnico / dia útil e Squad';
+  $('#indicatorHistoryEvalTitle').textContent=specific?'% de avaliação por técnico':'% de avaliação por Squad';
+  $('#indicatorHistoryAttNote').textContent=specific?'Barras = total do Squad • linhas = técnicos':'Barras = total geral • linhas = Squads';
+  renderHistoryAttendanceChart($('#indicatorHistoryAttChart'),data.labels,data.totals,data.attendance);
+  renderIndicatorLineChart($('#indicatorHistoryDailyAvgChart'),data.labels,data.daily,{maxValue:null,percent:false,decimals:1});
+  renderIndicatorLineChart($('#indicatorHistoryEvalChart'),data.labels,data.evaluation,{maxValue:null,percent:true});
+}
+let chartRenderSequence=0;
+function nextChartRenderId(prefix='chart'){
+  chartRenderSequence+=1;
+  return `${prefix}-${chartRenderSequence}`;
+}
+function splitChartPointSegments(values,xFn,yFn){
+  const segments=[];let current=[];
+  (values||[]).forEach((value,index)=>{
+    if(value==null||Number.isNaN(Number(value))){if(current.length){segments.push(current);current=[]}return;}
+    current.push({x:xFn(index),y:yFn(value),index,value:safe(value)});
+  });
+  if(current.length)segments.push(current);
+  return segments;
+}
+function smoothSvgPath(points){
+  if(!points?.length)return'';
+  if(points.length===1)return `M ${points[0].x} ${points[0].y}`;
+  let d=`M ${points[0].x} ${points[0].y}`;
+  for(let i=0;i<points.length-1;i++){
+    const p0=points[i-1]||points[i],p1=points[i],p2=points[i+1],p3=points[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+    d+=` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+function smoothAreaPath(points,baseline){
+  if(!points?.length)return'';
+  if(points.length===1)return `M ${points[0].x} ${baseline} L ${points[0].x} ${points[0].y} L ${points[0].x} ${baseline} Z`;
+  return `${smoothSvgPath(points)} L ${points[points.length-1].x} ${baseline} L ${points[0].x} ${baseline} Z`;
+}
+function svgSeriesGradient(id,color,startOpacity=.2){
+  return `<linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="${startOpacity}"/><stop offset="58%" stop-color="${color}" stop-opacity="${startOpacity*.28}"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient>`;
+}
+function ensureChartTooltip(el){
+  if(!el)return null;
+  let tip=el.querySelector('.chart-hover-tooltip');
+  if(!tip){tip=document.createElement('div');tip.className='chart-hover-tooltip';tip.setAttribute('role','tooltip');tip.setAttribute('aria-hidden','true');el.appendChild(tip);}
+  return tip;
+}
+function positionChartTooltip(el,tip,e){
+  const r=el.getBoundingClientRect();
+  const gap=18,px=e.clientX-r.left,py=e.clientY-r.top;
+  const tw=tip.offsetWidth||300,th=tip.offsetHeight||120;
+  let x=px+gap,y=py+gap;
+  if(x+tw>r.width-10)x=px-tw-gap;
+  if(y+th>r.height-10)y=py-th-gap;
+  tip.style.left=Math.max(10,Math.min(x,Math.max(10,r.width-tw-10)))+'px';
+  tip.style.top=Math.max(10,Math.min(y,Math.max(10,r.height-th-10)))+'px';
+}
+function chartValueText(value,{percent=false,decimals=0,suffix=''}={}){
+  const n=safe(value);
+  if(percent)return `${n.toLocaleString('pt-BR',{minimumFractionDigits:decimals?1:0,maximumFractionDigits:Math.max(1,decimals||1)})}%`;
+  return `${n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:decimals})}${suffix||''}`;
+}
+function sharedTooltipHtml(label,entries){
+  const valid=(entries||[]).filter(x=>x&&x.value!=null&&!Number.isNaN(Number(x.value))).sort((a,b)=>safe(b.value)-safe(a.value)||String(a.name).localeCompare(String(b.name),'pt-BR'));
+  const dense=valid.length>10?' dense':'';
+  return `<div class="chart-tooltip-head"><strong>${escapeHtml(label||'')}</strong><span>${valid.length} ${valid.length===1?'série':'séries'}</span></div><div class="chart-tooltip-list${dense}">${valid.map((x,i)=>`<div class="chart-tooltip-row${i===0&&valid.length>1?' leader':''}"><i style="background:${x.color||'var(--accent)'}"></i><span>${escapeHtml(x.name)}</span><strong>${escapeHtml(x.text)}</strong></div>`).join('')}</div>`;
+}
+function setChartRulerState(el,index,show=true){
+  el.querySelectorAll('[data-ruler-index]').forEach(n=>n.classList.toggle('is-active',show&&Number(n.dataset.rulerIndex)===Number(index)));
+  el.querySelectorAll('[data-point-index]').forEach(n=>n.classList.toggle('is-active',show&&Number(n.dataset.pointIndex)===Number(index)));
+}
+function focusChartSeries(el,index=null,locked=false){
+  const has=index!=null&&index!=='';
+  el.classList.toggle('has-series-focus',has);
+  el.dataset.lockedSeries=locked&&has?String(index):'';
+  el.querySelectorAll('[data-series-index]').forEach(n=>{
+    const same=has&&String(n.dataset.seriesIndex)===String(index);
+    n.classList.toggle('is-focused',same);
+    n.classList.toggle('is-muted',has&&!same);
+    if(n.classList.contains('chart-legend-item'))n.setAttribute('aria-pressed',same&&locked?'true':'false');
+  });
+}
+function bindInteractiveLegend(el){
+  if(!el)return;
+  const items=[...el.querySelectorAll('.chart-legend-item[data-series-index]')];
+  items.forEach(item=>{
+    const idx=item.dataset.seriesIndex;
+    item.addEventListener('pointerenter',()=>{if(!el.dataset.lockedSeries)focusChartSeries(el,idx,false)});
+    item.addEventListener('pointerleave',()=>{if(!el.dataset.lockedSeries)focusChartSeries(el,null,false)});
+    item.addEventListener('click',()=>{const locked=el.dataset.lockedSeries===String(idx);focusChartSeries(el,locked?null:idx,!locked)});
+    item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click()}});
+  });
+}
+function bindSharedChartTooltip(el,model){
+  if(!el)return;
+  const tip=ensureChartTooltip(el),zones=[...el.querySelectorAll('[data-chart-index]')];
+  const show=(node,e)=>{
+    const index=Number(node.dataset.chartIndex),label=model.labels?.[index]||'';
+    const entries=(model.entriesForIndex?.(index)||[]).filter(Boolean);
+    tip.innerHTML=sharedTooltipHtml(label,entries);tip.classList.add('show','shared');tip.setAttribute('aria-hidden','false');
+    setChartRulerState(el,index,true);positionChartTooltip(el,tip,e);
+  };
+  zones.forEach(node=>{
+    node.addEventListener('pointerenter',e=>show(node,e));
+    node.addEventListener('pointermove',e=>show(node,e));
+    node.addEventListener('pointerleave',()=>{tip.classList.remove('show','shared');tip.setAttribute('aria-hidden','true');setChartRulerState(el,-1,false)});
+  });
+  bindInteractiveLegend(el);
+}
+function bindChartTooltips(el){
+  if(!el)return;
+  const tip=ensureChartTooltip(el),targets=[...el.querySelectorAll('[data-chart-tip]')];
+  targets.forEach(node=>{
+    node.addEventListener('pointerenter',e=>{tip.textContent=node.dataset.chartTip||'';tip.classList.add('show');tip.setAttribute('aria-hidden','false');positionChartTooltip(el,tip,e)});
+    node.addEventListener('pointermove',e=>positionChartTooltip(el,tip,e));
+    node.addEventListener('pointerleave',()=>{tip.classList.remove('show');tip.setAttribute('aria-hidden','true')});
+  });
+}
+function qualityNoteTotal(row){return safe(row?.notes5)+safe(row?.notes4)+safe(row?.notes3)+safe(row?.notes2)+safe(row?.notes1)}
+function qualityWeightedSum(row){return safe(row?.notes5)*5+safe(row?.notes4)*4+safe(row?.notes3)*3+safe(row?.notes2)*2+safe(row?.notes1)}
+function qualitySummaryFinalize(row){const total=qualityNoteTotal(row),weighted=qualityWeightedSum(row);return{...row,total,avg:total?weighted/total:0,lowPct:total?(safe(row.notes1)+safe(row.notes2)+safe(row.notes3))/total:0}}
+function analysisCoversImportedMonth(m){
+  if(!m||!state.analysisStartDate||!state.analysisEndDate)return false;
+  const first=isoDateParts(m.year,m.month,1),last=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay)||new Date(m.year,m.month,0).getDate()));
+  return state.analysisStartDate<=first&&state.analysisEndDate>=last;
+}
+function monthExternalQualityRows(m){
+  if(!m)return[];
+  if(Array.isArray(m.qualityExternal)&&m.qualityExternal.length)return m.qualityExternal;
+  const out=[];for(const t of m.technicians||[])for(const q of t.qualityDaily||[])out.push({...q,technicianName:t.name,technicianKey:nameLinkKey(t.name)});return out;
+}
+function qualityRowsForMonth(m,type=null){return monthExternalQualityRows(m).filter(q=>!type||q.qualityType===type)}
+function qualityRowDate(m,q){return isoDateParts(m.year,m.month,safe(q.day))}
+function qualityMonthlySummary(type,squads,rangeIds){
+  const ids=[...(rangeIds||[])],out=new Map(ids.map(id=>[id,{id,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0}]));
+  for(const squad of squads||[]){
+    for(const id of ids){
+      const m=squad?.months?.[id];if(!m)continue;const bucket=out.get(id);if(!bucket)continue;
+      const useMonthlyServiceTotals=type==='service'&&analysisCoversImportedMonth(m);
+      for(const t of m.technicians||[]){
+        if(type==='service'){
+          // V2.26.1: para a competência inteira, usar o consolidado mensal oficial.
+          // Meses antigos podem ter Nota 1 a 4 no technician_monthly e zeros no daily_metrics,
+          // porque essas colunas diárias só passaram a existir na V2.21.
+          if(useMonthlyServiceTotals){
+            bucket.att+=safe(t.att);bucket.notes5+=safe(t.notes5);bucket.notes4+=safe(t.notes4);bucket.notes3+=safe(t.notes3);bucket.notes2+=safe(t.notes2);bucket.notes1+=safe(t.notes1);
+          }else{
+            for(const d of t.daily||[]){const date=isoDateParts(m.year,m.month,d.day);if(!dateBetween(date)||d.off)continue;bucket.att+=safe(d.att);bucket.notes5+=safe(d.notes5);bucket.notes4+=safe(d.notes4);bucket.notes3+=safe(d.notes3);bucket.notes2+=safe(d.notes2);bucket.notes1+=safe(d.notes1);}
+          }
+        }
+      }
+      if(type!=='service'){for(const q of qualityRowsForMonth(m,type)){const date=qualityRowDate(m,q);if(!dateBetween(date))continue;bucket.notes5+=safe(q.notes5);bucket.notes4+=safe(q.notes4);bucket.notes3+=safe(q.notes3);bucket.notes2+=safe(q.notes2);bucket.notes1+=safe(q.notes1);}}
+    }
+  }
+  return ids.map(id=>qualitySummaryFinalize(out.get(id)||{id,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0}));
+}
+function qualityPeriodSummary(type,squads,rangeIds){
+  const rows=qualityMonthlySummary(type,squads,rangeIds),total=rows.reduce((a,r)=>{a.att+=safe(r.att);a.notes5+=safe(r.notes5);a.notes4+=safe(r.notes4);a.notes3+=safe(r.notes3);a.notes2+=safe(r.notes2);a.notes1+=safe(r.notes1);return a;},{att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0});return qualitySummaryFinalize(total);
+}
+function qualitySourceInfo(squads,rangeIds){
+  const files=new Set(),dates=[];for(const squad of squads||[])for(const id of rangeIds||[]){const m=squad?.months?.[id];if(!m)continue;for(const q of monthExternalQualityRows(m)){if(q.sourceFile)files.add(q.sourceFile);if(q.importedAt)dates.push(q.importedAt)}}
+  if(!files.size)return null;dates.sort();return{files:[...files],last:dates[dates.length-1]||null};
+}
+function qualityDistributionSeries(rows){
+  const colors=['var(--danger)','var(--accent2)','var(--warn)','#78b7ff','var(--success)'];
+  return [1,2,3,4,5].map((note,i)=>({name:`Nota ${note}`,color:colors[i],values:rows.map(r=>r.total?safe(r[`notes${note}`])/r.total*100:null)}));
+}
+function qualityMonthlyLabels(rangeIds){return (rangeIds||[]).map(shortHistoryMonth)}
+function qualitySquadServiceSummary(squad,rangeIds){return qualityMonthlySummary('service',[squad],rangeIds)}
+function renderQualityIndicators(squads,rangeIds){
+  if(!$('#indicatorQualityPanel'))return;$('#qualitySquadPeriod').textContent=analysisRangeLabel();
+  const ids=[...(rangeIds||[])],labels=qualityMonthlyLabels(ids),serviceRows=qualityMonthlySummary('service',squads,ids),productRows=qualityMonthlySummary('product',squads,ids),companyRows=qualityMonthlySummary('company',squads,ids),service=qualityPeriodSummary('service',squads,ids),product=qualityPeriodSummary('product',squads,ids),company=qualityPeriodSummary('company',squads,ids),source=qualitySourceInfo(squads,ids);
+  $('#qualityImportStatus').textContent=source?`${source.files.length===1?'CSV Produto/Empresa importado':'CSVs Produto/Empresa importados'}${source.last?` • ${new Date(source.last).toLocaleDateString('pt-BR')}`:''}`:'Aguardando importação Produto/Empresa';
+  $('#qualityServiceTotal').textContent=fmtInt(service.total);$('#qualityServiceRate').textContent=`${fmtPct(service.att?service.total/service.att:0)} dos atendimentos`;$('#qualityServiceAvg').textContent=`Nota média ${service.total?service.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}`;
+  $('#qualityProductAvg').textContent=product.total?product.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';$('#qualityProductTotal').textContent=`${fmtInt(product.total)} avaliações`;$('#qualityProductLow').textContent=`${fmtPct(product.lowPct)} notas 1 a 3`;
+  $('#qualityCompanyAvg').textContent=company.total?company.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';$('#qualityCompanyTotal').textContent=`${fmtInt(company.total)} avaliações`;$('#qualityCompanyLow').textContent=`${fmtPct(company.lowPct)} notas 1 a 3`;
+  const hasExternal=product.total>0||company.total>0;$('#qualityOverallStatus').textContent=hasExternal?'MONITORADO':'SEM BASE';$('#qualityOverallStatus').className=hasExternal?'period-status-above':'period-status-tie';$('#qualityOverallDetail').textContent=hasExternal?`Produto ${fmtPct(product.lowPct)} baixa • Empresa ${fmtPct(company.lowPct)} baixa`:'Importe o CSV de Produto/Empresa';
+  renderQualityReconciliation(squads,ids);
+  const squadWrap=$('#qualitySquadCharts');if(squadWrap){squadWrap.innerHTML=(squads||[]).map(sq=>`<article class="card chart-card quality-squad-card"><div class="section-title"><div><span class="eyebrow">SQUAD ${escapeHtml(sq.code)}</span><h3>Avaliação x Qtd. Atendimento</h3></div><span class="muted">Qtd. + % avaliado</span></div><div id="qualitySquadChart-${escapeHtml(sq.code)}" class="chart quality-mixed-chart"></div></article>`).join('')||'<div class="card quality-card-empty">Sem Squads no escopo.</div>';(squads||[]).forEach(sq=>{const rows=qualitySquadServiceSummary(sq,ids);renderQualityAttendanceEvaluationChart($(`#qualitySquadChart-${sq.code}`),labels,rows.map(r=>safe(r.att)),rows.map(r=>r.att?r.total/r.att*100:null));});}
+  const benchmarkSeries=[{name:'Taxa Avaliação',color:'var(--accent)',values:serviceRows.map(r=>r.att?r.total/r.att*100:null)},{name:'Benchmark mín.',color:'var(--warn)',dashed:true,values:ids.map(()=>20)},{name:'Benchmark bom',color:'var(--success)',dashed:true,values:ids.map(()=>60)},{name:'Nota Baixa Produto',color:'var(--accent2)',values:productRows.map(r=>r.total?r.lowPct*100:null)},{name:'Nota Baixa Serviço',color:'var(--danger)',values:serviceRows.map(r=>r.total?r.lowPct*100:null)}];
+  renderIndicatorLineChart($('#qualityBenchmarkChart'),labels,benchmarkSeries,{maxValue:100,percent:true,decimals:1,height:390,fitWidth:true});
+  renderQualityGroupedBarChart($('#qualityServiceNotesChart'),labels,serviceRows);renderQualityGroupedBarChart($('#qualityProductNotesChart'),labels,productRows);renderQualityGroupedBarChart($('#qualityCompanyNotesChart'),labels,companyRows);
+  $('#qualityServiceChartNote').textContent=`${fmtInt(service.total)} avaliações no período • ${fmtPct(service.lowPct)} notas 1 a 3`;$('#qualityProductChartNote').textContent=product.total?`${fmtInt(product.total)} avaliações no período • ${fmtPct(product.lowPct)} notas 1 a 3`:'Importe o CSV de Produto/Empresa';$('#qualityCompanyChartNote').textContent=company.total?`${fmtInt(company.total)} avaliações válidas • zero/vazio ignorado`:'Importe o CSV de Produto/Empresa';
+}
+function monthServiceTechnicianTotals(m){
+  const map=new Map();for(const t of m?.technicians||[]){const key=nameLinkKey(t.name);map.set(key,{name:t.name,att:safe(t.att),notes5:safe(t.notes5),notes4:safe(t.notes4),notes3:safe(t.notes3),notes2:safe(t.notes2),notes1:safe(t.notes1)});}return map;
+}
+function monthQualityTechnicianTotals(m,type){
+  const map=new Map();for(const q of qualityRowsForMonth(m,type)){const name=q.technicianName||q.name||'Técnico sem nome',key=q.technicianKey||nameLinkKey(name),v=map.get(key)||{name,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};v.notes5+=safe(q.notes5);v.notes4+=safe(q.notes4);v.notes3+=safe(q.notes3);v.notes2+=safe(q.notes2);v.notes1+=safe(q.notes1);map.set(key,v);}return map;
+}
+function reconciliationMonthData(squads,id){
+  const people=new Map();let service=0,product=0,company=0;
+  for(const squad of squads||[]){const m=squad?.months?.[id];if(!m)continue;const serviceMap=monthServiceTechnicianTotals(m),productMap=monthQualityTechnicianTotals(m,'product'),companyMap=monthQualityTechnicianTotals(m,'company'),keys=new Set([...serviceMap.keys(),...productMap.keys(),...companyMap.keys()]);
+    for(const key of keys){const s=serviceMap.get(key)||{},p=productMap.get(key)||{},c=companyMap.get(key)||{},name=s.name||p.name||c.name||key,svc=qualityNoteTotal(s),prd=qualityNoteTotal(p),cmp=qualityNoteTotal(c),row={key:`${squad.code}|${key}`,name,squad:squad.code,service:svc,product:prd,company:cmp,diffProduct:prd-svc,diffCompany:cmp-svc};people.set(row.key,row);service+=svc;product+=prd;company+=cmp;}
+  }
+  const rows=[...people.values()],divergent=rows.filter(r=>r.diffProduct!==0||r.diffCompany!==0);return{id,label:monthLabelFromId(id),service,product,company,diffProduct:product-service,diffCompany:company-service,divergent:divergent.length,hasQuality:product>0||company>0,rows};
+}
+function diffText(v){const n=safe(v);return `${n>0?'+':''}${fmtInt(n)}`}
+function diffClass(v){return safe(v)>0?'positive':safe(v)<0?'negative':'zero'}
+
+  function financialImpactEmptyRow(id=''){
+    const [year,month]=String(id||'').split('-').map(Number);
+    return{id:null,organization_id:state.user?.organizationId||null,year:safe(year),month:safe(month),active_clients:0,avg_ticket:0,evaluated_clients:0,risk_any_clients:0,service_n1:0,service_n2:0,service_n3:0,service_n4:0,service_n5:0,product_n1:0,product_n2:0,product_n3:0,product_n4:0,product_n5:0,company_n1:0,company_n2:0,company_n3:0,company_n4:0,company_n5:0,source_file:'',imported_at:null,updated_at:null};
+  }
+  function normalizeFinancialImpactRow(row){
+    if(!row)return null;const id=`${safe(row.year)}-${String(safe(row.month)).padStart(2,'0')}`,out={...financialImpactEmptyRow(id),...row};
+    ['active_clients','evaluated_clients','risk_any_clients','service_n1','service_n2','service_n3','service_n4','service_n5','product_n1','product_n2','product_n3','product_n4','product_n5','company_n1','company_n2','company_n3','company_n4','company_n5'].forEach(k=>out[k]=Math.max(0,Math.round(safe(out[k]))));out.avg_ticket=Math.max(0,safe(out.avg_ticket));return out;
+  }
+  function loadDemoFinancialImpact(){try{const rows=JSON.parse(localStorage.getItem('softenFinancialQualityV1')||'[]');return Array.isArray(rows)?rows:[]}catch(e){return[]}}
+  function saveDemoFinancialImpact(rows){try{localStorage.setItem('softenFinancialQualityV1',JSON.stringify(rows||[]))}catch(e){}}
+  function financialImpactMonthIds(){
+    const ids=new Set(Object.keys(state.financialImpactCache||{}));Object.values(state.squads||{}).forEach(s=>Object.keys(s?.months||{}).forEach(id=>ids.add(id)));return[...ids].filter(id=>/^\d{4}-\d{2}$/.test(id)).sort();
+  }
+  async function ensureFinancialImpactLoaded(force=false){
+    if(!isSuperAdmin())return{};if(state.financialImpactLoaded&&!force)return state.financialImpactCache;if(state.financialImpactLoading)return state.financialImpactLoading;
+    const task=(async()=>{let rows=[];if(state.supabase){const {data,error}=await state.supabase.from('quality_financial_monthly').select('*').eq('organization_id',state.user.organizationId).order('year').order('month');if(error)throw error;rows=data||[];}else rows=loadDemoFinancialImpact();const cache={};for(const raw of rows){const row=normalizeFinancialImpactRow(raw);if(!row?.year||!row?.month)continue;cache[`${row.year}-${String(row.month).padStart(2,'0')}`]=row;}state.financialImpactCache=cache;state.financialImpactLoaded=true;return cache;})();
+    state.financialImpactLoading=task;try{return await task}catch(err){console.error(err);state.financialImpactLoaded=true;if($('#financialImpactImportStatus'))$('#financialImpactImportStatus').textContent='Não foi possível carregar a base financeira. Execute a migração V2.29.0.';return state.financialImpactCache||{};}finally{state.financialImpactLoading=null;if(state.currentView==='indicators'&&state.indicatorSection==='financial-impact')renderFinancialImpactIndicators();}
+  }
+  function financialImpactDimension(row,prefix){
+    const counts={};for(const n of [1,2,3,4,5])counts[n]=safe(row?.[`${prefix}_n${n}`]);const total=Object.values(counts).reduce((a,b)=>a+b,0),low=counts[1]+counts[2]+counts[3];return{counts,total,low,lowPct:total?low/total:0};
+  }
+  function financialImpactMetrics(row,activeClients,avgTicket){
+    const active=Math.max(0,Math.round(safe(activeClients))),ticket=Math.max(0,safe(avgTicket)),heard=Math.max(0,Math.round(safe(row?.evaluated_clients))),risk=Math.max(0,Math.round(safe(row?.risk_any_clients))),mrr=active*ticket,represented=heard*ticket,riskRevenue=risk*ticket;return{active,ticket,heard,risk,mrr,represented,riskRevenue,annualRisk:riskRevenue*12,coverage:active?heard/active:0,representedShare:mrr?represented/mrr:0,riskHeardShare:heard?risk/heard:0,riskPortfolioShare:mrr?riskRevenue/mrr:0};
+  }
+  function financialImpactStrategicMetrics(row,activeClients,avgTicket){
+    const base=financialImpactMetrics(row,activeClients,avgTicket),dimensions=[['Serviço','service'],['Produto','product'],['Empresa','company']].map(([label,prefix])=>({label,prefix,...financialImpactDimension(row,prefix)})),signalTotal=dimensions.reduce((sum,d)=>sum+d.low,0),primary=dimensions.slice().sort((a,b)=>b.low-a.low||b.lowPct-a.lowPct||a.label.localeCompare(b.label,'pt-BR'))[0]||null,unheardClients=Math.max(0,base.active-base.heard),unheardRevenue=unheardClients*base.ticket;
+    return{...base,dimensions,signalTotal,primary:primary&&primary.low?{...primary,share:signalTotal?primary.low/signalTotal:0}:null,unheardClients,unheardRevenue,unheardShare:base.mrr?unheardRevenue/base.mrr:0};
+  }
+  function fmtMoneyCompact(value){
+    const n=safe(value),a=Math.abs(n),fmt=(v,d=1)=>v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:d});
+    if(a>=1000000)return `R$ ${fmt(n/1000000,1)} mi`;if(a>=1000)return `R$ ${fmt(n/1000,0)} mil`;return `R$ ${fmt(n,0)}`;
+  }
+  function renderFinancialImpactTrend(){
+    const el=$('#financialImpactTrendChart');if(!el)return;const rows=Object.entries(state.financialImpactCache||{}).sort((a,b)=>a[0].localeCompare(b[0])).filter(([,row])=>safe(row?.evaluated_clients)>0),labels=rows.map(([id])=>shortHistoryMonth(id)),represented=rows.map(([,row])=>{const m=financialImpactMetrics(row,row.active_clients,row.avg_ticket);return m.ticket?m.represented:null}),risk=rows.map(([,row])=>{const m=financialImpactMetrics(row,row.active_clients,row.avg_ticket);return m.ticket?m.riskRevenue:null});
+    renderIndicatorLineChart(el,labels,[{name:'Receita representada',color:'var(--accent)',values:represented},{name:'Receita sob sinal',color:'var(--danger)',values:risk}],{height:360,fitWidth:true,decimals:0,axisFormatter:fmtMoneyCompact,valueFormatter:fmtMoney});
+    const valid=rows.filter(([,row])=>safe(row?.avg_ticket)>0);if($('#financialImpactTrendNote'))$('#financialImpactTrendNote').textContent=valid.length?`${valid.length} competência(s) com ticket médio • valores estimados, não receita perdida`:'Salve o ticket médio para visualizar a evolução financeira';
+  }
+  function updateFinancialImpactPreview(){
+    if(!isSuperAdmin()||!$('#indicatorFinancialImpactPanel')||state.indicatorSection!=='financial-impact')return;const id=state.financialImpactMonthId,row=state.financialImpactCache?.[id]||financialImpactEmptyRow(id),active=safe($('#financialImpactActiveClients')?.value),ticket=safe($('#financialImpactAvgTicket')?.value),m=financialImpactStrategicMetrics(row,active,ticket);
+    $('#financialImpactMrr').textContent=m.active&&m.ticket?fmtMoney(m.mrr):'—';$('#financialImpactPortfolioBase').textContent=m.active&&m.ticket?`${fmtInt(m.active)} clientes × ${fmtMoney(m.ticket)}`:'Informe clientes e ticket médio';$('#financialImpactEvaluated').textContent=fmtInt(m.heard);$('#financialImpactCoverage').textContent=`${fmtPct(m.coverage)} da base`;$('#financialImpactRepresented').textContent=m.ticket?fmtMoney(m.represented):'—';$('#financialImpactRepresentedShare').textContent=`${fmtPct(m.representedShare)} do MRR estimado`;$('#financialImpactRiskClients').textContent=fmtInt(m.risk);$('#financialImpactRiskShare').textContent=`${fmtPct(m.riskHeardShare)} dos clientes ouvidos`;$('#financialImpactRiskRevenue').textContent=m.ticket?fmtMoney(m.riskRevenue):'—';$('#financialImpactRiskPortfolioShare').textContent=`${fmtPct(m.riskPortfolioShare)} do MRR estimado`;$('#financialImpactAnnualExposure').textContent=m.ticket?fmtMoney(m.annualRisk):'—';
+    $('#financialStrategicCoverage').textContent=m.active&&m.ticket?fmtPct(m.representedShare):'—';$('#financialStrategicCoverageDetail').textContent=m.active&&m.ticket?`${fmtMoney(m.represented)} de ${fmtMoney(m.mrr)} estimados`:'Informe clientes ativos e ticket médio';
+    $('#financialStrategicExposure').textContent=m.heard&&m.ticket?fmtPct(m.riskHeardShare):'—';$('#financialStrategicExposureDetail').textContent=m.heard&&m.ticket?`${fmtMoney(m.riskRevenue)} de ${fmtMoney(m.represented)} representados`:'Importe o CSV e informe o ticket médio';
+    $('#financialStrategicPrimaryOrigin').textContent=m.primary?m.primary.label:'—';$('#financialStrategicPrimaryOriginDetail').textContent=m.primary?`${fmtPct(m.primary.share)} dos sinais • ${fmtInt(m.primary.low)} cliente(s) com nota 1 a 3`:'Sem sinais de notas 1 a 3';
+    $('#financialStrategicUnheardRevenue').textContent=m.active&&m.ticket?fmtMoney(m.unheardRevenue):'—';$('#financialStrategicUnheardDetail').textContent=m.active&&m.ticket?`${fmtInt(m.unheardClients)} cliente(s) • ${fmtPct(m.unheardShare)} do MRR estimado`:'Informe clientes ativos e ticket médio';
+    $('#financialImpactDimensionRows').innerHTML=m.dimensions.map(d=>{const monthly=d.low*m.ticket,annual=monthly*12,participation=m.signalTotal?d.low/m.signalTotal:0;return`<tr><td><strong>${d.label}</strong>${m.primary?.prefix===d.prefix?'<span class="financial-primary-risk-badge">Principal</span>':''}</td><td>${fmtInt(d.total)}</td><td>${fmtInt(d.low)}</td><td>${fmtPct(d.lowPct)}</td><td>${fmtPct(participation)}</td><td>${m.ticket?fmtMoney(monthly):'—'}</td><td>${m.ticket?fmtMoney(annual):'—'}</td></tr>`}).join('');
+  }
+  function renderFinancialImpactHistory(){
+    const el=$('#financialImpactHistoryRows');if(!el)return;const rows=Object.entries(state.financialImpactCache||{}).sort((a,b)=>b[0].localeCompare(a[0]));if(!rows.length){el.innerHTML='<tr><td colspan="9" class="muted">Importe o primeiro CSV deduplicado para iniciar o histórico.</td></tr>';return;}el.innerHTML=rows.map(([id,row])=>{const m=financialImpactMetrics(row,row.active_clients,row.avg_ticket);return`<tr class="${id===state.financialImpactMonthId?'selected-period-row':''}"><td><strong>${escapeHtml(monthLabelFromId(id))}</strong></td><td>${fmtInt(m.active)}</td><td>${m.ticket?fmtMoney(m.ticket):'—'}</td><td>${m.mrr?fmtMoney(m.mrr):'—'}</td><td>${fmtInt(m.heard)}</td><td>${fmtPct(m.coverage)}</td><td>${m.ticket?fmtMoney(m.represented):'—'}</td><td>${fmtInt(m.risk)}</td><td>${m.ticket?fmtMoney(m.riskRevenue):'—'}</td></tr>`}).join('');
+  }
+  function renderFinancialImpactIndicators(){
+    if(!isSuperAdmin()||!$('#indicatorFinancialImpactPanel'))return;if(!state.financialImpactLoaded){$('#financialImpactImportStatus').textContent='Carregando base financeira...';ensureFinancialImpactLoaded().catch(console.error);return;}const ids=financialImpactMonthIds();if(!ids.length){$('#financialImpactMonthSelect').innerHTML='';$('#financialImpactMonthSelect').disabled=true;$('#financialImpactImportStatus').textContent='Sem competências disponíveis.';return;}if(!state.financialImpactMonthId||!ids.includes(state.financialImpactMonthId))state.financialImpactMonthId=ids[ids.length-1];const id=state.financialImpactMonthId,row=state.financialImpactCache?.[id]||financialImpactEmptyRow(id);$('#financialImpactMonthSelect').disabled=false;$('#financialImpactMonthSelect').innerHTML=ids.map(mid=>`<option value="${mid}" ${mid===id?'selected':''}>${escapeHtml(monthLabelFromId(mid))}</option>`).join('');$('#financialImpactActiveClients').value=safe(row.active_clients)||'';$('#financialImpactAvgTicket').value=safe(row.avg_ticket)?safe(row.avg_ticket).toFixed(2):'';$('#financialImpactImportStatus').textContent=row.imported_at?`${monthLabelFromId(id)} • ${fmtInt(row.evaluated_clients)} clientes únicos importados${row.source_file?` • ${row.source_file}`:''}`:`${monthLabelFromId(id)} • aguardando CSV deduplicado`;updateFinancialImpactPreview();renderFinancialImpactTrend();renderFinancialImpactHistory();
+  }
+  function parseFinancialImpactCsv(text){
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV financeiro vazio ou sem linhas de dados.');const headers=lines[0].map(normalizeHeader),idx={};headers.forEach((h,i)=>idx[h]=i);for(const h of ['dataavaliacao','notaservico','notaproduto','notaempresa'])if(idx[h]==null)throw new Error(`Coluna obrigatória não encontrada: ${h}.`);const groups=new Map();let ignored=0;
+    for(const cols of lines.slice(1)){const date=parseCsvDate(cols[idx.dataavaliacao]),service=csvRating(cols[idx.notaservico]),product=csvRating(cols[idx.notaproduto]),company=csvRating(cols[idx.notaempresa]);if(!date||(!service&&!product&&!company)){ignored++;continue;}const id=`${date.year}-${String(date.month).padStart(2,'0')}`,g=groups.get(id)||{id,year:date.year,month:date.month,evaluated_clients:0,risk_any_clients:0,service_n1:0,service_n2:0,service_n3:0,service_n4:0,service_n5:0,product_n1:0,product_n2:0,product_n3:0,product_n4:0,product_n5:0,company_n1:0,company_n2:0,company_n3:0,company_n4:0,company_n5:0};g.evaluated_clients++;if([service,product,company].some(n=>n&&n<=3))g.risk_any_clients++;if(service)g[`service_n${service}`]++;if(product)g[`product_n${product}`]++;if(company)g[`company_n${company}`]++;groups.set(id,g);}
+    if(!groups.size)throw new Error('Nenhuma linha válida foi encontrada.');return{months:[...groups.values()].sort((a,b)=>a.id.localeCompare(b.id)),ignored,total:lines.length-1};
+  }
+  async function handleFinancialQualityCsvFile(e){
+    if(!isSuperAdmin())return;const file=e.target.files?.[0];if(!file)return;const btn=$('#importFinancialQualityCsvBtn'),status=$('#financialImpactImportStatus');if(btn){btn.disabled=true;btn.textContent='Importando...';}if(status)status.textContent='Lendo e consolidando o CSV deduplicado...';try{const parsed=parseFinancialImpactCsv(await file.text());await ensureFinancialImpactLoaded();const now=new Date().toISOString(),payloads=[];for(const g of parsed.months){const previous=state.financialImpactCache?.[g.id]||financialImpactEmptyRow(g.id),row=normalizeFinancialImpactRow({...previous,...g,organization_id:state.user.organizationId||'demo',source_file:file.name,imported_by:state.user.userId||null,imported_at:now,updated_at:now});payloads.push(row);state.financialImpactCache[g.id]=row;}if(state.supabase){const dbRows=payloads.map(r=>({organization_id:state.user.organizationId,year:r.year,month:r.month,active_clients:r.active_clients,avg_ticket:Number(safe(r.avg_ticket).toFixed(2)),evaluated_clients:r.evaluated_clients,risk_any_clients:r.risk_any_clients,service_n1:r.service_n1,service_n2:r.service_n2,service_n3:r.service_n3,service_n4:r.service_n4,service_n5:r.service_n5,product_n1:r.product_n1,product_n2:r.product_n2,product_n3:r.product_n3,product_n4:r.product_n4,product_n5:r.product_n5,company_n1:r.company_n1,company_n2:r.company_n2,company_n3:r.company_n3,company_n4:r.company_n4,company_n5:r.company_n5,source_file:file.name,imported_by:state.user.userId,imported_at:now,updated_at:now}));const {error}=await state.supabase.from('quality_financial_monthly').upsert(dbRows,{onConflict:'organization_id,year,month'});if(error)throw error;await ensureFinancialImpactLoaded(true);}else{const map=new Map(loadDemoFinancialImpact().map(r=>[`${safe(r.year)}-${String(safe(r.month)).padStart(2,'0')}`,r]));payloads.forEach(r=>map.set(`${r.year}-${String(r.month).padStart(2,'0')}`,r));saveDemoFinancialImpact([...map.values()]);state.financialImpactLoaded=true;}state.financialImpactMonthId=payloads[payloads.length-1]?.year?`${payloads[payloads.length-1].year}-${String(payloads[payloads.length-1].month).padStart(2,'0')}`:state.financialImpactMonthId;renderFinancialImpactIndicators();const imported=payloads.reduce((sum,r)=>sum+safe(r.evaluated_clients),0),risk=payloads.reduce((sum,r)=>sum+safe(r.risk_any_clients),0);toast(`${fmtInt(imported)} clientes únicos consolidados em ${payloads.length} competência(s).`);if(status)status.textContent=`${file.name} • ${fmtInt(imported)} clientes únicos • ${fmtInt(risk)} com ao menos um sinal de risco • ${fmtInt(parsed.ignored)} linha(s) ignorada(s)`;}catch(err){console.error(err);if(status)status.textContent=err.message||'Não foi possível importar o CSV.';toast('Não foi possível importar o CSV de impacto financeiro.');}finally{if(btn){btn.disabled=false;btn.textContent='↑ Importar CSV deduplicado';}e.target.value='';}
+  }
+  async function saveFinancialImpactParameters(){
+    if(!isSuperAdmin())return;const id=state.financialImpactMonthId;if(!id)return toast('Selecione uma competência.');const active=Math.max(0,Math.round(safe($('#financialImpactActiveClients')?.value))),ticket=Math.max(0,safe($('#financialImpactAvgTicket')?.value));if(!active)return toast('Informe o total de clientes ativos.');if(!ticket)return toast('Informe o ticket médio mensal.');await ensureFinancialImpactLoaded();const [year,month]=id.split('-').map(Number),previous=state.financialImpactCache?.[id]||financialImpactEmptyRow(id),now=new Date().toISOString(),row=normalizeFinancialImpactRow({...previous,organization_id:state.user.organizationId||'demo',year,month,active_clients:active,avg_ticket:Number(ticket.toFixed(2)),updated_by:state.user.userId||null,updated_at:now});const btn=$('#saveFinancialImpactParamsBtn');if(btn){btn.disabled=true;btn.textContent='Salvando...';}try{if(state.supabase){const db={organization_id:state.user.organizationId,year,month,active_clients:active,avg_ticket:Number(ticket.toFixed(2)),evaluated_clients:row.evaluated_clients,risk_any_clients:row.risk_any_clients,service_n1:row.service_n1,service_n2:row.service_n2,service_n3:row.service_n3,service_n4:row.service_n4,service_n5:row.service_n5,product_n1:row.product_n1,product_n2:row.product_n2,product_n3:row.product_n3,product_n4:row.product_n4,product_n5:row.product_n5,company_n1:row.company_n1,company_n2:row.company_n2,company_n3:row.company_n3,company_n4:row.company_n4,company_n5:row.company_n5,source_file:row.source_file||null,imported_by:row.imported_by||null,imported_at:row.imported_at||null,updated_by:state.user.userId,updated_at:now};const {error}=await state.supabase.from('quality_financial_monthly').upsert(db,{onConflict:'organization_id,year,month'});if(error)throw error;await ensureFinancialImpactLoaded(true);}else{const map=new Map(loadDemoFinancialImpact().map(r=>[`${safe(r.year)}-${String(safe(r.month)).padStart(2,'0')}`,r]));map.set(id,row);saveDemoFinancialImpact([...map.values()]);state.financialImpactCache[id]=row;state.financialImpactLoaded=true;}renderFinancialImpactIndicators();toast(`Parâmetros financeiros de ${monthLabelFromId(id)} salvos.`);}catch(err){console.error(err);toast('Não foi possível salvar. Confira a migração V2.29.0.');}finally{if(btn){btn.disabled=false;btn.textContent='Salvar parâmetros';}}
+  }
+
+function renderQualityReconciliation(squads,ids){
+  const list=(ids||[]).map(id=>reconciliationMonthData(squads,id)).filter(r=>r.hasQuality);state.reconciliationCache={};list.forEach(r=>state.reconciliationCache[r.id]=r);
+  const total=list.reduce((a,r)=>({service:a.service+r.service,product:a.product+r.product,company:a.company+r.company,divergent:a.divergent+r.divergent}),{service:0,product:0,company:0,divergent:0});
+  const summary=$('#qualityReconciliationSummary');if(summary)summary.innerHTML=`<div><span>Notas Serviço</span><strong>${fmtInt(total.service)}</strong><small>Fonte operacional</small></div><div><span>Notas Produto</span><strong>${fmtInt(total.product)}</strong><small>Diferença ${diffText(total.product-total.service)}</small></div><div><span>Notas Empresa</span><strong>${fmtInt(total.company)}</strong><small>Diferença ${diffText(total.company-total.service)}</small></div><div><span>Divergências técnico/mês</span><strong>${fmtInt(total.divergent)}</strong><small>Auditoria entre as fontes</small></div>`;
+  const body=$('#qualityReconciliationRows');if(body)body.innerHTML=list.length?list.map(r=>`<tr><td><strong>${escapeHtml(r.label)}</strong></td><td>${fmtInt(r.service)}</td><td>${fmtInt(r.product)}</td><td>${fmtInt(r.company)}</td><td><span class="reconcile-diff ${diffClass(r.diffProduct)}">${diffText(r.diffProduct)}</span></td><td><span class="reconcile-diff ${diffClass(r.diffCompany)}">${diffText(r.diffCompany)}</span></td><td>${fmtInt(r.divergent)}</td><td><button type="button" class="btn secondary reconcile-detail-btn" data-reconcile-id="${escapeHtml(r.id)}">Ver técnicos</button></td></tr>`).join(''):'<tr><td colspan="8" class="muted">Sem competências no período selecionado.</td></tr>';
+}
+function openReconciliationDetail(id){
+  const rec=state.reconciliationCache?.[id];if(!rec)return;$('#reconciliationModalTitle').textContent=`Conciliação • ${rec.label}`;$('#reconciliationModalText').textContent=`Serviço ${fmtInt(rec.service)} • Produto ${fmtInt(rec.product)} • Empresa ${fmtInt(rec.company)}. A diferença é informativa e não altera nenhuma fonte.`;
+  const rows=rec.rows.filter(r=>r.diffProduct!==0||r.diffCompany!==0).sort((a,b)=>Math.max(Math.abs(b.diffProduct),Math.abs(b.diffCompany))-Math.max(Math.abs(a.diffProduct),Math.abs(a.diffCompany))||a.name.localeCompare(b.name,'pt-BR'));
+  $('#reconciliationDetailRows').innerHTML=rows.length?rows.map(r=>`<tr><td><strong>${escapeHtml(titleWords(r.name))}</strong></td><td>Squad ${escapeHtml(r.squad)}</td><td>${fmtInt(r.service)}</td><td>${fmtInt(r.product)}</td><td>${fmtInt(r.company)}</td><td><span class="reconcile-diff ${diffClass(r.diffProduct)}">${diffText(r.diffProduct)}</span></td><td><span class="reconcile-diff ${diffClass(r.diffCompany)}">${diffText(r.diffCompany)}</span></td></tr>`).join(''):'<tr><td colspan="7" class="muted">As fontes fecham para todos os técnicos desta competência.</td></tr>';openModal('reconciliationModal');
+}
+function businessDayCalendar(y,m,latestDay=null){
+  const maxDay=latestDay==null?new Date(y,m,0).getDate():Math.min(new Date(y,m,0).getDate(),Math.max(0,safe(latestDay))),out=[];for(let day=1;day<=maxDay;day++){const dow=new Date(y,m-1,day).getDay();if(dow>=1&&dow<=5)out.push({index:out.length+1,day,date:isoDateParts(y,m,day)});}return out;
+}
+function scopeMonthLatestDay(squads,id){let latest=0;for(const s of squads||[])latest=Math.max(latest,safe(s?.months?.[id]?.latestDay));return latest}
+function businessDayCutoffDay(y,m,cutoff){const cal=businessDayCalendar(y,m);return cal[Math.max(0,Math.min(cal.length,safe(cutoff))-1)]?.day||new Date(y,m,0).getDate()}
+function serviceDailyCoverage(mon){
+  const monthly={notes5:0,notes4:0,notes3:0,notes2:0,notes1:0},daily={notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};
+  for(const t of mon?.technicians||[]){for(const n of [5,4,3,2,1])monthly[`notes${n}`]+=safe(t[`notes${n}`]);for(const d of t.daily||[]){if(safe(d.day)>safe(mon.latestDay)||d.off)continue;for(const n of [5,4,3,2,1])daily[`notes${n}`]+=safe(d[`notes${n}`]);}}
+  const complete=[5,4,3,2,1].every(n=>safe(monthly[`notes${n}`])===safe(daily[`notes${n}`]));
+  return{complete,monthly,daily};
+}
+function businessDaysStatusForSquad(mon,cutoffDay){
+  const metrics=[];for(const t of mon?.technicians||[]){const daily=[];for(const d of t.daily||[]){if(safe(d.day)>cutoffDay||safe(d.day)>safe(mon.latestDay)||d.off)continue;const date=isoDateParts(mon.year,mon.month,safe(d.day));if(!isBusinessDateIso(date))continue;daily.push(d);}const agg=aggregateDailyRows(daily);if(safe(agg.att)>0||safe(agg.totalEval)>0)metrics.push({name:t.name,...agg,excludeFromGroupCount:!!t.excludeFromGroupCount});}
+  if(!metrics.length)return{above:0,below:0,count:0};const refs={...scoreRefsFromRows(metrics),bonusAtt:20,bonusTotalEval:30,bonusAvg:40,bonusEvalPct:35};let above=0,below=0;for(const t of metrics){const status=calculateScore(t,refs).status;if(status==='ACIMA')above++;else if(status==='ABAIXO')below++;}return{above,below,count:metrics.length};
+}
+function businessDaysMonthSummary(squads,id,cutoff){
+  const [y,mn]=String(id).split('-').map(Number),cutoffDay=businessDayCutoffDay(y,mn,cutoff),service={att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0},product={notes5:0,notes4:0,notes3:0,notes2:0,notes1:0},company={notes5:0,notes4:0,notes3:0,notes2:0,notes1:0},techs=new Set();let availableDays=0,above=0,below=0,dailyAligned=true;
+  for(const squad of squads||[]){const mon=squad?.months?.[id];if(!mon)continue;if(!serviceDailyCoverage(mon).complete)dailyAligned=false;availableDays=Math.max(availableDays,businessDayCalendar(y,mn,Math.min(cutoffDay,safe(mon.latestDay)||cutoffDay)).length);const status=businessDaysStatusForSquad(mon,cutoffDay);above+=status.above;below+=status.below;for(const t of mon.technicians||[]){let has=false;for(const d of t.daily||[]){if(safe(d.day)>cutoffDay||safe(d.day)>safe(mon.latestDay)||d.off)continue;const date=isoDateParts(y,mn,safe(d.day));if(!isBusinessDateIso(date))continue;service.att+=safe(d.att);service.notes5+=safe(d.notes5);service.notes4+=safe(d.notes4);service.notes3+=safe(d.notes3);service.notes2+=safe(d.notes2);service.notes1+=safe(d.notes1);if(safe(d.att)+qualityNoteTotal(d)>0)has=true;}if(has)techs.add(`${squad.code}|${nameLinkKey(t.name)}`);}for(const q of qualityRowsForMonth(mon)){if(safe(q.day)>cutoffDay||!isBusinessDateIso(qualityRowDate(mon,q)))continue;const target=q.qualityType==='product'?product:q.qualityType==='company'?company:null;if(!target)continue;target.notes5+=safe(q.notes5);target.notes4+=safe(q.notes4);target.notes3+=safe(q.notes3);target.notes2+=safe(q.notes2);target.notes1+=safe(q.notes1);}}
+  const svc={...qualitySummaryFinalize(service),dailyAligned},prd=qualitySummaryFinalize(product),cmp=qualitySummaryFinalize(company),techCount=techs.size||(above+below);return{id,label:monthLabelFromId(id),cutoff,availableDays,techCount,att:service.att,attPerTechDay:availableDays&&techCount?service.att/(availableDays*techCount):0,service:svc,product:prd,company:cmp,evalRate:service.att?svc.total/service.att:0,above,below};
+}
+function businessDaysDailySeries(squads,id,cutoff,metric='attendance'){
+  const [y,mn]=String(id).split('-').map(Number),calendar=businessDayCalendar(y,mn).slice(0,cutoff),daily=calendar.map(x=>({day:x.day,att:0,serviceEval:0,serviceLow:0,productLow:0,companyLow:0}));const byDay=new Map(daily.map(x=>[x.day,x]));
+  for(const squad of squads||[]){const mon=squad?.months?.[id];if(!mon)continue;for(const t of mon.technicians||[])for(const d of t.daily||[]){const b=byDay.get(safe(d.day));if(!b||safe(d.day)>safe(mon.latestDay)||d.off)continue;b.att+=safe(d.att);b.serviceEval+=qualityNoteTotal(d);b.serviceLow+=safe(d.notes1)+safe(d.notes2)+safe(d.notes3);}for(const q of qualityRowsForMonth(mon)){const b=byDay.get(safe(q.day));if(!b)continue;const low=safe(q.notes1)+safe(q.notes2)+safe(q.notes3);if(q.qualityType==='product')b.productLow+=low;if(q.qualityType==='company')b.companyLow+=low;}}
+  let att=0,evals=0,low=0;return daily.map(b=>{att+=b.att;evals+=b.serviceEval;low+=metric==='product'?b.productLow:metric==='company'?b.companyLow:b.serviceLow;return metric==='attendance'?att:metric==='evaluation'?(att?evals/att*100:null):low;});
+}
+function setDeltaKpi(valueEl,detailEl,delta,{percent=false,points=false,lowerBetter=false,base=null,prev=null}={}){
+  if(!valueEl||!detailEl)return;if(delta==null||!Number.isFinite(Number(delta))){valueEl.textContent='—';detailEl.textContent='Sem comparação';valueEl.className='';return;}const n=Number(delta),positive=n>0,good=lowerBetter?!positive:positive;valueEl.textContent=points?`${n>0?'+':''}${n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`:`${n>0?'+':''}${n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`;valueEl.className=Math.abs(n)<.0001?'delta-neutral':good?'delta-positive':'delta-negative';detailEl.textContent=base==null||prev==null?'Mesmo estágio do mês':`${base} agora • ${prev} anterior`;}
+function renderBusinessDaysDistribution(body,rows,type){
+  if(!body)return;body.innerHTML=(rows||[]).map(r=>{const q=r[type],misaligned=type==='service'&&q?.dailyAligned===false,has=safe(q?.total)>0,note=n=>has?`<span class="business-days-note-share">${fmtInt(q[`notes${n}`])}<small>${(safe(q[`notes${n}`])/q.total*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</small></span>`:'—';return `<tr><td><strong>${escapeHtml(r.label)}</strong>${misaligned?'<small class="muted" style="display:block;margin-top:4px">⚠ detalhe diário difere do consolidado mensal; reimporte o CSV operacional atual para alinhar</small>':''}</td><td>${note(1)}</td><td>${note(2)}</td><td>${note(3)}</td><td>${note(4)}</td><td>${note(5)}</td><td>${has?fmtInt(q.total):'—'}</td></tr>`;}).join('')||'<tr><td colspan="7" class="muted">Sem dados para comparar.</td></tr>';
+}
+function renderBusinessDaysIndicators(squads){
+  const ids=indicatorMonthIds(squads);if(!ids.length){$('#businessDaysRows').innerHTML='<tr><td colspan="13" class="muted">Sem competências importadas.</td></tr>';['#businessDaysServiceDistributionRows','#businessDaysProductDistributionRows','#businessDaysCompanyDistributionRows'].forEach(sel=>{if($(sel))$(sel).innerHTML='<tr><td colspan="7" class="muted">Sem competências importadas.</td></tr>'});return;}let base=state.businessDaysBaseId;if(!base||!ids.includes(base)){const preferred=monthIdForDate(state.analysisEndDate);base=preferred&&ids.includes(preferred)?preferred:ids[ids.length-1];state.businessDaysBaseId=base;}const baseIndex=ids.indexOf(base),count=Math.max(2,safe(state.businessDaysCompareCount)||6),compareIds=ids.slice(Math.max(0,baseIndex-count+1),baseIndex+1),[by,bm]=base.split('-').map(Number),baseLatest=scopeMonthLatestDay(squads,base)||new Date(by,bm,0).getDate(),available=Math.max(1,businessDayCalendar(by,bm,baseLatest).length);if(!state.businessDaysCutoff||state.businessDaysCutoff>available)state.businessDaysCutoff=available;const cutoff=state.businessDaysCutoff;
+  $('#businessDaysBaseMonth').innerHTML=ids.map(id=>`<option value="${id}" ${id===base?'selected':''}>${escapeHtml(monthLabelFromId(id))}</option>`).join('');$('#businessDaysCompareCount').value=String(count);$('#businessDaysCutoff').innerHTML=Array.from({length:available},(_,i)=>`<option value="${i+1}" ${i+1===cutoff?'selected':''}>${i+1}º dia útil</option>`).join('');$('#businessDaysLowType').value=state.businessDaysLowType;$('#businessDaysScopeChip').textContent=`Até o ${cutoff}º dia útil`;
+  const rows=compareIds.map(id=>businessDaysMonthSummary(squads,id,cutoff)),baseRow=rows[rows.length-1],prev=rows.length>1?rows[rows.length-2]:null,misalignedServiceRows=rows.filter(r=>r.service?.dailyAligned===false);
+  const attDelta=prev&&prev.att?((baseRow.att/prev.att)-1)*100:null,evalDelta=prev&&baseRow.evalRate!=null&&prev.evalRate!=null?(baseRow.evalRate-prev.evalRate)*100:null,prdDelta=prev&&baseRow.product.total&&prev.product.total?(baseRow.product.lowPct-prev.product.lowPct)*100:null,cmpDelta=prev&&baseRow.company.total&&prev.company.total?(baseRow.company.lowPct-prev.company.lowPct)*100:null;
+  setDeltaKpi($('#businessDaysAttDelta'),$('#businessDaysAttValues'),attDelta,{base:fmtInt(baseRow.att),prev:prev?fmtInt(prev.att):null});setDeltaKpi($('#businessDaysEvalDelta'),$('#businessDaysEvalValues'),evalDelta,{points:true,base:fmtPct(baseRow.evalRate),prev:prev?fmtPct(prev.evalRate):null});setDeltaKpi($('#businessDaysProductDelta'),$('#businessDaysProductValues'),prdDelta,{points:true,lowerBetter:true,base:baseRow.product.total?fmtPct(baseRow.product.lowPct):'—',prev:prev?.product.total?fmtPct(prev.product.lowPct):'—'});setDeltaKpi($('#businessDaysCompanyDelta'),$('#businessDaysCompanyValues'),cmpDelta,{points:true,lowerBetter:true,base:baseRow.company.total?fmtPct(baseRow.company.lowPct):'—',prev:prev?.company.total?fmtPct(prev.company.lowPct):'—'});
+  const labels=Array.from({length:cutoff},(_,i)=>`${i+1}º`),seriesFor=metric=>compareIds.map((id,i)=>({name:shortHistoryMonth(id),color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:businessDaysDailySeries(squads,id,cutoff,metric)}));renderIndicatorLineChart($('#businessDaysAttendanceChart'),labels,seriesFor('attendance'),{height:360,fitWidth:true});renderIndicatorLineChart($('#businessDaysEvaluationChart'),labels,seriesFor('evaluation'),{height:360,fitWidth:true,maxValue:100,percent:true,decimals:1});renderIndicatorLineChart($('#businessDaysLowChart'),labels,seriesFor(state.businessDaysLowType),{height:360,fitWidth:true});
+  const lowLabel=state.businessDaysLowType==='product'?'Produto':state.businessDaysLowType==='company'?'Empresa':'Serviço';$('#businessDaysLowNote').textContent=`${lowLabel} • notas 1 a 3`;$('#businessDaysAttendanceNote').textContent=`${compareIds.length} competência(s) • mesmo corte no ${cutoff}º dia útil`;$('#businessDaysTableNote').textContent=`Base ${monthLabelFromId(base)} • corte no ${cutoff}º dia útil${misalignedServiceRows.length?` • ⚠ ${misalignedServiceRows.length} competência(s) com detalhe diário divergente do consolidado`:''}`;
+  $('#businessDaysRows').innerHTML=rows.map(r=>`<tr><td><strong>${escapeHtml(r.label)}</strong>${r.service?.dailyAligned===false?'<small class="muted" style="display:block;margin-top:3px">⚠ diário a conferir</small>':''}</td><td>${fmtInt(r.availableDays)}</td><td>${fmtInt(r.att)}</td><td>${r.techCount?r.attPerTechDay.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2}):'—'}</td><td>${r.evalRate!=null?fmtPct(r.evalRate):'—'}</td><td>${fmtInt(r.service.total)}</td><td>${r.service.total?fmtPct(r.service.lowPct):'—'}</td><td>${fmtInt(r.product.total)}</td><td>${r.product.total?fmtPct(r.product.lowPct):'—'}</td><td>${fmtInt(r.company.total)}</td><td>${r.company.total?fmtPct(r.company.lowPct):'—'}</td><td>${fmtInt(r.above)}</td><td>${fmtInt(r.below)}</td></tr>`).join('');
+  renderBusinessDaysDistribution($('#businessDaysServiceDistributionRows'),rows,'service');renderBusinessDaysDistribution($('#businessDaysProductDistributionRows'),rows,'product');renderBusinessDaysDistribution($('#businessDaysCompanyDistributionRows'),rows,'company');
+}
+function detailRankingRows(type,squads){
+  const map=new Map();for(const squad of squads||[])for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;if(type==='service'){const full=analysisCoversImportedMonth(m);for(const t of m.technicians||[]){const key=`${squad.code}|${nameLinkKey(t.name)}`,v=map.get(key)||{name:t.name,squad:squad.code,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};if(full){v.notes5+=safe(t.notes5);v.notes4+=safe(t.notes4);v.notes3+=safe(t.notes3);v.notes2+=safe(t.notes2);v.notes1+=safe(t.notes1);}else for(const d of t.daily||[]){const date=isoDateParts(m.year,m.month,safe(d.day));if(!dateBetween(date)||d.off)continue;v.notes5+=safe(d.notes5);v.notes4+=safe(d.notes4);v.notes3+=safe(d.notes3);v.notes2+=safe(d.notes2);v.notes1+=safe(d.notes1);}map.set(key,v);}}else{for(const q of qualityRowsForMonth(m,type)){const date=qualityRowDate(m,q);if(!dateBetween(date))continue;const name=q.technicianName||'Técnico sem nome',key=`${squad.code}|${q.technicianKey||nameLinkKey(name)}`,v=map.get(key)||{name,squad:squad.code,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};v.notes5+=safe(q.notes5);v.notes4+=safe(q.notes4);v.notes3+=safe(q.notes3);v.notes2+=safe(q.notes2);v.notes1+=safe(q.notes1);map.set(key,v);}}}
+  return [...map.values()].map(v=>{const total=qualityNoteTotal(v),low=safe(v.notes1)+safe(v.notes2)+safe(v.notes3);return{...v,total,low,lowPct:total?low/total:0}}).filter(v=>v.low>0).sort((a,b)=>b.low-a.low||b.lowPct-a.lowPct||b.total-a.total||a.name.localeCompare(b.name,'pt-BR')).slice(0,10);
+}
+function renderDetailRanking(el,rows){if(!el)return;el.innerHTML=rows.length?rows.map((r,i)=>`<div class="detail-rank-row"><span class="detail-rank-pos">${i+1}</span><div class="detail-rank-main"><strong>${escapeHtml(titleWords(r.name))}</strong><small>Squad ${escapeHtml(r.squad)} • N1 ${fmtInt(r.notes1)} • N2 ${fmtInt(r.notes2)} • N3 ${fmtInt(r.notes3)} • ${fmtInt(r.total)} avaliações</small></div><div class="detail-rank-score"><b>${fmtInt(r.low)}</b><small>${fmtPct(r.lowPct)} baixas</small></div></div>`).join(''):'<div class="chart-empty">Nenhuma nota 1 a 3 encontrada no período.</div>'}
+function renderDetailIndicators(squads){if($('#detailPeriodChip'))$('#detailPeriodChip').textContent=analysisRangeLabel();renderDetailRanking($('#detailServiceRanking'),detailRankingRows('service',squads));renderDetailRanking($('#detailProductRanking'),detailRankingRows('product',squads));renderDetailRanking($('#detailCompanyRanking'),detailRankingRows('company',squads));}
+
+function renderQualityAttendanceEvaluationChart(el,labels,attendance,evalPct){
+  if(!el)return;const has=(attendance||[]).some(v=>safe(v)>0)||(evalPct||[]).some(v=>v!=null);if(!has){el.innerHTML='<div class="chart-empty">Sem dados no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern');const w=Math.max(760,(labels?.length||0)*108),h=320,p={l:58,r:58,t:30,b:58},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(48,slot*.48),attTop=Math.max(1,...(attendance||[]).map(safe))*1.12,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-(safe(v)/100)*plotH;
+  const grid=[0,.25,.5,.75,1].map(f=>{const y=p.t+(1-f)*plotH;return `<line x1="${p.l}" y1="${y}" x2="${w-p.r}" y2="${y}" class="grid-line"/><text x="6" y="${y+4}" class="axis-label">${fmtInt(attTop*f)}</text><text x="${w-6}" y="${y+4}" class="quality-right-axis-label">${Math.round(100*f)}%</text>`}).join('');
+  const bars=(attendance||[]).map((v,i)=>{const y=yAtt(v);return `<rect x="${x(i)-barW/2}" y="${y}" width="${barW}" height="${Math.max(0,base-y)}" rx="8" fill="var(--accent)" opacity=".55" class="quality-bar chart-series-shape" data-series-index="0"></rect>`}).join('');
+  const pts=(evalPct||[]).map((v,i)=>v==null?null:{x:x(i),y:yPct(v)}),segments=[];let cur=[];pts.forEach(pt=>{if(pt){cur.push(pt)}else if(cur.length){segments.push(cur);cur=[]}});if(cur.length)segments.push(cur);const line=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('')+(evalPct||[]).map((v,i)=>v==null?'':`<circle cx="${x(i)}" cy="${yPct(v)}" r="4" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>`).join('');
+  const xLabels=(labels||[]).map((l,i)=>`<text x="${x(i)}" y="${h-18}" text-anchor="middle" class="axis-label">${escapeHtml(l)}</text>`).join(''),zones=(labels||[]).map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${plotH}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join('');
+  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${line}${zones}${xLabels}<text x="${p.l}" y="17" class="quality-axis-title">Atendimentos</text><text x="${w-p.r}" y="17" text-anchor="end" class="quality-axis-title">% avaliação</text></svg></div><div class="chart-legend-inline chart-legend-visible"><span><i class="legend-swatch" style="background:var(--accent)"></i>Qtd. Atendimento</span><span><i class="legend-swatch" style="background:var(--success)"></i>% Avaliação</span></div>`;
+  bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[{name:'Qtd. Atendimento',value:attendance?.[i],text:fmtInt(attendance?.[i]),color:'var(--accent)'},{name:'% Avaliação',value:evalPct?.[i],text:evalPct?.[i]==null?'—':`${safe(evalPct[i]).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:'var(--success)'}]});
+}
+function renderQualityGroupedBarChart(el,labels,rows){
+  if(!el)return;const series=qualityDistributionSeries(rows),has=(rows||[]).some(r=>safe(r.total)>0);if(!has){el.innerHTML='<div class="chart-empty">Sem avaliações para este indicador no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern','quality-grouped-bar-chart');const w=Math.max(860,(labels?.length||0)*112),h=350,p={l:54,r:24,t:28,b:62},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),groupW=Math.min(slot*.78,82),barW=Math.max(5,groupW/5-2),x0=i=>p.l+slot*i+(slot-groupW)/2,y=v=>p.t+plotH-(safe(v)/100)*plotH,base=h-p.b;
+  const grid=[0,25,50,75,100].map(v=>{const yy=y(v);return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${v}%</text>`}).join('');let bars='';series.forEach((ser,si)=>{(ser.values||[]).forEach((v,i)=>{if(v==null)return;const xx=x0(i)+si*(barW+2),yy=y(v);bars+=`<rect x="${xx}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="3" fill="${ser.color}" class="quality-bar chart-series-shape" data-series-index="${si}"></rect>`})});
+  const xLabels=(labels||[]).map((l,i)=>`<text x="${p.l+slot*(i+.5)}" y="${h-18}" text-anchor="middle" class="axis-label">${escapeHtml(l)}</text>`).join(''),zones=(labels||[]).map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${plotH}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join(''),legend=`<div class="chart-legend-inline chart-legend-visible chart-legend-interactive">${series.map((ser,si)=>`<button type="button" class="chart-legend-item" data-series-index="${si}" aria-pressed="false"><i class="legend-swatch" style="background:${ser.color}"></i>${ser.name}</button>`).join('')}</div>`;
+  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${zones}${xLabels}</svg></div>${legend}`;bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[{name:'Total avaliações',value:rows?.[i]?.total,text:fmtInt(rows?.[i]?.total),color:'var(--accent)'},...series.map(ser=>ser.values?.[i]==null?null:{name:ser.name,value:ser.values[i],text:`${safe(ser.values[i]).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:ser.color})]});
+}
+
+function renderHistoryAttendanceChart(el,labels,totals,series){
+  if(!el)return;
+  const validSeries=(series||[]).filter(s=>(s.values||[]).some(v=>v!=null));
+  if(!labels?.length||!validSeries.length){el.innerHTML='<div class="chart-empty">Importe pelo menos um mês com técnicos vinculados para visualizar o histórico.</div>';return;}
+  el.classList.add('interactive-chart','history-interactive-chart','chart-modern','premium-mixed-chart');
+  const chartId=nextChartRenderId('history'),w=Math.max(940,labels.length*136),h=360,p={l:58,r:68,t:34,b:60};
+  const lineVals=validSeries.flatMap(s=>s.values).filter(v=>v!=null).map(v=>safe(v));
+  const lineTop=Math.max(1,...lineVals)*1.12,totalTop=Math.max(1,...(totals||[]).map(safe))*1.12;
+  const slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(58,slot*.48),baseline=h-p.b;
+  const x=i=>p.l+slot*(i+.5),yLine=v=>p.t+(h-p.t-p.b)-(safe(v)/lineTop)*(h-p.t-p.b),yTotal=v=>p.t+(h-p.t-p.b)-(safe(v)/totalTop)*(h-p.t-p.b);
+  const leftGrid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),lv=lineTop*f,rv=totalTop*f;return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="6" y="${yy+4}" class="axis-label">${fmtInt(lv)}</text><text x="${w-6}" y="${yy+4}" class="axis-label-right">${fmtInt(rv)}</text>`}).join('');
+  const defs=[`<linearGradient id="${chartId}-bars" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".92"/><stop offset="100%" stop-color="var(--accent2)" stop-opacity=".28"/></linearGradient>`];
+  validSeries.forEach((s,si)=>defs.push(svgSeriesGradient(`${chartId}-area-${si}`,s.color||'var(--accent)',validSeries.length>4?.055:.10)));
+  const bars=(totals||[]).map((v,i)=>{const yy=yTotal(v),barHeight=Math.max(0,baseline-yy);return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${barHeight}" rx="12" fill="url(#${chartId}-bars)" class="history-total-bar chart-series-shape premium-bar"></rect><text x="${x(i)}" y="${Math.max(p.t+10,yy-8)}" text-anchor="middle" class="history-total-label">${fmtInt(v)}</text>`}).join('');
+  const paths=validSeries.map((s,si)=>{
+    const segments=splitChartPointSegments(s.values,x,yLine),color=s.color||'var(--accent)';
+    const areaOpacity=validSeries.length>6?0:(validSeries.length>4?.55:1);
+    const areas=areaOpacity?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" data-series-index="${si}" style="opacity:${areaOpacity};--series-color:${color}"></path>`).join(''):'';
+    const lines=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="2.65" stroke-linecap="round" stroke-linejoin="round" class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
+    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=yLine(v);return `${vacation?`<circle cx="${cx}" cy="${cy}" r="8.2" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?4.7:3.9}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>`}).join('');
+    return areas+lines+dots;
+  }).join('');
+  const rulers=labels.map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
+  const zones=labels.map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${h-p.t-p.b}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join('');
+  const xLabels=labels.map((label,i)=>`<text x="${x(i)}" y="${h-16}" text-anchor="middle" class="axis-label history-x-label">${escapeHtml(label)}</text>`).join('');
+  const legend=`<div class="chart-legend-inline chart-legend-visible chart-legend-interactive"><span class="chart-legend-total"><i class="legend-swatch history-total-bar"></i>Total geral</span>${validSeries.map((s,si)=>`<button type="button" class="chart-legend-item" data-series-index="${si}" aria-pressed="false" title="Passe o mouse para destacar; clique para fixar"><i class="legend-swatch" style="background:${s.color||'var(--accent)'}"></i>${escapeHtml(s.name)}</button>`).join('')}</div>`;
+  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;--chart-height:${h}px" preserveAspectRatio="none"><defs>${defs.join('')}</defs>${leftGrid}${bars}${paths}${rulers}${zones}${xLabels}<text x="${p.l}" y="18" class="history-axis-title">Técnico / grupo</text><text x="${w-p.r}" y="18" text-anchor="end" class="history-axis-title">Total geral</text></svg></div>${legend}`;
+  bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[{name:'Total geral',value:totals?.[i],text:fmtInt(totals?.[i]),color:'var(--accent)'},...validSeries.map(s=>s.values?.[i]==null?null:{name:s.vacations?.[i]?`${s.name} 🏖`:s.name,value:s.values[i],text:`${fmtInt(s.values[i])}${s.vacations?.[i]?' • férias':''}`,color:s.color})]});
+}
+
+function buildStatusMatrix(squads,rangeIds){
+  const map=new Map();
+  const multi=(squads||[]).length>1;
+  (squads||[]).forEach(squad=>{
+    (rangeIds||[]).forEach(id=>{
+      const m=squad?.months?.[id];if(!m)return;
+      (m.technicians||[]).forEach(t=>{
+        const key=`${squad.code}|${historyTechKey(t)}`;
+        if(!map.has(key))map.set(key,{key,name:titleWords(t.name),squad:squad.code,statuses:{},vacations:{}});
+        map.get(key).statuses[id]=String(t.status||'').toUpperCase();
+        map.get(key).vacations[id]=!!t.vacation;
+      });
+    });
+  });
+  return [...map.values()]
+    .sort((a,b)=>a.squad.localeCompare(b.squad)||a.name.localeCompare(b.name,'pt-BR'))
+    .map(x=>({...x,label:multi?`Squad ${x.squad} • ${x.name}`:x.name}));
+}
+
+function renderTechnicianStatusMatrix(el,squads,rangeIds){
+  if(!el)return;
+  const rows=buildStatusMatrix(squads,rangeIds);
+  if(!rows.length){el.innerHTML='<div class="chart-empty">Sem técnicos no período selecionado.</div>';return;}
+  const months=(rangeIds||[]).map(id=>({id,label:shortHistoryMonth(id)}));
+  const head=`<div class="status-matrix-head"><div class="status-tech-name">Técnico</div>${months.map(m=>`<div>${escapeHtml(m.label)}</div>`).join('')}<div>Resumo</div></div>`;
+  const body=rows.map(r=>{
+    let above=0,below=0;
+    const cells=months.map(m=>{const st=r.statuses[m.id]||'';if(st==='ACIMA')above++;if(st==='ABAIXO')below++;const cls=st==='ACIMA'?'above':st==='ABAIXO'?'below':'empty',vacation=!!r.vacations?.[m.id];const tip=`${r.label} • ${monthLabelFromId(m.id)}: ${st||'sem dados'}${vacation?' • férias registradas':''}`;return `<div class="status-cell ${cls}${vacation?' vacation':''} chart-hover-target" data-chart-tip="${escapeHtml(tip)}"><span>${st==='ACIMA'?'A':st==='ABAIXO'?'B':'—'}</span>${vacation?'<i class="vacation-cell-badge" aria-hidden="true">🏖</i>':''}</div>`}).join('');
+    const summary=above===below?'EMPATE':above>below?'ACIMA':'ABAIXO';
+    return `<div class="status-matrix-row"><div class="status-tech-name"><strong>${escapeHtml(r.label)}</strong></div>${cells}<div class="status-summary ${summary==='ACIMA'?'above':summary==='ABAIXO'?'below':'tie'}">${summary}<small>${above}A • ${below}B</small></div></div>`;
+  }).join('');
+  el.innerHTML=`<div class="status-matrix-scroll"><div class="status-matrix" style="--status-cols:${months.length}">${head}${body}</div></div>`;
+  bindChartTooltips(el);
+}
+
+function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,decimals=0,height=340,fitWidth=false,emphasis=false,axisFormatter=null,valueFormatter=null}={}){
+  if(!el)return;
+  const validSeries=(series||[]).filter(s=>(s.values||[]).some(v=>v!=null));
+  if(!validSeries.length){el.innerHTML='<div class="chart-empty">Sem dados para este recorte.</div>';return;}
+  el.classList.add('interactive-chart','chart-modern','premium-line-chart');
+  const chartId=nextChartRenderId('line');
+  const containerWidth=fitWidth?Math.max(0,Math.floor(el.clientWidth||el.getBoundingClientRect?.().width||0)-18):0;
+  const w=Math.max(900,(labels?.length||0)*124,containerWidth),h=Math.max(300,safe(height)||340),p=emphasis?{l:70,r:40,t:36,b:72}:{l:56,r:30,t:32,b:60};
+  const vals=validSeries.flatMap(s=>s.values).filter(v=>v!=null).map(v=>safe(v));
+  const rawTop=Math.max(1,...vals),top=maxValue??(percent?Math.max(10,Math.ceil(rawTop/10)*10):rawTop*1.1),baseline=h-p.b;
+  const x=i=>p.l+(labels.length<=1?0:i*(w-p.l-p.r)/(labels.length-1)),y=v=>p.t+(h-p.t-p.b)-(safe(v)/top)*(h-p.t-p.b);
+  const grid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),v=top*f,label=axisFormatter?axisFormatter(v):(percent?`${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}%`:v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:decimals}));return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${label}</text>`}).join('');
+  const tickStep=labels.length>24?Math.ceil(labels.length/7):labels.length>16?Math.ceil(labels.length/8):labels.length>12?2:1;
+  const xLabels=labels.map((label,i)=>{if(i!==0&&i!==labels.length-1&&i%tickStep!==0)return'';const raw=String(label||''),shown=raw.includes('/')?raw:raw.split(' ')[0].slice(0,3);return `<text x="${x(i)}" y="${h-17}" text-anchor="middle" class="axis-label history-x-label">${escapeHtml(shown)}</text>`}).join('');
+  const defs=[];
+  validSeries.forEach((s,si)=>defs.push(svgSeriesGradient(`${chartId}-area-${si}`,s.color||'var(--accent)',validSeries.length>5?.05:emphasis?.16:.10)));
+  const paths=validSeries.map((s,si)=>{
+    const color=s.color||'var(--accent)',segments=splitChartPointSegments(s.values,x,y);
+    const dash=s.dashed?' stroke-dasharray="7 7"':'',lineWidth=emphasis?(s.dashed?2.5:3):(s.dashed?2.1:2.65),pointRadius=emphasis?4.6:3.8;
+    const showArea=!s.dashed;
+    const areas=showArea?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" style="--series-color:${color}" data-series-index="${si}"></path>`).join(''):'';
+    const linePaths=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round"${dash} class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
+    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=y(v);return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?pointRadius+0.8:pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>`}).join('');
+    return areas+linePaths+dots;
+  }).join('');
+  const rulers=(labels||[]).map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
+  const plotWidth=Math.max(1,w-p.l-p.r),zoneWidth=labels.length<=1?plotWidth:plotWidth/(labels.length-1);
+  const zones=(labels||[]).map((_,i)=>{const zx=labels.length<=1?p.l:Math.max(p.l,x(i)-zoneWidth/2),zw=labels.length<=1?plotWidth:(i===0||i===labels.length-1?zoneWidth/2:zoneWidth);return `<rect x="${zx}" y="${p.t}" width="${zw}" height="${h-p.t-p.b}" class="chart-hover-zone" data-chart-index="${i}"></rect>`}).join('');
+  const legend=`<div class="chart-legend-inline chart-legend-visible chart-legend-interactive">${validSeries.map((s,si)=>`<button type="button" class="chart-legend-item" data-series-index="${si}" aria-pressed="false" title="Passe o mouse para destacar; clique para fixar"><i class="legend-swatch${s.dashed?' dashed':''}" style="background:${s.color||'var(--accent)'}"></i>${escapeHtml(s.name)}</button>`).join('')}</div>`;
+  el.classList.toggle('chart-emphasis',!!emphasis);
+  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;--chart-height:${h}px" preserveAspectRatio="none"><defs>${defs.join('')}</defs>${grid}${paths}${rulers}${zones}${xLabels}</svg></div>${legend}`;
+  bindSharedChartTooltip(el,{labels,entriesForIndex:i=>validSeries.map(s=>s.values?.[i]==null?null:{name:s.vacations?.[i]?`${s.name} 🏖`:s.name,value:s.values[i],text:`${valueFormatter?valueFormatter(s.values[i]):chartValueText(s.values[i],{percent,decimals})}${s.vacations?.[i]?' • férias':''}`,color:s.color||'var(--accent)'})});
+}
+
+
+
+  const FEEDBACK_STORAGE_KEY='squadDashboardFeedbacksV25';
+  function feedbackScopeKey(squad=currentSquad(),m=currentMonth()){return squad&&m?`${squad.code}|${m.id}`:null}
+  function loadDemoFeedbackStore(){try{const rows=JSON.parse(localStorage.getItem(FEEDBACK_STORAGE_KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return[]}}
+  function saveDemoFeedbackStore(rows){localStorage.setItem(FEEDBACK_STORAGE_KEY,JSON.stringify(rows||[]))}
+  function normalizeFeedbackRow(r){return r?{...r,year:safe(r.year),month:safe(r.month),visible_to_technician:!!r.visible_to_technician,status:r.status||'draft',generated_snapshot:r.generated_snapshot||{}}:null}
+  function feedbackMonthTechs(m=currentMonth()){return (m?.technicians||[]).filter(t=>safe(t.att)>0||safe(t.totalEval)>0).sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR'))}
+  function feedbackRowForTech(rows,techName){return (rows||[]).find(r=>samePersonName(r.technician_name,techName))||null}
+  function previousMonthForFeedback(squad,m){if(!squad||!m)return null;const ids=Object.keys(squad.months||{}).filter(id=>id<m.id).sort();return ids.length?squad.months[ids[ids.length-1]]:null}
+  function feedbackTrendText(currentValue,previousValue,label,{percent=false,points=false}={}){
+    const cur=safe(currentValue),prev=safe(previousValue);if(!prev)return'';const diff=cur-prev,ratio=Math.abs(diff)/(Math.abs(prev)||1);if(ratio<.03)return `${label} permaneceu estável em relação à competência anterior.`;const dir=diff>0?'evoluiu':'recuou';const formatted=percent?`${Math.abs(diff*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`:points?`${Math.abs(diff).toLocaleString('pt-BR',{maximumFractionDigits:1})} pts`:`${Math.abs(diff).toLocaleString('pt-BR',{maximumFractionDigits:0})}`;return `${label} ${dir} ${formatted} em relação à competência anterior.`;
+  }
+  function feedbackSnapshotForTech(t,m=currentMonth(),squad=currentSquad()){
+    const refs=displayScoreRules(m),teamCfg=teamSettings(m),prevMonth=previousMonthForFeedback(squad,m),prev=prevMonth?(prevMonth.technicians||[]).find(x=>samePersonName(x.name,t.name)):null;
+    return{version:1,squad:squad?.code||'',year:m?.year,month:m?.month,monthName:m?.monthName||'',technicianName:t.name,userId:t.userId||null,att:safe(t.att),notes5:safe(t.notes5),totalEval:safe(t.totalEval),avg:safe(t.avg),evalPct:safe(t.evalPct),points:safe(t.points),rank:safe(t.rank)||null,status:String(t.status||''),goalsHit:safe(t.goalsHit),goalAtt:safe(t.goalAtt),goalNotes5:safe(t.goalEval),goalEvalPct:safe(teamCfg.teamGoalEvalPct),refs:{att:safe(refs.refAtt),totalEval:safe(refs.refTotalEval),avg:safe(refs.refAvg),evalPct:safe(refs.refEvalPct)},previous:prev?{id:prevMonth.id,monthName:prevMonth.monthName,year:prevMonth.year,att:safe(prev.att),notes5:safe(prev.notes5),totalEval:safe(prev.totalEval),avg:safe(prev.avg),evalPct:safe(prev.evalPct),points:safe(prev.points),rank:safe(prev.rank)||null,status:String(prev.status||'')}:null};
+  }
+  function generatedFeedbackForTech(t,m=currentMonth(),squad=currentSquad()){
+    const snap=feedbackSnapshotForTech(t,m,squad),monthLabel=`${snap.monthName} de ${snap.year}`,status=snap.status||'SEM STATUS',rankText=snap.rank?`${snap.rank}ª posição`:'posição não definida';
+    const summaryParts=[`Em ${monthLabel}, ${titleWords(t.name)} registrou ${fmtInt(snap.att)} atendimentos, ${fmtInt(snap.totalEval)} avaliações (${fmtPct(snap.evalPct)} dos atendimentos), nota média ${snap.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} e ${fmtNum(snap.points)} pontos, encerrando a competência na ${rankText} do Squad ${snap.squad} com status ${status}.`];
+    if(snap.previous){const trends=[feedbackTrendText(snap.att,snap.previous.att,'O volume de atendimentos'),feedbackTrendText(snap.evalPct,snap.previous.evalPct,'A taxa de avaliação',{percent:true}),feedbackTrendText(snap.points,snap.previous.points,'A pontuação',{points:true})].filter(Boolean);if(trends.length)summaryParts.push(trends.join(' '));}
+    const strengths=[];
+    if(status==='ACIMA')strengths.push('Fechou a competência acima da referência geral do Squad, atendendo pelo menos dois dos quatro critérios da gamificação.');
+    if(snap.goalAtt&&snap.att>=snap.goalAtt)strengths.push(`Atingiu a meta mensal de atendimentos (${fmtInt(snap.att)} de ${fmtInt(snap.goalAtt)}).`);
+    if(snap.goalNotes5&&snap.notes5>=snap.goalNotes5)strengths.push(`Atingiu a meta mensal de notas 5 (${fmtInt(snap.notes5)} de ${fmtInt(snap.goalNotes5)}).`);
+    if(snap.goalEvalPct&&snap.evalPct>=snap.goalEvalPct)strengths.push(`Manteve taxa de avaliação acima da meta do Squad (${fmtPct(snap.evalPct)} frente a ${fmtPct(snap.goalEvalPct)}).`);
+    if(snap.avg>=snap.refs.avg&&snap.totalEval>0)strengths.push(`Nota média de ${snap.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}, igual ou superior à referência da equipe (${snap.refs.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}).`);
+    if(snap.previous&&snap.points>snap.previous.points*1.05)strengths.push('Apresentou evolução relevante de pontuação em relação à competência anterior.');
+    if(!strengths.length)strengths.push('Há produção registrada na competência e uma base objetiva para evolução dos indicadores no próximo ciclo.');
+    const improvements=[];
+    if(snap.goalAtt&&snap.att<snap.goalAtt)improvements.push(`Elevar o volume de atendimentos para alcançar a meta mensal de ${fmtInt(snap.goalAtt)}.`);
+    if(snap.goalNotes5&&snap.notes5<snap.goalNotes5)improvements.push(`Aumentar a quantidade de notas 5 para alcançar a meta mensal de ${fmtInt(snap.goalNotes5)}.`);
+    if(snap.goalEvalPct&&snap.evalPct<snap.goalEvalPct)improvements.push(`Reforçar a solicitação de avaliações ao final dos atendimentos; a taxa ficou em ${fmtPct(snap.evalPct)}, abaixo da meta de ${fmtPct(snap.goalEvalPct)}.`);
+    if(snap.avg<snap.refs.avg&&snap.totalEval>0)improvements.push(`Trabalhar a experiência do cliente para superar a referência de nota média do Squad (${snap.refs.avg.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}).`);
+    if(status==='ABAIXO')improvements.push(`Recuperar pelo menos dois dos quatro critérios da gamificação para voltar ao status ACIMA.`);
+    if(snap.previous&&snap.points<snap.previous.points*.95)improvements.push('Revisar os fatores que provocaram queda de pontuação em relação à competência anterior e definir uma correção de rota objetiva.');
+    if(!improvements.length)improvements.push('Manter a constância dos resultados e buscar evolução incremental sem perder qualidade no atendimento.');
+    const goals=[];
+    if(snap.goalAtt)goals.push(`Atingir pelo menos ${fmtInt(snap.goalAtt)} atendimentos no próximo mês.`);
+    if(snap.goalNotes5)goals.push(`Buscar pelo menos ${fmtInt(snap.goalNotes5)} notas 5 no próximo mês.`);
+    if(snap.goalEvalPct)goals.push(`Manter taxa de avaliação em ${fmtPct(snap.goalEvalPct)} ou superior.`);
+    goals.push(`Manter a nota média igual ou acima da referência do Squad e acompanhar o ranking durante a competência.`);
+    return{summary:summaryParts.join('\n\n'),strengths:strengths.map(x=>`• ${x}`).join('\n'),improvement_points:improvements.map(x=>`• ${x}`).join('\n'),next_month_goals:goals.map(x=>`• ${x}`).join('\n'),manager_notes:'',generated_snapshot:snap};
+  }
+  async function ensureFeedbacksLoaded(force=false){
+    const squad=currentSquad(),m=currentMonth(),key=feedbackScopeKey(squad,m);if(!key)return[];if(!force&&state.feedbackCache[key])return state.feedbackCache[key];if(state.feedbackLoading[key])return state.feedbackCache[key]||[];state.feedbackLoading[key]=true;
+    try{
+      let rows=[];
+      if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').select('*').eq('squad_id',squad.dbId).eq('year',m.year).eq('month',m.month).order('technician_name');if(error)throw error;rows=(data||[]).map(normalizeFeedbackRow);}
+      else rows=loadDemoFeedbackStore().filter(r=>r.squad_code===squad.code&&safe(r.year)===safe(m.year)&&safe(r.month)===safe(m.month)).map(normalizeFeedbackRow);
+      state.feedbackCache[key]=rows;return rows;
+    }catch(err){console.error('Feedbacks indisponíveis',err);state.feedbackCache[key]=[];if(state.currentView==='feedbacks')toast('Não foi possível carregar os feedbacks. Confira se a migração V2.25.0 foi executada.');return[];}
+    finally{delete state.feedbackLoading[key];if(state.currentView==='feedbacks'&&feedbackScopeKey()===key)renderFeedbacks();}
+  }
+  function renderFeedbacks(){
+    if(!isAdmin()||!$('#view-feedbacks'))return;const specific=state.squadCode!=='all',m=currentMonth(),squad=currentSquad();$('#feedbackScopeEmpty').classList.toggle('hidden',specific);$('#feedbackContent').classList.toggle('hidden',!specific);$('#generateSquadFeedbacksBtn').disabled=!specific||!m;if($('#regenerateSquadFeedbacksBtn'))$('#regenerateSquadFeedbacksBtn').disabled=!specific||!m;if(!specific)return;
+    if(!m){$('#feedbackMonthLabel').textContent='Sem competência';$('#feedbackRows').innerHTML='<div class="chart-empty">Importe uma competência para gerar feedbacks.</div>';return;}
+    $('#feedbackMonthLabel').textContent=`${m.monthName} ${m.year}`;const key=feedbackScopeKey(squad,m),rows=state.feedbackCache[key];if(!rows){$('#feedbackRows').innerHTML='<div class="chart-empty">Carregando feedbacks...</div>';ensureFeedbacksLoaded();return;}
+    const techs=feedbackMonthTechs(m),finalized=rows.filter(r=>r.status==='finalized').length,drafts=rows.filter(r=>r.status==='draft').length;$('#feedbackTechCount').textContent=fmtInt(techs.length);$('#feedbackFinalizedCount').textContent=fmtInt(finalized);$('#feedbackDraftCount').textContent=fmtInt(drafts);$('#feedbackProgressPct').textContent=techs.length?fmtPct(finalized/techs.length):'0%';$('#feedbackListHint').textContent=`${m.monthName} ${m.year} • ${rows.length} de ${techs.length} registros gerados`;
+    $('#feedbackRows').innerHTML=techs.map(t=>{const r=feedbackRowForTech(rows,t.name),status=r?.status==='finalized'?'FINALIZADO':r?'RASCUNHO':'NÃO GERADO',klass=r?.status==='finalized'?'finalized':r?'draft':'pending';return `<div class="feedback-row"><div class="feedback-person"><strong>${escapeHtml(titleWords(t.name))}</strong><small>Squad ${escapeHtml(squad.code)} • ${escapeHtml(m.monthName)} ${m.year}</small></div><div class="feedback-metric"><span>Atend.</span><strong>${fmtInt(t.att)}</strong></div><div class="feedback-metric"><span>% Aval.</span><strong>${fmtPct(t.evalPct)}</strong></div><div class="feedback-metric optional"><span>Pontos</span><strong>${fmtNum(t.points)}</strong></div><div class="feedback-metric optional"><span>Status</span><strong>${escapeHtml(t.status||'—')}</strong></div><div class="feedback-row-actions"><span class="feedback-status-badge ${klass}">${status}</span>${r?`<button class="btn secondary compact" type="button" data-feedback-regenerate="${escapeHtml(t.name)}">↻ Regerar</button><button class="btn secondary compact" type="button" data-feedback-open="${escapeHtml(t.name)}">Revisar</button>`:`<button class="btn primary compact" type="button" data-feedback-generate="${escapeHtml(t.name)}">Gerar</button>`}</div></div>`}).join('')||'<div class="chart-empty">Nenhum técnico com produção nesta competência.</div>';
+    $$('[data-feedback-open]').forEach(b=>b.addEventListener('click',()=>openFeedbackEditorByName(b.dataset.feedbackOpen)));
+    $$('[data-feedback-generate]').forEach(b=>b.addEventListener('click',()=>generateSingleFeedback(b.dataset.feedbackGenerate)));
+    $$('[data-feedback-regenerate]').forEach(b=>b.addEventListener('click',()=>regenerateSingleFeedback(b.dataset.feedbackRegenerate)));
+  }
+  function feedbackPayloadForTech(t,generated,existing=null){const m=currentMonth(),squad=currentSquad(),now=new Date().toISOString();return{organization_id:state.user.organizationId||existing?.organization_id||null,squad_id:squad.dbId||existing?.squad_id||null,technician_user_id:t.userId||existing?.technician_user_id||null,technician_name:t.name,year:m.year,month:m.month,summary:generated.summary||'',strengths:generated.strengths||'',improvement_points:generated.improvement_points||'',next_month_goals:generated.next_month_goals||'',manager_notes:generated.manager_notes||'',status:existing?.status||'draft',visible_to_technician:existing?.visible_to_technician===true,generated_snapshot:generated.generated_snapshot||{},created_by:existing?.created_by||state.user.userId||null,updated_by:state.user.userId||null,updated_at:now,finalized_at:existing?.finalized_at||null};}
+  async function persistGeneratedFeedbacks(payloads){
+    if(!payloads.length)return[];if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').upsert(payloads,{onConflict:'organization_id,squad_id,year,month,technician_name'}).select('*');if(error)throw error;return(data||[]).map(normalizeFeedbackRow)}
+    const store=loadDemoFeedbackStore();payloads.forEach(p=>{const ix=store.findIndex(r=>r.squad_code===state.squadCode&&safe(r.year)===safe(p.year)&&safe(r.month)===safe(p.month)&&samePersonName(r.technician_name,p.technician_name));const row={...p,id:ix>=0?store[ix].id:`demo-feedback-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,squad_code:state.squadCode,organization_id:p.organization_id||'demo-org',squad_id:p.squad_id||`demo-${state.squadCode}`};if(ix>=0)store[ix]=row;else store.push(row)});saveDemoFeedbackStore(store);return store.filter(r=>r.squad_code===state.squadCode&&safe(r.year)===safe(currentMonth().year)&&safe(r.month)===safe(currentMonth().month)).map(normalizeFeedbackRow);
+  }
+  async function generateSquadFeedbacks(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth(),squad=currentSquad();if(!m)return toast('Selecione uma competência com dados.');const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded(),techs=feedbackMonthTechs(m),missing=techs.filter(t=>!feedbackRowForTech(rows,t.name));if(!missing.length)return toast('Todos os feedbacks desta competência já foram gerados.');const btn=$('#generateSquadFeedbacksBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='Gerando...';try{const payloads=missing.map(t=>feedbackPayloadForTech(t,generatedFeedbackForTech(t,m,squad)));const saved=await persistGeneratedFeedbacks(payloads);state.feedbackCache[key]=state.supabase?[...rows,...saved.filter(n=>!feedbackRowForTech(rows,n.technician_name))]:saved;toast(`${missing.length} feedback(s) gerado(s) como rascunho.`);renderFeedbacks();}catch(err){console.error(err);toast('Não foi possível gerar os feedbacks. Confira a migração V2.25.0.');}finally{btn.disabled=false;btn.textContent=old;}}
+  async function generateSingleFeedback(techName){const m=currentMonth(),squad=currentSquad(),t=feedbackMonthTechs(m).find(x=>samePersonName(x.name,techName));if(!t)return;const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded();try{const saved=await persistGeneratedFeedbacks([feedbackPayloadForTech(t,generatedFeedbackForTech(t,m,squad))]);const row=saved.find(x=>samePersonName(x.technician_name,t.name))||saved[0];state.feedbackCache[key]=[...rows.filter(x=>!samePersonName(x.technician_name,t.name)),row];renderFeedbacks();openFeedbackEditor(row,t);}catch(err){console.error(err);toast('Não foi possível gerar este feedback.');}}
+
+  async function regenerateSquadFeedbacks(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth(),squad=currentSquad();if(!m)return toast('Selecione uma competência com dados.');const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded(),techs=feedbackMonthTechs(m);const targets=techs.filter(t=>{const r=feedbackRowForTech(rows,t.name);return !r||r.status!=='finalized';});if(!targets.length)return toast('Não há rascunhos ou feedbacks pendentes para regerar.');
+    if(!await confirmDialog(`Regerar em lote ${targets.length} feedback(s) não finalizados de ${m.monthName} ${m.year}? Os textos automáticos serão atualizados com os indicadores atuais. Feedbacks finalizados serão preservados e observações do gestor não serão apagadas.`,{title:'Regerar feedbacks em lote',confirmText:'Regerar',tone:'warning'}))return;
+    const btn=$('#regenerateSquadFeedbacksBtn');if(btn){btn.disabled=true;btn.dataset.oldText=btn.textContent;btn.textContent='Regerando...';}
+    try{
+      const payloads=targets.map(t=>{const existing=feedbackRowForTech(rows,t.name),generated=generatedFeedbackForTech(t,m,squad);generated.manager_notes=existing?.manager_notes||'';return{...feedbackPayloadForTech(t,generated,existing),status:'draft',finalized_at:null};});
+      const saved=await persistGeneratedFeedbacks(payloads),savedMap=new Map(saved.map(r=>[nameLinkKey(r.technician_name),r]));state.feedbackCache[key]=rows.filter(r=>!savedMap.has(nameLinkKey(r.technician_name))).concat(saved);renderFeedbacks();toast(`${targets.length} feedback(s) atualizado(s). Feedbacks finalizados foram preservados.`);
+    }catch(err){console.error(err);toast('Não foi possível regerar os feedbacks em lote.');}
+    finally{if(btn){btn.disabled=false;btn.textContent=btn.dataset.oldText||'↻ Regerar em lote';delete btn.dataset.oldText;}}
+  }
+  async function regenerateSingleFeedback(techName){
+    if(!isAdmin()||!techName)return;const m=currentMonth(),squad=currentSquad(),t=feedbackMonthTechs(m).find(x=>samePersonName(x.name,techName));if(!t)return;const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded(),existing=feedbackRowForTech(rows,t.name);if(!existing)return generateSingleFeedback(t.name);const finalized=existing.status==='finalized';
+    const message=finalized?`Regerar o feedback finalizado de ${titleWords(t.name)}? O conteúdo automático será atualizado, o feedback voltará para rascunho e deixará de ficar disponível ao técnico até ser finalizado novamente. As observações do gestor serão preservadas.`:`Regerar o feedback de ${titleWords(t.name)}? O resumo, pontos positivos, pontos de desenvolvimento e compromissos serão atualizados com os indicadores atuais. As observações do gestor serão preservadas.`;
+    if(!await confirmDialog(message,{title:'Regerar feedback individual',confirmText:'Regerar',tone:'warning'}))return;
+    const btn=$('#feedbackRegenerateBtn');if(btn){btn.disabled=true;btn.dataset.oldText=btn.textContent;btn.textContent='Regerando...';}
+    try{
+      const generated=generatedFeedbackForTech(t,m,squad);generated.manager_notes=existing.manager_notes||'';const payload={...feedbackPayloadForTech(t,generated,existing),status:'draft',finalized_at:null,visible_to_technician:finalized?false:!!existing.visible_to_technician};const saved=await persistGeneratedFeedbacks([payload]),row=saved.find(x=>samePersonName(x.technician_name,t.name))||saved[0];state.feedbackCache[key]=rows.filter(x=>!samePersonName(x.technician_name,t.name)).concat(row);renderFeedbacks();openFeedbackEditor(row,t);toast('Feedback regerado com os indicadores atuais.');
+    }catch(err){console.error(err);toast('Não foi possível regerar este feedback.');}
+    finally{if(btn){btn.disabled=false;btn.textContent=btn.dataset.oldText||'↻ Regerar conteúdo';delete btn.dataset.oldText;}}
+  }
+  function openFeedbackEditorByName(techName){const m=currentMonth(),rows=state.feedbackCache[feedbackScopeKey()]||[],t=feedbackMonthTechs(m).find(x=>samePersonName(x.name,techName)),r=feedbackRowForTech(rows,techName);if(t&&r)openFeedbackEditor(r,t)}
+  function openFeedbackEditor(row,t){
+    state.feedbackEditor={row,t};const snap=row.generated_snapshot&&Object.keys(row.generated_snapshot).length?row.generated_snapshot:feedbackSnapshotForTech(t);$('#feedbackEditorTech').textContent=titleWords(t.name);$('#feedbackEditorPeriod').textContent=`${currentMonth().monthName} ${currentMonth().year} • Squad ${state.squadCode}`;const finalized=row.status==='finalized';$('#feedbackEditorStatus').textContent=finalized?'FINALIZADO':'RASCUNHO';$('#feedbackEditorStatus').className=`feedback-status-badge ${finalized?'finalized':'draft'}`;$('#feedbackSummary').value=row.summary||'';$('#feedbackStrengths').value=row.strengths||'';$('#feedbackImprovements').value=row.improvement_points||'';$('#feedbackNextGoals').value=row.next_month_goals||'';$('#feedbackManagerNotes').value=row.manager_notes||'';$('#feedbackVisibleToTechnician').checked=!!row.visible_to_technician;$('#feedbackEditorMetrics').innerHTML=[['Atendimentos',fmtInt(snap.att)],['Avaliações',fmtInt(snap.totalEval)],['% avaliação',fmtPct(snap.evalPct)],['Nota média',safe(snap.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})],['Pontuação',fmtNum(snap.points)],['Ranking',snap.rank?`#${snap.rank}`:'—']].map(([a,b])=>`<div class="feedback-editor-metric"><span>${a}</span><strong>${b}</strong></div>`).join('');openModal('feedbackEditorModal');
+  }
+  async function saveFeedbackEditor(status='draft'){
+    const editor=state.feedbackEditor;if(!editor?.row||!editor?.t)return;const row=editor.row,key=feedbackScopeKey(),now=new Date().toISOString(),payload={summary:$('#feedbackSummary').value.trim(),strengths:$('#feedbackStrengths').value.trim(),improvement_points:$('#feedbackImprovements').value.trim(),next_month_goals:$('#feedbackNextGoals').value.trim(),manager_notes:$('#feedbackManagerNotes').value.trim(),visible_to_technician:$('#feedbackVisibleToTechnician').checked,status,updated_by:state.user.userId||null,updated_at:now,finalized_at:status==='finalized'?now:null};const btn=status==='finalized'?$('#feedbackFinalizeBtn'):$('#feedbackSaveDraftBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='Salvando...';try{let saved;if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').update(payload).eq('id',row.id).select('*').single();if(error)throw error;saved=normalizeFeedbackRow(data);}else{const store=loadDemoFeedbackStore(),ix=store.findIndex(x=>x.id===row.id);saved=normalizeFeedbackRow({...row,...payload});if(ix>=0)store[ix]=saved;saveDemoFeedbackStore(store);}state.feedbackCache[key]=(state.feedbackCache[key]||[]).map(x=>x.id===saved.id?saved:x);state.feedbackEditor={row:saved,t:editor.t};closeModal('feedbackEditorModal');renderFeedbacks();toast(status==='finalized'?'Feedback finalizado.':'Rascunho salvo.');}catch(err){console.error(err);toast('Não foi possível salvar o feedback.');}finally{btn.disabled=false;btn.textContent=old;}}
+  async function loadMyFeedbacks(force=false){if(!isTechnician())return[];if(state.myFeedbacks&&!force)return state.myFeedbacks;if(state.myFeedbackLoading)return state.myFeedbacks||[];state.myFeedbackLoading=true;try{let rows=[];if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').select('*').eq('technician_user_id',state.user.userId).eq('status','finalized').eq('visible_to_technician',true).order('year',{ascending:false}).order('month',{ascending:false});if(error)throw error;rows=(data||[]).map(normalizeFeedbackRow);}else rows=loadDemoFeedbackStore().filter(r=>r.status==='finalized'&&r.visible_to_technician&&samePersonName(r.technician_name,state.user.techName)).sort((a,b)=>(safe(b.year)*100+safe(b.month))-(safe(a.year)*100+safe(a.month))).map(normalizeFeedbackRow);state.myFeedbacks=rows;return rows;}catch(err){console.error(err);state.myFeedbacks=[];return[]}finally{state.myFeedbackLoading=false;if(state.currentView==='my-feedbacks')renderMyFeedbacks();}}
+  function renderMyFeedbacks(){if(!isTechnician()||!$('#myFeedbackRows'))return;if(!state.myFeedbacks){$('#myFeedbackRows').innerHTML='<div class="card chart-empty">Carregando feedbacks...</div>';loadMyFeedbacks();return;}const rows=state.myFeedbacks;$('#myFeedbackRows').innerHTML=rows.map(r=>{const snap=r.generated_snapshot||{},period=`${MONTHS_PT[Math.max(0,safe(r.month)-1)]||r.month}/${r.year}`;return `<article class="card my-feedback-card"><div class="my-feedback-head"><div><span class="eyebrow">${escapeHtml(period)} • SQUAD ${escapeHtml(snap.squad||state.user.squadCode||'')}</span><h3>Feedback mensal</h3><p>Finalizado em ${r.finalized_at?formatDateTime(r.finalized_at):'data não informada'}</p></div><span class="feedback-status-badge finalized">FINALIZADO</span></div><div class="my-feedback-sections"><div class="my-feedback-block full"><span>Resumo</span><p>${escapeHtml(r.summary||'—')}</p></div><div class="my-feedback-block"><span>Pontos positivos</span><p>${escapeHtml(r.strengths||'—')}</p></div><div class="my-feedback-block"><span>Pontos de desenvolvimento</span><p>${escapeHtml(r.improvement_points||'—')}</p></div><div class="my-feedback-block"><span>Compromissos</span><p>${escapeHtml(r.next_month_goals||'—')}</p></div><div class="my-feedback-block"><span>Observações do gestor</span><p>${escapeHtml(r.manager_notes||'Sem observações adicionais.')}</p></div></div></article>`}).join('')||'<div class="empty-state"><div>✎</div><h2>Nenhum feedback compartilhado</h2><p>Quando seu gestor finalizar e liberar um feedback mensal, ele aparecerá aqui.</p></div>';}
+
+
+  function renderProfile(){
+    if(!state.user||!$('#view-profile'))return;
+    const u=state.user,role=roleLabel(u.role),scope=u.role==='super_admin'?'Todos os Squads':(u.squadCode?`Squad ${u.squadCode}`:'Sem Squad');
+    const initial=String(u.fullName||u.email||'U').charAt(0).toUpperCase();
+    $('#profileAvatar').textContent=initial;
+    $('#profileName').textContent=u.fullName||'Usuário';
+    $('#profileEmail').textContent=u.email||'E-mail não informado';
+    $('#profileRole').textContent=role;
+    $('#profileScope').textContent=scope;
+    $('#profileFullName').textContent=u.fullName||'—';
+    $('#profileAccountEmail').textContent=u.email||'—';
+    $('#profileAccountRole').textContent=role;
+    $('#profileAccountSquad').textContent=scope;
+    $('#profileTechRow').classList.toggle('hidden',u.role!=='technician');
+    $('#profileAccountTech').textContent=u.techName?titleWords(u.techName):'—';
+  }
+  async function handleProfilePasswordChange(e){
+    e.preventDefault();if(!state.user)return;
+    const current=$('#profileCurrentPassword').value,newPassword=$('#profileNewPassword').value,confirm=$('#profileConfirmPassword').value,msg=$('#profilePasswordMessage'),btn=$('#profilePasswordSubmit');
+    msg.className='profile-form-message';msg.textContent='';
+    if(!current){msg.textContent='Informe sua senha atual.';return;}
+    if(String(newPassword).length<8){msg.textContent='A nova senha precisa ter pelo menos 8 caracteres.';return;}
+    if(newPassword!==confirm){msg.textContent='A confirmação da nova senha não confere.';return;}
+    if(newPassword===current){msg.textContent='A nova senha precisa ser diferente da senha atual.';return;}
+    btn.disabled=true;btn.textContent='Atualizando...';
+    try{
+      if(state.supabase){
+        const {error:reauthError}=await state.supabase.auth.signInWithPassword({email:state.user.email,password:current});
+        if(reauthError)throw reauthError;
+        const {error:updateError}=await state.supabase.auth.updateUser({password:newPassword});
+        if(updateError)throw updateError;
+      }else{
+        updateCurrentDemoPassword(current,newPassword);
+      }
+      $('#profilePasswordForm').reset();
+      msg.className='profile-form-message success';msg.textContent='Senha atualizada com sucesso. Use a nova senha no próximo login.';
+      toast('Sua senha foi atualizada com sucesso.');
+    }catch(err){
+      console.error(err);msg.className='profile-form-message error';msg.textContent=humanProfilePasswordError(err);
+    }finally{btn.disabled=false;btn.textContent='Atualizar minha senha';}
+  }
+  function updateCurrentDemoPassword(currentPassword,newPassword){
+    const email=String(state.user?.email||'').toLowerCase(),u=findDemoUser(email);
+    if(!u||String(u.password)!==String(currentPassword))throw new Error('Senha atual incorreta.');
+    const list=loadDemoCreatedUsers().filter(x=>String(x.email||'').toLowerCase()!==email);
+    list.push({...u,email:u.email||email,password:newPassword,userId:u.userId||`demo-profile-${Date.now()}`});
+    saveDemoCreatedUsers(list);state.user.password=newPassword;
+  }
+  function humanProfilePasswordError(err){
+    const m=String(err?.message||err||'');
+    if(/invalid login|invalid.*credential/i.test(m))return'Senha atual incorreta.';
+    if(/same password|different from the old|different.*password/i.test(m))return'A nova senha precisa ser diferente da senha atual.';
+    if(/password.*(least|characters|short)/i.test(m))return'A nova senha não atende aos requisitos de segurança. Use pelo menos 8 caracteres.';
+    if(/rate limit/i.test(m))return'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.';
+    return m||'Não foi possível alterar a senha.';
+  }
+
+  function renderHelp(){
+    if(!state.user)return;
+    $('#helpRoleName').textContent=roleLabel(state.user.role);
+    $('#helpRoleScope').textContent=isSuperAdmin()?'Todos os Squads':`Squad ${state.user.squadCode}`;
+  }
+
+  async function renderUsers(){
+    if(!isAdmin())return;
+    $('#usersScopeText').textContent=isSuperAdmin()
+      ? (state.squadCode==='all'?'Você está vendo usuários de todos os Squads.':'Você está filtrando a gestão para o Squad '+state.squadCode+'.')
+      : `Você administra somente os técnicos do Squad ${state.user.squadCode}.`;
+    if(!state.userDirectoryLoaded) await loadUserDirectory();
+    renderUserRows();
+  }
+  async function loadUserDirectory(){
+    if(!isAdmin())return;
+    if(state.supabase){
+      let q=state.supabase.from('profiles').select('user_id,email,full_name,role,squad_id,technician_name,active,squads(code,name)').order('full_name');
+      if(!isSuperAdmin() && currentSquad()?.dbId) q=q.eq('squad_id',currentSquad().dbId);
+      const {data,error}=await q;if(error)throw error;
+      state.userDirectory=(data||[]).map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:p.role,squadCode:p.squads?.code||null,techName:p.technician_name||'',active:p.active!==false}));
+    }else{
+      state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:u.role,squadCode:u.squadCode||null,techName:u.techName||'',active:u.active!==false}));
+    }
+    state.userDirectoryLoaded=true;
+  }
+  function scopedUserDirectory(){
+    let list=[...(state.userDirectory||[])];
+    if(!isSuperAdmin()) list=list.filter(u=>u.squadCode===state.user.squadCode);
+    else if(state.squadCode!=='all') list=list.filter(u=>u.squadCode===state.squadCode || (u.role==='super_admin'&&!u.squadCode));
+    return list;
+  }
+  function renderUserRows(){
+    if(!isAdmin()||!$('#userRows'))return;
+    const search=String($('#userSearchInput')?.value||'').trim().toLowerCase(),role=$('#userRoleFilter')?.value||'all';
+    let list=scopedUserDirectory();
+    if(role!=='all')list=list.filter(u=>u.role===role);
+    if(search)list=list.filter(u=>[u.fullName,u.email,u.techName,u.squadCode].some(v=>String(v||'').toLowerCase().includes(search)));
+    $('#usersCountLabel').textContent=`${list.length} ${list.length===1?'usuário':'usuários'}`;
+    const all=scopedUserDirectory(),counts={super_admin:0,squad_admin:0,technician:0};all.forEach(u=>{if(counts[u.role]!=null)counts[u.role]++});
+    $('#userStats').innerHTML=`<div class="card user-stat"><span>Total no escopo</span><strong>${all.length}</strong></div><div class="card user-stat"><span>Admins gerais</span><strong>${counts.super_admin}</strong></div><div class="card user-stat"><span>Admins de Squad</span><strong>${counts.squad_admin}</strong></div><div class="card user-stat"><span>Técnicos</span><strong>${counts.technician}</strong></div>`;
+    if(!list.length){$('#userRows').innerHTML='<tr><td colspan="6"><div class="users-empty">Nenhum usuário encontrado neste filtro.</div></td></tr>';return}
+    $('#userRows').innerHTML=list.sort((a,b)=>String(a.fullName).localeCompare(String(b.fullName),'pt-BR')).map(u=>{const manageable=canManageDirectoryUser(u),deletable=canDeleteDirectoryUser(u),canToggle=manageable&&u.role!=='super_admin';return `<tr><td><div class="user-cell"><span class="user-avatar table-avatar">${escapeHtml((u.fullName||'U').charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(u.fullName||'Sem nome')}</strong><small>${escapeHtml(u.email||'E-mail não informado')}</small></div></div></td><td><span class="role-pill ${u.role}">${escapeHtml(roleLabel(u.role))}</span></td><td>${u.squadCode?`Squad ${escapeHtml(u.squadCode)}`:'Todos'}</td><td>${escapeHtml(u.techName||'—')}</td><td><span class="status-dot ${u.active?'on':'off'}"></span>${u.active?'Ativo':'Inativo'}</td><td><div class="user-actions"><button class="table-action" data-edit-user="${escapeHtml(u.userId)}" ${manageable?'':'disabled'}>Editar</button><button class="table-action ${u.active?'warning':'success'}" data-toggle-user="${escapeHtml(u.userId)}" ${canToggle?'':'disabled'}>${u.active?'Inativar':'Reativar'}</button><button class="table-action danger" data-delete-user="${escapeHtml(u.userId)}" ${deletable?'':'disabled'}>Excluir</button></div></td></tr>`}).join('');
+    $$('[data-edit-user]').forEach(b=>b.addEventListener('click',()=>openEditUser(b.dataset.editUser)));
+    $$('[data-toggle-user]').forEach(b=>b.addEventListener('click',()=>toggleUserActive(b.dataset.toggleUser)));
+    $$('[data-delete-user]').forEach(b=>b.addEventListener('click',()=>deleteUser(b.dataset.deleteUser)));
+  }
+  function directoryUserById(userId){return (state.userDirectory||[]).find(u=>String(u.userId)===String(userId))||null}
+  function canManageDirectoryUser(u){
+    if(!u||!isAdmin())return false;
+    if(String(u.userId)===String(state.user?.userId))return false;
+    if(isSuperAdmin())return true;
+    return u.role==='technician'&&u.squadCode===state.user.squadCode;
+  }
+  function canDeleteDirectoryUser(u){
+    if(!canManageDirectoryUser(u))return false;
+    if(u.role==='super_admin')return false;
+    return isSuperAdmin()||(u.role==='technician'&&u.squadCode===state.user.squadCode);
+  }
+  function openEditUser(userId){
+    const u=directoryUserById(userId);if(!canManageDirectoryUser(u))return;
+    $('#editUserError').textContent='';$('#editUserId').value=u.userId;$('#editUserName').value=u.fullName||'';$('#editUserEmail').value=u.email||'';
+    const roleSel=$('#editUserRole'),squadSel=$('#editUserSquad');
+    if(isSuperAdmin()) roleSel.innerHTML='<option value="technician">Técnico</option><option value="squad_admin">Admin do Squad</option><option value="super_admin">Admin geral</option>';
+    else roleSel.innerHTML='<option value="technician">Técnico</option>';
+    roleSel.value=u.role;
+    const allowed=isSuperAdmin()?Object.values(state.squads):[state.squads[state.user.squadCode]].filter(Boolean);
+    squadSel.innerHTML='<option value="">Sem Squad</option>'+allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
+    squadSel.value=u.squadCode||'';squadSel.dataset.originalSquad=u.squadCode||'';$('#editUserTechName').value=u.techName||'';
+    const now=new Date(),year=now.getFullYear(),month=now.getMonth()+1;$('#editUserEffectiveMonth').value=`${year}-${String(month).padStart(2,'0')}`;
+    syncEditUserFields();openModal('editUserModal');
+  }
+  function syncEditUserFields(){
+    const role=$('#editUserRole').value,isSuper=role==='super_admin';
+    $('#editUserSquad').disabled=isSuper||!isSuperAdmin();if(isSuper)$('#editUserSquad').value='';
+    $('#editTechnicianNameField').classList.toggle('hidden',role!=='technician');$('#editUserTechName').required=role==='technician';
+    if(!isSuperAdmin()){$('#editUserRole').disabled=true;$('#editUserSquad').disabled=true;}else $('#editUserRole').disabled=false;
+    const moved=isSuperAdmin()&&role==='technician'&&$('#editUserSquad').value&&$('#editUserSquad').value!==($('#editUserSquad').dataset.originalSquad||'');
+    $('#editMovementPeriodField')?.classList.toggle('hidden',!moved);$('#editUserEffectiveMonth').required=moved;
+  }
+  async function handleEditUser(e){
+    e.preventDefault();const u=directoryUserById($('#editUserId').value);if(!canManageDirectoryUser(u))return;
+    const btn=$('#editUserSubmit');btn.disabled=true;btn.textContent='Salvando...';$('#editUserError').textContent='';
+    try{
+      const role=isSuperAdmin()?$('#editUserRole').value:u.role,squadCode=role==='super_admin'?null:(isSuperAdmin()?$('#editUserSquad').value:u.squadCode),techName=role==='technician'?normalizeName($('#editUserTechName').value):null;
+      const period=$('#editUserEffectiveMonth').value||'',parts=period.split('-').map(Number);
+      const payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null};
+      if(!payload.fullName)throw new Error('Informe o nome completo.');if(role!=='super_admin'&&!state.squads[squadCode])throw new Error('Selecione um Squad válido.');if(role==='technician'&&!techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
+      if(state.supabase)await manageSupabaseUser('update',payload);else updateDemoUser({...payload,active:u.active});
+      state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('editUserModal');toast(`Usuário ${payload.fullName} atualizado${u.squadCode!==squadCode?` e movimentado para o Squad ${squadCode}`:''}.`);
+    }catch(err){console.error(err);$('#editUserError').textContent=humanManageUserError(err)}finally{btn.disabled=false;btn.textContent='Salvar alterações'}
+  }
+  async function toggleUserActive(userId){
+    const u=directoryUserById(userId);if(!canManageDirectoryUser(u)||u.role==='super_admin')return;const next=!u.active;
+    if(!await confirmDialog(`${next?'Reativar':'Inativar'} o acesso de ${u.fullName}? ${next?'O login será liberado novamente.':'O login será bloqueado, mas todo o histórico será preservado.'}`,{title:next?'Reativar usuário':'Inativar usuário',confirmText:next?'Reativar':'Inativar',tone:next?'success':'warning'}))return;
+    try{if(state.supabase)await manageSupabaseUser('set_active',{userId:u.userId,active:next});else updateDemoUser({...u,userId:u.userId,active:next});state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();toast(`${u.fullName} ${next?'reativado':'inativado'} com sucesso.`)}catch(err){console.error(err);toast(humanManageUserError(err))}
+  }
+  async function deleteUser(userId){
+    const u=directoryUserById(userId);if(!canDeleteDirectoryUser(u))return;
+    if(!await confirmDialog(`Excluir o acesso de ${u.fullName}? O login será removido. O histórico mensal já importado continuará preservado, porém sem vínculo com este usuário.`,{title:'Excluir usuário',confirmText:'Excluir',tone:'danger'}))return;
+    try{if(state.supabase)await manageSupabaseUser('delete',{userId:u.userId});else deleteDemoUser(u);state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();toast(`Usuário ${u.fullName} excluído.`)}catch(err){console.error(err);toast(humanManageUserError(err))}
+  }
+  async function manageSupabaseUser(action,payload){
+    const body={action,user_id:payload.userId,full_name:payload.fullName,role:payload.role,squad_code:payload.squadCode,technician_name:payload.techName,active:payload.active,effective_year:payload.effectiveYear,effective_month:payload.effectiveMonth};
+    const {data,error}=await state.supabase.functions.invoke('manage-user',{body});if(error)throw await edgeFunctionErrorMessage(error);if(data?.error)throw new Error(data.error);return data
+  }
+  function updateDemoUser(p){
+    const list=loadDemoCreatedUsers(),i=list.findIndex(x=>String(x.userId)===String(p.userId));if(i>=0){list[i]={...list[i],fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,active:p.active};saveDemoCreatedUsers(list);return}
+    throw new Error('Usuários de demonstração padrão não são editáveis. Crie um usuário demo para testar esta função.');
+  }
+  function deleteDemoUser(u){const list=loadDemoCreatedUsers(),next=list.filter(x=>String(x.userId)!==String(u.userId));if(next.length===list.length)throw new Error('Usuários de demonstração padrão não podem ser excluídos.');saveDemoCreatedUsers(next)}
+  function humanManageUserError(err){const m=String(err?.message||err||'');if(/function|failed to fetch|non-2xx/i.test(m))return'Falha no servidor. Confira se a Edge Function manage-user V2.19.0 foi publicada.';if(/self|próprio|proprio/i.test(m))return'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.';if(/movimenta.*futur|competência.*futur/i.test(m))return'A movimentação deve começar no mês atual ou em uma competência anterior.';return m||'Não foi possível concluir a operação.'}
+
+  function openCreateUser(){
+    if(!isAdmin())return;
+    $('#createUserForm').reset();$('#createUserError').textContent='';
+    const roleSel=$('#newUserRole');
+    if(isSuperAdmin()) roleSel.innerHTML='<option value="technician">Técnico</option><option value="squad_admin">Admin do Squad</option><option value="super_admin">Admin geral</option>';
+    else roleSel.innerHTML='<option value="technician">Técnico</option>';
+    const squadSel=$('#newUserSquad');
+    const allowed=isSuperAdmin()?Object.values(state.squads):[state.squads[state.user.squadCode]].filter(Boolean);
+    squadSel.innerHTML=allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
+    const preferred=state.squadCode!=='all'&&allowed.some(s=>s.code===state.squadCode)?state.squadCode:(state.user.squadCode||allowed[0]?.code);
+    if(preferred)squadSel.value=preferred;
+    $('#userModalHint').textContent=isSuperAdmin()?'Você pode criar administradores e técnicos em qualquer Squad.':`Você pode criar técnicos somente no Squad ${state.user.squadCode}.`;
+    syncCreateUserFields();openModal('userModal');
+  }
+  function syncCreateUserFields(){
+    const role=$('#newUserRole').value,isSuper=role==='super_admin';
+    $('#newUserSquad').disabled=isSuper||!isSuperAdmin();
+    $('#technicianNameField').classList.toggle('hidden',role!=='technician');
+    $('#newUserTechName').required=role==='technician';
+    if(isSuper)$('#newUserSquad').value='';
+  }
+  async function handleCreateUser(e){
+    e.preventDefault();if(!isAdmin())return;
+    const submit=$('#createUserSubmit');submit.disabled=true;submit.textContent='Criando...';$('#createUserError').textContent='';
+    try{
+      const role=$('#newUserRole').value;
+      const payload={fullName:$('#newUserName').value.trim(),email:$('#newUserEmail').value.trim().toLowerCase(),password:$('#newUserPassword').value,role,squadCode:role==='super_admin'?null:$('#newUserSquad').value,techName:role==='technician'?normalizeName($('#newUserTechName').value):null};
+      validateNewUserPayload(payload);
+      if(state.supabase) await createSupabaseUser(payload); else createDemoUser(payload);
+      state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('userModal');toast(`Usuário ${payload.fullName} criado com sucesso.`);
+    }catch(err){console.error(err);$('#createUserError').textContent=humanCreateUserError(err)}finally{submit.disabled=false;submit.textContent='Criar usuário'}
+  }
+  function validateNewUserPayload(p){
+    if(!p.fullName)throw new Error('Informe o nome completo.');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))throw new Error('Informe um e-mail válido.');if(String(p.password||'').length<8)throw new Error('A senha temporária deve ter pelo menos 8 caracteres.');
+    if(!['technician','squad_admin','super_admin'].includes(p.role))throw new Error('Perfil inválido.');if(!isSuperAdmin()&&p.role!=='technician')throw new Error('Admin do Squad pode criar somente técnicos.');if(!isSuperAdmin()&&p.squadCode!==state.user.squadCode)throw new Error('Você só pode cadastrar usuários no seu próprio Squad.');if(p.role!=='super_admin'&&!state.squads[p.squadCode])throw new Error('Selecione um Squad válido.');if(p.role==='technician'&&!p.techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
+  }
+  function createDemoUser(p){
+    if(allDemoUsers().some(u=>String(u.email).toLowerCase()===p.email))throw new Error('Já existe um usuário com este e-mail.');
+    const list=loadDemoCreatedUsers();list.push({email:p.email,password:p.password,fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,active:true,userId:`demo-${Date.now()}`});saveDemoCreatedUsers(list);
+  }
+  async function edgeFunctionErrorMessage(error){
+    let message=String(error?.message||'').trim();
+    const response=error?.context;
+    try{
+      if(response&&typeof response.clone==='function'){
+        const copy=response.clone();
+        const contentType=String(copy.headers?.get?.('content-type')||'').toLowerCase();
+        if(contentType.includes('application/json')){
+          const payload=await copy.json();
+          message=String(payload?.error||payload?.message||message).trim();
+        }else{
+          const text=String(await copy.text()).trim();
+          if(text)message=text;
+        }
+      }
+    }catch(parseError){console.warn('Não foi possível ler o detalhe da Edge Function.',parseError)}
+    const err=new Error(message||'Falha ao executar a função do servidor.');
+    err.httpStatus=response?.status||null;
+    return err;
+  }
+  async function createSupabaseUser(p){
+    const body={full_name:p.fullName,email:p.email,password:p.password,role:p.role,squad_code:p.squadCode,technician_name:p.techName};
+    // Renova a sessão imediatamente antes da ação administrativa. Isso evita que um token
+    // antigo/expirado seja enviado para a Edge Function após muitas horas com o painel aberto.
+    let session=null;
+    try{
+      const refreshed=await state.supabase.auth.refreshSession();
+      if(!refreshed.error)session=refreshed.data?.session||null;
+    }catch(refreshError){console.warn('Refresh de sessão não concluído antes de criar usuário.',refreshError)}
+    if(!session){
+      const current=await state.supabase.auth.getSession();
+      if(current.error)throw current.error;
+      session=current.data?.session||null;
+    }
+    if(!session?.access_token)throw new Error('Sua sessão administrativa expirou. Entre novamente no sistema e tente criar o usuário.');
+    const {data,error}=await state.supabase.functions.invoke('create-user',{body,headers:{Authorization:`Bearer ${session.access_token}`}});
+    if(error)throw await edgeFunctionErrorMessage(error);
+    if(data?.error)throw new Error(data.error);
+    return data;
+  }
+  function humanCreateUserError(err){
+    const m=String(err?.message||err||'').trim();
+    if(/já está cadastrad.*Squad|edite o usuário existente/i.test(m))return m;if(/already|registered|duplicate|unique|já existe/i.test(m))return'Já existe um usuário com este e-mail. Consulte a listagem e edite o cadastro existente; se não aparecer, confira Authentication > Users.';
+    if(/sess[aã]o|jwt|token|unauthorized/i.test(m))return'Sua sessão administrativa expirou ou não foi aceita pelo servidor. Saia, entre novamente e tente de novo.';
+    if(/perfil administrador não encontrado/i.test(m))return'Seu login existe, mas o perfil administrativo não foi localizado no banco. Confira a tabela profiles para o seu usuário.';
+    if(/sem permissão/i.test(m))return'Seu perfil atual não tem permissão para criar esse tipo de usuário.';
+    if(/squad inválido|fora da organização/i.test(m))return'O Squad selecionado não foi localizado para esta organização.';
+    if(/configuração do servidor incompleta|service.role|service_role/i.test(m))return'A Edge Function create-user está sem a configuração de servidor necessária. Republique a função no projeto correto do Supabase.';
+    if(/function not found|404|failed to fetch/i.test(m))return'A Edge Function create-user não foi encontrada. Republique a função create-user no Supabase.';
+    if(/non-2xx|edge function/i.test(m))return`A Edge Function create-user respondeu com erro${err?.httpStatus?` HTTP ${err.httpStatus}`:''}. Abra Supabase > Edge Functions > create-user > Logs para ver o motivo.`;
+    return m||'Não foi possível criar o usuário.';
+  }
+
+  function renderAdminReconciliation(){
+    const body=$('#adminReconciliationRows'),summary=$('#adminReconciliationSummary'),chip=$('#adminReconciliationChip');if(!body||!summary)return;
+    const squads=analysisScopeSquads(),ids=indicatorMonthIds(squads);let id=state.currentId&&ids.includes(state.currentId)?state.currentId:(ids[ids.length-1]||null);
+    if(!id){if(chip)chip.textContent='Sem competência';summary.innerHTML='<div><span>Conciliação</span><strong>—</strong><small>Importe os dois CSVs para iniciar</small></div>';body.innerHTML='<tr><td colspan="8" class="muted">Nenhuma competência disponível neste escopo.</td></tr>';return;}
+    const rec=reconciliationMonthData(squads,id);state.reconciliationCache=state.reconciliationCache||{};state.reconciliationCache[id]=rec;if(chip)chip.textContent=`${rec.label} • ${state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`}`;
+    summary.innerHTML=`<div><span>Notas Serviço</span><strong>${fmtInt(rec.service)}</strong><small>Fonte operacional</small></div><div><span>Notas Produto</span><strong>${rec.hasQuality?fmtInt(rec.product):'—'}</strong><small>${rec.hasQuality?`Diferença ${diffText(rec.diffProduct)}`:'Aguardando importação'}</small></div><div><span>Notas Empresa</span><strong>${rec.hasQuality?fmtInt(rec.company):'—'}</strong><small>${rec.hasQuality?`Diferença ${diffText(rec.diffCompany)}`:'Aguardando importação'}</small></div><div><span>Técnicos divergentes</span><strong>${rec.hasQuality?fmtInt(rec.divergent):'—'}</strong><small>${rec.hasQuality?'Auditoria disponível':'Importe Produto/Empresa'}</small></div>`;
+    body.innerHTML=`<tr><td><strong>${escapeHtml(rec.label)}</strong></td><td>${fmtInt(rec.service)}</td><td>${rec.hasQuality?fmtInt(rec.product):'—'}</td><td>${rec.hasQuality?fmtInt(rec.company):'—'}</td><td>${rec.hasQuality?`<span class="reconcile-diff ${diffClass(rec.diffProduct)}">${diffText(rec.diffProduct)}</span>`:'—'}</td><td>${rec.hasQuality?`<span class="reconcile-diff ${diffClass(rec.diffCompany)}">${diffText(rec.diffCompany)}</span>`:'—'}</td><td>${rec.hasQuality?fmtInt(rec.divergent):'—'}</td><td>${rec.hasQuality?`<button type="button" class="btn secondary reconcile-detail-btn" data-reconcile-id="${escapeHtml(rec.id)}">Ver técnicos</button>`:'<span class="muted">Sem qualidade</span>'}</td></tr>`;
+  }
+
+  const SUPPORT_COST_DEMO_KEY='squadDashboardSupportMonthlyCostsV2281';
+  function loadDemoSupportCosts(){try{const rows=JSON.parse(localStorage.getItem(SUPPORT_COST_DEMO_KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return[]}}
+  function saveDemoSupportCosts(rows){localStorage.setItem(SUPPORT_COST_DEMO_KEY,JSON.stringify(rows||[]))}
+  function supportCostMonthIds(){
+    const ids=new Set(Object.keys(state.supportCostCache||{}));
+    Object.values(state.squads||{}).forEach(squad=>Object.keys(squad?.months||{}).forEach(id=>ids.add(id)));
+    return [...ids].filter(id=>/^\d{4}-\d{2}$/.test(id)).sort();
+  }
+  function supportCostDetectedTechnicians(id){
+    const names=new Set();
+    Object.values(state.squads||{}).forEach(squad=>{
+      const m=squad?.months?.[id];if(!m)return;
+      (m.technicians||[]).forEach(t=>{const key=nameLinkKey(t.name);if(key)names.add(key);});
+    });
+    return names.size;
+  }
+  function supportCostMonthParts(id){const [year,month]=String(id||'').split('-').map(Number);return{year,month}}
+  function supportCostHasCache(id){return !!id&&Object.prototype.hasOwnProperty.call(state.supportCostCache||{},id)}
+  async function ensureSupportCostsLoaded(id,{force=false}={}){
+    if(!id||!isSuperAdmin())return null;
+    if(!force&&supportCostHasCache(id))return state.supportCostCache[id]||null;
+    if(state.supportCostLoading[id])return state.supportCostLoading[id];
+    const task=(async()=>{
+      const {year,month}=supportCostMonthParts(id);let row=null;
+      if(state.supabase){
+        const {data,error}=await state.supabase.from('support_monthly_costs').select('id,organization_id,year,month,payroll_cost,other_costs,technician_count,hours_per_day,updated_at').eq('organization_id',state.user.organizationId).eq('year',year).eq('month',month).maybeSingle();
+        if(error)throw error;row=data||null;
+      }else{
+        row=loadDemoSupportCosts().find(r=>safe(r.year)===year&&safe(r.month)===month)||null;
+      }
+      state.supportCostCache[id]=row;return row;
+    })();
+    state.supportCostLoading[id]=task;
+    try{return await task}finally{delete state.supportCostLoading[id];if(state.currentView==='admin'&&state.adminSection==='costs'&&state.supportCostMonthId===id)renderSupportCosts();}
+  }
+  function supportCostInputValue(sel,def=0){const el=$(sel);const v=safe(el?.value);return v>0?v:def}
+  function updateSupportCostPreview(){
+    if(!isSuperAdmin()||!state.supportCostMonthId||!$('#supportCostSummary'))return;
+    const id=state.supportCostMonthId,{year,month}=supportCostMonthParts(id),payroll=Math.max(0,safe($('#supportPayrollCost')?.value)),other=Math.max(0,safe($('#supportOtherCosts')?.value)),techs=Math.max(0,Math.round(safe($('#supportTechnicianCount')?.value))),hoursPerDay=Math.max(.5,safe($('#supportHoursPerDay')?.value)||8),days=businessDaysMonFri(year,month),total=payroll+other,technicianDays=techs*days,totalHours=technicianDays*hoursPerDay,totalMinutes=totalHours*60,costDay=technicianDays?total/technicianDays:0,costHour=totalHours?total/totalHours:0,costMinute=totalMinutes?total/totalMinutes:0;
+    $('#supportCostSummary').innerHTML=`<div class="support-cost-summary-card confidential"><span>Custo total do Suporte</span><strong>${fmtMoney(total)}</strong><small>Pagamentos + outros custos</small></div><div class="support-cost-summary-card"><span>Dias úteis</span><strong>${fmtInt(days)}</strong><small>${fmtInt(techs)} técnico(s) × ${hoursPerDay.toLocaleString('pt-BR',{maximumFractionDigits:1})}h/dia</small></div><div class="support-cost-summary-card"><span>Capacidade útil</span><strong>${totalHours.toLocaleString('pt-BR',{maximumFractionDigits:1})} h</strong><small>${fmtInt(totalMinutes)} minutos técnicos na competência</small></div><div class="support-cost-summary-card"><span>Custo / dia útil técnico</span><strong>${technicianDays?fmtMoney(costDay):'—'}</strong><small>Total ÷ técnicos ÷ dias úteis</small></div><div class="support-cost-summary-card"><span>Custo / hora técnica</span><strong>${totalHours?fmtMoney(costHour):'—'}</strong><small>Total ÷ técnicos ÷ dias ÷ horas</small></div><div class="support-cost-summary-card"><span>Custo / minuto técnico</span><strong>${totalMinutes?fmtMoney(costMinute):'—'}</strong><small>Referência para o futuro cálculo por atendimento</small></div>`;
+  }
+  function renderSupportCosts(){
+    if(!isSuperAdmin()||!$('#supportCostMonthSelect'))return;
+    let ids=supportCostMonthIds();
+    if(!ids.length){
+      $('#supportCostMonthSelect').innerHTML='';$('#supportCostStatus').textContent='Sem competências disponíveis.';$('#supportCostSummary').innerHTML='';return;
+    }
+    if(!state.supportCostMonthId||!ids.includes(state.supportCostMonthId))state.supportCostMonthId=ids[ids.length-1];
+    const id=state.supportCostMonthId;
+    $('#supportCostMonthSelect').innerHTML=ids.map(mid=>`<option value="${mid}" ${mid===id?'selected':''}>${escapeHtml(monthLabelFromId(mid))}</option>`).join('');
+    if(!supportCostHasCache(id)){
+      $('#supportCostStatus').textContent='Carregando custo geral...';ensureSupportCostsLoaded(id).catch(err=>{console.error(err);$('#supportCostStatus').textContent='Não foi possível carregar os custos. Confira a migração V2.28.1.';toast('Não foi possível carregar a base de custos. Confira a migração V2.28.1.');});return;
+    }
+    const saved=state.supportCostCache[id]||null,detected=supportCostDetectedTechnicians(id),techs=safe(saved?.technician_count)>0?Math.round(safe(saved.technician_count)):detected,hours=safe(saved?.hours_per_day)>0?safe(saved.hours_per_day):8;
+    $('#supportPayrollCost').value=safe(saved?.payroll_cost)>0?safe(saved.payroll_cost).toFixed(2):'';
+    $('#supportOtherCosts').value=safe(saved?.other_costs)>0?safe(saved.other_costs).toFixed(2):'';
+    $('#supportTechnicianCount').value=techs||'';
+    $('#supportHoursPerDay').value=hours;
+    $('#supportDetectedTechnicians').textContent=`Quantidade detectada na competência: ${fmtInt(detected)}${saved&&techs!==detected?' • valor salvo mantido':''}`;
+    $('#supportCostStatus').textContent=saved?.updated_at?`${monthLabelFromId(id)} • atualizado em ${formatDateTime(saved.updated_at)}`:`${monthLabelFromId(id)} • ainda não salvo`;
+    updateSupportCostPreview();
+  }
+  async function saveSupportCosts(){
+    if(!isSuperAdmin())return;
+    const id=state.supportCostMonthId;if(!id)return toast('Selecione uma competência.');
+    const {year,month}=supportCostMonthParts(id),payroll=Math.max(0,safe($('#supportPayrollCost')?.value)),other=Math.max(0,safe($('#supportOtherCosts')?.value)),detected=supportCostDetectedTechnicians(id),techs=Math.max(1,Math.round(safe($('#supportTechnicianCount')?.value)||detected||1)),hours=Math.max(.5,safe($('#supportHoursPerDay')?.value)||8),row={organization_id:state.user.organizationId||'demo',year,month,payroll_cost:Number(payroll.toFixed(2)),other_costs:Number(other.toFixed(2)),technician_count:techs,hours_per_day:Number(hours.toFixed(2)),updated_by:state.user.userId||null,updated_at:new Date().toISOString()};
+    const btn=$('#saveSupportCostsBtn');if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+    try{
+      if(state.supabase){const {error}=await state.supabase.from('support_monthly_costs').upsert(row,{onConflict:'organization_id,year,month'});if(error)throw error;}
+      else{let store=loadDemoSupportCosts().filter(r=>!(safe(r.year)===year&&safe(r.month)===month));store.push({...row,id:`demo-${id}`});saveDemoSupportCosts(store);}
+      await ensureSupportCostsLoaded(id,{force:true});toast(`Custo geral de ${monthLabelFromId(id)} salvo com segurança.`);
+    }catch(err){console.error(err);toast('Não foi possível salvar o custo geral. Confira a migração V2.28.1 e suas permissões.');}
+    finally{if(btn){btn.disabled=false;btn.textContent='Salvar competência';}}
+  }
+  async function copyPreviousSupportCosts(){
+    if(!isSuperAdmin())return;
+    const current=state.supportCostMonthId,ids=supportCostMonthIds();if(!current)return toast('Selecione uma competência.');
+    const prevIds=ids.filter(id=>id<current).sort().reverse();if(!prevIds.length)return toast('Não existe uma competência anterior disponível.');
+    let previousId=null,previous=null;
+    for(const id of prevIds){try{const row=await ensureSupportCostsLoaded(id);if(row&&(safe(row.payroll_cost)>0||safe(row.other_costs)>0)){previousId=id;previous=row;break;}}catch(err){console.error(err);return toast('Não foi possível carregar os custos da competência anterior.');}}
+    if(!previousId||!previous)return toast('Nenhuma competência anterior possui custo geral cadastrado.');
+    $('#supportPayrollCost').value=safe(previous.payroll_cost).toFixed(2);$('#supportOtherCosts').value=safe(previous.other_costs).toFixed(2);$('#supportTechnicianCount').value=safe(previous.technician_count)||supportCostDetectedTechnicians(current)||'';$('#supportHoursPerDay').value=safe(previous.hours_per_day)||8;updateSupportCostPreview();
+    $('#supportCostStatus').textContent=`${monthLabelFromId(current)} • valores copiados de ${monthLabelFromId(previousId)} • revise e salve`;
+    toast(`Custos gerais copiados de ${monthLabelFromId(previousId)}. Revise a quantidade de técnicos antes de salvar.`);
+  }
+
+  function renderAdmin(){
+    if(!isAdmin())return;
+    const specific=state.squadCode!=='all',m=currentMonth(),canImport=specific||isSuperAdmin(),locked=!!m?.isClosed;
+    renderAdminReconciliation();
+    $('#adminScopeTitle').textContent=specific?`Squad ${state.squadCode}`:'Todos os Squads';
+    $('#adminScopeText').textContent=specific
+      ? (locked?`${m.monthName} ${m.year} está FECHADO. Dados, metas e pontuação histórica estão protegidos. Reabra o mês para alterar.`:'Importação, métricas, metas e tema abaixo afetam somente este Squad.')
+      :'Admin geral pode importar o CSV para todos os Squads de uma vez. Para métricas, metas, fechamento/exclusão de mês ou tema, selecione um Squad específico.';
+    $('#adminImportBtn').disabled=!canImport;if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').disabled=!canImport;
+    const disableForScope=['#adminThemeBtn','#importThemeBtn','#exportThemeBtn'];
+    disableForScope.forEach(sel=>{if($(sel))$(sel).disabled=!specific});
+    ['#saveGoalsBtn','#autoGoalBtn','#saveMonthlyMetricsBtn','#saveScoreSettingsBtn','#copyPreviousGoalsBtn','#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn','#exportFinanceExcelBtn','#exportFinancePdfBtn'].forEach(sel=>{if($(sel))$(sel).disabled=!specific||!m||(locked&&['#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn'].includes(sel))});
+    renderFinanceAdmin(m,specific,locked);
+    if(state.adminSection==='costs'){
+      $('#adminScopeTitle').textContent='Custos do Suporte';
+      $('#adminScopeText').textContent='Base confidencial do custo geral do Suporte técnico. Informe pagamentos, outros custos, quantidade total de técnicos e horas úteis por dia; o sistema calcula o custo médio por dia, hora e minuto técnico sem separar por Squad.';
+      renderSupportCosts();updateThemeName();return;
+    }
+    if(!specific||!m){
+      $('#monthHistory').innerHTML=specific?'<div class="muted">Nenhum mês importado neste Squad.</div>':'<div class="muted">Selecione um Squad específico para ver o histórico.</div>';
+      $('#teamGoalAttInput').value='';$('#teamGoalPctInput').value='';$('#autoGoalHint').textContent=m?'':'Importe um mês para configurar as metas.';
+      $('#teamGoalAttInput').disabled=true;$('#teamGoalPctInput').disabled=true;
+      ['scoreRefAtt','scoreRefEval','scoreRefAvg','scoreRefPct'].forEach(id=>{if($('#'+id)){$('#'+id).value='';$('#'+id).disabled=true}});if($('#scoreAutoHint'))$('#scoreAutoHint').textContent='Importe um mês para calcular as referências automáticas.';
+      $('#monthlyMetricsRows').innerHTML='<tr><td colspan="11" class="muted">Importe um mês para preencher as métricas individuais.</td></tr>';
+      $('#monthlyMetricsHint').textContent='Importe um mês para preencher as métricas.';
+      updateThemeName();return;
+    }
+    const ids=Object.keys(currentMonths()).sort().reverse(),latestId=ids[0]||null,cfg=teamSettings(m);
+    $('#monthHistory').innerHTML=ids.map(id=>{const mm=currentMonths()[id],closed=!!mm.isClosed,closedInfo=closed&&mm.closedAt?` • fechado em ${formatDateTime(mm.closedAt)}`:'';return `<div class="history-row ${closed?'month-closed':''}"><div><strong>${closed?'🔒 ':'🟢 '}${mm.monthName} ${mm.year}</strong><small>${escapeHtml(mm.sourceFile||'Banco de dados')} • ${mm.technicians.length} técnicos • até dia ${mm.latestDay}${closedInfo}</small></div><span class="tag ${closed?'closed':'open'}">${closed?'FECHADO':id===latestId?'EM ANDAMENTO':'ABERTO'}</span><button class="link-btn" data-open-month="${id}">Abrir</button>${closed?`<button class="link-btn" data-reopen-month="${id}">Reabrir</button>`:`<button class="link-btn" data-close-month="${id}">Fechar mês</button><button class="link-btn danger-link" data-delete-month="${id}">Excluir</button>`}</div>`}).join('');
+    $$('[data-open-month]').forEach(b=>b.addEventListener('click',()=>{state.currentId=b.dataset.openMonth;chooseDefaultTech();refreshSelectors();render();showView('individual')}));
+    $$('[data-delete-month]').forEach(b=>b.addEventListener('click',()=>deleteImportedMonth(b.dataset.deleteMonth)));
+    $$('[data-close-month]').forEach(b=>b.addEventListener('click',()=>closeMonth(b.dataset.closeMonth)));
+    $$('[data-reopen-month]').forEach(b=>b.addEventListener('click',()=>reopenMonth(b.dataset.reopenMonth)));
+    $('#teamGoalAttInput').value=Math.round(cfg.teamGoalAtt);$('#teamGoalPctInput').value=(cfg.teamGoalEvalPct*100).toFixed(1);
+    $('#teamGoalAttInput').disabled=locked;$('#teamGoalPctInput').disabled=locked;
+    const useful=businessDaysMonFri(m.year,m.month),suggested=autoTeamAttGoal(m);$('#autoGoalHint').textContent=locked?'🔒 Mês fechado: metas preservadas como histórico.':`Sugestão: ${useful} dias úteis × 10 atendimentos × ${m.technicians.length} técnicos = ${fmtInt(suggested)} atendimentos.`;
+    renderScoreSettings(m);renderMonthlyMetrics(m);updateThemeName();
+  }
+
+  function renderScoreSettings(m){
+    const rules=displayScoreRules(m);
+    $('#scoreRefAtt').value=safe(rules.refAtt).toFixed(0);$('#scoreRefEval').value=safe(rules.refTotalEval).toFixed(0);$('#scoreRefAvg').value=safe(rules.refAvg).toFixed(2);$('#scoreRefPct').value=(safe(rules.refEvalPct)*100).toFixed(2);
+    ['scoreRefAtt','scoreRefEval','scoreRefAvg','scoreRefPct'].forEach(id=>$('#'+id).disabled=true);
+    const pop=scoreReferencePopulation(m?.technicians||[]),countInfo=pop.active.length?` • ${pop.active.length} técnico${pop.active.length>1?'s':''} com produção na referência`:'';
+    $('#scoreAutoHint').innerHTML=m?.isClosed?`🔒 <strong>Médias congeladas no fechamento:</strong> ${fmtNum(rules.refAtt)} atend. • ${fmtNum(rules.refTotalEval)} avaliações • nota ${safe(rules.refAvg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} • ${fmtPct(rules.refEvalPct)}${countInfo}.`:`<strong>Médias atuais do Squad:</strong> ${fmtNum(rules.refAtt)} atend. • ${fmtNum(rules.refTotalEval)} avaliações • nota ${safe(rules.refAvg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} • ${fmtPct(rules.refEvalPct)}${countInfo}. Competência parcial não altera o status operacional.`;
+  }
+
+  function renderMonthlyMetrics(m){
+    const list=[...(m?.technicians||[])].sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR'));
+    const locked=!!m.isClosed,disabled=locked?' disabled':'';
+    const pop=scoreReferencePopulation(m?.technicians||[]),excludedEvalTotal=(m?.technicians||[]).reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0);$('#monthlyMetricsHint').textContent=locked?`${m.monthName} ${m.year} • 🔒 mês fechado: metas, ajustes e pontuação estão congelados.`:`${m.monthName} ${m.year} • ${pop.active.length} técnico${pop.active.length===1?'':'s'} com produção compõem as médias de status • ${fmtInt(excludedEvalTotal)} atend. sem avaliação descontados da base das taxas.`;
+    $('#monthlyMetricsRows').innerHTML=list.map(t=>`<tr data-metric-tech="${escapeHtml(t.name)}"><td><span class="table-tech-name">${escapeHtml(t.name)}${t.vacation?vacationBadgeHtml([m.id],{compact:true}):''}${groupCountBadgeHtml(t.excludeFromGroupCount,{compact:true})}</span></td><td>${fmtInt(t.att)}</td><td><input class="metric-input" data-field="evaluationExcludedAtt" type="number" min="0" max="${Math.max(0,safe(t.att)-safe(t.totalEval))}" step="1" value="${normalizedEvaluationExcludedAtt(t)}" title="Atendimentos que não dispararam e-mail de avaliação"${disabled}><small class="metric-sub">base ${fmtInt(eligibleEvaluationAttendance(t))}</small></td><td>${fmtInt(t.totalEval)}</td><td>${safe(t.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td>${fmtPct(t.evalPct)}</td><td><input class="metric-input" data-field="goalAtt" type="number" min="0" step="1" value="${safe(t.goalAtt)}"${disabled}></td><td><input class="metric-input" data-field="goalEval" type="number" min="0" step="1" value="${safe(t.goalEval)}"${disabled}></td><td><span class="status ${String(t.status).toUpperCase()==='ACIMA'?'above':'below'}">${escapeHtml(t.status||'—')}</span><small class="metric-sub">${fmtInt(t.goalsHit)}/4 critérios</small></td><td><strong>${fmtNum(t.points)}</strong></td><td><strong>${fmtNum(cumulativePointsForTech(t))}</strong></td></tr>`).join('')||'<tr><td colspan="11" class="muted">Nenhum técnico encontrado.</td></tr>';
+  }
+
+  async function saveMonthlyMetrics(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar metas ou bonificações.');return}const btn=$('#saveMonthlyMetricsBtn');btn.disabled=true;btn.textContent='Salvando...';
+    try{
+      for(const row of $$('#monthlyMetricsRows [data-metric-tech]')){
+        const t=m.technicians.find(x=>samePersonName(x.name,row.dataset.metricTech));if(!t)continue;
+        for(const input of $$('[data-field]',row))t[input.dataset.field]=safe(input.value);
+      }
+      recalculateMonth(m);saveDemoSquads();if(state.supabase){await persistManualMetrics(m);await persistFinanceMonth(m)}refreshSelectors();render();toast('Metas e atendimentos sem avaliação salvos. Taxas, status, ranking e bonificação recalculados.');
+    }catch(err){console.error(err);toast('Não foi possível salvar as métricas mensais.')}finally{btn.disabled=false;btn.textContent='Salvar metas e ajustes'}
+  }
+
+  async function saveScoreSettings(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar os parâmetros.');return}const btn=$('#saveScoreSettingsBtn');btn.disabled=true;btn.textContent='Recalculando...';
+    try{
+      m.scoreSettings={
+        refAtt:optionalNumber($('#scoreRefAtt').value),
+        refTotalEval:optionalNumber($('#scoreRefEval').value),
+        refAvg:optionalNumber($('#scoreRefAvg').value),
+        refEvalPct:optionalPercent($('#scoreRefPct').value),
+        bonusAtt:20,bonusTotalEval:30,bonusAvg:40,bonusEvalPct:35
+      };
+      recalculateMonth(m);saveDemoSquads();
+      if(state.supabase){
+        const {error}=await state.supabase.from('squad_months').update({score_settings:m.scoreSettings,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;
+        await persistCalculatedScores(m);
+      }
+      render();toast('Parâmetros salvos. Pontuação, critérios, status e ranking recalculados.');
+    }catch(err){console.error(err);toast('Não foi possível salvar os parâmetros de pontuação. Confira se as migrações V2.3.0 e V2.4.0 foram executadas.')}finally{btn.disabled=false;btn.textContent='Salvar parâmetros e recalcular'}
+  }
+
+  function optionalNumber(v){if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null}
+  function optionalPercent(v){const n=optionalNumber(v);return n==null?null:n/100}
+  function optionalValue(v){return v==null||v===''?'':String(v)}
+  function meanOf(list,getter){return list.length?list.reduce((sum,x)=>sum+safe(getter(x)),0)/list.length:0}
+  function truncate2(n){return Math.trunc((safe(n)+1e-9)*100)/100}
+  function maxEvaluationExcludedAtt(t){return Math.max(0,safe(t?.att)-safe(t?.totalEval))}
+  function normalizedEvaluationExcludedAtt(t){return Math.min(Math.max(0,safe(t?.evaluationExcludedAtt)),maxEvaluationExcludedAtt(t))}
+  function eligibleEvaluationAttendance(t){return Math.max(0,safe(t?.att)-normalizedEvaluationExcludedAtt(t))}
+  function scoreReferencePopulation(rows){
+    // Status operacional: a referência deve reproduzir a planilha oficial e considerar
+    // todos os técnicos com produção, inclusive quem teve competência parcial.
+    // O checkbox de desconsideração passa a ser exclusivamente financeiro.
+    const active=(rows||[]).filter(t=>safe(t.att)>0);
+    const divisor=active.length||1;
+    return{active,counted:active,ratioBase:active,divisor,excludedCount:0};
+  }
+  function scoreRefsFromRows(rows){
+    const pop=scoreReferencePopulation(rows);
+    const totalAtt=pop.active.reduce((sum,t)=>sum+safe(t.att),0);
+    const totalEval=pop.active.reduce((sum,t)=>sum+safe(t.totalEval),0);
+    return{
+      refAtt:roundTo(totalAtt/pop.divisor,0),
+      refTotalEval:roundTo(totalEval/pop.divisor,0),
+      refAvg:truncate2(meanOf(pop.active,t=>t.avg)),
+      refEvalPct:roundTo(meanOf(pop.active,t=>t.evalPct),4),
+      activeCount:pop.active.length,
+      countedCount:pop.active.length,
+      excludedCount:0
+    };
+  }
+  function automaticScoreRefs(m){
+    // Fórmula oficial da planilha: todos os técnicos com produção compõem as médias
+    // e 2 de 4 critérios atendidos já resultam em ACIMA.
+    return scoreRefsFromRows(m?.technicians||[]);
+  }
+  function businessDaysElapsed(y,m,latest){let c=0,limit=Math.min(Math.max(0,safe(latest)),new Date(y,m,0).getDate());for(let d=1;d<=limit;d++){const dow=new Date(y,m-1,d).getDay();if(dow>=1&&dow<=5)c++}return c}
+  function scoreRules(m,options={}){
+    const auto=automaticScoreRefs(m),saved=m?.scoreSettings||{},totalDays=Math.max(1,businessDaysMonFri(m.year,m.month)),elapsedDays=Math.min(totalDays,businessDaysElapsed(m.year,m.month,m.latestDay));
+    return{refAtt:auto.refAtt,refTotalEval:auto.refTotalEval,refAvg:auto.refAvg,refEvalPct:auto.refEvalPct,baseRefAtt:auto.refAtt,baseRefTotalEval:auto.refTotalEval,bonusAtt:safe(saved.bonusAtt)||20,bonusTotalEval:safe(saved.bonusTotalEval)||30,bonusAvg:safe(saved.bonusAvg)||40,bonusEvalPct:safe(saved.bonusEvalPct)||35,manualCount:0,progress:1,elapsedDays,totalDays,activeCount:auto.activeCount||0,countedCount:auto.activeCount||0,excludedCount:0,attSource:'Média de atendimentos de todos os técnicos com produção (0 casas)',evalSource:'Média de avaliações de todos os técnicos com produção (0 casas)',avgSource:'Média das notas médias de todos os técnicos com produção, truncada (2 casas)',pctSource:'Média da % ajustada de todos os técnicos com produção (4 casas)'};
+  }
+  function displayScoreRules(m){
+    if(m?.isClosed&&m.closedSnapshot?.scoreRules){const r=m.closedSnapshot.scoreRules;return{...r,progress:1,elapsedDays:businessDaysMonFri(m.year,m.month),totalDays:businessDaysMonFri(m.year,m.month),attSource:'Referência congelada no fechamento',evalSource:'Referência congelada no fechamento',avgSource:'Referência congelada no fechamento',pctSource:'Referência congelada no fechamento'}}
+    return scoreRules(m);
+  }
+  function calculateScore(t,rules){
+    if(safe(t.att)<=0)return{points:0,goalsHit:0,status:''};
+    const hits=[safe(t.att)>=rules.refAtt,safe(t.totalEval)>=rules.refTotalEval,safe(t.avg)>=rules.refAvg,safe(t.evalPct)>=rules.refEvalPct];
+    const weights=[rules.bonusAtt,rules.bonusTotalEval,rules.bonusAvg,rules.bonusEvalPct];
+    const adjustments=hits.reduce((sum,ok,i)=>sum+(ok?weights[i]:-weights[i]),0);
+    const points=Number((safe(t.att)*safe(t.avg)+adjustments).toFixed(2));
+    const goalsHit=hits.filter(Boolean).length;
+    return{points,goalsHit,status:goalsHit>=2?'ACIMA':'ABAIXO'};
+  }
+  function teamStatusFromTechnicianStatuses(rows,{period=false}={}){
+    const active=(rows||[]).filter(t=>safe(t.att)>0);
+    if(!active.length)return{status:'',aboveCount:0,belowCount:0,count:0,ratio:0,excludedCount:0};
+    // Resultado da equipe: usa os status individuais calculados pela regra 2 de 4.
+    // Competência parcial não altera a leitura operacional do time; a desconsideração
+    // existe apenas na Base do Squad e nos ajustes financeiros.
+    const readStatus=t=>String(period?(t.periodStatus||t.status||''):(t.status||t.periodStatus||'')).toUpperCase();
+    const classified=active.filter(t=>['ACIMA','ABAIXO'].includes(readStatus(t)));
+    const aboveCount=classified.filter(t=>readStatus(t)==='ACIMA').length,belowCount=classified.filter(t=>readStatus(t)==='ABAIXO').length,count=classified.length,ratio=count?aboveCount/count:0;
+    return{status:count?(ratio>=.5?'ACIMA':'ABAIXO'):'',aboveCount,belowCount,count,ratio,excludedCount:0};
+  }
+  function cumulativePointsForTech(t,squad=currentSquad()){
+    if(!squad)return safe(t?.points);let total=0;
+    const latestId=Object.keys(squad.months||{}).sort().reverse()[0]||null;
+    for(const m of Object.values(squad.months||{})){
+      if(!m.isClosed&&m.id!==latestId)continue;
+      const match=(m.technicians||[]).find(x=>(t?.userId&&x.userId&&x.userId===t.userId)||samePersonName(x.name,t?.name));if(match)total+=safe(match.points)
+    }
+    return Number(total.toFixed(2));
+  }
+
+  function recalculateMonth(m,options={}){
+    for(const t of m.technicians||[]){
+      t.totalEval=safe(t.notes5)+safe(t.notes4)+safe(t.notes3)+safe(t.notes2)+safe(t.notes1);
+      const rawAvg=t.totalEval?((safe(t.notes5)*5+safe(t.notes4)*4+safe(t.notes3)*3+safe(t.notes2)*2+safe(t.notes1))/t.totalEval):0;
+      t.avg=truncate2(rawAvg);
+      t.evaluationExcludedAtt=normalizedEvaluationExcludedAtt(t);
+      t.eligibleAtt=eligibleEvaluationAttendance(t);
+      t.evalPct=t.eligibleAtt?roundTo(t.totalEval/t.eligibleAtt,4):0;
+    }
+    if(m.isClosed&&Array.isArray(m.closedSnapshot?.technicians)){
+      const snap=new Map(m.closedSnapshot.technicians.map(x=>[nameLinkKey(x.name),x]));
+      for(const t of m.technicians||[]){const s=snap.get(nameLinkKey(t.name));if(!s)continue;['att','notes5','notes4','notes3','notes2','notes1','totalEval','avg','evalPct','evaluationExcludedAtt','eligibleAtt','goalAtt','goalEval','points','goalsHit'].forEach(k=>{if(s[k]!=null)t[k]=safe(s[k])});t.status=s.status||'';t.rank=safe(s.rank)||null;t.financeManualBonus=safe(s.financeManualBonus);t.salesCommission=safe(s.salesCommission);t.vacation=!!s.vacation;t.excludeFromGroupCount=!!s.excludeFromGroupCount;t.financeData=s.financeData?clone(s.financeData):(t.financeData||{});}
+      if(m.closedSnapshot.financeSettings)m.financeSettings=clone(m.closedSnapshot.financeSettings);if(m.closedSnapshot.financeMonthData)m.financeMonthData=clone(m.closedSnapshot.financeMonthData);
+      if(m.closedSnapshot.financeModel)m.financeModel=m.closedSnapshot.financeModel;else if(safe(m.closedSnapshot.version)<3)m.financeModel='individual';
+      if(typeof m.closedSnapshot.financeCompare==='boolean')m.financeCompare=m.closedSnapshot.financeCompare;if(typeof m.closedSnapshot.financeTechCompare==='boolean')m.financeTechCompare=m.closedSnapshot.financeTechCompare;if(Number.isFinite(Number(m.closedSnapshot.financeIndividualCap)))m.financeIndividualCap=safe(m.closedSnapshot.financeIndividualCap);if(m.closedSnapshot.financeComparison)m.financeComparison=clone(m.closedSnapshot.financeComparison);
+      m.teamTotals=deriveTotals(m.technicians);const closedTeamStatus=teamStatusFromTechnicianStatuses(m.technicians);m.teamResult=closedTeamStatus.status||m.closedSnapshot.teamResult||m.teamResult||'—';return;
+    }
+    const rules=scoreRules(m,{final:!!options.final});
+    for(const t of m.technicians||[]){const scored=calculateScore(t,rules);t.points=scored.points;t.goalsHit=scored.goalsHit;t.status=scored.status;}
+    const ranked=[...(m.technicians||[])].sort((a,b)=>safe(b.points)-safe(a.points)||safe(b.att)-safe(a.att)||String(a.name).localeCompare(String(b.name),'pt-BR'));
+    const hasPoints=ranked.some(t=>safe(t.points)!==0);ranked.forEach((t,i)=>t.rank=hasPoints?i+1:null);
+    m.teamTotals=deriveTotals(m.technicians);const teamStatus=teamStatusFromTechnicianStatuses(m.technicians);m.teamResult=teamStatus.status||'ABAIXO';recalculateFinance(m);
+  }
+
+  function financeSettingsForMonth(m){
+    const current=m?.financeSettings&&Object.keys(m.financeSettings).length?m.financeSettings:{};
+    return{
+      attendanceTiers:Array.isArray(current.attendanceTiers)&&current.attendanceTiers.length?clone(current.attendanceTiers):clone(DEFAULT_FINANCE_SETTINGS.attendanceTiers),
+      notes5Tiers:Array.isArray(current.notes5Tiers)&&current.notes5Tiers.length?clone(current.notes5Tiers):clone(DEFAULT_FINANCE_SETTINGS.notes5Tiers),
+      cancelTiers:Array.isArray(current.cancelTiers)&&current.cancelTiers.length?clone(current.cancelTiers):clone(DEFAULT_FINANCE_SETTINGS.cancelTiers),
+      topAttendancePrize:Number.isFinite(Number(current.topAttendancePrize))?safe(current.topAttendancePrize):DEFAULT_FINANCE_SETTINGS.topAttendancePrize,
+      topNotes5Prize:Number.isFinite(Number(current.topNotes5Prize))?safe(current.topNotes5Prize):DEFAULT_FINANCE_SETTINGS.topNotes5Prize,
+      belowDiscount:Number.isFinite(Number(current.belowDiscount))?safe(current.belowDiscount):DEFAULT_FINANCE_SETTINGS.belowDiscount
+    };
+  }
+  function financeModelForMonth(m){return ['squad','individual'].includes(m?.financeModel)?m.financeModel:(m?.isClosed&&safe(m?.closedSnapshot?.version)<3?'individual':'squad')}
+  function financeModelLabel(model){return model==='individual'?'Individual meritocrático':'Base do Squad'}
+  function financeFloorTier(value,tiers){const sorted=[...(tiers||[])].sort((a,b)=>safe(b.min)-safe(a.min));return sorted.find(t=>safe(value)>=safe(t.min))||sorted[sorted.length-1]||{min:0,amount:0}}
+  function financeCancelTier(rate,tiers){const sorted=[...(tiers||[])].sort((a,b)=>safe(a.max)-safe(b.max));return sorted.find(t=>safe(rate)<=safe(t.max))||sorted[sorted.length-1]||{max:0,mult:0}}
+  function financialStatusRefs(m){return automaticScoreRefs(m)}
+  function financePerformanceStatus(t,m){if(safe(t.att)<=0)return'';const r=financialStatusRefs(m),hits=[safe(t.att)>=r.refAtt,safe(t.totalEval)>=r.refTotalEval,safe(t.avg)>=r.refAvg,safe(t.evalPct)>=r.refEvalPct].filter(Boolean).length;return hits>=2?'ACIMA':'ABAIXO'}
+  function buildFinanceModelData({mode,hasProduction,days,avgPerDay,notes5Pct,eligibleAtt,evaluationExcludedAtt,commissionAtt,commissionNotes5,cancelRate,cancelTier,rawMult,effectiveMult,financeStatus,financialAdjustmentEligible,topAttBonus,topNotes5Bonus,manualBonus,sales,discount,redistributed,vacation,pool}){
+    const base=hasProduction?safe(commissionAtt)+safe(commissionNotes5):0,afterCancel=hasProduction?base*effectiveMult:0;
+    const rawBeforeVacation=hasProduction?afterCancel+manualBonus+topAttBonus+topNotes5Bonus+sales-discount+redistributed:0;
+    const beforeVacation=mode==='individual'?Math.max(0,rawBeforeVacation):rawBeforeVacation;
+    const zeroFloorAdjustment=mode==='individual'&&rawBeforeVacation<0?-rawBeforeVacation:0;
+    const preCapFinal=vacation?beforeVacation*.5:beforeVacation;
+    return{mode,hasProduction,days,avgPerDay,notes5Pct,eligibleAtt:safe(eligibleAtt),evaluationExcludedAtt:safe(evaluationExcludedAtt),attendanceTier:null,notes5Tier:null,commissionAtt:safe(commissionAtt),commissionNotes5:safe(commissionNotes5),base,cancelRate,cancelTier:safe(cancelTier?.max),cancelRawMultiplier:rawMult,cancelMultiplier:effectiveMult,afterCancel,financeStatus,financialAdjustmentEligible:financialAdjustmentEligible!==false,topAttBonus,topNotes5Bonus,manualBonus,salesCommission:sales,discount,redistribution:redistributed,rawBeforeVacation,beforeVacation,zeroFloorAdjustment,vacation:!!vacation,vacationFactor:vacation?.5:1,preCapFinal:Number(preCapFinal.toFixed(2)),capAdjustment:0,capFactor:1,capApplied:false,final:Number(preCapFinal.toFixed(2)),pool:Number(pool.toFixed(2))}
+  }
+  function applyIndividualTotalCap(records,cap){
+    const limit=Math.max(0,Number.isFinite(Number(cap))?safe(cap):7000),before=records.reduce((sum,r)=>sum+Math.max(0,safe(r.data.preCapFinal)),0);
+    if(before<=limit||before<=0){records.forEach(r=>{r.data.capFactor=1;r.data.capApplied=false;r.data.capAdjustment=0;r.data.final=Number(safe(r.data.preCapFinal).toFixed(2))});return{before:Number(before.toFixed(2)),after:Number(before.toFixed(2)),cap:limit,factor:1,applied:false,adjustment:0}}
+    const factor=limit/before,targetCents=Math.round(limit*100),parts=records.map((r,i)=>{const raw=Math.max(0,safe(r.data.preCapFinal))*factor*100,base=Math.floor(raw+1e-9);return{i,r,raw,base,frac:raw-base}}),used=parts.reduce((s,p)=>s+p.base,0),remainder=Math.max(0,targetCents-used);
+    parts.sort((a,b)=>b.frac-a.frac||safe(b.r.data.preCapFinal)-safe(a.r.data.preCapFinal));for(let i=0;i<remainder&&parts.length;i++)parts[i%parts.length].base+=1;
+    parts.forEach(p=>{const final=p.base/100,d=p.r.data;d.capFactor=factor;d.capApplied=true;d.final=final;d.capAdjustment=Number((final-safe(d.preCapFinal)).toFixed(2))});
+    const after=records.reduce((sum,r)=>sum+safe(r.data.final),0);return{before:Number(before.toFixed(2)),after:Number(after.toFixed(2)),cap:limit,factor,applied:true,adjustment:Number((after-before).toFixed(2))}
+  }
+  function recalculateFinance(m){
+    if(!m||m.isClosed)return;
+    // Em produção, técnicos não recalculam o financeiro no navegador: a RLS protege os componentes
+    // privados dos colegas e o teto Individual depende da folha completa do Squad. Preserve o cálculo
+    // persistido pelo gestor/importação para o próprio técnico.
+    if(isTechnician()&&state.supabase)return;
+    const settings=financeSettingsForMonth(m);m.financeSettings=settings;m.financeMonthData=m.financeMonthData||{};m.financeModel=financeModelForMonth(m);if(typeof m.financeCompare!=='boolean')m.financeCompare=true;if(typeof m.financeTechCompare!=='boolean')m.financeTechCompare=false;if(!Number.isFinite(Number(m.financeIndividualCap)))m.financeIndividualCap=7000;
+    const customers=safe(m.financeMonthData.customersStart),canceled=safe(m.financeMonthData.canceledCount),cancelRate=customers>0?canceled/customers:0,cancelTier=financeCancelTier(cancelRate,settings.cancelTiers),rawMult=customers>0?safe(cancelTier.mult):0,effectiveMult=customers>0?(rawMult===0?1:rawMult):1;
+    const active=(m.technicians||[]).filter(t=>safe(t.att)>0),counted=active.filter(t=>!t.excludeFromGroupCount),days=Math.max(1,businessDaysElapsed(m.year,m.month,m.latestDay));
+    // V2.21.0: todos os atendimentos e Notas 5 continuam no numerador. O checkbox apenas
+    // retira o técnico do denominador da quantidade de técnicos usada pela Base do Squad.
+    const totalAtt=active.reduce((s,t)=>s+safe(t.att),0),totalN5=active.reduce((s,t)=>s+safe(t.notes5),0),groupEligibleAtt=active.reduce((s,t)=>s+eligibleEvaluationAttendance(t),0),groupExcludedAtt=active.reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0),groupAvgPerDay=counted.length?totalAtt/(days*counted.length):0,groupNotes5Pct=groupEligibleAtt?totalN5/groupEligibleAtt:0;
+    const groupAttTier=financeFloorTier(groupAvgPerDay,settings.attendanceTiers),groupN5Tier=financeFloorTier(groupNotes5Pct,settings.notes5Tiers),groupCommissionAtt=safe(groupAttTier.amount),groupCommissionNotes5=safe(groupN5Tier.amount),groupBase=(groupCommissionAtt+groupCommissionNotes5)*effectiveMult;
+    const maxAtt=active.length?Math.max(...active.map(t=>safe(t.att))):0,maxN5=active.length?Math.max(...active.map(t=>safe(t.notes5))):0,attWinners=maxAtt>0?active.filter(t=>safe(t.att)===maxAtt):[],n5Winners=maxN5>0?active.filter(t=>safe(t.notes5)===maxN5):[];
+    const attPrizeEach=attWinners.length?safe(settings.topAttendancePrize)/attWinners.length:0,n5PrizeEach=n5Winners.length?safe(settings.topNotes5Prize)/n5Winners.length:0;
+    const statuses=new Map();active.forEach(t=>statuses.set(nameLinkKey(t.name),financePerformanceStatus(t,m)));
+    // Competência parcial continua recebendo a Base do Squad, mas não gera desconto
+    // nem participa da redistribuição. Isso separa a regra financeira da regra operacional.
+    const financialEligible=active.filter(t=>!t.excludeFromGroupCount),below=financialEligible.filter(t=>statuses.get(nameLinkKey(t.name))==='ABAIXO'),above=financialEligible.filter(t=>statuses.get(nameLinkKey(t.name))==='ACIMA'),pool=below.length*safe(settings.belowDiscount),redistribution=above.length?pool/above.length:0;
+    let squadTotal=0;const individualRecords=[];
+    for(const t of m.technicians||[]){
+      const hasProduction=safe(t.att)>0||safe(t.totalEval)>0,avgPerDay=safe(t.att)/days,eligibleAtt=eligibleEvaluationAttendance(t),evaluationExcludedAtt=normalizedEvaluationExcludedAtt(t),notes5Pct=eligibleAtt?safe(t.notes5)/eligibleAtt:0,attTier=financeFloorTier(avgPerDay,settings.attendanceTiers),n5Tier=financeFloorTier(notes5Pct,settings.notes5Tiers),financeStatus=statuses.get(nameLinkKey(t.name))||'';
+      const financialAdjustmentEligible=hasProduction&&!t.excludeFromGroupCount,topAttBonus=attWinners.includes(t)?attPrizeEach:0,topNotes5Bonus=n5Winners.includes(t)?n5PrizeEach:0,manualBonus=hasProduction?safe(t.financeManualBonus):0,sales=hasProduction?safe(t.salesCommission):0,discount=financialAdjustmentEligible&&financeStatus==='ABAIXO'?safe(settings.belowDiscount):0,redistributed=financialAdjustmentEligible&&financeStatus==='ACIMA'?redistribution:0;
+      const common={hasProduction,days,eligibleAtt,evaluationExcludedAtt,cancelRate,cancelTier,rawMult,effectiveMult,financeStatus,financialAdjustmentEligible,topAttBonus,topNotes5Bonus,manualBonus,sales,discount,redistributed,vacation:!!t.vacation,pool};
+      const individual=buildFinanceModelData({mode:'individual',...common,avgPerDay,notes5Pct,commissionAtt:hasProduction?safe(attTier.amount):0,commissionNotes5:hasProduction?safe(n5Tier.amount):0});individual.attendanceTier=safe(attTier.min);individual.notes5Tier=safe(n5Tier.min);
+      const squad=buildFinanceModelData({mode:'squad',...common,eligibleAtt:groupEligibleAtt,evaluationExcludedAtt:groupExcludedAtt,avgPerDay:groupAvgPerDay,notes5Pct:groupNotes5Pct,commissionAtt:hasProduction?groupCommissionAtt:0,commissionNotes5:hasProduction?groupCommissionNotes5:0});squad.attendanceTier=safe(groupAttTier.min);squad.notes5Tier=safe(groupN5Tier.min);
+      squadTotal+=squad.final;individualRecords.push({t,data:individual,squad});
+    }
+    const capInfo=applyIndividualTotalCap(individualRecords,Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000);let individualTotal=0;
+    individualRecords.forEach(({t,data:individual,squad})=>{individualTotal+=individual.final;const official=m.financeModel==='individual'?individual:squad;t.financeData={...official,version:5,officialModel:m.financeModel,models:{squad,individual},comparisonDiff:Number((individual.final-squad.final).toFixed(2)),groupBase:{avgPerDay:groupAvgPerDay,notes5Pct:groupNotes5Pct,eligibleAtt:groupEligibleAtt,evaluationExcludedAtt:groupExcludedAtt,commissionAtt:groupCommissionAtt,commissionNotes5:groupCommissionNotes5,afterCancel:groupBase}}});
+    const diff=individualTotal-squadTotal;m.financeComparison={version:4,squadTotal:Number(squadTotal.toFixed(2)),individualBeforeCapTotal:capInfo.before,individualTotal:Number(individualTotal.toFixed(2)),individualCap:capInfo.cap,individualCapApplied:capInfo.applied,individualCapFactor:capInfo.factor,individualCapAdjustment:capInfo.adjustment,difference:Number(diff.toFixed(2)),differencePct:squadTotal?diff/squadTotal:0,groupAvgPerDay,groupNotes5Pct,groupEligibleAtt,groupExcludedAtt,groupCommissionAtt,groupCommissionNotes5,groupAfterCancel:groupBase,cancelRate,cancelMultiplier:effectiveMult,activeTechnicians:active.length,countedTechnicians:counted.length,excludedFromGroupCount:Math.max(0,active.length-counted.length),financialAdjustmentEligible:financialEligible.length,belowCount:below.length,aboveCount:above.length,redistributionPool:Number(pool.toFixed(2)),redistributionEach:Number(redistribution.toFixed(2))};m.financeComparisonSnapshot=clone(m.financeComparison);
+  }
+  function renderFinanceSummary(t,m){
+    if(!$('#financeSummaryCard'))return;const d=t.financeData||{},model=d.officialModel||financeModelForMonth(m),other=model==='squad'?'individual':'squad',otherData=d.models?.[other];$('#financeSummaryTitle').textContent=m.isClosed?'Bonificação final':'Bonificação estimada';$('#financeSummaryState').textContent=`${m.isClosed?'FECHADO':'EM ANDAMENTO'} • ${financeModelLabel(model).toUpperCase()}`;$('#financeSummaryTotal').textContent=fmtMoney(d.final);$('#financeVacationBadge').classList.toggle('hidden',!t.vacation);
+    const financeEligibilityNote=d.financialAdjustmentEligible===false?'Competência parcial • isento':'Elegível ao ajuste financeiro';
+    const items=[['Produção',fmtMoney(d.commissionAtt),`${safe(d.avgPerDay).toLocaleString('pt-BR',{maximumFractionDigits:2})} atend./dia`,''],['Qualidade',fmtMoney(d.commissionNotes5),`${fmtPct(d.notes5Pct)} de Notas 5 • base ${fmtInt(d.eligibleAtt)} atend.`,''],['Cancelamento',`× ${safe(d.cancelMultiplier||1).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3})}`,`${fmtPct(d.cancelRate)} no mês`,''],['Bônus manual',fmtMoney(d.manualBonus),'Informado pelo admin','positive'],['Prêmios',fmtMoney(safe(d.topAttBonus)+safe(d.topNotes5Bonus)),'Maior atendimento / Notas 5','positive'],['Comissão vendas',fmtMoney(d.salesCommission),'Informada pelo admin','positive'],['Desconto',`- ${fmtMoney(d.discount)}`,d.financialAdjustmentEligible===false?financeEligibilityNote:(d.financeStatus||'Sem status'),d.discount?'negative':''],['Redistribuição',fmtMoney(d.redistribution),d.financialAdjustmentEligible===false?'Competência parcial • não participa':'Somente entre técnicos ACIMA elegíveis','positive']];
+    $('#financeBreakdown').innerHTML=items.map(([label,value,note,cls])=>`<div class="finance-break-item ${cls}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note)}</small></div>`).join('');
+    const adminCompare=!isTechnician()&&m.financeCompare&&otherData?` • Simulação ${financeModelLabel(other)}: ${fmtMoney(otherData.final)}.`:'';$('#financeSummarySubtitle').textContent=(t.vacation?`Subtotal antes das férias: ${fmtMoney(d.beforeVacation)} • redutor final de 50%.`:`Modelo aplicado: ${financeModelLabel(model)}.`)+adminCompare;
+    const transition=$('#financeTransitionCompare');if(transition){const show=isTechnician()&&m.financeTechCompare===true&&otherData;transition.classList.toggle('hidden',!show);transition.innerHTML=show?`<div><span>SIMULAÇÃO DE TRANSIÇÃO</span><strong>${escapeHtml(financeModelLabel(other))}</strong><small>Comparação informativa; não altera o valor oficial do mês.</small></div><div class="transition-values"><span>Oficial <b>${fmtMoney(d.final)}</b></span><span>Simulação <b>${fmtMoney(otherData.final)}</b></span><span class="${safe(otherData.final)-safe(d.final)>=0?'positive-text':'negative-text'}">Diferença <b>${safe(otherData.final)-safe(d.final)>=0?'+ ':''}${fmtMoney(safe(otherData.final)-safe(d.final))}</b></span></div>`:'';}
+  }
+  function renderFinanceTierEditor(id,tiers,type){const el=$('#'+id);if(!el)return;const isCancel=type==='cancel';el.innerHTML=`<div class="finance-tier-table"><div class="finance-tier-row finance-tier-head"><span>${isCancel?'Até %':'Faixa'}</span><span>${isCancel?'Multiplicador':'Comissão R$'}</span></div>${(tiers||[]).map((t,i)=>`<div class="finance-tier-row"><input type="number" step="0.01" data-finance-tier="${type}" data-tier-index="${i}" data-tier-field="${isCancel?'max':'min'}" value="${isCancel?(safe(t.max)*100).toFixed(2):type==='notes'?(safe(t.min)*100).toFixed(2):safe(t.min)}"><input type="number" step="0.001" data-finance-tier="${type}" data-tier-index="${i}" data-tier-field="${isCancel?'mult':'amount'}" value="${safe(t[isCancel?'mult':'amount'])}"></div>`).join('')}</div>`}
+  function financeDetailGrid(d){const individual=d.mode==='individual';return `<div class="finance-detail-grid"><div><span>Base elegível avaliação</span><strong>${fmtInt(d.eligibleAtt)}</strong><small>${fmtInt(d.evaluationExcludedAtt)} descontado(s)</small></div><div><span>Comissão atendimento</span><strong>${fmtMoney(d.commissionAtt)}</strong></div><div><span>Comissão Notas 5</span><strong>${fmtMoney(d.commissionNotes5)}</strong></div><div><span>Após cancelamento</span><strong>${fmtMoney(d.afterCancel)}</strong></div><div><span>Bônus + prêmios</span><strong>${fmtMoney(safe(d.manualBonus)+safe(d.topAttBonus)+safe(d.topNotes5Bonus))}</strong></div><div><span>Vendas</span><strong>${fmtMoney(d.salesCommission)}</strong></div><div><span>Ajuste financeiro</span><strong>${d.financialAdjustmentEligible===false?'ISENTO':'ELEGÍVEL'}</strong></div><div><span>Desconto</span><strong>${d.discount?'- ':''}${fmtMoney(d.discount)}</strong></div><div><span>Redistribuição</span><strong>${fmtMoney(d.redistribution)}</strong></div><div><span>Antes das férias</span><strong>${fmtMoney(d.beforeVacation)}</strong></div>${individual?`<div><span>Piso zero aplicado</span><strong>${fmtMoney(d.zeroFloorAdjustment)}</strong></div><div><span>Antes do teto global</span><strong>${fmtMoney(d.preCapFinal)}</strong></div><div><span>Ajuste do teto</span><strong>${fmtMoney(d.capAdjustment)}</strong></div><div><span>Final Individual</span><strong>${fmtMoney(d.final)}</strong></div>`:''}</div>`}
+  function renderFinanceAdmin(m,specific,locked){
+    if(!$('#financeTechnicianRows'))return;const disabled=locked?' disabled':'';
+    $$('.admin-section').forEach(el=>el.classList.toggle('section-hidden',!el.classList.contains(`admin-${state.adminSection}`)));
+    if(!specific||!m){$('#financeTechnicianRows').innerHTML='<div class="muted finance-empty">Selecione um Squad e um mês.</div>';$('#financeAdminHint').textContent='Selecione um Squad específico e um mês.';['financeCustomersStart','financeCanceledCount','financeTopAttPrize','financeTopNotesPrize','financeBelowDiscount','financeIndividualCap'].forEach(id=>{if($('#'+id)){$('#'+id).value='';$('#'+id).disabled=true}});if($('#financeComparisonSummary'))$('#financeComparisonSummary').innerHTML='';if($('#financeBaseAudit'))$('#financeBaseAudit').innerHTML='';renderSuperAdminCommission(null);return;}
+    const settings=financeSettingsForMonth(m),md=m.financeMonthData||{},customers=safe(md.customersStart),canceled=safe(md.canceledCount),rate=customers?canceled/customers:0,tier=financeCancelTier(rate,settings.cancelTiers),mult=customers?(safe(tier.mult)===0?1:safe(tier.mult)):1,model=financeModelForMonth(m);m.financeModel=model;
+    $('#financeModelSquad').checked=model==='squad';$('#financeModelIndividual').checked=model==='individual';$('#financeModelSquad').disabled=locked;$('#financeModelIndividual').disabled=locked;$('#financeCompareToggle').checked=m.financeCompare!==false;$('#financeCompareToggle').disabled=locked;$('#financeTechnicianCompareToggle').checked=m.financeTechCompare===true;$('#financeTechnicianCompareToggle').disabled=locked;
+    $('#financeCustomersStart').value=safe(md.customersStart)||'';$('#financeCanceledCount').value=safe(md.canceledCount)||'';$('#financeTopAttPrize').value=safe(settings.topAttendancePrize);$('#financeTopNotesPrize').value=safe(settings.topNotes5Prize);$('#financeBelowDiscount').value=safe(settings.belowDiscount);$('#financeIndividualCap').value=Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000;['financeCustomersStart','financeCanceledCount','financeTopAttPrize','financeTopNotesPrize','financeBelowDiscount','financeIndividualCap'].forEach(id=>$('#'+id).disabled=locked);
+    $('#financeCancelRate').textContent=fmtPct(rate);$('#financeCancelMultiplier').textContent=`× ${mult.toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3})}`;
+    renderFinanceTierEditor('financeAttTiers',settings.attendanceTiers,'att');renderFinanceTierEditor('financeNotesTiers',settings.notes5Tiers,'notes');renderFinanceTierEditor('financeCancelTiers',settings.cancelTiers,'cancel');$$('[data-finance-tier]').forEach(i=>i.disabled=locked);
+    const c=m.financeComparison||{};$('#financeComparisonSummary').classList.toggle('hidden',m.financeCompare===false);$('#financeComparisonSummary').innerHTML=`<div class="finance-compare-card official"><span>MODELO OFICIAL</span><strong>${escapeHtml(financeModelLabel(model))}</strong><small>${fmtMoney(model==='individual'?c.individualTotal:c.squadTotal)}</small></div><div class="finance-compare-card"><span>BASE DO SQUAD</span><strong>${fmtMoney(c.squadTotal)}</strong><small>Folha estimada</small></div><div class="finance-compare-card"><span>INDIVIDUAL</span><strong>${fmtMoney(c.individualTotal)}</strong><small>${c.individualCapApplied?'Após teto global':'Folha estimada'}</small></div><div class="finance-compare-card ${safe(c.difference)>=0?'up':'down'}"><span>IMPACTO INDIVIDUAL</span><strong>${safe(c.difference)>=0?'+ ':''}${fmtMoney(c.difference)}</strong><small>${safe(c.differencePct)>=0?'+':''}${fmtPct(c.differencePct)}</small></div>`;
+    $('#financeBaseAudit').innerHTML=`<div><span>Técnicos considerados na Base</span><strong>${fmtInt(c.countedTechnicians??c.activeTechnicians)} de ${fmtInt(c.activeTechnicians)}</strong><small>${safe(c.excludedFromGroupCount)} competência(s) parcial(is) fora do divisor financeiro</small></div><div><span>Média do grupo</span><strong>${safe(c.groupAvgPerDay).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} atend./técnico/dia</strong></div><div><span>% Notas 5 do grupo</span><strong>${fmtPct(c.groupNotes5Pct)}</strong></div><div><span>Comissões da base</span><strong>${fmtMoney(c.groupCommissionAtt)} + ${fmtMoney(c.groupCommissionNotes5)}</strong></div><div><span>Base após cancelamento</span><strong>${fmtMoney(c.groupAfterCancel)}</strong></div><div><span>Individual antes do teto</span><strong>${fmtMoney(c.individualBeforeCapTotal)}</strong></div><div><span>Teto Individual</span><strong>${fmtMoney(c.individualCap||m.financeIndividualCap||7000)}</strong><small>${c.individualCapApplied?`Aplicado • fator ${(safe(c.individualCapFactor)*100).toLocaleString('pt-BR',{maximumFractionDigits:2})}%`:'Não atingido'}</small></div><div><span>Ajuste total do teto</span><strong>${fmtMoney(c.individualCapAdjustment)}</strong></div><div><span>Redistribuição</span><strong>${fmtMoney(c.redistributionPool)} ÷ ${fmtInt(c.aboveCount)} ACIMA elegíveis = ${fmtMoney(c.redistributionEach)}</strong><small>${fmtInt(c.financialAdjustmentEligible??c.activeTechnicians)} técnico(s) participam dos ajustes</small></div>`;
+    const list=[...(m.technicians||[])].sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR')),showCompare=m.financeCompare!==false;
+    $('#financeTechnicianRows').innerHTML=list.map(t=>{const d=t.financeData||{},sq=d.models?.squad||d,ind=d.models?.individual||d,prizes=safe(d.topAttBonus)+safe(d.topNotes5Bonus),diff=safe(ind.final)-safe(sq.final),comparisonMetrics=showCompare?`<div><span>Base Squad</span><b>${fmtMoney(sq.final)}</b></div><div><span>Individual</span><b>${fmtMoney(ind.final)}</b></div><div class="${diff>=0?'positive-text':'negative-text'}"><span>Diferença</span><b>${diff>=0?'+ ':''}${fmtMoney(diff)}</b></div>`:`<div><span>Modelo oficial</span><b>${fmtMoney(d.final)}</b></div>`;return `<article class="finance-tech-card" data-finance-tech="${escapeHtml(t.name)}"><div class="finance-tech-head"><div><strong>${escapeHtml(t.name)}${t.vacation?vacationBadgeHtml([m.id],{compact:true}):''}${groupCountBadgeHtml(t.excludeFromGroupCount,{compact:true})}</strong><span class="status finance-status ${d.financeStatus==='ACIMA'?'above':d.financeStatus==='ABAIXO'?'below':''}">${escapeHtml(d.financeStatus||'—')}</span></div><div class="finance-tech-total"><small>${escapeHtml(financeModelLabel(model))}</small><strong>${fmtMoney(d.final)}</strong></div></div><div class="finance-tech-metrics"><div><span>At./dia individual</span><b>${safe(ind.avgPerDay).toLocaleString('pt-BR',{maximumFractionDigits:2})}</b></div><div><span>% N5 individual</span><b>${fmtPct(ind.notes5Pct)}</b></div><div><span>Base elegível avaliação</span><b>${fmtInt(eligibleEvaluationAttendance(t))}</b><small>${normalizedEvaluationExcludedAtt(t)?`${fmtInt(normalizedEvaluationExcludedAtt(t))} descontado(s)`: 'sem desconto'}</small></div>${comparisonMetrics}</div><div class="finance-tech-inputs"><label><span>Atend. sem avaliação</span><input data-finance-field="evaluationExcludedAtt" type="number" min="0" max="${Math.max(0,safe(t.att)-safe(t.totalEval))}" step="1" value="${normalizedEvaluationExcludedAtt(t)}"${disabled}><small>Não geraram e-mail; produção continua integral.</small></label><label><span>Bônus manual</span><input data-finance-field="financeManualBonus" type="number" step="0.01" value="${safe(t.financeManualBonus)}"${disabled}></label><label><span>Comissão vendas</span><input data-finance-field="salesCommission" type="number" step="0.01" value="${safe(t.salesCommission)}"${disabled}></label><label class="finance-vacation-control"><input data-finance-field="vacation" type="checkbox" ${t.vacation?'checked':''}${disabled}><span>Férias no mês • pagar 50%</span></label><label class="finance-count-control"><input data-finance-field="excludeFromGroupCount" type="checkbox" ${t.excludeFromGroupCount?'checked':''}${disabled}><span>Desconsiderar na quantidade do Squad (competência parcial)</span><small>Produção e status continuam normais. Sai apenas do divisor da Base do Squad e fica isento de desconto/redistribuição.</small></label><div class="finance-auto-adjust"><span>Prêmios</span><b>${fmtMoney(prizes)}</b></div><div class="finance-auto-adjust"><span>Desconto / redistrib.</span><b>${d.financialAdjustmentEligible===false?'ISENTO':(d.discount?'-'+fmtMoney(d.discount):'+'+fmtMoney(d.redistribution))}</b></div></div><details class="finance-tech-details"><summary>${showCompare?'Detalhes e auditoria dos dois modelos':'Detalhes do modelo oficial'}</summary>${showCompare?`<div class="finance-model-detail"><h4>Base do Squad</h4>${financeDetailGrid(sq)}</div><div class="finance-model-detail"><h4>Individual meritocrático</h4>${financeDetailGrid(ind)}</div>`:`<div class="finance-model-detail"><h4>${escapeHtml(financeModelLabel(model))}</h4>${financeDetailGrid(d)}</div>`}</details></article>`}).join('')||'<div class="muted finance-empty">Nenhum técnico.</div>';
+    $('#financeAdminHint').textContent=`${m.monthName} ${m.year} • ${m.isClosed?'🔒 valores congelados':`modelo oficial: ${financeModelLabel(model)}`}.`;renderSuperAdminCommission(m);
+  }
+  function collectFinanceSettingsFromUi(m){const settings=financeSettingsForMonth(m);settings.topAttendancePrize=Math.max(0,safe($('#financeTopAttPrize').value));settings.topNotes5Prize=Math.max(0,safe($('#financeTopNotesPrize').value));settings.belowDiscount=Math.max(0,safe($('#financeBelowDiscount').value));const maps={att:settings.attendanceTiers,notes:settings.notes5Tiers,cancel:settings.cancelTiers};$$('[data-finance-tier]').forEach(inp=>{const type=inp.dataset.financeTier,idx=safe(inp.dataset.tierIndex),field=inp.dataset.tierField,arr=maps[type];if(!arr?.[idx])return;let value=safe(inp.value);if(type==='notes'&&field==='min')value/=100;if(type==='cancel'&&field==='max')value/=100;arr[idx][field]=value;});return settings}
+  function previewFinanceModelChange(){if(!isAdmin()||state.squadCode==='all')return;const m=currentMonth();if(!m)return;if(!m.isClosed)m.financeModel=$('#financeModelIndividual')?.checked?'individual':'squad';m.financeCompare=$('#financeCompareToggle')?.checked!==false;m.financeTechCompare=$('#financeTechnicianCompareToggle')?.checked===true;m.financeIndividualCap=Math.max(0,safe($('#financeIndividualCap')?.value||7000));if(!m.isClosed)recalculateMonth(m);renderFinanceAdmin(m,true,!!m.isClosed);if(currentTech())renderFinanceSummary(currentTech(),m)}
+  async function saveFinanceConfiguration(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return toast('Reabra o mês antes de alterar a bonificação.');
+    try{m.financeModel=$('#financeModelIndividual')?.checked?'individual':'squad';m.financeCompare=$('#financeCompareToggle')?.checked!==false;m.financeTechCompare=$('#financeTechnicianCompareToggle')?.checked===true;m.financeIndividualCap=Math.max(0,safe($('#financeIndividualCap')?.value||7000));m.financeSettings=collectFinanceSettingsFromUi(m);m.financeMonthData={customersStart:Math.max(0,safe($('#financeCustomersStart').value)),canceledCount:Math.max(0,safe($('#financeCanceledCount').value))};recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);state.financeRankingCache={};render();toast(`Modelo ${financeModelLabel(m.financeModel)} salvo como oficial e bonificação recalculada.`)}catch(err){console.error(err);toast('Não foi possível salvar. Confira se as migrações V2.19.0 e V2.20.0 foram executadas.')}
+  }
+  async function saveFinanceTechnicians(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return toast('Reabra o mês antes de alterar os valores financeiros.');
+    for(const row of $$('#financeTechnicianRows [data-finance-tech]')){const t=m.technicians.find(x=>samePersonName(x.name,row.dataset.financeTech));if(!t)continue;for(const input of $$('[data-finance-field]',row)){if(['vacation','excludeFromGroupCount'].includes(input.dataset.financeField))t[input.dataset.financeField]=!!input.checked;else t[input.dataset.financeField]=safe(input.value)}t.evaluationExcludedAtt=normalizedEvaluationExcludedAtt(t)}
+    try{recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);state.financeRankingCache={};render();toast('Valores salvos; status operacional e bonificação foram recalculados com as regras consolidadas.')}catch(err){console.error(err);toast('Não foi possível salvar os valores financeiros.')}
+  }
+  async function persistFinanceMonth(m){
+    if(!state.supabase||!m?.dbId)return;const payload={finance_settings:financeSettingsForMonth(m),finance_month_data:m.financeMonthData||{},finance_model:financeModelForMonth(m),finance_compare:m.financeCompare!==false,finance_technician_compare:m.financeTechCompare===true,finance_individual_cap:Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000,finance_comparison_snapshot:m.financeComparison||{},team_result:m.teamResult};const {error:me}=await state.supabase.from('squad_months').update(payload).eq('id',m.dbId);if(me)throw me;
+    for(const t of m.technicians||[]){if(!t.dbId)continue;const row={technician_month_id:t.dbId,manual_bonus:safe(t.financeManualBonus),sales_commission:safe(t.salesCommission),vacation:!!t.vacation,exclude_from_group_count:!!t.excludeFromGroupCount,calculated:t.financeData||{},updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('technician_finance_monthly').upsert(row,{onConflict:'technician_month_id'}).select('id').single();if(error)throw error;t.financeDbId=data.id}
+    await persistCalculatedScores(m);
+  }
+  async function copyFinanceRulesFromPreviousMonth(){if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return;const prev=previousMonthForCurrent(m);if(!prev)return toast('Não existe mês anterior neste Squad.');if(!await confirmDialog(`Copiar as faixas e parâmetros financeiros de ${prev.monthName} ${prev.year}? O modelo oficial, cancelamento e valores individuais não serão copiados.`,{title:'Copiar regras financeiras',confirmText:'Copiar',tone:'warning'}))return;m.financeSettings=clone(financeSettingsForMonth(prev));m.financeIndividualCap=Number.isFinite(Number(prev.financeIndividualCap))?safe(prev.financeIndividualCap):7000;recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);render();toast('Regras financeiras copiadas do mês anterior.')}
+  function financeReportRows(m){return (m?.technicians||[]).map(t=>{const d=t.financeData||{},sq=d.models?.squad||d,ind=d.models?.individual||d,official=financeModelForMonth(m);return{'Técnico':titleWords(t.name),'Status financeiro':d.financeStatus||'','Atendimentos':safe(t.att),'Atend. sem avaliação':normalizedEvaluationExcludedAtt(t),'Base elegível avaliação':eligibleEvaluationAttendance(t),'Atend./dia individual':safe(ind.avgPerDay),'Notas 5':safe(t.notes5),'% Notas 5 individual':safe(ind.notes5Pct),'Base Squad - comissão atend.':safe(sq.commissionAtt),'Base Squad - comissão N5':safe(sq.commissionNotes5),'Base Squad - final':safe(sq.final),'Individual - comissão atend.':safe(ind.commissionAtt),'Individual - comissão N5':safe(ind.commissionNotes5),'Individual - antes do teto':safe(ind.preCapFinal),'Individual - ajuste teto':safe(ind.capAdjustment),'Individual - final':safe(ind.final),'Diferença Individual x Squad':safe(ind.final)-safe(sq.final),'Modelo oficial':financeModelLabel(official),'Valor oficial':safe(d.final),'Multiplicador cancelamento':safe(d.cancelMultiplier||1),'Bônus manual':safe(d.manualBonus),'Prêmio atendimento':safe(d.topAttBonus),'Prêmio Notas 5':safe(d.topNotes5Bonus),'Comissão vendas':safe(d.salesCommission),'Desconto':safe(d.discount),'Redistribuição':safe(d.redistribution),'Férias':t.vacation?'SIM':'NÃO','Conta na Base do Squad':t.excludeFromGroupCount?'NÃO':'SIM','Participa desconto/redistribuição':d.financialAdjustmentEligible===false?'NÃO':'SIM'}})}
+  function reportAdminRows(m){if(!m)return[];return (state.superAdminCommissions||[]).filter(c=>safe(c.year)===safe(m.year)&&safe(c.month)===safe(m.month)).map(c=>({'Admin Geral':c.name||'Admin geral','Comissão final':safe(c.amount),'Observação':c.notes||''}))}
+  function loadExternalScriptOnce(src,test){return new Promise((resolve,reject)=>{if(test?.())return resolve();const existing=[...document.scripts].find(x=>x.src===src);if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return}const sc=document.createElement('script');sc.src=src;sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca de exportação.'));document.head.appendChild(sc)})}
+  async function exportFinanceExcel(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;try{await loadExternalScriptOnce('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',()=>window.XLSX);const wb=XLSX.utils.book_new(),rows=financeReportRows(m),ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'Tecnicos');const admins=reportAdminRows(m);if(admins.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(admins),'Admin Geral');const c=m.financeComparison||{},summary=[{'Squad':state.squadCode,'Competência':`${m.monthName} ${m.year}`,'Status do mês':m.isClosed?'FECHADO':'EM ANDAMENTO','Modelo oficial':financeModelLabel(financeModelForMonth(m)),'Folha Base Squad':safe(c.squadTotal),'Individual antes do teto':safe(c.individualBeforeCapTotal),'Teto Individual':safe(c.individualCap||m.financeIndividualCap||7000),'Fator do teto':safe(c.individualCapFactor||1),'Folha Individual':safe(c.individualTotal),'Diferença':safe(c.difference),'Média atend./técnico/dia Squad':safe(c.groupAvgPerDay),'% Notas 5 Squad':safe(c.groupNotes5Pct),'Base Squad após cancelamento':safe(c.groupAfterCancel),'Clientes início':safe(m.financeMonthData?.customersStart),'Cancelados':safe(m.financeMonthData?.canceledCount),'% cancelamento':safe(m.financeMonthData?.customersStart)?safe(m.financeMonthData?.canceledCount)/safe(m.financeMonthData?.customersStart):0,'Técnicos com produção':safe(c.activeTechnicians),'Técnicos considerados na média Base Squad':safe(c.countedTechnicians??c.activeTechnicians),'Técnicos desconsiderados no denominador':safe(c.excludedFromGroupCount)}];XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Resumo');XLSX.writeFile(wb,`Bonificacao_Squad_${state.squadCode}_${m.id}.xlsx`);toast('Relatório Excel comparativo gerado.')}catch(err){console.error(err);toast('Não foi possível gerar o Excel. Verifique sua conexão com a internet.')}
+  }
+  async function exportFinancePdf(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;try{await loadExternalScriptOnce('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',()=>window.jspdf?.jsPDF);await loadExternalScriptOnce('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js',()=>window.jspdf?.jsPDF?.API?.autoTable);const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'}),rows=financeReportRows(m),c=m.financeComparison||{};doc.setFontSize(16);doc.text(`Bonificação • Squad ${state.squadCode} • ${m.monthName} ${m.year}`,14,14);doc.setFontSize(9);doc.text(`${m.isClosed?'FECHADO':'PRÉVIA'} • Modelo oficial: ${financeModelLabel(financeModelForMonth(m))} • Base Squad ${fmtMoney(c.squadTotal)} • Individual ${fmtMoney(c.individualTotal)}${c.individualCapApplied?' (teto aplicado)':''} • Gerado em ${new Date().toLocaleString('pt-BR')}`,14,20);const body=rows.map(r=>[r['Técnico'],r['Status financeiro'],fmtMoney(r['Base Squad - final']),fmtMoney(r['Individual - final']),fmtMoney(r['Diferença Individual x Squad']),r['Modelo oficial'],fmtMoney(r['Valor oficial']),fmtMoney(r['Bônus manual']+r['Prêmio atendimento']+r['Prêmio Notas 5']),fmtMoney(r['Comissão vendas']),fmtMoney(r['Desconto']),fmtMoney(r['Redistribuição']),r['Férias'],r['Conta na quantidade do Squad']]);doc.autoTable({startY:25,head:[['Técnico','Status','Base Squad','Individual','Dif.','Oficial','Valor oficial','Bônus','Vendas','Desc.','Redistrib.','Férias','Conta qtd.']],body,styles:{fontSize:6.6,cellPadding:1.4},headStyles:{fillColor:[35,39,48]},columnStyles:{6:{fontStyle:'bold'}}});const admins=reportAdminRows(m);if(admins.length){const y=doc.lastAutoTable.finalY+8;doc.setFontSize(11);doc.text('Comissão de Admin Geral',14,y);doc.autoTable({startY:y+3,head:[['Admin Geral','Comissão final','Observação']],body:admins.map(a=>[a['Admin Geral'],fmtMoney(a['Comissão final']),a['Observação']]),styles:{fontSize:8}})}doc.save(`Bonificacao_Squad_${state.squadCode}_${m.id}.pdf`);toast('Relatório PDF comparativo gerado.')}catch(err){console.error(err);toast('Não foi possível gerar o PDF. Verifique sua conexão com a internet.')}
+  }
+  function renderSuperAdminCommission(m){
+    if(!isSuperAdmin()||!$('#superAdminCommissionInput'))return;if(!state.supabase&&!state.superAdminCommissions.length){try{state.superAdminCommissions=JSON.parse(localStorage.getItem(demoAdminCommissionKey())||'[]')}catch(e){}}const disabled=!m;$('#superAdminCommissionInput').disabled=disabled;$('#superAdminCommissionNotes').disabled=disabled;$('#saveSuperAdminCommissionBtn').disabled=disabled;const found=m?(state.superAdminCommissions||[]).find(c=>c.user_id===state.user.userId&&safe(c.year)===safe(m.year)&&safe(c.month)===safe(m.month)):null;$('#superAdminCommissionInput').value=found?safe(found.amount):'';$('#superAdminCommissionNotes').value=found?.notes||'';$('#superAdminCommissionPeriod').textContent=m?`${m.monthName} ${m.year} • valor total manual`:'Selecione um Squad e um mês para definir a competência.';
+  }
+  function demoAdminCommissionKey(){return'squadDashboardSuperAdminCommissionsV218'}
+  async function saveSuperAdminCommission(){
+    if(!isSuperAdmin())return;const m=currentMonth();if(!m)return toast('Selecione um Squad e um mês para definir a competência.');const amount=Math.max(0,safe($('#superAdminCommissionInput').value)),notes=$('#superAdminCommissionNotes').value.trim();try{if(state.supabase){const payload={organization_id:state.user.organizationId,user_id:state.user.userId,year:m.year,month:m.month,amount,notes,updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('super_admin_commissions').upsert(payload,{onConflict:'organization_id,user_id,year,month'}).select('id').single();if(error)throw error;const old=(state.superAdminCommissions||[]).filter(c=>!(c.user_id===state.user.userId&&safe(c.year)===m.year&&safe(c.month)===m.month));state.superAdminCommissions=[...old,{...payload,id:data.id,name:state.user.fullName}]}else{const list=JSON.parse(localStorage.getItem(demoAdminCommissionKey())||'[]').filter(c=>!(c.user_id===state.user.email&&safe(c.year)===m.year&&safe(c.month)===m.month));list.push({user_id:state.user.email,year:m.year,month:m.month,amount,notes,name:state.user.fullName});localStorage.setItem(demoAdminCommissionKey(),JSON.stringify(list));state.superAdminCommissions=list}renderSuperAdminCommission(m);toast('Comissão do Admin Geral salva.')}catch(err){console.error(err);toast('Não foi possível salvar a comissão do Admin Geral. Confira se a migração financeira V2.18.0 está aplicada.')}
+  }
+
+
+  function formatDateTime(v){if(!v)return'';try{return new Date(v).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}catch(e){return String(v)}}
+  function previousMonthForCurrent(m=currentMonth()){
+    if(!m)return null;const ids=Object.keys(currentMonths()).filter(id=>id<m.id).sort().reverse();return ids.length?currentMonths()[ids[0]]:null;
+  }
+  async function copyGoalsFromPreviousMonth(){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de copiar metas.');return}
+    const prev=previousMonthForCurrent(m);if(!prev){toast('Não existe um mês anterior importado neste Squad.');return}
+    if(!await confirmDialog(`Copiar somente as metas individuais de ${prev.monthName} ${prev.year} para ${m.monthName} ${m.year}? Metas de atendimentos e notas 5 já preenchidas no mês atual serão substituídas.`,{title:'Copiar metas do mês anterior',confirmText:'Copiar metas',tone:'warning'}))return;
+    try{
+      let copied=0;for(const t of m.technicians||[]){const old=(prev.technicians||[]).find(x=>(t.userId&&x.userId&&t.userId===x.userId)||samePersonName(x.name,t.name));if(!old)continue;t.goalAtt=safe(old.goalAtt);t.goalEval=safe(old.goalEval);copied++;}
+      recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistManualMetrics(m);render();toast(`${copied} técnico(s) tiveram as metas individuais copiadas de ${prev.monthName}.`);
+    }catch(err){console.error(err);toast('Não foi possível copiar as metas do mês anterior.')}
+  }
+  async function closeMonth(id){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m||m.isClosed)return;
+    if(!await confirmDialog(`Fechar ${m.monthName} ${m.year}? Dados, metas, pontuação e bonificação financeira ficarão congelados até que o mês seja reaberto.`,{title:'Fechar competência',confirmText:'Fechar mês',tone:'warning'}))return;
+    try{
+      recalculateMonth(m,{final:true});const rules=scoreRules(m,{final:true}),now=new Date().toISOString();
+      m.closedSnapshot={version:8,closedAt:now,scoreRules:{refAtt:rules.refAtt,refTotalEval:rules.refTotalEval,refAvg:rules.refAvg,refEvalPct:rules.refEvalPct,bonusAtt:rules.bonusAtt,bonusTotalEval:rules.bonusTotalEval,bonusAvg:rules.bonusAvg,bonusEvalPct:rules.bonusEvalPct},teamResult:m.teamResult,teamGoals:teamSettings(m),financeModel:financeModelForMonth(m),financeCompare:m.financeCompare!==false,financeTechCompare:m.financeTechCompare===true,financeIndividualCap:Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000,financeComparison:clone(m.financeComparison||{}),financeSettings:clone(financeSettingsForMonth(m)),financeMonthData:clone(m.financeMonthData||{}),technicians:(m.technicians||[]).map(t=>({name:t.name,att:safe(t.att),notes5:safe(t.notes5),notes4:safe(t.notes4),notes3:safe(t.notes3),notes2:safe(t.notes2),notes1:safe(t.notes1),totalEval:safe(t.totalEval),avg:safe(t.avg),evalPct:safe(t.evalPct),evaluationExcludedAtt:normalizedEvaluationExcludedAtt(t),eligibleAtt:eligibleEvaluationAttendance(t),goalAtt:safe(t.goalAtt),goalEval:safe(t.goalEval),points:safe(t.points),goalsHit:safe(t.goalsHit),status:t.status,rank:t.rank,financeManualBonus:safe(t.financeManualBonus),salesCommission:safe(t.salesCommission),vacation:!!t.vacation,excludeFromGroupCount:!!t.excludeFromGroupCount,financeData:clone(t.financeData||{})}))};
+      m.isClosed=true;m.closedAt=now;m.closedBy=state.user?.userId||state.user?.email||null;saveDemoSquads();
+      if(state.supabase&&m.dbId){await persistFinanceMonth(m);const {error}=await state.supabase.from('squad_months').update({is_closed:true,closed_at:now,closed_by:state.user.userId,closed_snapshot:m.closedSnapshot,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;await persistCalculatedScores(m)}
+      refreshSelectors();render();toast(`${m.monthName} ${m.year} fechado e congelado com sucesso.`);
+    }catch(err){console.error(err);toast('Não foi possível fechar o mês. Confira as migrações V2.4.0, V2.18.0, V2.19.0 e V2.20.0.')}
+  }
+  async function reopenMonth(id){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m||!m.isClosed)return;
+    if(!await confirmDialog(`Reabrir ${m.monthName} ${m.year}? O mês voltará a aceitar importações e alterações. Ao concluir a correção, feche-o novamente.`,{title:'Reabrir competência',confirmText:'Reabrir mês',tone:'warning'}))return;
+    try{
+      m.isClosed=false;m.closedAt=null;m.closedBy=null;m.closedSnapshot={};recalculateMonth(m);saveDemoSquads();
+      if(state.supabase&&m.dbId){const {error}=await state.supabase.from('squad_months').update({is_closed:false,closed_at:null,closed_by:null,closed_snapshot:{},team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;await persistCalculatedScores(m);await persistFinanceMonth(m)}
+      refreshSelectors();render();toast(`${m.monthName} ${m.year} reaberto. Faça os ajustes e feche o mês novamente.`);
+    }catch(err){console.error(err);toast('Não foi possível reabrir o mês.')}
+  }
+
+  async function persistCalculatedScores(m){
+    for(const t of m.technicians||[]){if(!t.dbId)continue;const {error}=await state.supabase.from('technician_monthly').update({evaluation_excluded_att:normalizedEvaluationExcludedAtt(t),eval_pct:safe(t.evalPct),points:safe(t.points),goals_hit:safe(t.goalsHit),status:t.status,rank:t.rank}).eq('id',t.dbId);if(error)throw error;}
+  }
+
+  async function persistManualMetrics(m){
+    for(const t of m.technicians||[]){
+      if(!t.dbId)continue;
+      const {error}=await state.supabase.from('technician_monthly').update({goal_att:safe(t.goalAtt),goal_eval:safe(t.goalEval),evaluation_excluded_att:normalizedEvaluationExcludedAtt(t),eval_pct:safe(t.evalPct),points:safe(t.points),goals_hit:safe(t.goalsHit),status:t.status,rank:t.rank}).eq('id',t.dbId);if(error)throw error;
+    }
+    if(m.dbId){const {error}=await state.supabase.from('squad_months').update({team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;}
+  }
+
+  async function deleteImportedMonth(id){
+    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m)return;if(m.isClosed){toast('Mês fechado não pode ser excluído. Reabra-o primeiro.');return}
+    if(!await confirmDialog(`Excluir ${m.monthName} ${m.year} do Squad ${state.squadCode}? Isso remove os dados importados e as métricas manuais deste mês.`,{title:'Excluir competência',confirmText:'Excluir mês',tone:'danger'}))return;
+    try{if(state.supabase&&m.dbId){const {error}=await state.supabase.from('squad_months').delete().eq('id',m.dbId);if(error)throw error;}delete currentSquad().months[id];const ids=Object.keys(currentMonths()).sort().reverse();state.currentId=ids[0]||null;chooseDefaultTech();saveDemoSquads();refreshSelectors();render();toast('Mês importado excluído.')}catch(err){console.error(err);toast('Não foi possível excluir este mês.')}
+  }
+
+  function businessDaysMonFri(y,m){let c=0,days=new Date(y,m,0).getDate();for(let d=1;d<=days;d++){const dow=new Date(y,m-1,d).getDay();if(dow>=1&&dow<=5)c++}return c}
+  function autoTeamAttGoal(m){return businessDaysMonFri(m.year,m.month)*10*Math.max(1,m.technicians.length)}
+  function teamSettings(m){if(m?.isClosed&&m.closedSnapshot?.teamGoals)return{teamGoalAtt:safe(m.closedSnapshot.teamGoals.teamGoalAtt),teamGoalEvalPct:safe(m.closedSnapshot.teamGoals.teamGoalEvalPct)};const saved=m?.settings||{};return{teamGoalAtt:safe(saved.teamGoalAtt)||autoTeamAttGoal(m),teamGoalEvalPct:Number.isFinite(Number(saved.teamGoalEvalPct))?Number(saved.teamGoalEvalPct):.343}}
+  async function saveTeamGoals(){if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}try{const att=Math.max(0,safe($('#teamGoalAttInput').value)),pct=Math.max(0,safe($('#teamGoalPctInput').value))/100;m.settings={...(m.settings||{}),teamGoalAtt:att||autoTeamAttGoal(m),teamGoalEvalPct:pct};recalculateMonth(m);saveDemoSquads();if(state.supabase){const {error}=await state.supabase.from('squad_months').update({team_goal_att:m.settings.teamGoalAtt,team_goal_eval_pct:m.settings.teamGoalEvalPct,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error}renderTeam();renderAdmin();toast('Metas salvas para '+m.monthName+'.')}catch(err){console.error(err);toast('Não foi possível salvar as metas.')}}
+  function useAutomaticTeamGoal(){const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}$('#teamGoalAttInput').value=autoTeamAttGoal(m);if(!$('#teamGoalPctInput').value)$('#teamGoalPctInput').value='34.3';toast('Meta automática calculada. Clique em Salvar metas.')}
+  function deriveTotals(list){const att=(list||[]).reduce((s,t)=>s+safe(t.att),0),evaluationExcludedAtt=(list||[]).reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0),eligibleAtt=Math.max(0,att-evaluationExcludedAtt),evals=(list||[]).reduce((s,t)=>s+safe(t.totalEval),0),points=(list||[]).reduce((s,t)=>s+safe(t.points),0);return{att,evaluationExcludedAtt,eligibleAtt,eval:evals,evalPct:eligibleAtt?evals/eligibleAtt:0,points}}
+  function goalLine(noun,current,goal){if(!goal)return'Meta não encontrada.';if(current>=goal)return`Meta atingida: ${fmtInt(current-goal)} ${noun} acima do objetivo.`;return`Faltam ${fmtInt(goal-current)} ${noun} para atingir a meta.`}
+  function buildHeroMessage(t,a,n){if(!safe(t.goalAtt)||!safe(t.goalEval))return'Resultados do mês importados. O administrador ainda precisa preencher as metas mensais deste técnico.';if(a>=1&&n>=1)return'Excelente ritmo: as duas metas mensais já foram atingidas.';if(a>=1)return'Meta de atendimentos atingida. Agora o foco é completar as notas 5.';if(n>=1)return'Meta de notas 5 atingida. Agora o foco é completar os atendimentos.';return`Você está em ${fmtPct(a)} da meta de atendimentos e ${fmtPct(n)} da meta de notas 5.`}
+  function coachText(t,m,a,n){if(a>=1&&n>=1)return{title:'Meta completa!',text:'As duas metas foram batidas. O objetivo agora é sustentar qualidade e produtividade.'};const remainingDays=Math.max(1,businessDaysRemaining(m.year,m.month,m.latestDay)),attNeed=Math.max(0,t.goalAtt-t.att),noteNeed=Math.max(0,t.goalEval-t.notes5);if(a>=1)return{title:'Foco em avaliações',text:`Estimativa: ${(noteNeed/remainingDays).toLocaleString('pt-BR',{maximumFractionDigits:1})} nota(s) 5 por dia útil restante.`};if(n>=1)return{title:'Foco em volume',text:`Estimativa: ${(attNeed/remainingDays).toLocaleString('pt-BR',{maximumFractionDigits:1})} atendimento(s) por dia útil restante.`};return{title:'Ritmo necessário',text:`Estimativa: ${(attNeed/remainingDays).toLocaleString('pt-BR',{maximumFractionDigits:1})} atendimentos e ${(noteNeed/remainingDays).toLocaleString('pt-BR',{maximumFractionDigits:1})} notas 5 por dia útil restante.`}}
+  function businessDaysRemaining(y,m,latest){let c=0,days=new Date(y,m,0).getDate();for(let d=latest+1;d<=days;d++){const dow=new Date(y,m-1,d).getDay();if(dow>=1&&dow<=5)c++}return c}
+  function overallLabel(a,n){if(a>=1&&n>=1)return'META BATIDA';if(a>=.75&&n>=.75)return'ESTÁ NO CAMINHO';if(a>=.45||n>=.45)return'PRECISA DE ATENÇÃO';return'APERTA O PÉ'}
+  function overallColor(a,n){const min=Math.min(a,n);return min>=1?'var(--success)':min>=.75?'var(--success)':min>=.45?'var(--warn)':'var(--danger)'}
+  function firstName(n){return title((n||'').trim().split(/\s+/)[0]||'Técnico')}
+  function shortName(n){const p=(n||'').split(/\s+/);return p.length>1?`${title(p[0])} ${title(p[p.length-1])}`:title(n)}
+  function title(s=''){return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()}
+  function titleWords(s=''){return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())}
+
+  function openImport(expectedKind=null){
+    if(!isAdmin())return;if(state.squadCode==='all'&&!isSuperAdmin())return;
+    const scope=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;
+    state.pendingCsv=null;state.expectedCsvKind=expectedKind;
+    const quality=expectedKind==='quality',service=expectedKind==='service';
+    $('#importMessage').textContent=quality?`Selecione o CSV de Produto/Empresa para ${scope}.`:service?`Selecione o CSV operacional de atendimentos para ${scope}.`:`Selecione o CSV para atualizar ${scope}.`;
+    $('#importDetails').innerHTML=quality?'<b>CSV Produto/Empresa:</b> Time, nomeApresentativo, NotaProduto e NotaEmpresa. Cada linha representa uma avaliação. <b>NotaServico é ignorada</b> e cliente não é necessário.':service?'<b>CSV Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.':'<b>Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.<br><b>Qualidade Produto/Empresa:</b> Time, nomeApresentativo, NotaProduto e NotaEmpresa. <b>NotaServico é ignorada</b> neste segundo arquivo.';
+    if($('#csvPeriodHint'))$('#csvPeriodHint').textContent=quality?'Produto/Empresa exige que a competência operacional já esteja importada. Ao confirmar um mês, as demais competências existentes no mesmo CSV e já cadastradas no escopo também são sincronizadas.':service?'A reimportação substitui Serviço/atendimentos do mês e preserva Produto/Empresa.':'O tipo do CSV é identificado automaticamente.';
+    $('#importProgress').style.width='0%';$('#chooseFileBtn').disabled=false;$('#confirmCsvImportBtn').classList.add('hidden');$('#csvPeriodBlock').classList.add('hidden');openModal('importModal');
+  }
+  let confirmDialogResolver=null;
+  function confirmDialog(message,options={}){
+    const modal=$('#confirmDialog');if(!modal)return Promise.resolve(false);
+    const title=options.title||'Confirmar ação',confirmText=options.confirmText||'Confirmar',cancelText=options.cancelText||'Cancelar',tone=options.tone||'warning';
+    $('#confirmDialogTitle').textContent=title;$('#confirmDialogMessage').textContent=message;$('#confirmDialogConfirm').textContent=confirmText;$('#confirmDialogCancel').textContent=cancelText;
+    modal.dataset.tone=tone;const icon=$('#confirmDialogIcon');if(icon)icon.textContent=tone==='danger'?'!':tone==='success'?'✓':'?';
+    if(confirmDialogResolver){confirmDialogResolver(false);confirmDialogResolver=null}
+    openModal('confirmDialog');
+    setTimeout(()=>$('#confirmDialogConfirm')?.focus(),0);
+    return new Promise(resolve=>{confirmDialogResolver=resolve});
+  }
+  function settleConfirmDialog(value){const resolve=confirmDialogResolver;confirmDialogResolver=null;closeModal('confirmDialog');if(resolve)resolve(!!value)}
+  function openModal(id){$('#'+id).classList.add('open');$('#'+id).setAttribute('aria-hidden','false')}
+  function closeModal(id){$('#'+id).classList.remove('open');$('#'+id).setAttribute('aria-hidden','true')}
+  function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2800)}
+
+  async function handleCsvFile(e){
+    if(!isAdmin())return;const file=e.target.files?.[0];if(!file)return;openModal('importModal');$('#chooseFileBtn').disabled=true;$('#importMessage').textContent='Lendo CSV...';$('#importProgress').style.width='25%';
+    try{
+      const text=await file.text(),kind=detectCsvKind(text);$('#importProgress').style.width='45%';
+      if(state.expectedCsvKind&&kind!==state.expectedCsvKind)throw new Error(state.expectedCsvKind==='quality'?'Este botão é exclusivo para o CSV de Produto/Empresa. Selecione o arquivo com Time, nomeApresentativo, NotaProduto e NotaEmpresa.':'Este botão é exclusivo para o CSV operacional de atendimentos.');
+      if(!state.userDirectoryLoaded)await loadUserDirectory();
+      const scopeAll=isSuperAdmin()&&state.squadCode==='all',codes=scopeAll?Object.keys(state.squads):[state.squadCode];
+      if(kind==='quality'){
+        const parsed=parseQualityCsv(text),mapped=mapQualityCsvRows(parsed.rows,codes),months=[...new Set(mapped.rows.map(r=>r.id))].sort().reverse();
+        if(!months.length)throw new Error(scopeAll?'Nenhuma avaliação de Produto/Empresa pôde ser vinculada. Importe primeiro o CSV operacional das competências e confira os nomes dos técnicos.':`Nenhuma avaliação de Produto/Empresa pôde ser vinculada ao Squad ${state.squadCode}. Importe primeiro a competência operacional e confira o nome do técnico.`);
+        state.pendingCsv={kind:'quality',fileName:file.name,rows:mapped.rows,ignored:parsed.ignored,total:parsed.total,months,unmatched:mapped.unmatched,ambiguous:mapped.ambiguous,scopeAll,codes};
+        $('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar qualidade';$('#importMessage').textContent='CSV de Produto/Empresa reconhecido.';
+        if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='Cada linha é uma avaliação individual. A importação consolida NotaProduto e NotaEmpresa por técnico + dia. NotaServico é ignorada. As outras competências presentes no mesmo CSV também serão sincronizadas quando já existirem no monitor.';
+        const un=mapped.unmatched.length?` • <strong>${mapped.unmatched.length} técnico(s) sem vínculo</strong>: ${escapeHtml(mapped.unmatched.slice(0,6).join(', '))}${mapped.unmatched.length>6?'…':''}`:'',amb=mapped.ambiguous.length?` • <strong>${mapped.ambiguous.length} vínculo(s) ambíguo(s)</strong>`:'';
+        const hist=safe(mapped.sourceCounts?.['histórico anterior'])+safe(mapped.sourceCounts?.['histórico posterior']),directory=safe(mapped.sourceCounts?.['cadastro de usuário']);
+        $('#importDetails').innerHTML=`<strong>${fmtInt(mapped.rows.length)} avaliações vinculadas</strong> • <strong>${months.length} meses disponíveis</strong>${un}${amb} • ${fmtInt(parsed.ignored)} linha(s) inválida(s)/sem nota de Produto ou Empresa. <span class="muted">Vínculos recuperados pelo histórico: ${fmtInt(hist)} • pelo cadastro: ${fmtInt(directory)}. Técnicos desligados podem permanecer na qualidade mesmo sem linha operacional na competência. Clientes, Resolve, comentário e NotaServico não entram nos cálculos.</span>`;$('#importProgress').style.width='100%';return;
+      }
+      const parsed=parseServiceCsv(text),aliasBy=serviceTechnicianAliases(codes);
+      // O status de login (ativo/inativo) não interfere no reconhecimento do histórico.
+      // O vínculo operacional aceita tanto "Nome do técnico" quanto "Nome completo" do usuário,
+      // além dos nomes que já existam no histórico do próprio Squad.
+      if(!codes.some(code=>aliasBy[code]?.size))throw new Error(scopeAll?'Cadastre técnicos nos Squads antes de importar o CSV.':`Cadastre os técnicos do Squad ${state.squadCode} em Usuários antes de importar o CSV.`);
+      const scopeRows=parsed.rows.filter(r=>codes.includes(r.group)),unmatchedSet=new Set(),rows=[];
+      for(const r of scopeRows){const canonical=aliasBy[r.group]?.get(nameLinkKey(r.name));if(canonical)rows.push({...r,name:canonical});else unmatchedSet.add(`${r.group}: ${r.name}`)}
+      const unmatched=[...unmatchedSet].sort(),months=[...new Set(rows.map(r=>r.id))].sort().reverse();if(!months.length)throw new Error(scopeAll?'O CSV não possui registros que correspondam aos técnicos cadastrados. Confira os vínculos em Usuários.':`O CSV não possui registros que correspondam aos técnicos cadastrados do Squad ${state.squadCode}. Confira Nome do técnico, Nome completo e Squad do usuário.`);
+      state.pendingCsv={kind:'service',fileName:file.name,rows,ignored:parsed.ignored,total:parsed.total,months,unmatched,scopeAll,codes};$('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar mês';$('#importMessage').textContent=scopeAll?'CSV operacional reconhecido para importação geral.':`CSV operacional reconhecido para o Squad ${state.squadCode}.`;if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='A reimportação operacional substitui Serviço/atendimentos do mês, preserva dados financeiros manuais e qualidade Produto/Empresa e sincroniza o detalhamento diário de notas dos meses históricos já importados no mesmo escopo.';
+      const unmatchedText=unmatched.length?` • <strong>${unmatched.length} vínculo(s) não encontrado(s) ignorado(s)</strong>: ${escapeHtml(unmatched.slice(0,5).join(', '))}${unmatched.length>5?'…':''}`:'';$('#importDetails').innerHTML=`<strong>${fmtInt(rows.length)} linhas vinculadas</strong> aos técnicos cadastrados • <strong>${months.length} meses disponíveis</strong>${unmatchedText} • ${fmtInt(parsed.ignored)} linhas inválidas/fora dos Squads A, B, D e E. <span class="muted">O vínculo considera Nome do técnico, Nome completo e histórico do Squad. Ativar ou inativar o login não remove nem bloqueia a importação do desempenho histórico.</span>`;$('#importProgress').style.width='100%';
+    }catch(err){console.error(err);state.pendingCsv=null;$('#importMessage').textContent='Não foi possível ler este CSV.';$('#importDetails').textContent=err.message||String(err);$('#importProgress').style.width='100%';$('#confirmCsvImportBtn').classList.add('hidden');$('#csvPeriodBlock').classList.add('hidden')}
+    finally{$('#chooseFileBtn').disabled=false;e.target.value=''}
+  }
+
+  async function confirmCsvImport(){
+    if(!isAdmin()||!state.pendingCsv)return;const id=$('#csvMonthSelect').value;if(!id)return;const btn=$('#confirmCsvImportBtn');btn.disabled=true;btn.textContent='Importando...';
+    try{
+      const pending=state.pendingCsv,[year,month]=id.split('-').map(Number);$('#importProgress').style.width='35%';
+      if(pending.kind==='quality'){
+        $('#importMessage').textContent='Consolidando Produto e Empresa por técnico e dia...';let importedSquads=0,importedRows=0;const codes=pending.codes.filter(code=>pending.rows.some(r=>r.group===code&&r.id===id));if(!codes.length)throw new Error('Nenhum Squad possui avaliações vinculadas para este mês.');
+        for(const code of codes){const squad=state.squads[code],m=squad?.months?.[id];if(!m)continue;const result=applyQualityMonthImport(m,pending.rows.filter(r=>r.group===code&&r.id===id),pending.fileName);importedSquads++;importedRows+=result.sourceRows;if(state.supabase){$('#importMessage').textContent=`Gravando qualidade do Squad ${code}...`;$('#importProgress').style.width=(45+Math.round(importedSquads/Math.max(1,codes.length)*30))+'%';await persistQualityMonth(m,pending.fileName)}}
+        $('#importMessage').textContent='Sincronizando Produto/Empresa das demais competências do mesmo CSV...';$('#importProgress').style.width='82%';const historySync=await syncHistoricalQualityFromCsv(pending,id);
+        saveDemoSquads();render();state.pendingCsv=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${fmtInt(importedRows)} avaliações de Produto/Empresa consolidadas em ${importedSquads} Squad(s).${historySync.monthsPatched?` Histórico de qualidade sincronizado em ${historySync.monthsPatched} competência(s).`:''}`);return;
+      }
+      $('#importMessage').textContent='Consolidando dados do mês...';let importedSquads=0,importedTechs=0;
+      if(pending.scopeAll){
+        const candidates=pending.codes.filter(code=>pending.rows.some(r=>r.group===code&&r.id===id));if(!candidates.length)throw new Error('Nenhum Squad possui registros vinculados para este mês.');const closedCodes=candidates.filter(code=>state.squads[code]?.months?.[id]?.isClosed);if(closedCodes.length)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no(s) Squad(s) ${closedCodes.join(', ')}. Reabra o mês antes de importar.`);
+        for(const code of candidates){const s=state.squads[code],previous=s.months[id],data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,code);s.months[id]=data;importedSquads++;importedTechs+=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${code}...`;$('#importProgress').style.width=(55+Math.round(importedSquads/Math.max(1,candidates.length)*34))+'%';await persistImportedMonth(data,s)}}const historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}saveDemoSquads();state.financeRankingCache={};if(state.analysisPreset==='month')resetAnalysisRange(true);refreshSelectors();render();state.pendingCsv=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${importedSquads} Squads e ${importedTechs} técnicos atualizados.${historySync.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
+      }else{
+        const s=currentSquad(),previous=s.months[id];if(previous?.isClosed)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no Squad ${state.squadCode}. Reabra o mês antes de importar.`);const data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,state.squadCode);s.months[id]=data;state.currentId=id;state.techName=data.technicians[0]?.name||'';if(state.supabase){$('#importMessage').textContent='Gravando no banco de dados...';$('#importProgress').style.width='70%';await persistImportedMonth(data,s)}const historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}saveDemoSquads();if(state.analysisPreset==='month')resetAnalysisRange(true);state.financeRankingCache={};refreshSelectors();render();state.pendingCsv=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${data.monthName} ${data.year} importado: ${data.technicians.length} técnicos.${historySync.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
+      }
+    }catch(err){console.error(err);$('#importMessage').textContent='Não foi possível concluir a importação.';$('#importDetails').textContent=(err.message||String(err))+((state.pendingCsv?.kind==='quality'&&state.supabase)?' Se a tabela de qualidade ainda não existir, execute supabase/migrations/MIGRACAO_V2.27.0.sql no Supabase.':'');$('#importProgress').style.width='100%'}finally{btn.disabled=false;btn.textContent=state.pendingCsv?.kind==='quality'?'Importar qualidade':'Importar mês'}
+  }
+
+  function detectCsvKind(text){
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(!lines.length)throw new Error('CSV vazio.');const headers=new Set(lines[0].map(normalizeHeader));if(headers.has('nomeapresentativo')&&headers.has('notaproduto')&&headers.has('notaempresa'))return'quality';if(headers.has('tecnico')&&headers.has('grupoatendimento')&&headers.has('quantidade'))return'service';throw new Error('Formato de CSV não reconhecido. Use o CSV operacional ou o CSV de avaliações com Time, nomeApresentativo, NotaProduto e NotaEmpresa.');
+  }
+  function csvRating(v){const n=Math.trunc(csvNumber(v));return n>=1&&n<=5?n:null}
+  function parseQualityCsv(text){
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV de qualidade vazio ou sem linhas de dados.');const headers=lines[0].map(normalizeHeader),idx={};headers.forEach((h,i)=>idx[h]=i);for(const h of ['time','nomeapresentativo','notaproduto','notaempresa'])if(idx[h]==null)throw new Error(`Coluna obrigatória não encontrada no CSV de qualidade: ${h}.`);const rows=[];let ignored=0;
+    for(const cols of lines.slice(1)){const date=parseCsvDate(cols[idx.time]),name=normalizeName(cols[idx.nomeapresentativo]),productNote=csvRating(cols[idx.notaproduto]),companyNote=csvRating(cols[idx.notaempresa]);if(!date||!name||(!productNote&&!companyNote)){ignored++;continue}const year=date.year,month=date.month,day=date.day;rows.push({id:`${year}-${String(month).padStart(2,'0')}`,year,month,day,name,productNote,companyNote});}
+    if(!rows.length)throw new Error('Nenhuma avaliação válida de Produto ou Empresa foi encontrada.');return{rows,ignored,total:lines.length-1};
+  }
+  function qualityUserAliasKeys(name){const key=nameLinkKey(name),keys=new Set([key]);for(const u of state.userDirectory||[]){if(u.role!=='technician')continue;if(samePersonName(u.fullName,name)||samePersonName(u.techName,name)){if(u.techName)keys.add(nameLinkKey(u.techName));if(u.fullName)keys.add(nameLinkKey(u.fullName));}}return keys}
+  function monthOrdinal(id){const [y,m]=String(id||'').split('-').map(Number);return safe(y)*12+safe(m)}
+  function qualityTechnicianCandidates(row,codes){
+    const aliasKeys=qualityUserAliasKeys(row.name),targetOrd=monthOrdinal(row.id),eligible=(codes||[]).filter(code=>!!state.squads?.[code]?.months?.[row.id]);if(!eligible.length)return[];
+    const exact=[];for(const code of eligible){const target=state.squads[code].months[row.id];for(const t of target.technicians||[])if(aliasKeys.has(nameLinkKey(t.name)))exact.push({group:code,name:t.name,source:'competência',distance:0});}
+    if(exact.length)return [...new Map(exact.map(x=>[`${x.group}|${nameLinkKey(x.name)}`,x])).values()];
+    const historical=[];for(const code of eligible){let best=null;for(const [id,m] of Object.entries(state.squads?.[code]?.months||{})){for(const t of m?.technicians||[]){if(!aliasKeys.has(nameLinkKey(t.name)))continue;const ord=monthOrdinal(id),past=ord<=targetOrd,distance=Math.abs(targetOrd-ord),score=distance*2+(past?0:1);if(!best||score<best.score)best={group:code,name:t.name,source:past?'histórico anterior':'histórico posterior',distance,score};}}if(best)historical.push(best);}
+    if(historical.length){const min=Math.min(...historical.map(x=>x.score));return historical.filter(x=>x.score===min).map(({score,...x})=>x);}
+    const directory=[];for(const u of state.userDirectory||[]){if(u.role!=='technician'||!eligible.includes(u.squadCode))continue;if(aliasKeys.has(nameLinkKey(u.techName))||aliasKeys.has(nameLinkKey(u.fullName)))directory.push({group:u.squadCode,name:u.techName||u.fullName||row.name,source:'cadastro de usuário',distance:999});}
+    return [...new Map(directory.map(x=>[`${x.group}|${nameLinkKey(x.name)}`,x])).values()];
+  }
+  function mapQualityCsvRows(rows,codes){const mapped=[],unmatchedCounts=new Map(),ambiguousCounts=new Map(),sourceCounts={competência:0,'histórico anterior':0,'histórico posterior':0,'cadastro de usuário':0};for(const row of rows||[]){const candidates=qualityTechnicianCandidates(row,codes);if(candidates.length===1){mapped.push({...row,group:candidates[0].group,name:candidates[0].name,linkSource:candidates[0].source});sourceCounts[candidates[0].source]=(sourceCounts[candidates[0].source]||0)+1}else if(!candidates.length)unmatchedCounts.set(row.name,(unmatchedCounts.get(row.name)||0)+1);else ambiguousCounts.set(row.name,(ambiguousCounts.get(row.name)||0)+1)}return{rows:mapped,unmatched:[...unmatchedCounts.keys()].map(titleWords).sort((a,b)=>a.localeCompare(b,'pt-BR')),ambiguous:[...ambiguousCounts.keys()].map(titleWords).sort((a,b)=>a.localeCompare(b,'pt-BR')),sourceCounts}}
+  function applyQualityMonthImport(m,rows,fileName){
+    const now=new Date().toISOString(),grouped=new Map();for(const row of rows||[]){const key=`${nameLinkKey(row.name)}|${row.day}`,g=grouped.get(key)||{name:row.name,technicianKey:nameLinkKey(row.name),day:row.day,product:{notes5:0,notes4:0,notes3:0,notes2:0,notes1:0},company:{notes5:0,notes4:0,notes3:0,notes2:0,notes1:0}};if(row.productNote)g.product[`notes${row.productNote}`]++;if(row.companyNote)g.company[`notes${row.companyNote}`]++;grouped.set(key,g)}
+    const external=[];for(const g of grouped.values())for(const type of ['product','company']){const counts=g[type];if(!qualityNoteTotal(counts))continue;external.push({technicianName:g.name,technicianKey:g.technicianKey,day:g.day,qualityType:type,...counts,sourceFile:fileName,importedAt:now});}
+    m.qualityExternal=external.sort((a,b)=>String(a.technicianName).localeCompare(String(b.technicianName),'pt-BR')||safe(a.day)-safe(b.day)||String(a.qualityType).localeCompare(String(b.qualityType)));
+    // Mantém a estrutura antiga preenchida somente para técnicos operacionais existentes, sem duplicar na leitura V2.27.
+    for(const t of m.technicians||[]){t.qualityDaily=[];for(const q of m.qualityExternal){if(!samePersonName(q.technicianName,t.name))continue;t.qualityDaily.push({day:q.day,qualityType:q.qualityType,notes5:q.notes5,notes4:q.notes4,notes3:q.notes3,notes2:q.notes2,notes1:q.notes1,sourceFile:q.sourceFile,importedAt:q.importedAt});}}
+    return{sourceRows:(rows||[]).length,dailyRows:[...grouped.values()].length,externalRows:external.length};
+  }
+  async function persistQualityMonth(m,fileName){
+    if(!state.supabase)return;if(!m?.dbId)throw new Error('Competência operacional sem identificador no banco. Reimporte o CSV operacional antes da qualidade.');
+    const {error:de}=await state.supabase.from('quality_person_daily_metrics').delete().eq('squad_month_id',m.dbId);if(de)throw new Error(`Não foi possível gravar a nova estrutura de qualidade. Execute supabase/migrations/MIGRACAO_V2.27.0.sql. ${de.message||''}`.trim());
+    const inserts=(m.qualityExternal||[]).map(q=>({squad_month_id:m.dbId,technician_name:q.technicianName,technician_key:q.technicianKey||nameLinkKey(q.technicianName),day:safe(q.day),quality_type:q.qualityType,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),source_file:q.sourceFile||fileName,imported_by:state.user.userId,imported_at:q.importedAt||new Date().toISOString()}));
+    for(let i=0;i<inserts.length;i+=500){const {error}=await state.supabase.from('quality_person_daily_metrics').insert(inserts.slice(i,i+500));if(error)throw error}
+    // Limpa a tabela V2.26 para evitar dados antigos concorrentes; ela permanece apenas como compatibilidade histórica.
+    for(const t of m.technicians||[]){if(!t.dbId)continue;const {error}=await state.supabase.from('quality_daily_metrics').delete().eq('technician_month_id',t.dbId);if(error)console.warn('Não foi possível limpar quality_daily_metrics legado.',error);}
+  }
+
+  async function syncHistoricalQualityFromCsv(pending,selectedId){
+    const synced=[];let sourceRows=0,externalRows=0;
+    for(const code of pending?.codes||[]){
+      const squad=state.squads?.[code];if(!squad)continue;
+      for(const id of pending?.months||[]){
+        if(id===selectedId)continue;
+        const mon=squad.months?.[id];if(!mon)continue;
+        const rows=(pending.rows||[]).filter(r=>r.group===code&&r.id===id);if(!rows.length)continue;
+        const result=applyQualityMonthImport(mon,rows,pending.fileName);sourceRows+=result.sourceRows;externalRows+=result.externalRows;synced.push({code,id,rows:result.sourceRows});
+        if(state.supabase)await persistQualityMonth(mon,pending.fileName);
+      }
+    }
+    return{synced,monthsPatched:new Set(synced.map(x=>x.id)).size,squadsPatched:new Set(synced.map(x=>x.code)).size,sourceRows,externalRows};
+  }
+
+  function serviceCsvMonthTechMap(rows,id,squadCode){
+    const map=new Map();for(const r of rows||[]){if(r.id!==id||r.group!==squadCode)continue;const key=nameLinkKey(r.name),g=map.get(key)||{name:r.name,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,daily:new Map()};g.att+=safe(r.att);for(const n of [5,4,3,2,1])g[`notes${n}`]+=safe(r[`notes${n}`]);const d=g.daily.get(safe(r.day))||{day:safe(r.day),notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};for(const n of [5,4,3,2,1])d[`notes${n}`]+=safe(r[`notes${n}`]);g.daily.set(safe(r.day),d);map.set(key,g);}return map;
+  }
+  function syncHistoricalServiceDailyFromCsv(pending,selectedId){
+    const changed=[],monthKeys=new Set();let techsPatched=0,daysPatched=0,monthlyMismatches=0,missingTechnicians=0;
+    for(const code of pending?.codes||[]){
+      const squad=state.squads?.[code];if(!squad)continue;
+      for(const id of pending.months||[]){
+        if(id===selectedId)continue;
+        const mon=squad.months?.[id];if(!mon)continue;
+        const source=serviceCsvMonthTechMap(pending.rows,id,code);if(!source.size)continue;
+        for(const t of mon.technicians||[]){
+          const src=source.get(nameLinkKey(t.name));if(!src){missingTechnicians++;continue;}
+          if([5,4,3,2,1].some(n=>safe(src[`notes${n}`])!==safe(t[`notes${n}`])))monthlyMismatches++;
+          let changedTech=false;
+          for(const d of t.daily||[]){
+            const sday=src.daily.get(safe(d.day));let changedDay=false;
+            for(const n of [5,4,3,2,1]){
+              const next=safe(sday?.[`notes${n}`]);
+              if(safe(d[`notes${n}`])!==next){d[`notes${n}`]=next;changedTech=true;changedDay=true;}
+            }
+            if(changedDay)daysPatched++;
+          }
+          if(!changedTech)continue;
+          techsPatched++;monthKeys.add(`${code}|${id}`);changed.push({code,id,month:mon,tech:t});
+        }
+      }
+    }
+    return{changed,monthsPatched:monthKeys.size,techsPatched,daysPatched,monthlyMismatches,missingTechnicians};
+  }
+  async function persistHistoricalServiceDailySync(sync){
+    if(!state.supabase||!sync?.changed?.length)return;let done=0;for(const item of sync.changed){const t=item.tech;if(!t?.dbId)continue;const payload=(t.daily||[]).map(d=>({technician_month_id:t.dbId,day:safe(d.day),att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off}));for(let i=0;i<payload.length;i+=500){const {error}=await state.supabase.from('daily_metrics').upsert(payload.slice(i,i+500),{onConflict:'technician_month_id,day'});if(error)throw error}done++;if($('#importProgress'))$('#importProgress').style.width=(92+Math.round(done/Math.max(1,sync.changed.length)*7))+'%';}
+  }
+
+  function serviceTechnicianAliases(codes){
+    const by={};for(const code of codes||[])by[code]=new Map();
+    for(const u of state.userDirectory||[]){
+      if(u.role!=='technician'||!u.squadCode||!by[u.squadCode])continue;
+      const canonical=normalizeName(u.techName||u.fullName);if(!canonical)continue;
+      for(const alias of [u.techName,u.fullName]){const key=nameLinkKey(alias);if(key&&!by[u.squadCode].has(key))by[u.squadCode].set(key,canonical);}
+      const ownKey=nameLinkKey(canonical);if(ownKey&&!by[u.squadCode].has(ownKey))by[u.squadCode].set(ownKey,canonical);
+    }
+    for(const code of codes||[]){const squad=state.squads?.[code];for(const monthData of Object.values(squad?.months||{}))for(const tech of monthData?.technicians||[]){const key=nameLinkKey(tech?.name);if(key&&!by[code].has(key))by[code].set(key,tech.name);}}
+    return by;
+  }
+
+  function parseServiceCsv(text){
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV vazio ou sem linhas de dados.');
+    const headers=lines[0].map(normalizeHeader),idx={};headers.forEach((h,i)=>idx[h]=i);
+    const required=['time','tecnico','grupoatendimento','quantidade'];for(const h of required)if(idx[h]==null)throw new Error(`Coluna obrigatória não encontrada: ${h}.`);
+    const noteIndex=n=>idx[`nota${n}`];const rows=[];let ignored=0;
+    for(const cols of lines.slice(1)){
+      const date=parseCsvDate(cols[idx.time]),name=normalizeName(cols[idx.tecnico]),group=normalizeName(cols[idx.grupoatendimento]);
+      if(!date||!name||!['A','B','D','E'].includes(group)){ignored++;continue}
+      const year=date.year,month=date.month,day=date.day;rows.push({id:`${year}-${String(month).padStart(2,'0')}`,year,month,day,name,group,att:csvNumber(cols[idx.quantidade]),notes5:csvNumber(cols[noteIndex(5)]),notes4:csvNumber(cols[noteIndex(4)]),notes3:csvNumber(cols[noteIndex(3)]),notes2:csvNumber(cols[noteIndex(2)]),notes1:csvNumber(cols[noteIndex(1)])});
+    }
+    if(!rows.length)throw new Error('Nenhuma linha válida foi encontrada para os Squads A, B, D ou E.');return{rows,ignored,total:lines.length-1};
+  }
+
+  function isOperationalTechnicianRow(t){
+    if(!t?.name)return false;
+    const key=normalizeName(t.name);
+    if(/^(MEDIA|MÉDIA) GRUPO$|^TOTAL GRUPO$|^RESULTADO EQUIPE$|^TOTAL$|^MEDIA$|^MÉDIA$/.test(key))return false;
+    return safe(t.att)>0||safe(t.totalEval)>0||safe(t.notes5)+safe(t.notes4)+safe(t.notes3)+safe(t.notes2)+safe(t.notes1)>0;
+  }
+
+  function buildMonthFromCsv(rows,id,fileName,previous,squadCode=state.squadCode){
+    const selected=rows.filter(r=>r.id===id&&r.group===squadCode);if(!selected.length)throw new Error('Nenhum registro encontrado para o mês selecionado.');
+    const [year,month]=id.split('-').map(Number),byTech=new Map();let latest=1;
+    for(const r of selected){latest=Math.max(latest,r.day);let t=byTech.get(r.name);if(!t){t={name:r.name,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,dailyMap:new Map()};byTech.set(r.name,t)}t.att+=r.att;t.notes5+=r.notes5;t.notes4+=r.notes4;t.notes3+=r.notes3;t.notes2+=r.notes2;t.notes1+=r.notes1;let d=t.dailyMap.get(r.day)||{day:r.day,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:false};d.att+=r.att;d.notes5+=r.notes5;d.notes4+=r.notes4;d.notes3+=r.notes3;d.notes2+=r.notes2;d.notes1+=r.notes1;t.dailyMap.set(r.day,d)}
+    const previousTechs=previous?.technicians||[],prevBy=new Map(previousTechs.map(t=>[nameLinkKey(t.name),t])),daysInMonth=new Date(year,month,0).getDate(),presentKeys=new Set([...byTech.keys()].map(nameLinkKey));
+    const technicians=[...byTech.values()].map(raw=>{const prev=prevBy.get(nameLinkKey(raw.name))||{};const daily=[];for(let d=1;d<=daysInMonth;d++)daily.push(raw.dailyMap.get(d)||{day:d,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:new Date(year,month-1,d).getDay()===0});return{dbId:prev.dbId||null,userId:prev.userId||null,name:raw.name,att:raw.att,notes5:raw.notes5,notes4:raw.notes4,notes3:raw.notes3,notes2:raw.notes2,notes1:raw.notes1,totalEval:0,avg:0,evalPct:0,status:prev.status||'',goalsHit:safe(prev.goalsHit),points:safe(prev.points),rank:prev.rank||null,discount:safe(prev.discount),pointBonus:safe(prev.pointBonus),goalAtt:safe(prev.goalAtt),goalEval:safe(prev.goalEval),financeManualBonus:safe(prev.financeManualBonus),salesCommission:safe(prev.salesCommission),vacation:!!prev.vacation,excludeFromGroupCount:!!prev.excludeFromGroupCount,evaluationExcludedAtt:safe(prev.evaluationExcludedAtt),eligibleAtt:0,financeData:prev.financeData?clone(prev.financeData):{},qualityDaily:prev.qualityDaily?clone(prev.qualityDaily):[],daily}});
+
+    // V2.20.4: a média da competência deve representar todos os técnicos que efetivamente
+    // tiveram produção naquele mês. Se um técnico já estava gravado na competência e deixa
+    // de aparecer em uma extração posterior (ex.: inativação/migração), preservamos o último
+    // consolidado daquele mês em vez de removê-lo. Assim B11/I11/J11/K11 não mudam artificialmente.
+    for(const prev of previousTechs){
+      const key=nameLinkKey(prev.name);if(presentKeys.has(key)||!isOperationalTechnicianRow(prev))continue;
+      const preserved=clone(prev);preserved.daily=(prev.daily||[]).map(d=>({...d}));technicians.push(preserved);
+      latest=Math.max(latest,...(preserved.daily||[]).filter(d=>safe(d.att)>0||safe(d.notes5)>0).map(d=>safe(d.day)),1);
+    }
+    technicians.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+    const data={id,month,monthName:MONTHS_PT[month-1],year,sourceFile:fileName,latestDay:latest,importedAt:new Date().toISOString(),teamResult:previous?.teamResult||'',redistributed:safe(previous?.redistributed),settings:previous?.settings?{...previous.settings}:undefined,scoreSettings:previous?.scoreSettings?{...previous.scoreSettings}:{},financeSettings:previous?.financeSettings?clone(previous.financeSettings):clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:previous?.financeMonthData?clone(previous.financeMonthData):{},financeModel:previous?.financeModel||'squad',financeCompare:previous?.financeCompare!==false,financeTechCompare:previous?.financeTechCompare===true,financeIndividualCap:Number.isFinite(Number(previous?.financeIndividualCap))?safe(previous.financeIndividualCap):7000,financeComparison:previous?.financeComparison?clone(previous.financeComparison):{},isClosed:!!previous?.isClosed,closedAt:previous?.closedAt||null,closedBy:previous?.closedBy||null,closedSnapshot:previous?.closedSnapshot?clone(previous.closedSnapshot):{},qualityExternal:previous?.qualityExternal?clone(previous.qualityExternal):[],technicians};recalculateMonth(data);return data;
+  }
+
+  function parseCsvRows(text){
+    const firstLine=(text.split(/\r?\n/,1)[0]||''),comma=(firstLine.match(/,/g)||[]).length,semi=(firstLine.match(/;/g)||[]).length,delimiter=semi>comma?';':',';const rows=[];let row=[],field='',quoted=false;
+    for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){field+='"';i++}else if(c==='"')quoted=false;else field+=c}else if(c==='"')quoted=true;else if(c===delimiter){row.push(field);field=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);field='';if(row.some(v=>String(v).trim()!==''))rows.push(row);row=[]}else field+=c}row.push(field);if(row.some(v=>String(v).trim()!==''))rows.push(row);return rows;
+  }
+  function normalizeHeader(v){return String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'')}
+  function csvNumber(v){if(v==null||String(v).trim()==='')return 0;let s=String(v).trim().replace(/\s/g,'');if(/^[-+]?\d{1,3}(\.\d{3})+,\d+$/.test(s))s=s.replace(/\./g,'').replace(',','.');else if(/^[-+]?\d+,\d+$/.test(s))s=s.replace(',','.');const n=Number(s);return Number.isFinite(n)?n:0}
+  function parseCsvDate(v){const raw=String(v||'').trim();let m=raw.match(/^(\d{4})-(\d{2})-(\d{2})/),year,month,day;if(m){year=Number(m[1]);month=Number(m[2]);day=Number(m[3]);}else{m=raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);if(!m)return null;day=Number(m[1]);month=Number(m[2]);year=Number(m[3]);}if(month<1||month>12||day<1||day>31)return null;return{year,month,day}}
+  function cleanNameWhitespace(s){
+    return String(s||'')
+      .replace(/[\u200B-\u200D\u2060\uFEFF]/g,'')
+      .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g,' ')
+      .trim()
+      .replace(/\s+/g,' ');
+  }
+  function normalizeName(s){return cleanNameWhitespace(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+  function nameLinkKey(s){return normalizeName(s).replace(/\s+/g,'')}
+  function samePersonName(a,b){return nameLinkKey(a)===nameLinkKey(b)}
+
+  function audioPrefsKey(){const who=state.user?.userId||state.user?.email||'browser';return `softenPerformanceAudioV1:${who}`}
+  function loadAudioPrefs(){try{return JSON.parse(localStorage.getItem(audioPrefsKey())||'{}')||{}}catch(e){return {}}}
+  function saveAudioPrefs(patch){const next={...loadAudioPrefs(),...patch};try{localStorage.setItem(audioPrefsKey(),JSON.stringify(next))}catch(e){}return next}
+  function sanitizeThemeAudio(v){if(!v)return null;const s=String(v).trim();return /^(data:audio\/(mpeg|mp3|ogg|wav|x-wav|mp4|m4a|aac);base64,|https?:\/\/|assets\/)/i.test(s)?s:null}
+  function themeAudioConfig(theme=state.theme){const t=theme||DEFAULT_THEME,hasTrack=Object.prototype.hasOwnProperty.call(t,'soundtrack');return{src:sanitizeThemeAudio(hasTrack?t.soundtrack:DEFAULT_SOUNDTRACK),name:t.soundtrackName||DEFAULT_SOUNDTRACK_NAME,volume:clamp(Number(t.soundtrackVolume??.24),0,1)}}
+  function initializeThemeAudio(){
+    applySoundtrack(state.theme,{preservePlayback:false});
+    const cfg=themeAudioConfig(),prefs=loadAudioPrefs();
+    if(!cfg.src)return;
+    if(prefs.chosen!==true){showSoundWelcome();return;}
+    if(prefs.enabled!==false){state.audio.pendingResume=true;syncSoundPlayerUi();armSoundResumeOnGesture();}
+  }
+  function showSoundWelcome(){const cfg=themeAudioConfig();if(!cfg.src)return;const el=$('#soundWelcome');if(!el)return;$('#soundWelcomeTrackName').textContent=cfg.name;el.classList.remove('hidden')}
+  function hideSoundWelcome(){const el=$('#soundWelcome');if(el)el.classList.add('hidden')}
+  async function chooseSoundWelcome(withSound){saveAudioPrefs({chosen:true,enabled:!!withSound});hideSoundWelcome();if(withSound){await playThemeAudio(true)}else{pauseThemeAudio();syncSoundPlayerUi()}}
+  function armSoundResumeOnGesture(){
+    if(!state.audio.pendingResume)return;
+    const resume=async e=>{if(e?.target?.closest?.('#soundPlayer,#soundWelcome,#themeModal'))return;document.removeEventListener('pointerdown',resume,true);document.removeEventListener('keydown',resume,true);if(loadAudioPrefs().enabled!==false)await playThemeAudio(false)};
+    document.addEventListener('pointerdown',resume,true);document.addEventListener('keydown',resume,true);
+  }
+  function applySoundtrack(theme,{preservePlayback=true}={}){
+    const audio=$('#themeAudio'),player=$('#soundPlayer');if(!audio||!player)return;
+    if(state.audio.previewing){state.audio.previewing=false;state.audio.previewBefore=null;if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').textContent='▶ Ouvir trilha';}
+    const cfg=themeAudioConfig(theme),wasPlaying=!audio.paused&&!!audio.src;
+    player.classList.toggle('hidden',!cfg.src);
+    if(!cfg.src){pauseThemeAudio();audio.removeAttribute('src');audio.load();state.audio.source=null;syncSoundPlayerUi();return;}
+    if(state.audio.source!==cfg.src){audio.pause();audio.src=cfg.src;audio.load();state.audio.source=cfg.src;}
+    const prefs=loadAudioPrefs();audio.volume=clamp(prefs.volume!=null?Number(prefs.volume):cfg.volume,0,1);audio.muted=!!prefs.muted;
+    if($('#soundVolume'))$('#soundVolume').value=Math.round(audio.volume*100);
+    if(preservePlayback&&wasPlaying&&prefs.enabled!==false)playThemeAudio(false);else syncSoundPlayerUi();
+  }
+  function preferredAudioVolume(){const prefs=loadAudioPrefs(),cfg=themeAudioConfig();return clamp(prefs.volume!=null?Number(prefs.volume):cfg.volume,0,1)}
+  function cancelAudioFade(){if(state.audio.fadeTimer){clearInterval(state.audio.fadeTimer);state.audio.fadeTimer=null}}
+  function fadeAudioTo(target,duration=2200){const audio=$('#themeAudio');if(!audio)return;cancelAudioFade();const from=safe(audio.volume),to=clamp(target,0,1),started=performance.now();state.audio.fadeTimer=setInterval(()=>{const pct=Math.min(1,(performance.now()-started)/duration),eased=1-Math.pow(1-pct,3);audio.volume=from+(to-from)*eased;if(pct>=1)cancelAudioFade()},45)}
+  async function playThemeAudio(userGesture=false){
+    const audio=$('#themeAudio'),cfg=themeAudioConfig();if(!audio||!cfg.src)return;
+    if(state.audio.source!==cfg.src)applySoundtrack(state.theme,{preservePlayback:false});
+    const targetVolume=preferredAudioVolume();cancelAudioFade();audio.volume=0;
+    try{await audio.play();state.audio.playing=true;state.audio.pendingResume=false;saveAudioPrefs({chosen:true,enabled:true});if(!audio.muted)fadeAudioTo(targetVolume,2400);else audio.volume=targetVolume;syncSoundPlayerUi();}
+    catch(err){audio.volume=targetVolume;state.audio.playing=false;state.audio.pendingResume=true;syncSoundPlayerUi();if(userGesture)toast('O navegador bloqueou o áudio. Clique novamente em reproduzir.');}
+  }
+  function pauseThemeAudio(){const audio=$('#themeAudio');cancelAudioFade();if(audio)audio.pause();state.audio.playing=false;state.audio.pendingResume=false;syncSoundPlayerUi()}
+  function stopThemeAudio(){const audio=$('#themeAudio');cancelAudioFade();if(audio){audio.pause();try{audio.currentTime=0}catch(e){}}state.audio.playing=false;state.audio.pendingResume=false;hideSoundWelcome();syncSoundPlayerUi()}
+  async function toggleSoundPlayback(){const audio=$('#themeAudio');if(!audio?.src)return;if(audio.paused){await playThemeAudio(true)}else{pauseThemeAudio();saveAudioPrefs({enabled:false})}}
+  function toggleSoundMute(){const audio=$('#themeAudio');if(!audio)return;audio.muted=!audio.muted;saveAudioPrefs({muted:audio.muted});syncSoundPlayerUi()}
+  function handleSoundVolume(e){const audio=$('#themeAudio');if(!audio)return;cancelAudioFade();audio.volume=clamp(safe(e.target.value)/100,0,1);if(audio.volume>0&&audio.muted)audio.muted=false;saveAudioPrefs({volume:audio.volume,muted:audio.muted});syncSoundPlayerUi()}
+  function syncSoundPlayerUi(){
+    const audio=$('#themeAudio'),cfg=themeAudioConfig();if($('#soundPlayerName'))$('#soundPlayerName').textContent=cfg.name||'Trilha do tema';if($('#soundWelcomeTrackName'))$('#soundWelcomeTrackName').textContent=cfg.name||'Trilha do tema';
+    const playing=!!audio&&!!audio.src&&!audio.paused;state.audio.playing=playing;if($('#soundToggleBtn')){$('#soundToggleBtn').textContent=playing?'❚❚':'▶';$('#soundToggleBtn').setAttribute('aria-label',playing?'Pausar trilha':'Reproduzir trilha')}
+    if($('#soundMuteBtn')){$('#soundMuteBtn').textContent=audio?.muted?'🔇':'🔊';$('#soundMuteBtn').setAttribute('aria-label',audio?.muted?'Ativar som':'Silenciar trilha')}
+    if($('#soundPlayerStatus'))$('#soundPlayerStatus').textContent=playing?(audio?.muted?'Reproduzindo • silenciado':'Reproduzindo em ambiente'):state.audio.pendingResume?'Clique no painel para iniciar':'Trilha pausada';
+  }
+  function handleSoundtrackFile(e){
+    if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;
+    const ok=/^audio\/(mpeg|mp3|ogg|wav|x-wav|mp4|m4a|aac)$/i.test(f.type||'')||/\.(mp3|ogg|wav|m4a|aac)$/i.test(f.name||'');if(!ok){toast('Use MP3, OGG, WAV, M4A ou AAC.');e.target.value='';return}
+    if(f.size>3*1024*1024){toast('Use uma trilha de até 3 MB para manter o tema leve.');e.target.value='';return}
+    const reader=new FileReader();reader.onload=()=>{state.theme.soundtrack=reader.result;state.theme.soundtrackName=(f.name||DEFAULT_SOUNDTRACK_NAME).replace(/\.[^.]+$/,'');state.theme.soundtrackVolume=state.theme.soundtrackVolume??.24;state.theme.preset='custom';saveTheme();applySoundtrack(state.theme,{preservePlayback:false});if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName;toast('Trilha do tema atualizada.')};reader.readAsDataURL(f);e.target.value='';
+  }
+  async function previewThemeSoundtrack(){
+    const cfg=themeAudioConfig();if(!cfg.src){toast('Nenhuma trilha configurada neste tema.');return}
+    const audio=$('#themeAudio');if(!audio)return;
+    if(state.audio.previewing){cancelAudioFade();audio.pause();const before=state.audio.previewBefore||{};audio.volume=before.volume??preferredAudioVolume();audio.muted=!!before.muted;try{audio.currentTime=before.currentTime??0}catch(e){}state.audio.previewing=false;state.audio.previewBefore=null;if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').textContent='▶ Ouvir trilha';if(before.wasPlaying)await playThemeAudio(true);else syncSoundPlayerUi();return}
+    state.audio.previewBefore={volume:audio.volume,muted:audio.muted,wasPlaying:!audio.paused,currentTime:safe(audio.currentTime)};state.audio.previewing=true;cancelAudioFade();audio.pause();try{audio.currentTime=0}catch(e){}audio.volume=0;audio.muted=false;try{await audio.play();fadeAudioTo(cfg.volume,1500);if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').textContent='❚❚ Pausar prévia';syncSoundPlayerUi()}catch(e){state.audio.previewing=false;state.audio.previewBefore=null;audio.volume=preferredAudioVolume();toast('Clique novamente para permitir a reprodução do áudio.')}
+  }
+  function resetSoundtrack(){if(!isAdmin())return;state.theme.soundtrack=DEFAULT_SOUNDTRACK;state.theme.soundtrackName=DEFAULT_SOUNDTRACK_NAME;state.theme.soundtrackVolume=.24;state.theme.preset='custom';saveTheme();applyTheme(state.theme);toast('Trilha original restaurada.')}
+  function removeSoundtrack(){if(!isAdmin())return;state.theme.soundtrack=null;state.theme.soundtrackName='';state.theme.preset='custom';saveTheme();applyTheme(state.theme);toast('Trilha removida deste tema.')}
+
+  function themeColorSubset(source={}){
+    const out={};
+    ['accent','secondary','bg','bg2','panel','panel2','text','muted','border','success','danger','warn','shadow'].forEach(k=>{if(source?.[k]!=null&&source[k]!=='')out[k]=source[k]});
+    return out;
+  }
+  function isLightSurfaceColor(value){
+    const s=String(value||'').trim().toLowerCase();let r,g,b;
+    if(/^#[0-9a-f]{3}$/.test(s)){r=parseInt(s[1]+s[1],16);g=parseInt(s[2]+s[2],16);b=parseInt(s[3]+s[3],16)}
+    else if(/^#[0-9a-f]{6}$/.test(s)){r=parseInt(s.slice(1,3),16);g=parseInt(s.slice(3,5),16);b=parseInt(s.slice(5,7),16)}
+    else{const m=s.match(/^rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/);if(!m)return false;r=+m[1];g=+m[2];b=+m[3]}
+    return (r*.2126+g*.7152+b*.0722)>165;
+  }
+  function deriveLightPalette(dark={}){return{...DEFAULT_LIGHT_COLORS,accent:dark.accent||DEFAULT_LIGHT_COLORS.accent,secondary:dark.secondary||DEFAULT_LIGHT_COLORS.secondary}}
+  function syncLegacyThemeColors(t){const d=t.colors?.dark||DEFAULT_DARK_COLORS;['accent','secondary','bg','bg2','panel','text'].forEach(k=>t[k]=d[k]);t.panel2=d.panel2;t.muted=d.muted;t.border=d.border;return t}
+  function normalizeThemePayload(theme){
+    const t=clone(theme||DEFAULT_THEME);
+    if(t.preset==='vermithor'||(!t.preset&&(!t.campaignTitle||t.campaignTitle==='Dragão Vermithor'))){if(!t.name||t.name==='Vermithor')t.name='Casa do Dragão';if(!t.campaignTitle||t.campaignTitle==='Dragão Vermithor')t.campaignTitle='Casa do Dragão';if(!t.campaignTagline||t.campaignTagline==='Transforme números em conquista.')t.campaignTagline='Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.';}
+    if(!t.favicon)t.favicon=DEFAULT_FAVICON;if(!Object.prototype.hasOwnProperty.call(t,'soundtrack'))t.soundtrack=DEFAULT_SOUNDTRACK;if(!t.soundtrackName&&t.soundtrack)t.soundtrackName=DEFAULT_SOUNDTRACK_NAME;if(t.soundtrackVolume==null)t.soundtrackVolume=.24;
+    const flat=themeColorSubset(t),rawDark=themeColorSubset(t.colors?.dark||{}),rawLight=themeColorSubset(t.colors?.light||{}),hasDual=Object.keys(rawDark).length||Object.keys(rawLight).length;
+    let dark,light;
+    if(hasDual){
+      dark={...DEFAULT_DARK_COLORS,...rawDark};
+      if(!Object.keys(rawDark).length){dark={...DEFAULT_DARK_COLORS,accent:rawLight.accent||flat.accent||DEFAULT_DARK_COLORS.accent,secondary:rawLight.secondary||flat.secondary||DEFAULT_DARK_COLORS.secondary}}
+      light={...deriveLightPalette(dark),...rawLight};
+    }else if(isLightSurfaceColor(flat.bg)){
+      light={...DEFAULT_LIGHT_COLORS,...flat};
+      dark={...DEFAULT_DARK_COLORS,accent:flat.accent||DEFAULT_DARK_COLORS.accent,secondary:flat.secondary||DEFAULT_DARK_COLORS.secondary};
+    }else{
+      dark={...DEFAULT_DARK_COLORS,...flat};
+      light=deriveLightPalette(dark);
+    }
+    t.colors={dark,light};
+    return syncLegacyThemeColors(t);
+  }
+  function themePalette(theme=state.theme,mode=state.colorMode){const t=theme?.colors?theme:normalizeThemePayload(theme||DEFAULT_THEME);return t.colors?.[mode]||t.colors?.dark||DEFAULT_DARK_COLORS}
+  function updateThemeMetaColor(palette=themePalette()){const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',palette.bg||'#080b12')}
+  function syncColorModeUi(){
+    const mode=state.colorMode==='light'?'light':'dark',next=mode==='light'?'escuro':'claro';
+    document.documentElement.dataset.colorMode=mode;document.documentElement.style.colorScheme=mode;
+    $$('[data-color-mode-toggle]').forEach(btn=>{btn.dataset.mode=mode;btn.setAttribute('aria-label',`Ativar modo ${next}`);btn.setAttribute('title',`Ativar modo ${next}`);btn.setAttribute('aria-pressed',mode==='light'?'true':'false')});
+    $$('[data-theme-edit-mode]').forEach(btn=>btn.classList.toggle('active',btn.dataset.themeEditMode===mode));
+    if($('#themePaletteModeLabel'))$('#themePaletteModeLabel').textContent=mode==='light'?'Modo claro':'Modo escuro';
+  }
+  function applyThemePalette(theme=state.theme){
+    const t=normalizeThemePayload(theme||DEFAULT_THEME),p=themePalette(t,state.colorMode),r=document.documentElement.style;
+    const vars={accent:p.accent,accent2:p.secondary,bg:p.bg,bg2:p.bg2,panel:p.panel,panel2:p.panel2,text:p.text,muted:p.muted,border:p.border,success:p.success,danger:p.danger,warn:p.warn,shadow:p.shadow};
+    Object.entries(vars).forEach(([k,v])=>{if(v!=null)r.setProperty(`--${k}`,v)});
+    updateThemeMetaColor(p);syncColorModeUi();
+    if($('#accentColor'))$('#accentColor').value=p.accent||'#f0a33a';if($('#secondaryColor'))$('#secondaryColor').value=p.secondary||'#ef5a29';
+    return t;
+  }
+  function applyColorMode(mode,{persist=true,reapplyTheme=true}={}){
+    const next=mode==='light'?'light':'dark';state.colorMode=next;
+    if(persist){try{localStorage.setItem(COLOR_MODE_KEY,next)}catch(e){}}
+    if(reapplyTheme)state.theme=applyThemePalette(state.theme);else syncColorModeUi();
+  }
+  function toggleColorMode(){applyColorMode(state.colorMode==='light'?'dark':'light',{persist:true,reapplyTheme:true})}
+  function bindSystemColorMode(){
+    if(!window.matchMedia)return;const mq=window.matchMedia('(prefers-color-scheme: light)');
+    const onChange=e=>{if(!hasStoredColorMode())applyColorMode(e.matches?'light':'dark',{persist:false,reapplyTheme:true})};
+    if(mq.addEventListener)mq.addEventListener('change',onChange);else if(mq.addListener)mq.addListener(onChange);
+  }
+  function setThemePaletteColor(key,value){
+    state.theme=normalizeThemePayload(state.theme);const mode=state.colorMode==='light'?'light':'dark';state.theme.colors[mode][key]=value;if(mode==='dark')syncLegacyThemeColors(state.theme);applyThemePalette(state.theme);
+  }
+  function applyPreset(name){
+    if(!isAdmin())return;
+    const presets={
+      vermithor:clone(DEFAULT_THEME),
+      soften:{name:'Soften',campaignTitle:'Soften Performance',campaignTagline:'Tecnologia que impulsiona resultados.',preset:'soften',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#20b7f5',secondary:'#176bd3',bg:'#06111f',bg2:'#0a2035',panel:'rgba(8,24,40,.9)',panel2:'rgba(12,32,52,.94)',text:'#f3f8fc'},light:{...DEFAULT_LIGHT_COLORS,accent:'#0284c7',secondary:'#2563eb'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.18},
+      neon:{name:'Neon',campaignTitle:'Squad Neon',campaignTagline:'Acelere. Evolua. Conquiste.',preset:'neon',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#c05cff',secondary:'#21dbc9',bg:'#090514',bg2:'#151029',panel:'rgba(23,15,42,.9)',panel2:'rgba(31,21,54,.94)',text:'#faf5ff'},light:{...DEFAULT_LIGHT_COLORS,accent:'#9333ea',secondary:'#0f9f91'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.18},
+      clean:{name:'Claro',campaignTitle:'Performance',campaignTagline:'Clareza para acompanhar cada resultado.',preset:'clean',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#7c8cf8',secondary:'#4f68dd',bg:'#0b1020',bg2:'#121a2c',panel:'rgba(19,27,45,.92)',panel2:'rgba(27,38,61,.94)'},light:{...DEFAULT_LIGHT_COLORS,accent:'#3157d5',secondary:'#6a7be8',bg:'#e9eef5',bg2:'#f7f9fc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#172033'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.06}
+    };
+    state.theme=normalizeThemePayload(presets[name]||presets.vermithor);saveTheme();applyTheme(state.theme);toast(`Tema ${state.theme.name} aplicado.`)
+  }
+  function applyTheme(t){
+    state.theme=normalizeThemePayload(t||DEFAULT_THEME);applyThemePalette(state.theme);const r=document.documentElement.style;
+    if(state.theme.opacity!=null)r.setProperty('--hero-opacity',state.theme.opacity);const safeBg=sanitizeThemeBackground(state.theme.background),bg=safeBg?`url("${safeBg}")`:state.theme.preset==='vermithor'?"url('assets/vermithor.png')":'none';r.setProperty('--hero-img',bg);
+    const fallbackTitle=state.theme.preset==='vermithor'?'Casa do Dragão':(state.theme.name||`Squad ${state.squadCode}`),fallbackTagline=state.theme.preset==='vermithor'?'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.':'Acompanhe, evolua e conquiste.';
+    if($('#campaignNameInput'))$('#campaignNameInput').value=state.theme.campaignTitle||fallbackTitle;if($('#campaignTaglineInput'))$('#campaignTaglineInput').value=state.theme.campaignTagline||fallbackTagline;applyFavicon(state.theme.favicon);if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName||'';if($('#soundtrackDefaultVolume'))$('#soundtrackDefaultVolume').value=Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100);if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100)}%`;applySoundtrack(state.theme);updateThemeName()
+  }
+  function updateThemeName(){if($('#themeName'))$('#themeName').textContent=state.theme?.name||state.theme?.campaignTitle||'Personalizado';syncColorModeUi()}
+  function handleBackground(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;if(f.size>5*1024*1024){toast('Use uma imagem de até 5 MB.');return}const reader=new FileReader();reader.onload=()=>{state.theme.background=reader.result;state.theme.name=$('#campaignNameInput').value||'Personalizado';state.theme.campaignTitle=$('#campaignNameInput').value||state.theme.campaignTitle||`Squad ${state.squadCode}`;state.theme.campaignTagline=$('#campaignTaglineInput').value||state.theme.campaignTagline||'';state.theme.preset='custom';saveTheme();applyTheme(state.theme);toast('Fundo atualizado.')};reader.readAsDataURL(f)}
+  function sanitizeThemeBackground(v){if(!v)return null;const s=String(v).trim();return/^(data:image\/(png|jpeg|jpg|webp|gif);base64,|https?:\/\/|assets\/)/i.test(s)?s:null}
+  function applyFavicon(value){
+    const safe=sanitizeThemeBackground(value)||DEFAULT_FAVICON;
+    let link=$('#appFavicon');
+    if(!link){link=document.createElement('link');link.id='appFavicon';link.rel='icon';link.type='image/png';document.head.appendChild(link)}
+    link.href=safe;
+    if($('#faviconPreview'))$('#faviconPreview').src=safe;
+  }
+  function handleFavicon(e){
+    if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;
+    if(!/^image\/(png|jpeg|jpg|webp|gif)$/i.test(f.type||'')){toast('Use PNG, JPG, WEBP ou GIF para o favicon.');e.target.value='';return}
+    if(f.size>750*1024){toast('Use um favicon de até 750 KB.');e.target.value='';return}
+    const reader=new FileReader();reader.onload=()=>{state.theme.favicon=reader.result;state.theme.preset='custom';saveTheme();applyFavicon(state.theme.favicon);toast('Favicon do tema atualizado.')};reader.readAsDataURL(f);
+  }
+  function resetFavicon(){if(!isAdmin())return;state.theme.favicon=DEFAULT_FAVICON;state.theme.preset='custom';if($('#faviconFile'))$('#faviconFile').value='';saveTheme();applyFavicon(DEFAULT_FAVICON);toast('Favicon padrão do dragão restaurado.')}
+  function themePayload(){const t=normalizeThemePayload(state.theme);const d=t.colors.dark;return{schema:'squad-theme-v2',name:t.name||'Personalizado',campaignTitle:t.campaignTitle||t.name||`Squad ${state.squadCode}`,campaignTagline:t.campaignTagline||'',colors:clone(t.colors),accent:d.accent,secondary:d.secondary,bg:d.bg,bg2:d.bg2,panel:d.panel,panel2:d.panel2,text:d.text,muted:d.muted,border:d.border,background:t.background||null,favicon:t.favicon||DEFAULT_FAVICON,soundtrack:Object.prototype.hasOwnProperty.call(t,'soundtrack')?t.soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:t.soundtrackName||'',soundtrackVolume:clamp(Number(t.soundtrackVolume??.24),0,1),opacity:t.opacity??.28}}
+  function downloadJson(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  function exportTheme(){if(!isAdmin()||!requireSpecificSquad())return;downloadJson(themePayload(),`tema-squad-${state.squadCode.toLowerCase()}.json`);toast('Tema exportado em JSON com paletas clara e escura.')}
+  async function handleThemeJson(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());if(!['squad-theme-v1','squad-theme-v2'].includes(raw.schema))throw new Error('Arquivo de tema incompatível.');const theme={...raw,preset:'custom'};delete theme.schema;delete theme._instrucoes;if(theme.background&&!sanitizeThemeBackground(theme.background))throw new Error('Fundo inválido.');if(theme.favicon&&!sanitizeThemeBackground(theme.favicon))throw new Error('Favicon inválido.');if(theme.soundtrack&&!sanitizeThemeAudio(theme.soundtrack))throw new Error('Trilha sonora inválida.');state.theme=normalizeThemePayload(theme);saveTheme();applyTheme(state.theme);toast(raw.schema==='squad-theme-v1'?'Tema antigo convertido para Light/Dark e aplicado.':'Tema importado e aplicado.')}catch(err){toast(err.message||'Não foi possível importar o tema.')}finally{e.target.value=''}}
+
+  /* ===== Supabase: login + dados multi-squad ===== */
+  async function initSupabase(){
+    const cfg=window.APP_CONFIG||{};if(!cfg.supabaseUrl||!cfg.supabaseAnonKey)throw new Error('Preencha supabaseUrl e supabaseAnonKey em js/config.js.');
+    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    state.supabase=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+    const hashType=new URLSearchParams(window.location.hash.replace(/^#/, '')).get('type');
+    if(hashType==='recovery')state.recoveryMode=true;
+    state.supabase.auth.onAuthStateChange((event)=>{
+      if(event==='PASSWORD_RECOVERY'){
+        state.recoveryMode=true;
+        setTimeout(()=>{showLogin('Link de recuperação validado. Defina sua nova senha.');openModal('recoveryModal');},0);
+      }
+    });
+  }
+  function loadScript(src){return new Promise((resolve,reject)=>{if(window.supabase)return resolve();const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Falha ao carregar biblioteca Supabase.'));document.head.appendChild(s)})}
+  async function enterSupabaseSession(authUser){
+    const {data:profile,error}=await state.supabase.from('profiles').select('user_id,email,full_name,role,organization_id,squad_id,technician_name,squads(id,code,name)').eq('user_id',authUser.id).single();if(error)throw error;
+    state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null};
+    await loadSupabaseData();await enterApp(state.user);
+  }
+  async function loadSupabaseData(){
+    const {data:squads,error}=await state.supabase.from('squads').select('id,code,name').eq('active',true).order('code');if(error)throw error;state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];
+    for(const s of squads){state.squads[s.code]={code:s.code,name:s.name,dbId:s.id,months:{}};const {data:themes}=await state.supabase.from('squad_themes').select('theme').eq('squad_id',s.id).maybeSingle();if(themes?.theme)state.squads[s.code].theme=normalizeThemePayload(themes.theme);const {data:months,error:me}=await state.supabase.from('squad_months').select('id,year,month,source_file,latest_day,imported_at,team_result,redistributed,team_goal_att,team_goal_eval_pct,score_settings,finance_settings,finance_month_data,finance_model,finance_compare,finance_technician_compare,finance_individual_cap,finance_comparison_snapshot,is_closed,closed_at,closed_by,closed_snapshot,quality_person_daily_metrics(technician_name,technician_key,day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at),technician_monthly(id,user_id,technician_name,att,notes5,notes4,notes3,notes2,notes1,total_eval,avg_rating,eval_pct,evaluation_excluded_att,status,goals_hit,points,rank,discount,point_bonus,goal_att,goal_eval,technician_finance_monthly(id,manual_bonus,sales_commission,vacation,exclude_from_group_count,calculated),daily_metrics(day,att,notes5,notes4,notes3,notes2,notes1,off),quality_daily_metrics(day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at))').eq('squad_id',s.id).order('year',{ascending:false}).order('month',{ascending:false});if(me)throw me;for(const row of months||[]){const id=`${row.year}-${String(row.month).padStart(2,'0')}`,technicians=(row.technician_monthly||[]).map(t=>({dbId:t.id,userId:t.user_id,name:t.technician_name,att:safe(t.att),notes5:safe(t.notes5),notes4:safe(t.notes4),notes3:safe(t.notes3),notes2:safe(t.notes2),notes1:safe(t.notes1),totalEval:safe(t.total_eval),avg:safe(t.avg_rating),evalPct:safe(t.eval_pct),evaluationExcludedAtt:safe(t.evaluation_excluded_att),eligibleAtt:Math.max(0,safe(t.att)-safe(t.evaluation_excluded_att)),status:t.status||'',goalsHit:safe(t.goals_hit),points:safe(t.points),rank:safe(t.rank)||null,discount:safe(t.discount),pointBonus:safe(t.point_bonus),goalAtt:safe(t.goal_att),goalEval:safe(t.goal_eval),financeDbId:firstRelation(t.technician_finance_monthly).id||null,financeManualBonus:safe(firstRelation(t.technician_finance_monthly).manual_bonus),salesCommission:safe(firstRelation(t.technician_finance_monthly).sales_commission),vacation:!!firstRelation(t.technician_finance_monthly).vacation,excludeFromGroupCount:!!firstRelation(t.technician_finance_monthly).exclude_from_group_count,financeData:firstRelation(t.technician_finance_monthly).calculated||{},daily:(t.daily_metrics||[]).map(d=>({day:d.day,att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off})).sort((a,b)=>a.day-b.day),qualityDaily:(t.quality_daily_metrics||[]).map(q=>({day:safe(q.day),qualityType:q.quality_type,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),sourceFile:q.source_file||'',importedAt:q.imported_at||null})).sort((a,b)=>a.day-b.day||String(a.qualityType).localeCompare(String(b.qualityType)))}));const totals=deriveTotals(technicians);const monthData={dbId:row.id,id,year:row.year,month:row.month,monthName:MONTHS_PT[row.month-1],sourceFile:row.source_file||'Supabase',latestDay:row.latest_day||1,importedAt:row.imported_at,teamResult:row.team_result||'',redistributed:safe(row.redistributed),teamTotals:totals,settings:{teamGoalAtt:safe(row.team_goal_att),teamGoalEvalPct:Number(row.team_goal_eval_pct??.343)},scoreSettings:row.score_settings||{},financeSettings:row.finance_settings&&Object.keys(row.finance_settings).length?row.finance_settings:clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:row.finance_month_data||{},financeModel:(row.is_closed&&safe(row.closed_snapshot?.version)<3)?'individual':(row.finance_model||'squad'),financeCompare:row.finance_compare!==false,financeTechCompare:row.finance_technician_compare===true,financeIndividualCap:Number.isFinite(Number(row.finance_individual_cap))?safe(row.finance_individual_cap):7000,financeComparison:row.finance_comparison_snapshot||{},isClosed:!!row.is_closed,closedAt:row.closed_at||null,closedBy:row.closed_by||null,closedSnapshot:row.closed_snapshot||{},qualityExternal:(row.quality_person_daily_metrics||[]).map(q=>({technicianName:q.technician_name||'',technicianKey:nameLinkKey(q.technician_name||''),day:safe(q.day),qualityType:q.quality_type,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),sourceFile:q.source_file||'',importedAt:q.imported_at||null})).sort((a,b)=>String(a.technicianName).localeCompare(String(b.technicianName),'pt-BR')||a.day-b.day||String(a.qualityType).localeCompare(String(b.qualityType))),technicians};recalculateMonth(monthData);state.squads[s.code].months[id]=monthData}}
+    state.superAdminCommissions=[];
+    if(isSuperAdmin()){
+      try{
+        const {data:comms,error:ce}=await state.supabase.from('super_admin_commissions').select('id,user_id,year,month,amount,notes').order('year',{ascending:false}).order('month',{ascending:false});if(ce)throw ce;
+        const {data:admins}=await state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin');const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Admin geral']));
+        state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Admin geral',amount:safe(c.amount)}));
+      }catch(err){console.warn('Comissões de Admin Geral indisponíveis. Confira a migração financeira V2.18.0.',err);}
+    }
+    try{
+      const {data:overview,error:overviewError}=await state.supabase.rpc('get_org_squad_monthly_overview');
+      if(overviewError)throw overviewError;
+      state.orgOverview=(overview||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),totalAtt:safe(r.total_att),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct),technicianCount:safe(r.technician_count)}));
+    }catch(err){console.warn('Visão consolidada por Squad indisponível; usando dados já permitidos pela sessão.',err);state.orgOverview=buildOrgOverviewFromState();}
+    try{
+      const {data:techOverview,error:techOverviewError}=await state.supabase.rpc('get_org_technician_monthly_overview');
+      if(techOverviewError)throw techOverviewError;
+      state.orgTechnicianOverview=(techOverview||[]).map(r=>({
+        squadCode:r.squad_code,squadName:r.squad_name,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),
+        technicianName:r.technician_name||'',att:safe(r.att),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct),points:safe(r.points),status:String(r.status||'').toUpperCase()
+      }));
+    }catch(err){console.warn('Visão geral dos técnicos indisponível; usando apenas os dados permitidos pela sessão.',err);state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();}
+    try{
+      const {data:dailyOverview,error:dailyOverviewError}=await state.supabase.rpc('get_org_daily_attendance_overview');
+      if(dailyOverviewError)throw dailyOverviewError;
+      state.orgDailyOverview=(dailyOverview||[]).map(r=>({squadCode:r.squad_code,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),totalAtt:safe(r.total_att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct)}));
+    }catch(err){console.warn('Consolidado diário do setor indisponível; usando apenas os dados permitidos pela sessão.',err);state.orgDailyOverview=buildOrgDailyOverviewFromState();}
+    try{
+      const {data:techDaily,error:techDailyError}=await state.supabase.rpc('get_org_technician_daily_overview');if(techDailyError)throw techDailyError;state.orgTechnicianDailyOverview=(techDaily||[]).map(r=>({squadCode:r.squad_code,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct)}));
+    }catch(err){console.warn('Consolidado diário dos técnicos indisponível; usando dados locais permitidos.',err);state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
+  }
+  function periodWithinHistory(row,year,month){const key=year*100+month,from=safe(row.valid_from_year)*100+safe(row.valid_from_month),to=row.valid_to_year?safe(row.valid_to_year)*100+safe(row.valid_to_month):999999;return key>=from&&key<=to}
+  async function userMapForSquadPeriod(squad,m){
+    const userMap={};
+    if(!state.supabase||!squad?.dbId)return userMap;
+    try{const {data:history,error}=await state.supabase.from('profile_squad_history').select('user_id,technician_name,valid_from_year,valid_from_month,valid_to_year,valid_to_month').eq('squad_id',squad.dbId);if(error)throw error;(history||[]).filter(h=>h.technician_name&&periodWithinHistory(h,m.year,m.month)).forEach(h=>userMap[nameLinkKey(h.technician_name)]=h.user_id)}catch(err){console.warn('Histórico de movimentação indisponível; usando perfil atual.',err)}
+    const {data:profiles,error:pe}=await state.supabase.from('profiles').select('user_id,technician_name,full_name').eq('squad_id',squad.dbId);if(pe)throw pe;(profiles||[]).forEach(p=>{for(const alias of [p.technician_name,p.full_name]){const key=nameLinkKey(alias);if(key&&!userMap[key])userMap[key]=p.user_id}});
+    return userMap;
+  }
+  async function persistImportedMonth(m,squad){
+    const payload={squad_id:squad.dbId,year:m.year,month:m.month,source_file:m.sourceFile,latest_day:m.latestDay,team_result:m.teamResult,redistributed:m.redistributed,team_goal_att:m.settings?.teamGoalAtt||autoTeamAttGoal(m),team_goal_eval_pct:m.settings?.teamGoalEvalPct??.343,score_settings:m.scoreSettings||{},finance_settings:financeSettingsForMonth(m),finance_month_data:m.financeMonthData||{},finance_model:financeModelForMonth(m),finance_compare:m.financeCompare!==false,finance_technician_compare:m.financeTechCompare===true,finance_individual_cap:Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000,finance_comparison_snapshot:m.financeComparison||{},imported_by:state.user.userId,imported_at:new Date().toISOString()};
+    const {data:monthRow,error}=await state.supabase.from('squad_months').upsert(payload,{onConflict:'squad_id,year,month'}).select('id').single();if(error)throw error;m.dbId=monthRow.id;
+    const userMap=await userMapForSquadPeriod(squad,m);
+    const {data:existing,error:ee}=await state.supabase.from('technician_monthly').select('id,technician_name').eq('squad_month_id',monthRow.id);if(ee)throw ee;const keepNames=new Set();
+    for(const t of m.technicians){
+      keepNames.add(nameLinkKey(t.name));
+      const row={squad_month_id:monthRow.id,user_id:userMap[nameLinkKey(t.name)]||null,technician_name:t.name,att:t.att,notes5:t.notes5,notes4:t.notes4,notes3:t.notes3,notes2:t.notes2,notes1:t.notes1,total_eval:t.totalEval,avg_rating:t.avg,eval_pct:t.evalPct,evaluation_excluded_att:normalizedEvaluationExcludedAtt(t),status:t.status,goals_hit:t.goalsHit,points:t.points,rank:t.rank,discount:t.discount,point_bonus:t.pointBonus,goal_att:t.goalAtt,goal_eval:t.goalEval};
+      const {data:tm,error:te}=await state.supabase.from('technician_monthly').upsert(row,{onConflict:'squad_month_id,technician_name'}).select('id').single();if(te)throw te;t.dbId=tm.id;
+      const financeRow={technician_month_id:tm.id,manual_bonus:safe(t.financeManualBonus),sales_commission:safe(t.salesCommission),vacation:!!t.vacation,exclude_from_group_count:!!t.excludeFromGroupCount,calculated:t.financeData||{},updated_by:state.user.userId,updated_at:new Date().toISOString()};const {error:tfe}=await state.supabase.from('technician_finance_monthly').upsert(financeRow,{onConflict:'technician_month_id'});if(tfe)throw tfe;
+      const {error:dd}=await state.supabase.from('daily_metrics').delete().eq('technician_month_id',tm.id);if(dd)throw dd;
+      const daily=(t.daily||[]).map(d=>({technician_month_id:tm.id,day:d.day,att:d.att,notes5:d.notes5,notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off}));if(daily.length){const {error:de}=await state.supabase.from('daily_metrics').insert(daily);if(de)throw de}
+    }
+    for(const old of existing||[]){if(!keepNames.has(nameLinkKey(old.technician_name))){const {error:se}=await state.supabase.from('technician_monthly').delete().eq('id',old.id);if(se)throw se}}
+  }
+  async function persistThemeToSupabase(){const squad=currentSquad();if(!state.supabase||!squad?.dbId)return;const {error}=await state.supabase.from('squad_themes').upsert({squad_id:squad.dbId,theme:themePayload(),updated_by:state.user.userId,updated_at:new Date().toISOString()},{onConflict:'squad_id'});if(error)throw error;squad.theme=clone(state.theme)}
+
+  function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+  boot();
+})();

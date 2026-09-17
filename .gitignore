@@ -1,0 +1,18 @@
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporários / logs
+*.log
+*.tmp
+*.bak
+
+# Arquivos locais que não devem ir para o repositório
+.env
+.env.*
+!.env.example
+
+# Dependências caso ferramentas auxiliares sejam adicionadas futuramente
+node_modules/

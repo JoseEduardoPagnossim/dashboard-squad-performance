@@ -9,7 +9,7 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-dragon.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="styles.css?v=2.29.6" />
+  <link rel="stylesheet" href="css/styles.css?v=2.29.6" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -791,7 +791,7 @@
     <label><span>E-mail</span><input id="newUserEmail" type="email" required autocomplete="off" placeholder="joao@empresa.com"></label>
     <label><span>Senha temporária</span><input id="newUserPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></label>
     <div class="user-form-grid"><label><span>Perfil</span><select id="newUserRole" required><option value="technician">Técnico</option><option value="squad_admin">Admin do Squad</option><option value="super_admin">Admin geral</option></select></label><label><span>Squad</span><select id="newUserSquad"></select></label></div>
-    <label id="technicianNameField"><span>Nome do técnico no CSV</span><input id="newUserTechName" type="text" autocomplete="off" placeholder="Ex.: RODOLFO DONDA"><small>Deve corresponder ao campo Tecnico do CSV para associar os resultados.</small></label>
+    <label id="technicianNameField"><span>Nome do técnico no CSV</span><input id="newUserTechName" type="text" autocomplete="off" placeholder="Ex.: TECNICO DEMO 01"><small>Deve corresponder ao campo Tecnico do CSV para associar os resultados.</small></label>
     <div id="createUserError" class="login-error"></div>
     <div class="modal-actions"><button class="btn secondary" type="button" data-close="userModal">Cancelar</button><button class="btn primary" id="createUserSubmit" type="submit">Criar usuário</button></div>
   </form></div></div>
@@ -879,8 +879,10 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="config.js"></script>
-  <script src="default-data.js"></script>
-  <script src="app.js?v=2.29.6"></script>
+  <script src="js/config.js"></script>
+  <script src="js/core-utils.js"></script>
+  <script src="js/demo-users.js"></script>
+  <script src="js/default-data.js"></script>
+  <script src="js/app.js?v=2.29.6"></script>
 </body>
 </html>
