@@ -8,17 +8,18 @@ A ordem de carregamento dos scripts é importante:
 
 1. `js/config.js` — seleciona modo `supabase` ou `demo`;
 2. `js/core-utils.js` — formatação, seletores e utilidades compartilhadas;
-3. `js/demo-users.js` — usuários fictícios do modo de demonstração;
-4. `js/default-data.js` — dados fictícios do modo de demonstração;
-5. `js/finance-rules.js` — regras financeiras puras, compartilhadas pela aplicação e pelos testes automatizados;
-6. `js/app.js` — estado, renderização, orquestração das regras e integrações.
+3. `js/audit-utils.js` — confirmação crítica, sanitização e rótulos de auditoria;
+4. `js/demo-users.js` — usuários fictícios do modo de demonstração;
+5. `js/default-data.js` — dados fictícios do modo de demonstração;
+6. `js/finance-rules.js` — regras financeiras puras, compartilhadas pela aplicação e pelos testes automatizados;
+7. `js/app.js` — estado, renderização, orquestração das regras e integrações.
 
 A modularização foi iniciada de forma conservadora para não alterar o comportamento existente. As regras financeiras críticas já foram retiradas do arquivo principal para que o código executado em produção seja o mesmo exercitado pela suíte automática. O próximo passo natural é separar gradualmente áreas como autenticação, importação, indicadores e feedbacks.
 
 
 ## Qualidade automatizada
 
-A suíte `tests/finance-rules.test.js` usa o test runner nativo do Node.js e valida as regras financeiras críticas sem depender do navegador. O workflow `.github/workflows/quality.yml` executa `npm run validate` e `npm test` em pushes e Pull Requests da branch `main`.
+As suítes `tests/finance-rules.test.js` e `tests/audit-utils.test.js` usam o test runner nativo do Node.js. Elas validam as regras financeiras críticas e as proteções de auditoria sem depender do navegador. O workflow `.github/workflows/quality.yml` executa `npm run validate` e `npm test` em pushes e Pull Requests da branch `main`.
 
 Essa separação permite alterar o painel visualmente ou evoluir a lógica financeira com uma verificação automática de regressões antes da publicação.
 
@@ -33,13 +34,14 @@ Em produção, o frontend usa Supabase para:
 - feedbacks;
 - temas;
 - custos e impacto financeiro;
-- RPCs de consolidação/ranking.
+- RPCs de consolidação/ranking;
+- trilha de auditoria administrativa em `audit_logs`.
 
 A estrutura para uma base nova está em `supabase/schema.sql`. A evolução histórica permanece em `supabase/migrations/`.
 
 ## Edge Functions
 
-As ações que exigem privilégios elevados, como criação e manutenção de usuários, ficam em `supabase/functions/`. Chaves administrativas não devem ser expostas no frontend.
+As ações que exigem privilégios elevados, como criação e manutenção de usuários, ficam em `supabase/functions/`. Na V2.29.8 essas funções também registram a auditoria de usuários no backend. Chaves administrativas não devem ser expostas no frontend.
 
 ## Dependências carregadas sob demanda
 

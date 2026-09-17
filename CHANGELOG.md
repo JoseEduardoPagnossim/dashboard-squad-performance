@@ -2,6 +2,17 @@
 
 Histórico resumido do Soften Performance Hub. As notas completas de cada versão permanecem em `docs/releases/`.
 
+## 2.29.8
+
+- nova área **Gestão > Auditoria** com leitura por escopo e RLS;
+- registro de alterações administrativas com ator, data/hora, descrição e visão antes/depois;
+- auditoria de usuários realizada pelas Edge Functions `create-user` e `manage-user`;
+- auditoria de importações, competências, metas, regras/valores financeiros, custos e impacto financeiro;
+- confirmação digitada para exclusões e reabertura de competência;
+- sanitização de campos sensíveis nos payloads de auditoria;
+- novos testes automáticos para confirmação crítica e sanitização;
+- nova migração `MIGRACAO_V2.29.8.sql` e atualização do instalador cumulativo.
+
 ## 2.29.7
 
 - extração das regras financeiras críticas para `js/finance-rules.js`;
@@ -47,6 +58,7 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 
 ## Notas completas
 
+- [2.29.8 — Auditoria e proteção de operações críticas](docs/releases/ATUALIZACAO_V2.29.8.md)
 - [2.29.7 — Qualidade automatizada e testes financeiros](docs/releases/ATUALIZACAO_V2.29.7.md)
 - [2.29.6 — Soften Performance Hub V2.29.6](docs/releases/ATUALIZACAO_V2.29.6.md)
 - [2.29.5 — Soften Performance Hub V2.29.5](docs/releases/ATUALIZACAO_V2.29.5.md)

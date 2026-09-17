@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.29.6.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.29.8.
 
 Depois:
 
@@ -40,6 +40,12 @@ V2.29.0
 V2.29.2
 V2.29.5
 V2.29.6
+V2.29.8
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
+
+
+## V2.29.8 — Auditoria
+
+`MIGRACAO_V2.29.8.sql` cria `audit_logs`, habilita RLS e disponibiliza a RPC `log_audit_event`. Depois da migração, republique `create-user` e `manage-user` para que as operações administrativas de usuários também sejam auditadas no backend.

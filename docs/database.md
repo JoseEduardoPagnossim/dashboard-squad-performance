@@ -1,6 +1,6 @@
 # Banco de dados — Supabase
 
-Este documento representa o fluxo recomendado para a versão `2.29.6`.
+Este documento representa o fluxo recomendado para a versão `2.29.8`.
 
 ## Instalação nova
 
@@ -14,13 +14,13 @@ Em um projeto Supabase novo:
 6. configure URL e chave publishable/anon em `js/config.js`;
 7. valide login, leitura dos Squads e uma importação controlada antes de liberar o ambiente.
 
-`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.29.6.
+`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.29.8.
 
 ## Atualização de uma base existente
 
 Não recrie o banco e não execute `schema.sql` sobre produção apenas para atualizar a aplicação.
 
-Use `supabase/migrations/README.md` para identificar a sequência histórica e execute somente as migrações ainda pendentes. Antes de qualquer alteração em produção, faça backup e valide em um ambiente separado quando possível.
+Use `supabase/migrations/README.md` para identificar a sequência histórica e execute somente as migrações ainda pendentes. Antes de qualquer alteração em produção, faça backup e valide a aplicação após a migração. A V2.29.8 adiciona `MIGRACAO_V2.29.8.sql` para auditoria administrativa.
 
 ## Edge Functions
 
@@ -31,7 +31,7 @@ supabase/functions/create-user/
 supabase/functions/manage-user/
 ```
 
-Elas concentram operações administrativas que não devem depender de privilégios expostos ao navegador.
+Elas concentram operações administrativas que não devem depender de privilégios expostos ao navegador. Na V2.29.8, `create-user` e `manage-user` também registram auditoria; por isso devem ser republicadas após a atualização do banco.
 
 ## RLS
 

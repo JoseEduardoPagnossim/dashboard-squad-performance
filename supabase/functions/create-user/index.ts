@@ -9,6 +9,12 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const fail = (error: string, status: number, code: string, extra:Record<string,unknown>={}) => json({ error, code, ...extra }, status)
 const normalizeTech = (value: unknown) => String(value ?? '').normalize('NFKC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/\s+/g, ' ').trim().toUpperCase()
 const linkKey = (value: unknown) => normalizeTech(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '')
+const writeAudit = async (admin:any, requester:any, event:{action:string;entityType:string;entityId?:string|null;squadId?:string|null;description?:string;beforeData?:unknown;afterData?:unknown;metadata?:unknown}) => {
+  try {
+    const { error } = await admin.from('audit_logs').insert({organization_id:requester.organization_id,squad_id:event.squadId||null,actor_user_id:requester.user_id,actor_name:requester.full_name||'Administrador',actor_email:requester.email||null,actor_role:requester.role,action:event.action,entity_type:event.entityType,entity_id:event.entityId||null,description:event.description||null,before_data:event.beforeData||{},after_data:event.afterData||{},metadata:event.metadata||{}})
+    if (error) console.error('create-user audit:', error)
+  } catch (error) { console.error('create-user audit unexpected:', error) }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -21,7 +27,7 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceRoleKey, {auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}})
     const { data: authData, error: authError } = await admin.auth.getUser(token)
     if (authError || !authData.user) return fail('Sessão inválida.', 401, 'invalid_session')
-    const { data: requester } = await admin.from('profiles').select('user_id,organization_id,squad_id,role,active').eq('user_id', authData.user.id).eq('active', true).single()
+    const { data: requester } = await admin.from('profiles').select('user_id,organization_id,squad_id,role,active,full_name,email').eq('user_id', authData.user.id).eq('active', true).single()
     if (!requester) return fail('Perfil administrador não encontrado.', 403, 'admin_profile_missing')
     if (!['super_admin','squad_admin'].includes(requester.role)) return fail('Sem permissão para criar usuários.', 403, 'forbidden')
 
@@ -80,6 +86,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    await writeAudit(admin,requester,{action:'user.create',entityType:'profile',entityId:created.user.id,squadId:targetSquad?.id||null,description:`Usuário ${fullName} criado com perfil ${role}.`,afterData:{full_name:fullName,email,role,squad_code:targetSquad?.code||null,technician_name:technicianName,active:true}})
     return json({user:{id:created.user.id,email,full_name:fullName,role,squad_code:targetSquad?.code||null,technician_name:technicianName}},201)
   } catch (error) {
     console.error('create-user unexpected:', error)

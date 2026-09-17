@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.29.7`<br>
+**Versão atual:** `2.29.8`<br>
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
 
@@ -37,6 +37,7 @@ dashboard-squad-performance/
 │   ├── config.js           # configuração de ambiente/Supabase
 │   ├── core-utils.js       # utilidades compartilhadas
 │   ├── finance-rules.js    # regras financeiras puras e testáveis
+│   ├── audit-utils.js      # sanitização e proteções da auditoria
 │   ├── default-data.js     # dados demonstrativos anonimizados
 │   └── demo-users.js       # contas exclusivamente demonstrativas
 ├── docs/
@@ -47,7 +48,8 @@ dashboard-squad-performance/
 │   ├── examples/           # exemplos de tema
 │   └── releases/           # histórico detalhado por versão
 ├── tests/
-│   └── finance-rules.test.js # testes automáticos das regras financeiras
+│   ├── finance-rules.test.js # testes automáticos das regras financeiras
+│   └── audit-utils.test.js   # testes das proteções de auditoria
 ├── .github/workflows/
 │   └── quality.yml         # validação automática no GitHub Actions
 ├── supabase/
@@ -99,9 +101,9 @@ npm run check
 O comando `npm run check` executa duas etapas:
 
 1. `npm run validate` — confere referências locais, estrutura obrigatória, ordem de carregamento dos módulos e sintaxe dos JavaScripts;
-2. `npm test` — executa os testes automáticos das regras financeiras com o test runner nativo do Node.js.
+2. `npm test` — executa os testes automáticos das regras financeiras e das proteções de auditoria com o test runner nativo do Node.js.
 
-A suíte financeira cobre faixas de atendimento, faixas de Notas 5, cancelamento, regra 2 de 4 para status financeiro, empate de prêmios, desconto/redistribuição, competência parcial, piso zero, férias e teto global do modelo individual.
+A suíte financeira cobre faixas de atendimento, faixas de Notas 5, cancelamento, regra 2 de 4 para status financeiro, empate de prêmios, desconto/redistribuição, competência parcial, piso zero, férias e teto global do modelo individual. Os testes de auditoria validam a confirmação digitada e a remoção de campos sensíveis antes do registro.
 
 ### GitHub Actions
 
@@ -112,6 +114,21 @@ O workflow `.github/workflows/quality.yml` roda automaticamente em:
 - execução manual pela aba **Actions** do GitHub.
 
 Se a validação ou qualquer teste falhar, o workflow fica vermelho e informa qual regra precisa ser revisada. Ele não altera o deploy do GitHub Pages; funciona apenas como barreira de qualidade.
+
+
+## Auditoria e operações críticas
+
+A V2.29.8 adiciona uma área **Gestão > Auditoria** para administradores. Os registros incluem ator, data/hora, escopo, ação e visão de antes/depois para mudanças administrativas relevantes. Admin Geral visualiza a organização; Admin de Squad visualiza apenas seu próprio Squad por RLS.
+
+São auditadas, entre outras, criação/alteração/inativação/exclusão de usuários, importações, fechamento/reabertura/exclusão de competência, metas, configurações financeiras, custos e parâmetros de impacto financeiro. Campos com nomes sensíveis como senha, token, secret e `service_role` são removidos do payload de auditoria do frontend.
+
+Ações destrutivas selecionadas usam confirmação reforçada: **EXCLUIR** para exclusões e **REABRIR** para reabertura de competência.
+
+Para atualizar uma base existente para a V2.29.8:
+
+1. execute `supabase/migrations/MIGRACAO_V2.29.8.sql` no SQL Editor;
+2. republique as Edge Functions `create-user` e `manage-user`, pois elas agora registram as ações de usuários no backend;
+3. publique o frontend normalmente.
 
 ## Publicação no GitHub Pages
 

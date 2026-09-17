@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   validate-and-test:
-    name: Validar projeto e regras financeiras
+    name: Validar projeto, auditoria e regras financeiras
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -35,8 +35,8 @@ jobs:
       - name: Preparar ambiente
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validar estrutura e JavaScript
+      - name: Validar estrutura, segurança e JavaScript
         run: npm run validate
 
-      - name: Executar testes financeiros
+      - name: Executar testes automatizados
         run: npm test

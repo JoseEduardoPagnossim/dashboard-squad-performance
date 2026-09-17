@@ -20,15 +20,24 @@ const index = readFileSync(indexPath, 'utf8');
 for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) assertLocalRef(root, match[1], 'index.html');
 
 const financeScriptPosition = index.indexOf('js/finance-rules.js');
+const auditScriptPosition = index.indexOf('js/audit-utils.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
+if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && auditScriptPosition > appScriptPosition) errors.push('js/audit-utils.js deve ser carregado antes de js/app.js.');
+for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
+  if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
+}
 
 for (const required of [
   '.github/workflows/quality.yml',
   'package.json',
   'tests/finance-rules.test.js',
-  'js/finance-rules.js'
+  'tests/audit-utils.test.js',
+  'js/finance-rules.js',
+  'js/audit-utils.js',
+  'supabase/migrations/MIGRACAO_V2.29.8.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -67,6 +76,26 @@ for (const financeCall of [
   'financeRules.applyIndividualTotalCap'
 ]) {
   if (!appText.includes(financeCall)) errors.push(`js/app.js deixou de usar a regra financeira testada: ${financeCall}`);
+}
+
+for (const auditMarker of [
+  "rpc('log_audit_event'",
+  "'month.import_service'",
+  "'month.import_quality'",
+  "'month.close'",
+  "'month.reopen'",
+  "'finance.config_update'"
+]) {
+  if (!appText.includes(auditMarker)) errors.push(`js/app.js deixou de registrar auditoria esperada: ${auditMarker}`);
+}
+
+const migrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.29.8.sql'), 'utf8').toLowerCase();
+for (const sqlMarker of [
+  'create table if not exists public.audit_logs',
+  'alter table public.audit_logs enable row level security',
+  'create or replace function public.log_audit_event'
+]) {
+  if (!migrationText.includes(sqlMarker)) errors.push(`Migração V2.29.8 incompleta: ${sqlMarker}`);
 }
 
 if (errors.length) {

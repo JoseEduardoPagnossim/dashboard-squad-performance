@@ -9,7 +9,7 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-dragon.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.29.7" />
+  <link rel="stylesheet" href="css/styles.css?v=2.29.8" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -47,7 +47,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.29.7 • Qualidade automatizada</small>
+      <small class="login-version">V2.29.8 • Auditoria e proteção crítica</small>
     </div>
   </section>
 
@@ -80,6 +80,7 @@
           <button class="nav-btn super-only" data-view="admin" data-admin-section="costs"><span>⏱</span> Custos</button>
           <button class="nav-btn" data-view="feedbacks"><span>✎</span> Feedbacks</button>
           <button class="nav-btn" data-view="users"><span>♟</span> Usuários</button>
+          <button class="nav-btn" data-view="audit"><span>⌁</span> Auditoria</button>
           <button class="nav-btn" data-view="admin" data-admin-section="appearance"><span>✦</span> Aparência</button>
         </div>
         <div class="nav-group"><span class="nav-group-label">CONTA</span>
@@ -104,7 +105,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.29.7 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.29.8 • Squads A, B, D e E</div>
     </aside>
 
     <main class="main">
@@ -628,6 +629,24 @@
       </section>
 
 
+      <section id="view-audit" class="view admin-only">
+        <div class="audit-hero card glass">
+          <div><span class="eyebrow">RASTREABILIDADE ADMINISTRATIVA</span><h2>Auditoria de operações</h2><p id="auditScopeText">Acompanhe alterações críticas, importações, fechamento de competências, usuários e regras financeiras.</p></div>
+          <button class="btn secondary" id="refreshAuditBtn" type="button">↻ Atualizar</button>
+        </div>
+        <article class="card audit-log-card">
+          <div class="section-title"><div><span class="eyebrow">HISTÓRICO IMUTÁVEL</span><h3>Últimas ações administrativas</h3></div><span class="muted" id="auditCountLabel">0 registros</span></div>
+          <div class="audit-toolbar">
+            <label class="search-field"><span>Buscar</span><input id="auditSearchInput" type="search" placeholder="Usuário, ação, competência ou descrição"></label>
+            <label class="filter-field"><span>Categoria</span><select id="auditCategoryFilter"><option value="all">Todas</option><option value="user">Usuários</option><option value="month">Competências / importações</option><option value="finance">Bonificação</option><option value="goals">Metas e métricas</option><option value="costs">Custos</option><option value="quality">Impacto financeiro</option></select></label>
+          </div>
+          <div id="auditStatus" class="admin-note">Carregando auditoria...</div>
+          <div class="table-wrap audit-table-wrap"><table class="audit-table"><thead><tr><th>Data / hora</th><th>Responsável</th><th>Ação</th><th>Escopo</th><th>Detalhes</th></tr></thead><tbody id="auditRows"></tbody></table></div>
+          <div class="admin-note">Os registros de auditoria não podem ser editados ou excluídos pela aplicação. Dados sensíveis como senhas e tokens são removidos antes do registro.</div>
+        </article>
+      </section>
+
+
       <section id="view-my-feedbacks" class="view tech-only">
         <div class="feedback-hero card glass">
           <div><span class="eyebrow">MEU DESENVOLVIMENTO</span><h2>Meus feedbacks</h2><p>Histórico mensal compartilhado pelo gestor. Apenas feedbacks finalizados e liberados para você aparecem aqui.</p></div>
@@ -871,6 +890,7 @@
       <span class="eyebrow">CONFIRMAÇÃO</span>
       <h2 id="confirmDialogTitle">Confirmar ação</h2>
       <p id="confirmDialogMessage">Confirme para continuar.</p>
+      <label id="confirmDialogPhraseWrap" class="confirm-phrase hidden"><span id="confirmDialogPhraseLabel">Digite a confirmação para continuar</span><input id="confirmDialogPhraseInput" type="text" autocomplete="off" spellcheck="false"></label>
       <div class="modal-actions">
         <button class="btn secondary" id="confirmDialogCancel" type="button">Cancelar</button>
         <button class="btn primary" id="confirmDialogConfirm" type="button">Confirmar</button>
@@ -881,9 +901,10 @@
   <div class="toast" id="toast"></div>
   <script src="js/config.js"></script>
   <script src="js/core-utils.js"></script>
+  <script src="js/audit-utils.js?v=2.29.8"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.29.7"></script>
-  <script src="js/app.js?v=2.29.7"></script>
+  <script src="js/finance-rules.js?v=2.29.8"></script>
+  <script src="js/app.js?v=2.29.8"></script>
 </body>
 </html>

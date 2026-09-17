@@ -10,6 +10,12 @@ const normalizeTech = (value: unknown) => String(value ?? '').normalize('NFKC').
 const linkKey = (value: unknown) => normalizeTech(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'')
 const periodKey = (year:number,month:number)=>year*100+month
 const previousPeriod = (year:number,month:number)=>month===1?{year:year-1,month:12}:{year,month:month-1}
+const writeAudit = async (admin:any, requester:any, event:{action:string;entityType:string;entityId?:string|null;squadId?:string|null;description?:string;beforeData?:unknown;afterData?:unknown;metadata?:unknown}) => {
+  try {
+    const { error } = await admin.from('audit_logs').insert({organization_id:requester.organization_id,squad_id:event.squadId||null,actor_user_id:requester.user_id,actor_name:requester.full_name||'Administrador',actor_email:requester.email||null,actor_role:requester.role,action:event.action,entity_type:event.entityType,entity_id:event.entityId||null,description:event.description||null,before_data:event.beforeData||{},after_data:event.afterData||{},metadata:event.metadata||{}})
+    if (error) console.error('manage-user audit:', error)
+  } catch (error) { console.error('manage-user audit unexpected:', error) }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -22,7 +28,7 @@ Deno.serve(async (req) => {
     const admin=createClient(supabaseUrl,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}})
     const {data:authData,error:authError}=await admin.auth.getUser(token)
     if(authError||!authData.user)return json({error:'Sessão inválida.'},401)
-    const {data:requester}=await admin.from('profiles').select('user_id,organization_id,squad_id,role,active').eq('user_id',authData.user.id).eq('active',true).single()
+    const {data:requester}=await admin.from('profiles').select('user_id,organization_id,squad_id,role,active,full_name,email').eq('user_id',authData.user.id).eq('active',true).single()
     if(!requester||!['super_admin','squad_admin'].includes(requester.role))return json({error:'Sem permissão para gerenciar usuários.'},403)
 
     const body=await req.json(),action=String(body.action||''),targetId=String(body.user_id||'')
@@ -36,6 +42,7 @@ Deno.serve(async (req) => {
       if(target.role==='super_admin')return json({error:'Administradores gerais não podem ser excluídos por esta tela.'},403)
       const {error}=await admin.auth.admin.deleteUser(targetId)
       if(error)return json({error:error.message||'Não foi possível excluir o usuário.'},400)
+      await writeAudit(admin,requester,{action:'user.delete',entityType:'profile',entityId:targetId,squadId:target.squad_id||null,description:`Usuário ${target.full_name} excluído.`,beforeData:{full_name:target.full_name,email:target.email,role:target.role,squad_id:target.squad_id,technician_name:target.technician_name,active:target.active},afterData:{deleted:true}})
       return json({ok:true,deleted_user_id:targetId})
     }
 
@@ -49,6 +56,7 @@ Deno.serve(async (req) => {
         await admin.auth.admin.updateUserById(targetId,{ban_duration:target.active?'none':'876000h'})
         return json({error:profileError.message||'Não foi possível alterar o status do perfil.'},400)
       }
+      await writeAudit(admin,requester,{action:active?'user.activate':'user.deactivate',entityType:'profile',entityId:targetId,squadId:target.squad_id||null,description:`Usuário ${target.full_name} ${active?'reativado':'inativado'}.`,beforeData:{active:target.active},afterData:{active}})
       return json({ok:true,user_id:targetId,active})
     }
 
@@ -122,6 +130,7 @@ Deno.serve(async (req) => {
     }
 
     if(!targetSquadCode&&squadId){const {data:s}=await admin.from('squads').select('code').eq('id',squadId).maybeSingle();targetSquadCode=s?.code||null}
+    await writeAudit(admin,requester,{action:'user.update',entityType:'profile',entityId:targetId,squadId:squadId||target.squad_id||null,description:`Usuário ${fullName} atualizado${squadChanged?' e movimentado de Squad':''}.`,beforeData:{full_name:target.full_name,email:target.email,role:target.role,squad_id:target.squad_id,technician_name:target.technician_name,active:target.active},afterData:{full_name:fullName,email:target.email,role,squad_id:squadId,squad_code:targetSquadCode,technician_name:technicianName,active:target.active},metadata:squadChanged?{effective_year:effectiveYear,effective_month:effectiveMonth,previous_squad_id:target.squad_id}:{} })
     return json({ok:true,user:{id:targetId,email:target.email,full_name:fullName,role,squad_code:targetSquadCode,technician_name:technicianName,active:target.active},movement:squadChanged?{effective_year:effectiveYear,effective_month:effectiveMonth}:null})
   } catch(error) {
     console.error(error)

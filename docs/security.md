@@ -21,6 +21,15 @@ Sempre teste pelo menos estes perfis após mudanças de schema/policies:
 - Admin de Squad;
 - Técnico.
 
+
+## Auditoria administrativa
+
+A V2.29.8 mantém os registros administrativos em `audit_logs`. A tabela tem RLS para leitura e não concede INSERT/UPDATE/DELETE ao cliente autenticado. Registros feitos pelo frontend passam por `log_audit_event`, que deriva o ator da sessão; operações de usuários executadas pelas Edge Functions são gravadas pelo backend.
+
+O frontend sanitiza payloads de auditoria e substitui campos com nomes sensíveis (senha, token, secret, authorization, `service_role` e API keys) por `[removido]`. Mesmo assim, não inclua secrets em objetos de negócio ou mensagens de descrição.
+
+A exclusão de usuário/competência e a reabertura de competência possuem confirmação digitada adicional para reduzir ações acidentais. Auditoria não substitui backup do banco.
+
 ## Dados de demonstração
 
 Os dados em `js/default-data.js` e `js/demo-users.js` são fictícios. Nomes de colaboradores foram removidos do conjunto demonstrativo e das notas históricas incluídas no repositório.
