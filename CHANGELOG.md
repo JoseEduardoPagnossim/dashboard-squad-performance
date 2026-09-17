@@ -2,6 +2,14 @@
 
 Histórico resumido do Soften Performance Hub. As notas completas de cada versão permanecem em `docs/releases/`.
 
+## 2.29.7
+
+- extração das regras financeiras críticas para `js/finance-rules.js`;
+- inclusão de testes automáticos com Node.js para faixas, cancelamento, status, prêmios, redistribuição, férias, piso zero e teto global;
+- inclusão do GitHub Actions `Quality Gate` em pushes e Pull Requests da `main`;
+- validação estrutural reforçada para garantir o carregamento correto do módulo financeiro;
+- nenhuma migração de banco de dados necessária.
+
 ## 2.29.6
 
 - consolidação das regras de status e bonificação;
@@ -39,6 +47,7 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 
 ## Notas completas
 
+- [2.29.7 — Qualidade automatizada e testes financeiros](docs/releases/ATUALIZACAO_V2.29.7.md)
 - [2.29.6 — Soften Performance Hub V2.29.6](docs/releases/ATUALIZACAO_V2.29.6.md)
 - [2.29.5 — Soften Performance Hub V2.29.5](docs/releases/ATUALIZACAO_V2.29.5.md)
 - [2.29.4 — Atualização V2.29.4 — Status da equipe consistente](docs/releases/ATUALIZACAO_V2.29.4.md)

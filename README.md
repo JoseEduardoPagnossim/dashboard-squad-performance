@@ -1,8 +1,10 @@
 # Soften Performance Hub
 
+![Quality Gate](https://github.com/JoseEduardoPagnossim/dashboard-squad-performance/actions/workflows/quality.yml/badge.svg)
+
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.29.6`<br>
+**Versão atual:** `2.29.7`<br>
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
 
@@ -34,6 +36,7 @@ dashboard-squad-performance/
 │   ├── app.js              # lógica principal
 │   ├── config.js           # configuração de ambiente/Supabase
 │   ├── core-utils.js       # utilidades compartilhadas
+│   ├── finance-rules.js    # regras financeiras puras e testáveis
 │   ├── default-data.js     # dados demonstrativos anonimizados
 │   └── demo-users.js       # contas exclusivamente demonstrativas
 ├── docs/
@@ -43,6 +46,10 @@ dashboard-squad-performance/
 │   ├── demo.md             # modo de demonstração
 │   ├── examples/           # exemplos de tema
 │   └── releases/           # histórico detalhado por versão
+├── tests/
+│   └── finance-rules.test.js # testes automáticos das regras financeiras
+├── .github/workflows/
+│   └── quality.yml         # validação automática no GitHub Actions
 ├── supabase/
 │   ├── functions/          # Edge Functions
 │   ├── migrations/         # migrações históricas
@@ -80,15 +87,31 @@ Para uma instalação nova do banco, siga [docs/database.md](docs/database.md).
 
 Para trabalhar sem banco, altere `mode` para `demo` em `js/config.js`. As contas e os dados deste modo são fictícios e anonimizados. Consulte [docs/demo.md](docs/demo.md).
 
-## Validação rápida
+## Validação e testes automáticos
 
-Antes de publicar, execute:
+O projeto possui um *quality gate* executável localmente e também pelo GitHub Actions. Com Node.js 20 ou superior:
 
 ```bash
-node scripts/validate-project.mjs
+npm ci
+npm run check
 ```
 
-O script confere os arquivos referenciados pelo `index.html` e valida a sintaxe dos JavaScripts locais.
+O comando `npm run check` executa duas etapas:
+
+1. `npm run validate` — confere referências locais, estrutura obrigatória, ordem de carregamento dos módulos e sintaxe dos JavaScripts;
+2. `npm test` — executa os testes automáticos das regras financeiras com o test runner nativo do Node.js.
+
+A suíte financeira cobre faixas de atendimento, faixas de Notas 5, cancelamento, regra 2 de 4 para status financeiro, empate de prêmios, desconto/redistribuição, competência parcial, piso zero, férias e teto global do modelo individual.
+
+### GitHub Actions
+
+O workflow `.github/workflows/quality.yml` roda automaticamente em:
+
+- todo `push` na branch `main`;
+- todo Pull Request direcionado para `main`;
+- execução manual pela aba **Actions** do GitHub.
+
+Se a validação ou qualquer teste falhar, o workflow fica vermelho e informa qual regra precisa ser revisada. Ele não altera o deploy do GitHub Pages; funciona apenas como barreira de qualidade.
 
 ## Publicação no GitHub Pages
 

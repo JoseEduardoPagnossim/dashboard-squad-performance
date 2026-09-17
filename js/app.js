@@ -2,21 +2,9 @@
   const utils = window.SoftenPerformanceUtils;
   if(!utils) throw new Error('SoftenPerformanceUtils não carregado. Verifique js/core-utils.js.');
   const {MONTHS_PT,MONTH_SHEET,$,$$,fmtInt,fmtPct,fmtMoney,fmtNum,clamp,HISTORY_COLORS,safe,roundTo,clone,firstRelation}=utils;
-  const DEFAULT_FINANCE_SETTINGS = {
-    attendanceTiers:[
-      {min:50,amount:750},{min:40,amount:637.50},{min:32,amount:541.88},{min:25.6,amount:460.59},{min:20.5,amount:391.50},
-      {min:16.4,amount:332.78},{min:13.1,amount:282.86},{min:10.5,amount:240.43},{min:8.4,amount:204.37},{min:6.7,amount:0}
-    ],
-    notes5Tiers:[
-      {min:1,amount:750},{min:.70,amount:600},{min:.49,amount:480},{min:.343,amount:384},{min:.24,amount:307.20},
-      {min:.168,amount:245.76},{min:.118,amount:196.61},{min:.083,amount:0},{min:.058,amount:0},{min:.04,amount:0}
-    ],
-    cancelTiers:[
-      {max:.004,mult:2},{max:.008,mult:1.760},{max:.012,mult:1.549},{max:.016,mult:1.363},{max:.020,mult:1.199},
-      {max:.024,mult:1.055},{max:.028,mult:0},{max:.032,mult:0},{max:.036,mult:0},{max:.040,mult:0}
-    ],
-    topAttendancePrize:100,topNotes5Prize:100,belowDiscount:200
-  };
+  const financeRules = window.SoftenFinanceRules;
+  if(!financeRules) throw new Error('SoftenFinanceRules não carregado. Verifique js/finance-rules.js.');
+  const {DEFAULT_FINANCE_SETTINGS}=financeRules;
 
   const DEFAULT_FAVICON = 'assets/favicon-dragon.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -2110,39 +2098,15 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     m.teamTotals=deriveTotals(m.technicians);const teamStatus=teamStatusFromTechnicianStatuses(m.technicians);m.teamResult=teamStatus.status||'ABAIXO';recalculateFinance(m);
   }
 
-  function financeSettingsForMonth(m){
-    const current=m?.financeSettings&&Object.keys(m.financeSettings).length?m.financeSettings:{};
-    return{
-      attendanceTiers:Array.isArray(current.attendanceTiers)&&current.attendanceTiers.length?clone(current.attendanceTiers):clone(DEFAULT_FINANCE_SETTINGS.attendanceTiers),
-      notes5Tiers:Array.isArray(current.notes5Tiers)&&current.notes5Tiers.length?clone(current.notes5Tiers):clone(DEFAULT_FINANCE_SETTINGS.notes5Tiers),
-      cancelTiers:Array.isArray(current.cancelTiers)&&current.cancelTiers.length?clone(current.cancelTiers):clone(DEFAULT_FINANCE_SETTINGS.cancelTiers),
-      topAttendancePrize:Number.isFinite(Number(current.topAttendancePrize))?safe(current.topAttendancePrize):DEFAULT_FINANCE_SETTINGS.topAttendancePrize,
-      topNotes5Prize:Number.isFinite(Number(current.topNotes5Prize))?safe(current.topNotes5Prize):DEFAULT_FINANCE_SETTINGS.topNotes5Prize,
-      belowDiscount:Number.isFinite(Number(current.belowDiscount))?safe(current.belowDiscount):DEFAULT_FINANCE_SETTINGS.belowDiscount
-    };
-  }
+  function financeSettingsForMonth(m){return financeRules.resolveFinanceSettings(m?.financeSettings)}
   function financeModelForMonth(m){return ['squad','individual'].includes(m?.financeModel)?m.financeModel:(m?.isClosed&&safe(m?.closedSnapshot?.version)<3?'individual':'squad')}
   function financeModelLabel(model){return model==='individual'?'Individual meritocrático':'Base do Squad'}
-  function financeFloorTier(value,tiers){const sorted=[...(tiers||[])].sort((a,b)=>safe(b.min)-safe(a.min));return sorted.find(t=>safe(value)>=safe(t.min))||sorted[sorted.length-1]||{min:0,amount:0}}
-  function financeCancelTier(rate,tiers){const sorted=[...(tiers||[])].sort((a,b)=>safe(a.max)-safe(b.max));return sorted.find(t=>safe(rate)<=safe(t.max))||sorted[sorted.length-1]||{max:0,mult:0}}
+  function financeFloorTier(value,tiers){return financeRules.financeFloorTier(value,tiers)}
+  function financeCancelTier(rate,tiers){return financeRules.financeCancelTier(rate,tiers)}
   function financialStatusRefs(m){return automaticScoreRefs(m)}
-  function financePerformanceStatus(t,m){if(safe(t.att)<=0)return'';const r=financialStatusRefs(m),hits=[safe(t.att)>=r.refAtt,safe(t.totalEval)>=r.refTotalEval,safe(t.avg)>=r.refAvg,safe(t.evalPct)>=r.refEvalPct].filter(Boolean).length;return hits>=2?'ACIMA':'ABAIXO'}
-  function buildFinanceModelData({mode,hasProduction,days,avgPerDay,notes5Pct,eligibleAtt,evaluationExcludedAtt,commissionAtt,commissionNotes5,cancelRate,cancelTier,rawMult,effectiveMult,financeStatus,financialAdjustmentEligible,topAttBonus,topNotes5Bonus,manualBonus,sales,discount,redistributed,vacation,pool}){
-    const base=hasProduction?safe(commissionAtt)+safe(commissionNotes5):0,afterCancel=hasProduction?base*effectiveMult:0;
-    const rawBeforeVacation=hasProduction?afterCancel+manualBonus+topAttBonus+topNotes5Bonus+sales-discount+redistributed:0;
-    const beforeVacation=mode==='individual'?Math.max(0,rawBeforeVacation):rawBeforeVacation;
-    const zeroFloorAdjustment=mode==='individual'&&rawBeforeVacation<0?-rawBeforeVacation:0;
-    const preCapFinal=vacation?beforeVacation*.5:beforeVacation;
-    return{mode,hasProduction,days,avgPerDay,notes5Pct,eligibleAtt:safe(eligibleAtt),evaluationExcludedAtt:safe(evaluationExcludedAtt),attendanceTier:null,notes5Tier:null,commissionAtt:safe(commissionAtt),commissionNotes5:safe(commissionNotes5),base,cancelRate,cancelTier:safe(cancelTier?.max),cancelRawMultiplier:rawMult,cancelMultiplier:effectiveMult,afterCancel,financeStatus,financialAdjustmentEligible:financialAdjustmentEligible!==false,topAttBonus,topNotes5Bonus,manualBonus,salesCommission:sales,discount,redistribution:redistributed,rawBeforeVacation,beforeVacation,zeroFloorAdjustment,vacation:!!vacation,vacationFactor:vacation?.5:1,preCapFinal:Number(preCapFinal.toFixed(2)),capAdjustment:0,capFactor:1,capApplied:false,final:Number(preCapFinal.toFixed(2)),pool:Number(pool.toFixed(2))}
-  }
-  function applyIndividualTotalCap(records,cap){
-    const limit=Math.max(0,Number.isFinite(Number(cap))?safe(cap):7000),before=records.reduce((sum,r)=>sum+Math.max(0,safe(r.data.preCapFinal)),0);
-    if(before<=limit||before<=0){records.forEach(r=>{r.data.capFactor=1;r.data.capApplied=false;r.data.capAdjustment=0;r.data.final=Number(safe(r.data.preCapFinal).toFixed(2))});return{before:Number(before.toFixed(2)),after:Number(before.toFixed(2)),cap:limit,factor:1,applied:false,adjustment:0}}
-    const factor=limit/before,targetCents=Math.round(limit*100),parts=records.map((r,i)=>{const raw=Math.max(0,safe(r.data.preCapFinal))*factor*100,base=Math.floor(raw+1e-9);return{i,r,raw,base,frac:raw-base}}),used=parts.reduce((s,p)=>s+p.base,0),remainder=Math.max(0,targetCents-used);
-    parts.sort((a,b)=>b.frac-a.frac||safe(b.r.data.preCapFinal)-safe(a.r.data.preCapFinal));for(let i=0;i<remainder&&parts.length;i++)parts[i%parts.length].base+=1;
-    parts.forEach(p=>{const final=p.base/100,d=p.r.data;d.capFactor=factor;d.capApplied=true;d.final=final;d.capAdjustment=Number((final-safe(d.preCapFinal)).toFixed(2))});
-    const after=records.reduce((sum,r)=>sum+safe(r.data.final),0);return{before:Number(before.toFixed(2)),after:Number(after.toFixed(2)),cap:limit,factor,applied:true,adjustment:Number((after-before).toFixed(2))}
-  }
+  function financePerformanceStatus(t,m){return financeRules.financePerformanceStatus(t,financialStatusRefs(m))}
+  function buildFinanceModelData(options){return financeRules.buildFinanceModelData(options)}
+  function applyIndividualTotalCap(records,cap){return financeRules.applyIndividualTotalCap(records,cap)}
   function recalculateFinance(m){
     if(!m||m.isClosed)return;
     // Em produção, técnicos não recalculam o financeiro no navegador: a RLS protege os componentes
@@ -2150,18 +2114,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     // persistido pelo gestor/importação para o próprio técnico.
     if(isTechnician()&&state.supabase)return;
     const settings=financeSettingsForMonth(m);m.financeSettings=settings;m.financeMonthData=m.financeMonthData||{};m.financeModel=financeModelForMonth(m);if(typeof m.financeCompare!=='boolean')m.financeCompare=true;if(typeof m.financeTechCompare!=='boolean')m.financeTechCompare=false;if(!Number.isFinite(Number(m.financeIndividualCap)))m.financeIndividualCap=7000;
-    const customers=safe(m.financeMonthData.customersStart),canceled=safe(m.financeMonthData.canceledCount),cancelRate=customers>0?canceled/customers:0,cancelTier=financeCancelTier(cancelRate,settings.cancelTiers),rawMult=customers>0?safe(cancelTier.mult):0,effectiveMult=customers>0?(rawMult===0?1:rawMult):1;
+    const cancellation=financeRules.cancellationSummary(m.financeMonthData.customersStart,m.financeMonthData.canceledCount,settings.cancelTiers),customers=cancellation.customers,canceled=cancellation.canceled,cancelRate=cancellation.rate,cancelTier=cancellation.tier,rawMult=cancellation.rawMultiplier,effectiveMult=cancellation.effectiveMultiplier;
     const active=(m.technicians||[]).filter(t=>safe(t.att)>0),counted=active.filter(t=>!t.excludeFromGroupCount),days=Math.max(1,businessDaysElapsed(m.year,m.month,m.latestDay));
     // V2.21.0: todos os atendimentos e Notas 5 continuam no numerador. O checkbox apenas
     // retira o técnico do denominador da quantidade de técnicos usada pela Base do Squad.
-    const totalAtt=active.reduce((s,t)=>s+safe(t.att),0),totalN5=active.reduce((s,t)=>s+safe(t.notes5),0),groupEligibleAtt=active.reduce((s,t)=>s+eligibleEvaluationAttendance(t),0),groupExcludedAtt=active.reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0),groupAvgPerDay=counted.length?totalAtt/(days*counted.length):0,groupNotes5Pct=groupEligibleAtt?totalN5/groupEligibleAtt:0;
-    const groupAttTier=financeFloorTier(groupAvgPerDay,settings.attendanceTiers),groupN5Tier=financeFloorTier(groupNotes5Pct,settings.notes5Tiers),groupCommissionAtt=safe(groupAttTier.amount),groupCommissionNotes5=safe(groupN5Tier.amount),groupBase=(groupCommissionAtt+groupCommissionNotes5)*effectiveMult;
-    const maxAtt=active.length?Math.max(...active.map(t=>safe(t.att))):0,maxN5=active.length?Math.max(...active.map(t=>safe(t.notes5))):0,attWinners=maxAtt>0?active.filter(t=>safe(t.att)===maxAtt):[],n5Winners=maxN5>0?active.filter(t=>safe(t.notes5)===maxN5):[];
-    const attPrizeEach=attWinners.length?safe(settings.topAttendancePrize)/attWinners.length:0,n5PrizeEach=n5Winners.length?safe(settings.topNotes5Prize)/n5Winners.length:0;
+    const totalAtt=active.reduce((s,t)=>s+safe(t.att),0),totalN5=active.reduce((s,t)=>s+safe(t.notes5),0),groupEligibleAtt=active.reduce((s,t)=>s+eligibleEvaluationAttendance(t),0),groupExcludedAtt=active.reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0);
+    const groupBaseData=financeRules.groupFinanceBase({totalAtt,totalN5,countedCount:counted.length,days,eligibleAtt:groupEligibleAtt,evaluationExcludedAtt:groupExcludedAtt,effectiveMultiplier:effectiveMult,attendanceTiers:settings.attendanceTiers,notes5Tiers:settings.notes5Tiers}),groupAvgPerDay=groupBaseData.avgPerDay,groupNotes5Pct=groupBaseData.notes5Pct,groupAttTier=groupBaseData.attendanceTier,groupN5Tier=groupBaseData.notes5Tier,groupCommissionAtt=groupBaseData.commissionAtt,groupCommissionNotes5=groupBaseData.commissionNotes5,groupBase=groupBaseData.afterCancel;
+    const attPrize=financeRules.topPrizeAllocation(active,'att',settings.topAttendancePrize),n5Prize=financeRules.topPrizeAllocation(active,'notes5',settings.topNotes5Prize),attWinners=attPrize.winners,n5Winners=n5Prize.winners,attPrizeEach=attPrize.amountEach,n5PrizeEach=n5Prize.amountEach;
     const statuses=new Map();active.forEach(t=>statuses.set(nameLinkKey(t.name),financePerformanceStatus(t,m)));
     // Competência parcial continua recebendo a Base do Squad, mas não gera desconto
     // nem participa da redistribuição. Isso separa a regra financeira da regra operacional.
-    const financialEligible=active.filter(t=>!t.excludeFromGroupCount),below=financialEligible.filter(t=>statuses.get(nameLinkKey(t.name))==='ABAIXO'),above=financialEligible.filter(t=>statuses.get(nameLinkKey(t.name))==='ACIMA'),pool=below.length*safe(settings.belowDiscount),redistribution=above.length?pool/above.length:0;
+    const financialEligible=active.filter(t=>!t.excludeFromGroupCount),adjustmentSummary=financeRules.financialAdjustmentSummary(active.map(t=>({status:statuses.get(nameLinkKey(t.name)),eligible:!t.excludeFromGroupCount})),settings.belowDiscount),pool=adjustmentSummary.pool,redistribution=adjustmentSummary.redistributionEach;
     let squadTotal=0;const individualRecords=[];
     for(const t of m.technicians||[]){
       const hasProduction=safe(t.att)>0||safe(t.totalEval)>0,avgPerDay=safe(t.att)/days,eligibleAtt=eligibleEvaluationAttendance(t),evaluationExcludedAtt=normalizedEvaluationExcludedAtt(t),notes5Pct=eligibleAtt?safe(t.notes5)/eligibleAtt:0,attTier=financeFloorTier(avgPerDay,settings.attendanceTiers),n5Tier=financeFloorTier(notes5Pct,settings.notes5Tiers),financeStatus=statuses.get(nameLinkKey(t.name))||'';
@@ -2173,7 +2136,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
     const capInfo=applyIndividualTotalCap(individualRecords,Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000);let individualTotal=0;
     individualRecords.forEach(({t,data:individual,squad})=>{individualTotal+=individual.final;const official=m.financeModel==='individual'?individual:squad;t.financeData={...official,version:5,officialModel:m.financeModel,models:{squad,individual},comparisonDiff:Number((individual.final-squad.final).toFixed(2)),groupBase:{avgPerDay:groupAvgPerDay,notes5Pct:groupNotes5Pct,eligibleAtt:groupEligibleAtt,evaluationExcludedAtt:groupExcludedAtt,commissionAtt:groupCommissionAtt,commissionNotes5:groupCommissionNotes5,afterCancel:groupBase}}});
-    const diff=individualTotal-squadTotal;m.financeComparison={version:4,squadTotal:Number(squadTotal.toFixed(2)),individualBeforeCapTotal:capInfo.before,individualTotal:Number(individualTotal.toFixed(2)),individualCap:capInfo.cap,individualCapApplied:capInfo.applied,individualCapFactor:capInfo.factor,individualCapAdjustment:capInfo.adjustment,difference:Number(diff.toFixed(2)),differencePct:squadTotal?diff/squadTotal:0,groupAvgPerDay,groupNotes5Pct,groupEligibleAtt,groupExcludedAtt,groupCommissionAtt,groupCommissionNotes5,groupAfterCancel:groupBase,cancelRate,cancelMultiplier:effectiveMult,activeTechnicians:active.length,countedTechnicians:counted.length,excludedFromGroupCount:Math.max(0,active.length-counted.length),financialAdjustmentEligible:financialEligible.length,belowCount:below.length,aboveCount:above.length,redistributionPool:Number(pool.toFixed(2)),redistributionEach:Number(redistribution.toFixed(2))};m.financeComparisonSnapshot=clone(m.financeComparison);
+    const diff=individualTotal-squadTotal;m.financeComparison={version:4,squadTotal:Number(squadTotal.toFixed(2)),individualBeforeCapTotal:capInfo.before,individualTotal:Number(individualTotal.toFixed(2)),individualCap:capInfo.cap,individualCapApplied:capInfo.applied,individualCapFactor:capInfo.factor,individualCapAdjustment:capInfo.adjustment,difference:Number(diff.toFixed(2)),differencePct:squadTotal?diff/squadTotal:0,groupAvgPerDay,groupNotes5Pct,groupEligibleAtt,groupExcludedAtt,groupCommissionAtt,groupCommissionNotes5,groupAfterCancel:groupBase,cancelRate,cancelMultiplier:effectiveMult,activeTechnicians:active.length,countedTechnicians:counted.length,excludedFromGroupCount:Math.max(0,active.length-counted.length),financialAdjustmentEligible:financialEligible.length,belowCount:adjustmentSummary.belowCount,aboveCount:adjustmentSummary.aboveCount,redistributionPool:Number(pool.toFixed(2)),redistributionEach:Number(redistribution.toFixed(2))};m.financeComparisonSnapshot=clone(m.financeComparison);
   }
   function renderFinanceSummary(t,m){
     if(!$('#financeSummaryCard'))return;const d=t.financeData||{},model=d.officialModel||financeModelForMonth(m),other=model==='squad'?'individual':'squad',otherData=d.models?.[other];$('#financeSummaryTitle').textContent=m.isClosed?'Bonificação final':'Bonificação estimada';$('#financeSummaryState').textContent=`${m.isClosed?'FECHADO':'EM ANDAMENTO'} • ${financeModelLabel(model).toUpperCase()}`;$('#financeSummaryTotal').textContent=fmtMoney(d.final);$('#financeVacationBadge').classList.toggle('hidden',!t.vacation);

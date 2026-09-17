@@ -19,6 +19,20 @@ const indexPath = join(root, 'index.html');
 const index = readFileSync(indexPath, 'utf8');
 for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) assertLocalRef(root, match[1], 'index.html');
 
+const financeScriptPosition = index.indexOf('js/finance-rules.js');
+const appScriptPosition = index.indexOf('js/app.js');
+if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
+if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
+
+for (const required of [
+  '.github/workflows/quality.yml',
+  'package.json',
+  'tests/finance-rules.test.js',
+  'js/finance-rules.js'
+]) {
+  if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
+}
+
 const cssPath = join(root, 'css', 'styles.css');
 const css = readFileSync(cssPath, 'utf8');
 for (const match of css.matchAll(/url\(\s*['"]?([^'"\)]+)['"]?\s*\)/g)) {
@@ -42,6 +56,18 @@ for (const file of walk(join(root, 'js')).filter(f => f.endsWith('.js'))) {
 
 const appText = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 if (appText.includes('squad-dashboard-v2.1.0')) errors.push('Referência ao nome antigo do repositório encontrada em js/app.js.');
+
+for (const financeCall of [
+  'financeRules.resolveFinanceSettings',
+  'financeRules.cancellationSummary',
+  'financeRules.groupFinanceBase',
+  'financeRules.topPrizeAllocation',
+  'financeRules.financialAdjustmentSummary',
+  'financeRules.buildFinanceModelData',
+  'financeRules.applyIndividualTotalCap'
+]) {
+  if (!appText.includes(financeCall)) errors.push(`js/app.js deixou de usar a regra financeira testada: ${financeCall}`);
+}
 
 if (errors.length) {
   console.error('Falha na validação do projeto:\n- ' + errors.join('\n- '));

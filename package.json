@@ -1,0 +1,14 @@
+{
+  "name": "dashboard-squad-performance",
+  "version": "2.29.7",
+  "private": true,
+  "description": "Soften Performance Hub - validação e testes automatizados do dashboard.",
+  "scripts": {
+    "validate": "node scripts/validate-project.mjs",
+    "test": "node --test tests/*.test.js",
+    "check": "npm run validate && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

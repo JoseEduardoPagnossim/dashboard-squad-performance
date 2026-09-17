@@ -10,9 +10,17 @@ A ordem de carregamento dos scripts é importante:
 2. `js/core-utils.js` — formatação, seletores e utilidades compartilhadas;
 3. `js/demo-users.js` — usuários fictícios do modo de demonstração;
 4. `js/default-data.js` — dados fictícios do modo de demonstração;
-5. `js/app.js` — estado, regras de negócio, renderização e integrações.
+5. `js/finance-rules.js` — regras financeiras puras, compartilhadas pela aplicação e pelos testes automatizados;
+6. `js/app.js` — estado, renderização, orquestração das regras e integrações.
 
-A modularização foi iniciada de forma conservadora para não alterar o comportamento existente. O próximo passo natural é separar gradualmente áreas como autenticação, importação, indicadores, finanças e feedbacks.
+A modularização foi iniciada de forma conservadora para não alterar o comportamento existente. As regras financeiras críticas já foram retiradas do arquivo principal para que o código executado em produção seja o mesmo exercitado pela suíte automática. O próximo passo natural é separar gradualmente áreas como autenticação, importação, indicadores e feedbacks.
+
+
+## Qualidade automatizada
+
+A suíte `tests/finance-rules.test.js` usa o test runner nativo do Node.js e valida as regras financeiras críticas sem depender do navegador. O workflow `.github/workflows/quality.yml` executa `npm run validate` e `npm test` em pushes e Pull Requests da branch `main`.
+
+Essa separação permite alterar o painel visualmente ou evoluir a lógica financeira com uma verificação automática de regressões antes da publicação.
 
 ## Persistência
 
