@@ -8,6 +8,8 @@
   const auditUtils = window.SoftenAuditUtils;
   if(!auditUtils) throw new Error('SoftenAuditUtils não carregado. Verifique js/audit-utils.js.');
   const {sanitizeAuditValue,confirmationMatches,actionCategory,actionLabel}=auditUtils;
+  const roiRules = window.SoftenRoiRules;
+  if(!roiRules) throw new Error('SoftenRoiRules não carregado. Verifique js/roi-rules.js.');
 
   const DEFAULT_FAVICON = 'assets/favicon-dragon.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -84,6 +86,11 @@
     financialImpactCache:{},
     financialImpactLoaded:false,
     financialImpactLoading:null,
+    roiMonthId:null,
+    roiLoaded:false,
+    roiLoading:null,
+    roiOpportunities:[],
+    roiPendingImport:null,
     audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
   };
 
@@ -198,6 +205,23 @@
     if($('#importFinancialQualityCsvBtn'))$('#importFinancialQualityCsvBtn').addEventListener('click',()=>$('#financialQualityCsvInput')?.click());
     if($('#financialQualityCsvInput'))$('#financialQualityCsvInput').addEventListener('change',handleFinancialQualityCsvFile);
     if($('#saveFinancialImpactParamsBtn'))$('#saveFinancialImpactParamsBtn').addEventListener('click',saveFinancialImpactParameters);
+    if($('#roiMonthSelect'))$('#roiMonthSelect').addEventListener('change',e=>{state.roiMonthId=e.target.value;renderRoiSupport();});
+    if($('#roiRefreshBtn'))$('#roiRefreshBtn').addEventListener('click',async()=>{try{state.roiLoaded=false;await ensureRoiDataLoaded(true);renderRoiSupport();toast('Base do ROI atualizada.')}catch(err){console.error('Falha ao atualizar base do ROI:',err);toast('Não foi possível atualizar a base do ROI. Confira a migration V2.30.0 e tente novamente.')}});
+    if($('#roiCopyPreviousBtn'))$('#roiCopyPreviousBtn').addEventListener('click',copyPreviousRoiConfig);
+    ROI_COST_FIELDS.map(([,id])=>`#${id}`).concat(['#roiAvgTicket','#roiChurnReference','#roiChurnCurrent','#roiClientMethod','#roiPortfolioClients','#roiServedClients','#roiActiveClients','#roiNotes']).forEach(sel=>{const el=$(sel);if(el){el.addEventListener('input',updateRoiConfigPreview);el.addEventListener('change',updateRoiConfigPreview);}});
+    if($('#roiSaveConfigBtn'))$('#roiSaveConfigBtn').addEventListener('click',saveRoiConfig);
+    if($('#roiImportSettingsBtn'))$('#roiImportSettingsBtn').addEventListener('click',()=>$('#roiSettingsCsvInput')?.click());
+    if($('#roiImportOpportunitiesBtn'))$('#roiImportOpportunitiesBtn').addEventListener('click',()=>$('#roiOpportunitiesCsvInput')?.click());
+    if($('#roiSettingsCsvInput'))$('#roiSettingsCsvInput').addEventListener('change',handleRoiSettingsCsvFile);
+    if($('#roiOpportunitiesCsvInput'))$('#roiOpportunitiesCsvInput').addEventListener('change',handleRoiOpportunitiesCsvFile);
+    if($('#roiImportCancelBtn'))$('#roiImportCancelBtn').addEventListener('click',()=>{state.roiPendingImport=null;closeModal('roiImportModal');});
+    if($('#roiImportConfirmBtn'))$('#roiImportConfirmBtn').addEventListener('click',confirmRoiImport);
+    if($('#roiOpportunityForm'))$('#roiOpportunityForm').addEventListener('submit',saveRoiOpportunity);
+    if($('#roiOpportunityCancelEditBtn'))$('#roiOpportunityCancelEditBtn').addEventListener('click',resetRoiOpportunityForm);
+    if($('#roiOpportunityRows'))$('#roiOpportunityRows').addEventListener('click',e=>{const edit=e.target.closest('[data-roi-edit-opportunity]'),del=e.target.closest('[data-roi-delete-opportunity]');if(edit)editRoiOpportunity(edit.dataset.roiEditOpportunity);if(del)deleteRoiOpportunity(del.dataset.roiDeleteOpportunity);});
+    if($('#roiHistoryGrain'))$('#roiHistoryGrain').addEventListener('change',renderRoiHistory);
+    ['#roiSimClients','#roiSimTicket','#roiSimChurn','#roiSimProjectedChurn','#roiSimCost','#roiSimAttendances','#roiSimAdditional'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',updateRoiSimulator);});
+    $$('[data-roi-method]').forEach(btn=>btn.addEventListener('click',()=>openRoiMethod(btn.dataset.roiMethod)));
     $('#copyPreviousGoalsBtn').addEventListener('click',copyGoalsFromPreviousMonth);
     $('#saveScoreSettingsBtn').addEventListener('click',saveScoreSettings);
     $$('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
@@ -327,7 +351,7 @@
 
   async function enterApp(user){
     state.user=user;
-    state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;
+    state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.roiMonthId=null;state.roiLoaded=false;state.roiLoading=null;state.roiOpportunities=[];state.roiPendingImport=null;
     state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
     chooseLatestMonth(); chooseDefaultTech();
     state.theme=state.squads[state.squadCode]?.theme||loadThemeForSquad(state.squadCode); applyTheme(state.theme);
@@ -344,10 +368,10 @@
     $$('.tech-only').forEach(el=>el.classList.toggle('hidden',!isTechnician()));
     $$('.admin-help').forEach(el=>el.classList.toggle('hidden',!admin));
     $$('.super-help').forEach(el=>el.classList.toggle('hidden',!superAdmin));
-    const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
-    $('.technician-control').classList.toggle('hidden',isTechnician()||state.currentView!=='individual'||state.squadCode==='all'||costAdminView);
-    const analyticalView=['individual','team','indicators'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','audit','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
-    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
+    const costAdminView=state.currentView==='admin'&&state.adminSection==='costs',roiView=state.currentView==='roi-support';
+    $('.technician-control').classList.toggle('hidden',isTechnician()||state.currentView!=='individual'||state.squadCode==='all'||costAdminView||roiView);
+    const analyticalView=['individual','team','indicators'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||roiView||['users','audit','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
+    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||roiView||!isSuperAdmin());
     syncAnalysisDateControls();
     if($('#topUserName'))$('#topUserName').textContent=state.user.fullName;
     if($('#topUserScope'))$('#topUserScope').textContent=state.user.role==='super_admin'?'Acesso geral':`Squad ${state.user.squadCode}`;
@@ -569,7 +593,7 @@
   function showView(name,adminSection=null){
     if((name==='admin'||name==='users'||name==='feedbacks'||name==='audit')&&!isAdmin())return;
     if(name==='my-feedbacks'&&!isTechnician())return;
-    if(name==='indicators'&&!isSuperAdmin())return;
+    if((name==='indicators'||name==='roi-support')&&!isSuperAdmin())return;
     if(name==='admin'&&adminSection==='costs'&&!isSuperAdmin())return;
     if(name==='individual'&&state.squadCode==='all')name='team';
     if(name==='admin'&&adminSection)state.adminSection=adminSection;
@@ -577,14 +601,14 @@
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;b.classList.toggle('active',sameView&&sameSection)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
-    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores','roi-support':'ROI do Suporte',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';
-    const costAdminView=name==='admin'&&state.adminSection==='costs';
-    $('.technician-control').classList.toggle('hidden',name!=='individual'||isTechnician()||state.squadCode==='all'||costAdminView);
+    const costAdminView=name==='admin'&&state.adminSection==='costs',roiView=name==='roi-support';
+    $('.technician-control').classList.toggle('hidden',name!=='individual'||isTechnician()||state.squadCode==='all'||costAdminView||roiView);
     const analytical=name==='individual'||name==='team'||name==='indicators';
-    $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='users'||name==='audit'||name==='profile'||name==='my-feedbacks'||name==='help');
+    $('.month-control').classList.toggle('hidden',analytical||costAdminView||roiView||name==='users'||name==='audit'||name==='profile'||name==='my-feedbacks'||name==='help');
     if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!(name==='individual'||name==='team'));
-    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
+    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||roiView||!isSuperAdmin());
     syncAnalysisDateControls();
     $('.sidebar').classList.remove('open');
     render();
@@ -609,6 +633,7 @@
     if(state.currentView==='help')renderHelp();
     if(state.currentView==='profile')renderProfile();
     if(state.currentView==='indicators')renderIndicators();
+    if(state.currentView==='roi-support'){renderRoiSupport();return;}
     if(state.squadCode==='all'){renderTeam();renderAdmin();return}
     const m=currentMonth();
     $('#individualEmpty').classList.toggle('hidden',!!m);$('#individualContent').classList.toggle('hidden',!m);
@@ -1881,6 +1906,275 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     body.innerHTML=`<tr><td><strong>${escapeHtml(rec.label)}</strong></td><td>${fmtInt(rec.service)}</td><td>${rec.hasQuality?fmtInt(rec.product):'—'}</td><td>${rec.hasQuality?fmtInt(rec.company):'—'}</td><td>${rec.hasQuality?`<span class="reconcile-diff ${diffClass(rec.diffProduct)}">${diffText(rec.diffProduct)}</span>`:'—'}</td><td>${rec.hasQuality?`<span class="reconcile-diff ${diffClass(rec.diffCompany)}">${diffText(rec.diffCompany)}</span>`:'—'}</td><td>${rec.hasQuality?fmtInt(rec.divergent):'—'}</td><td>${rec.hasQuality?`<button type="button" class="btn secondary reconcile-detail-btn" data-reconcile-id="${escapeHtml(rec.id)}">Ver técnicos</button>`:'<span class="muted">Sem qualidade</span>'}</td></tr>`;
   }
 
+  const ROI_OPPORTUNITIES_DEMO_KEY='softenSupportRoiOpportunitiesV230';
+  const ROI_COST_FIELDS=[
+    ['salaries','roiCostSalaries','Salários','Custo com salários da equipe'],
+    ['charges','roiCostCharges','Encargos','Encargos trabalhistas e custos associados'],
+    ['benefits','roiCostBenefits','Benefícios','Benefícios concedidos à equipe'],
+    ['tools','roiCostTools','Ferramentas','Ferramentas e softwares usados pelo Suporte'],
+    ['telephony','roiCostTelephony','Telefonia','Telefonia e comunicação'],
+    ['infrastructure','roiCostInfrastructure','Infraestrutura','Infraestrutura alocada ao Suporte'],
+    ['training','roiCostTraining','Treinamentos','Capacitação e treinamentos'],
+    ['overtime','roiCostOvertime','Horas extras','Horas extras e adicionais'],
+    ['other','roiCostOther','Outros custos','Demais custos considerados no período']
+  ];
+  const ROI_STATUS_LABELS={pending:'Pendente',converted:'Convertida',lost:'Perdida',canceled:'Cancelada'};
+  const ROI_METHOD_LABELS={active:'Clientes ativos',served:'Clientes atendidos',portfolio:'Clientes da carteira'};
+  function loadDemoRoiOpportunities(){try{const rows=JSON.parse(localStorage.getItem(ROI_OPPORTUNITIES_DEMO_KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return[]}}
+  function saveDemoRoiOpportunities(rows){try{localStorage.setItem(ROI_OPPORTUNITIES_DEMO_KEY,JSON.stringify(rows||[]))}catch(e){console.warn('Não foi possível salvar oportunidades ROI no modo demo.',e)}}
+  function roiMonthParts(id){const [year,month]=String(id||'').split('-').map(Number);return{year,month}}
+  function roiOpportunityMonth(row){return String(row?.opportunity_date||'').slice(0,7)}
+  function roiOriginLabel(origin){return origin==='imported'?'Importado':origin==='manual'?'Manual':origin==='mixed'?'Manual + Importado':origin==='missing'?'Pendente':'Automático'}
+  function roiOriginClass(origin){return origin==='imported'?'imported':origin==='manual'?'manual':origin==='mixed'?'mixed':origin==='missing'?'missing':'automatic'}
+  function roiImportTrace(row){if(!row||row.roi_data_origin!=='imported')return'';const parts=[];if(row.roi_source_file)parts.push(row.roi_source_file);if(row.roi_imported_at)parts.push(formatDateTime(row.roi_imported_at));return parts.join(' • ')}
+  function roiCostBreakdownHasData(row){const b=row?.roi_cost_breakdown;return !!b&&typeof b==='object'&&ROI_COST_FIELDS.some(([key])=>b[key]!=null)}
+  function roiBreakdownValues(row){
+    const out={};
+    if(roiCostBreakdownHasData(row)){
+      ROI_COST_FIELDS.forEach(([key])=>{const item=row.roi_cost_breakdown?.[key];out[key]=Math.max(0,safe(item&&typeof item==='object'?item.value:item));});
+      return out;
+    }
+    ROI_COST_FIELDS.forEach(([key])=>out[key]=0);
+    out.salaries=Math.max(0,safe(row?.payroll_cost));
+    out.other=Math.max(0,safe(row?.other_costs));
+    return out;
+  }
+  function roiBreakdownTotal(row){const vals=roiBreakdownValues(row);return Object.values(vals).reduce((sum,v)=>sum+safe(v),0)}
+  function roiBuildBreakdownFromInputs(origin='manual'){
+    const out={};
+    ROI_COST_FIELDS.forEach(([key,id,label,description])=>{out[key]={value:Number(Math.max(0,safe($('#'+id)?.value)).toFixed(2)),type:key,label,description,origin};});
+    return out;
+  }
+  function roiPayloadCostTotals(breakdown){
+    const value=key=>Math.max(0,safe(breakdown?.[key]?.value??breakdown?.[key]));
+    const payroll=value('salaries')+value('charges')+value('benefits')+value('overtime');
+    const other=value('tools')+value('telephony')+value('infrastructure')+value('training')+value('other');
+    return{payroll:Number(payroll.toFixed(2)),other:Number(other.toFixed(2)),total:Number((payroll+other).toFixed(2))};
+  }
+  function roiAutomaticMonthData(id){
+    let attendances=0,latestDay=0;const techs=new Set(),squads=[];
+    Object.values(state.squads||{}).filter(Boolean).forEach(squad=>{const m=squad.months?.[id];if(!m)return;squads.push(squad.code);latestDay=Math.max(latestDay,safe(m.latestDay));for(const t of m.technicians||[]){attendances+=safe(t.att);if(safe(t.att)>0||safe(t.totalEval)>0)techs.add(`${squad.code}|${nameLinkKey(t.name)}`);}});
+    const {year,month}=roiMonthParts(id),businessDays=year&&month?businessDayCalendar(year,month,latestDay||new Date(year,month,0).getDate()).length:0;
+    return{attendances,technicians:techs.size,businessDays,squads:squads.length,latestDay};
+  }
+  function roiOpportunityRowsForMonth(id){return(state.roiOpportunities||[]).filter(r=>roiOpportunityMonth(r)===id)}
+  function roiAdditionalRevenueForMonth(id){return roiOpportunityRowsForMonth(id).filter(r=>r.status==='converted').reduce((sum,r)=>sum+safe(r.converted_value),0)}
+  function roiFieldOrigin(row,field){return row?.roi_field_origins?.[field]||row?.roi_data_origin||'manual'}
+  function roiResolvedInputs(id){
+    const row=state.supportCostCache?.[id]||null,impact=state.financialImpactCache?.[id]||null,auto=roiAutomaticMonthData(id),breakdown=roiBreakdownValues(row),breakdownExists=roiCostBreakdownHasData(row),legacyCost=Math.max(0,safe(row?.payroll_cost))+Math.max(0,safe(row?.other_costs)),detailedCost=Object.values(breakdown).reduce((sum,v)=>sum+safe(v),0),cost=breakdownExists?detailedCost:legacyCost;
+    const method=row?.roi_client_method||'active';
+    const roiActive=Math.max(0,safe(row?.roi_active_clients)),impactActive=Math.max(0,safe(impact?.active_clients));
+    const counts={portfolio:Math.max(0,safe(row?.roi_portfolio_clients)),served:Math.max(0,safe(row?.roi_served_clients)),active:roiActive||impactActive};
+    const clients=counts[method]||0;
+    const roiTicket=Math.max(0,safe(row?.roi_avg_ticket)),impactTicket=Math.max(0,safe(impact?.avg_ticket)),ticket=roiTicket||impactTicket;
+    const churnReference=Math.max(0,safe(row?.roi_churn_reference)),churnCurrent=Math.max(0,safe(row?.roi_churn_current));
+    const costOrigin=breakdownExists?roiFieldOrigin(row,'costs'):(legacyCost>0?'automatic':null);
+    const clientsOrigin=method==='active'&&!roiActive&&impactActive?'automatic':(counts[method]>0?roiFieldOrigin(row,`clients_${method}`):null);
+    const ticketOrigin=!roiTicket&&impactTicket?'automatic':(ticket>0?roiFieldOrigin(row,'ticket'):null);
+    const churnOrigin=row?.roi_field_origins?.churn?roiFieldOrigin(row,'churn'):null;
+    const oppRows=roiOpportunityRowsForMonth(id),oppOrigins=new Set(oppRows.filter(r=>r.status==='converted'&&safe(r.converted_value)>0).map(r=>r.source_origin||'manual'));
+    const additionalOrigin=oppOrigins.size>1?'mixed':oppOrigins.size===1?[...oppOrigins][0]:null;
+    return{row,impact,auto,breakdown,cost,legacyCost,method,counts,clients,ticket,churnReference,churnCurrent,additionalRevenue:roiAdditionalRevenueForMonth(id),origins:{cost:costOrigin,clients:clientsOrigin,ticket:ticketOrigin,churn:churnOrigin,additional:additionalOrigin},oppRows};
+  }
+  function roiMonthlyMetrics(id){
+    const r=roiResolvedInputs(id),hoursPerDay=Math.max(.5,safe(r.row?.hours_per_day)||8),metrics=roiRules.calculateMonthlyRoi({cost:r.cost,attendances:r.auto.attendances,clients:r.clients,ticket:r.ticket,churnReference:r.churnReference,churnCurrent:r.churnCurrent,additionalRevenue:r.additionalRevenue,technicians:r.auto.technicians,businessDays:r.auto.businessDays,hoursPerDay}),hasChurn=!!r.origins.churn,isComplete=r.cost>0&&r.clients>0&&r.ticket>0&&hasChurn;
+    return{id,...metrics,...r,hoursPerDay,hasChurn,isComplete};
+  }
+  function roiMonthIds(){
+    const ids=new Set();
+    Object.values(state.squads||{}).forEach(s=>Object.keys(s?.months||{}).forEach(id=>ids.add(id)));
+    Object.keys(state.supportCostCache||{}).forEach(id=>ids.add(id));
+    Object.keys(state.financialImpactCache||{}).forEach(id=>ids.add(id));
+    (state.roiOpportunities||[]).forEach(r=>{const id=roiOpportunityMonth(r);if(/^\d{4}-\d{2}$/.test(id))ids.add(id)});
+    return[...ids].filter(id=>/^\d{4}-\d{2}$/.test(id)).sort();
+  }
+  async function ensureRoiDataLoaded(force=false){
+    if(!isSuperAdmin())return;
+    if(state.roiLoaded&&!force)return;
+    if(state.roiLoading)return state.roiLoading;
+    state.roiLoading=(async()=>{
+      await ensureFinancialImpactLoaded(force);
+      let costs=[],opportunities=[];
+      if(state.supabase){
+        const [costRes,oppRes]=await Promise.all([
+          state.supabase.from('support_monthly_costs').select('*').eq('organization_id',state.user.organizationId).order('year').order('month'),
+          state.supabase.from('support_roi_opportunities').select('*').eq('organization_id',state.user.organizationId).order('opportunity_date',{ascending:false})
+        ]);
+        if(costRes.error)throw costRes.error;if(oppRes.error)throw oppRes.error;costs=costRes.data||[];opportunities=oppRes.data||[];
+      }else{costs=loadDemoSupportCosts();opportunities=loadDemoRoiOpportunities();}
+      const cache={...(state.supportCostCache||{})};for(const row of costs){if(!row?.year||!row?.month)continue;cache[`${row.year}-${String(row.month).padStart(2,'0')}`]=row;}state.supportCostCache=cache;state.roiOpportunities=opportunities;state.roiLoaded=true;
+    })();
+    try{await state.roiLoading;}finally{state.roiLoading=null}
+  }
+  function roiFormatDelta(current,previous,{money=false,percent=false,inverse=false}={}){
+    if(current==null||previous==null||!Number.isFinite(Number(current))||!Number.isFinite(Number(previous)))return'Sem comparação';
+    const diff=safe(current)-safe(previous),good=inverse?diff<=0:diff>=0,klass=Math.abs(diff)<.000001?'neutral':good?'positive':'negative';
+    const abs=Math.abs(diff),text=money?fmtMoney(abs):percent?`${abs.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`:fmtInt(abs);
+    return`<span class="roi-delta ${klass}">${diff>0?'▲':diff<0?'▼':'•'} ${text} vs mês anterior</span>`;
+  }
+  function roiHasCoreInputs(m){return !!m?.isComplete}
+  function roiSourceBadge(label,origin,detail){const display=origin==='mixed'?'Manual + Importado':roiOriginLabel(origin);return`<div class="roi-source-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(detail||'—')}</strong><small class="roi-source-badge ${roiOriginClass(origin)}">${escapeHtml(display)}</small></div>`}
+  function renderRoiSources(m){
+    const el=$('#roiSourceGrid');if(!el)return;
+    const importTrace=roiImportTrace(m.row),costDetail=m.origins.cost==='automatic'?'Reaproveitado de Gestão > Custos':m.origins.cost==='imported'?`Detalhamento importado${importTrace?` • ${importTrace}`:''}`:m.origins.cost?`Detalhamento ${roiOriginLabel(m.origins.cost).toLowerCase()}`:'Não informado';
+    const clientDetail=m.origins.clients==='automatic'?'Reaproveitado de Impacto financeiro':m.origins.clients?ROI_METHOD_LABELS[m.method]:'Não informado';
+    const ticketDetail=m.origins.ticket==='automatic'?'Reaproveitado de Impacto financeiro':m.origins.ticket==='imported'?`Premissa importada${importTrace?` • ${importTrace}`:''}`:m.origins.ticket?'Premissa do ROI':'Não informado';
+    const addDetail=m.origins.additional?`${m.oppRows.filter(r=>r.status==='converted').length} oportunidade(s) convertida(s)`:'Sem receita convertida';
+    el.innerHTML=[
+      roiSourceBadge('Atendimentos','automatic','CSV operacional já consolidado no monitor'),
+      roiSourceBadge('Técnicos / Squads','automatic','Estrutura existente do monitor'),
+      roiSourceBadge('Custo do suporte',m.origins.cost||'missing',costDetail),
+      roiSourceBadge('Clientes',m.origins.clients||'missing',clientDetail),
+      roiSourceBadge('Ticket médio',m.origins.ticket||'missing',ticketDetail),
+      roiSourceBadge('Churn',m.origins.churn||'missing',m.origins.churn?'Premissa da competência':'Não informado'),
+      roiSourceBadge('Receita adicional',m.origins.additional||'missing',addDetail),
+      roiSourceBadge('ROI','automatic','Calculado a partir das fontes acima')
+    ].join('');
+    const counts={automatic:3,manual:0,imported:0,mixed:0};Object.values(m.origins).filter(Boolean).forEach(o=>{if(counts[o]!=null)counts[o]++});
+    $('#roiSourceSummary').textContent=`${counts.automatic} auto • ${counts.manual} manual • ${counts.imported} import.`;
+  }
+  function renderRoiKpis(m,previous){
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    set('#roiTotalCost',m.cost||m.cost===0?fmtMoney(m.cost):'—');$('#roiTotalCostCompare').innerHTML=previous?roiFormatDelta(m.cost,previous.cost,{money:true,inverse:true}):'Sem comparação';
+    set('#roiAttendances',fmtInt(m.attendances));$('#roiAttendancesCompare').innerHTML=previous?roiFormatDelta(m.attendances,previous.attendances):'Fonte operacional do monitor';
+    set('#roiClients',m.clients?fmtInt(m.clients):'—');set('#roiClientsMethod',m.clients?ROI_METHOD_LABELS[m.method]:'Informe a base de clientes');
+    set('#roiCostPerAttendance',m.costPerAttendance!=null?fmtMoney(m.costPerAttendance):'—');$('#roiCostPerAttendanceCompare').innerHTML=previous?roiFormatDelta(m.costPerAttendance,previous.costPerAttendance,{money:true,inverse:true}):'Custo ÷ atendimentos';
+    set('#roiCostPerClient',m.costPerClient!=null?fmtMoney(m.costPerClient):'—');$('#roiCostPerClientCompare').innerHTML=previous?roiFormatDelta(m.costPerClient,previous.costPerClient,{money:true,inverse:true}):'Custo ÷ clientes considerados';
+    set('#roiChurn',m.origins.churn?fmtPct(m.churnCurrent):'—');$('#roiChurnCompare').innerHTML=m.origins.churn?`Referência ${fmtPct(m.churnReference)} • Δ ${(m.churnDelta*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} p.p.`:'Informe churn atual e referência';
+    set('#roiProtectedRevenue',(m.clients&&m.ticket&&m.origins.churn)?fmtMoney(m.protectedMonthly):'—');set('#roiProtectedRevenueAnnual',`Equivalente anual: ${m.clients&&m.ticket&&m.origins.churn?fmtMoney(m.protectedAnnual):'—'}`);
+    set('#roiAdditionalRevenue',fmtMoney(m.additionalRevenue));set('#roiAdditionalRevenueDetail',`${m.oppRows.filter(r=>r.status==='converted').length} oportunidade(s) convertida(s)`);
+    set('#roiEconomicBenefit',roiHasCoreInputs(m)?fmtMoney(m.economicBenefit):'—');set('#roiEconomicBenefitDetail',roiHasCoreInputs(m)?`${fmtMoney(m.estimatedBenefit)} estimado + ${fmtMoney(m.realizedBenefit)} realizado`:'Aguardando custos, clientes, ticket e churn');
+    set('#roiValue',roiHasCoreInputs(m)&&m.roiPct!=null?`${m.roiPct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})}%`:'—');$('#roiValueCompare').innerHTML=previous&&m.isComplete&&previous.isComplete&&m.roiPct!=null&&previous.roiPct!=null?roiFormatDelta(m.roiPct,previous.roiPct,{percent:true}):'Benefício − custo ÷ custo';
+    set('#roiProductivity',m.productivityPerTechDay!=null?`${m.productivityPerTechDay.toLocaleString('pt-BR',{maximumFractionDigits:2})} atend./téc./dia`:'—');set('#roiProductivityDetail',`${fmtInt(m.auto.technicians)} técnico(s) • ${fmtInt(m.auto.businessDays)} dia(s) útil(eis)`);
+    set('#roiPreservedClients',(m.clients&&m.origins.churn)?m.preservedClients.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2}):'—');set('#roiTicket',m.ticket?fmtMoney(m.ticket):'—');set('#roiTicketOrigin',m.origins.ticket==='automatic'?'Reaproveitado do Impacto financeiro':m.origins.ticket?`Origem: ${roiOriginLabel(m.origins.ticket)}`:'Aguardando premissa');
+  }
+  function roiFillConfigForm(m){
+    ROI_COST_FIELDS.forEach(([key,id])=>{$('#'+id).value=safe(m.breakdown[key])?safe(m.breakdown[key]).toFixed(2):''});
+    $('#roiAvgTicket').value=safe(m.row?.roi_avg_ticket)?safe(m.row.roi_avg_ticket).toFixed(2):'';
+    const churnSaved=!!m.row?.roi_field_origins?.churn;
+    $('#roiChurnReference').value=churnSaved?(safe(m.row?.roi_churn_reference)*100).toFixed(2):'';
+    $('#roiChurnCurrent').value=churnSaved?(safe(m.row?.roi_churn_current)*100).toFixed(2):'';
+    $('#roiClientMethod').value=m.row?.roi_client_method||'active';
+    $('#roiPortfolioClients').value=safe(m.row?.roi_portfolio_clients)||'';$('#roiServedClients').value=safe(m.row?.roi_served_clients)||'';$('#roiActiveClients').value=safe(m.row?.roi_active_clients)||'';$('#roiNotes').value=m.row?.roi_notes||'';
+    const impactActive=safe(m.impact?.active_clients),impactTicket=safe(m.impact?.avg_ticket);$('#roiActiveClientsHint').textContent=impactActive?`Monitor possui ${fmtInt(impactActive)} clientes ativos no Impacto financeiro; deixe vazio para reutilizar.`:'Sem base automática de clientes ativos nesta competência.';$('#roiAvgTicketHint').textContent=impactTicket?`Monitor possui ${fmtMoney(impactTicket)} no Impacto financeiro; deixe vazio para reutilizar.`:'Sem ticket médio existente no monitor para esta competência.';
+    $('#roiConfigStatus').textContent=m.row?.roi_imported_at?`${monthLabelFromId(m.id)} • importado em ${formatDateTime(m.row.roi_imported_at)}`:m.row?.roi_updated_at?`${monthLabelFromId(m.id)} • ROI atualizado em ${formatDateTime(m.row.roi_updated_at)}`:m.row?.updated_at?`${monthLabelFromId(m.id)} • base de custos atualizada em ${formatDateTime(m.row.updated_at)}`:`${monthLabelFromId(m.id)} • ainda sem premissas de ROI`;
+    updateRoiConfigPreview();
+  }
+  function updateRoiConfigPreview(){
+    if(!state.roiMonthId||!$('#roiConfigPreview'))return;
+    const b=roiBuildBreakdownFromInputs('manual'),tot=roiPayloadCostTotals(b),method=$('#roiClientMethod')?.value||'active',counts={active:safe($('#roiActiveClients')?.value),served:safe($('#roiServedClients')?.value),portfolio:safe($('#roiPortfolioClients')?.value)},impact=state.financialImpactCache?.[state.roiMonthId]||{},clients=counts[method]||(method==='active'?safe(impact.active_clients):0),ticket=safe($('#roiAvgTicket')?.value)||safe(impact.avg_ticket),ref=safe($('#roiChurnReference')?.value)/100,cur=safe($('#roiChurnCurrent')?.value)/100,protectedValue=clients*(ref-cur)*ticket;
+    $('#roiConfigPreview').innerHTML=`<div class="roi-preview-item"><span>Custo configurado</span><strong>${fmtMoney(tot.total)}</strong></div><div class="roi-preview-item"><span>Clientes (${escapeHtml(ROI_METHOD_LABELS[method])})</span><strong>${clients?fmtInt(clients):'—'}</strong></div><div class="roi-preview-item"><span>Ticket usado</span><strong>${ticket?fmtMoney(ticket):'—'}</strong></div><div class="roi-preview-item"><span>Receita protegida estimada</span><strong>${clients&&ticket&&(ref||cur)?fmtMoney(protectedValue):'—'}</strong></div>`;
+  }
+  async function saveRoiConfig(){
+    if(!isSuperAdmin()||!state.roiMonthId)return;
+    const id=state.roiMonthId,{year,month}=roiMonthParts(id),previous=state.supportCostCache?.[id]||null,breakdown=roiBuildBreakdownFromInputs('manual'),tot=roiPayloadCostTotals(breakdown),auto=roiAutomaticMonthData(id),now=new Date().toISOString(),createdAt=previous?.roi_created_at||now,createdBy=previous?.roi_created_by||state.user.userId||null,churnProvided=String($('#roiChurnReference')?.value??'').trim()!==''&&String($('#roiChurnCurrent')?.value??'').trim()!=='',fieldOrigins={costs:'manual',ticket:'manual',clients_active:'manual',clients_served:'manual',clients_portfolio:'manual'};
+    if(churnProvided)fieldOrigins.churn='manual';
+    const row={organization_id:state.user.organizationId||'demo',year,month,payroll_cost:tot.payroll,other_costs:tot.other,technician_count:Math.max(1,Math.round(safe(previous?.technician_count)||auto.technicians||1)),hours_per_day:Math.max(.5,safe(previous?.hours_per_day)||8),roi_cost_breakdown:breakdown,roi_avg_ticket:Number(Math.max(0,safe($('#roiAvgTicket')?.value)).toFixed(2)),roi_churn_reference:Number(Math.max(0,Math.min(100,safe($('#roiChurnReference')?.value)))/100),roi_churn_current:Number(Math.max(0,Math.min(100,safe($('#roiChurnCurrent')?.value)))/100),roi_portfolio_clients:Math.max(0,Math.round(safe($('#roiPortfolioClients')?.value))),roi_served_clients:Math.max(0,Math.round(safe($('#roiServedClients')?.value))),roi_active_clients:Math.max(0,Math.round(safe($('#roiActiveClients')?.value))),roi_client_method:$('#roiClientMethod')?.value||'active',roi_notes:String($('#roiNotes')?.value||'').trim()||null,roi_data_origin:'manual',roi_field_origins:fieldOrigins,roi_source_file:null,roi_imported_at:null,roi_created_by:createdBy,roi_created_at:createdAt,roi_updated_by:state.user.userId||null,roi_updated_at:now,updated_by:state.user.userId||null,updated_at:now};
+    const btn=$('#roiSaveConfigBtn');if(btn){btn.disabled=true;btn.textContent='Salvando...'}
+    try{
+      if(state.supabase){const{error}=await state.supabase.from('support_monthly_costs').upsert(row,{onConflict:'organization_id,year,month'});if(error)throw error;}
+      else{const rows=loadDemoSupportCosts().filter(r=>!(safe(r.year)===year&&safe(r.month)===month));rows.push({...previous,...row,id:previous?.id||`demo-${id}`});saveDemoSupportCosts(rows)}
+      state.supportCostCache[id]={...previous,...row};state.roiLoaded=true;await logAuditEvent('roi.settings_update',{entityType:'support_monthly_cost',entityId:id,squadId:null,description:`Configurações do ROI do Suporte atualizadas em ${monthLabelFromId(id)}.`,beforeData:previous||{},afterData:row,metadata:{period:id}});renderRoiSupport();toast(`Configurações de ROI de ${monthLabelFromId(id)} salvas.`);
+    }catch(err){console.error(err);toast('Não foi possível salvar o ROI. Confira se a migração V2.30.0 foi aplicada.');}
+    finally{if(btn){btn.disabled=false;btn.textContent='Salvar configurações da competência'}}
+  }
+  async function copyPreviousRoiConfig(){
+    const ids=roiMonthIds(),current=state.roiMonthId,previousId=[...ids].filter(id=>id<current).sort().pop();if(!previousId)return toast('Não existe competência anterior disponível.');const prev=roiMonthlyMetrics(previousId);if(!await confirmDialog(`Copiar custos e premissas de ${monthLabelFromId(previousId)} para ${monthLabelFromId(current)}? O histórico anterior não será alterado.`,{title:'Copiar premissas de ROI',confirmText:'Copiar',tone:'warning'}))return;
+    ROI_COST_FIELDS.forEach(([key,id])=>{$('#'+id).value=safe(prev.breakdown[key])?safe(prev.breakdown[key]).toFixed(2):''});$('#roiAvgTicket').value=safe(prev.ticket)?safe(prev.ticket).toFixed(2):'';$('#roiChurnReference').value=prev.origins.churn?(prev.churnReference*100).toFixed(2):'';$('#roiChurnCurrent').value=prev.origins.churn?(prev.churnCurrent*100).toFixed(2):'';$('#roiClientMethod').value=prev.method;$('#roiPortfolioClients').value=safe(prev.counts.portfolio)||'';$('#roiServedClients').value=safe(prev.counts.served)||'';$('#roiActiveClients').value=safe(prev.counts.active)||'';$('#roiNotes').value=`Premissas copiadas de ${monthLabelFromId(previousId)}. Revise antes de salvar.`;updateRoiConfigPreview();toast('Premissas copiadas. Revise e salve a competência atual.');
+  }
+  function roiHistoryLabel(id){if(/-T\d$/.test(id))return id.replace('-T',' • T');if(/^\d{4}$/.test(id))return id;return shortHistoryMonth(id)}
+  function renderRoiGroupedBars(el,rows,series,options={}){
+    if(!el)return;if(!rows.length){el.innerHTML='<div class="roi-chart-empty">Sem histórico suficiente.</div>';return;}
+    const globalMax=Math.max(1,...rows.flatMap(r=>series.map(s=>Math.abs(safe(s.value(r))))));
+    const seriesMax=series.map(s=>Math.max(1,...rows.map(r=>Math.abs(safe(s.value(r))))));
+    el.innerHTML=`<div class="roi-bars">${rows.map(r=>`<div class="roi-bar-group"><div class="roi-bar-area">${series.map((s,i)=>{const value=safe(s.value(r)),max=options.independentScales?seriesMax[i]:globalMax,height=Math.max(value?5:0,Math.abs(value)/max*100);return`<div class="roi-bar-column" title="${escapeHtml(s.label)}: ${escapeHtml(s.format(value))}"><i class="roi-bar-fill s${i}" style="height:${height}%"></i><small>${escapeHtml(s.format(value))}</small></div>`}).join('')}</div><strong>${escapeHtml(roiHistoryLabel(r.id))}</strong></div>`).join('')}</div><div class="roi-chart-legend">${series.map((s,i)=>`<span><i class="${i===1?'secondary':i===2?'success':''}"></i>${escapeHtml(s.label)}</span>`).join('')}${options.independentScales?'<span class="roi-chart-scale-note">Escalas independentes por unidade</span>':''}</div>`;
+  }
+  function renderRoiHistory(){
+    const grain=$('#roiHistoryGrain')?.value||'month',monthly=roiMonthIds().map(id=>roiMonthlyMetrics(id)),groups=roiRules.groupRoiHistory(monthly,grain),body=$('#roiHistoryRows');if(!body)return;
+    body.innerHTML=groups.slice().reverse().map(g=>`<tr><td><strong>${escapeHtml(roiHistoryLabel(g.id))}</strong>${g.isComplete?'':`<small class="muted"> • base incompleta</small>`}</td><td>${fmtMoney(g.cost)}</td><td>${fmtInt(g.attendances)}</td><td>${g.costPerAttendance!=null?fmtMoney(g.costPerAttendance):'—'}</td><td>${g.hasChurn?fmtPct(g.churnCurrent):'—'}</td><td>${g.isComplete?fmtMoney(g.protectedMonthly):'—'}</td><td>${fmtMoney(g.additionalRevenue)}</td><td>${g.isComplete?fmtMoney(g.economicBenefit):'—'}</td><td><strong>${g.isComplete&&g.roiPct!=null?`${g.roiPct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})}%`:'—'}</strong></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sem competências para histórico.</td></tr>';
+    const labels=groups.map(g=>roiHistoryLabel(g.id));
+    renderIndicatorLineChart($('#roiTrendChart'),labels,[{name:'ROI',color:'var(--accent)',values:groups.map(g=>g.isComplete?g.roiPct:null)}],{height:300,decimals:1,valueFormatter:v=>`${safe(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})}%`,axisFormatter:v=>`${safe(v).toLocaleString('pt-BR',{maximumFractionDigits:0})}%`});
+    renderRoiGroupedBars($('#roiCostBenefitChart'),groups,[{label:'Custo',value:r=>r.cost,format:fmtMoney},{label:'Benefício',value:r=>r.isComplete?r.economicBenefit:0,format:fmtMoney}]);
+    renderRoiGroupedBars($('#roiChurnProtectedChart'),groups,[{label:'Churn atual',value:r=>r.hasChurn?r.churnCurrent*100:0,format:v=>`${safe(v).toLocaleString('pt-BR',{maximumFractionDigits:2})}%`},{label:'Receita protegida',value:r=>r.isComplete?r.protectedMonthly:0,format:fmtMoney}],{independentScales:true});
+    renderIndicatorLineChart($('#roiCostAttendanceChart'),labels,[{name:'Custo / atendimento',color:'var(--secondary)',values:groups.map(g=>g.costPerAttendance)}],{height:300,decimals:2,valueFormatter:fmtMoney,axisFormatter:fmtMoney});
+    renderRoiGroupedBars($('#roiBenefitCompositionChart'),groups,[{label:'Receita protegida estimada',value:r=>r.isComplete?r.protectedMonthly:0,format:fmtMoney},{label:'Receita adicional realizada',value:r=>r.additionalRevenue,format:fmtMoney}]);
+  }
+  function updateRoiSimulator(){
+    if(!$('#roiSimulatorResults'))return;const r=roiRules.calculateMonthlyRoi({clients:safe($('#roiSimClients')?.value),ticket:safe($('#roiSimTicket')?.value),churnReference:safe($('#roiSimChurn')?.value)/100,churnCurrent:safe($('#roiSimProjectedChurn')?.value)/100,cost:safe($('#roiSimCost')?.value),attendances:safe($('#roiSimAttendances')?.value),additionalRevenue:safe($('#roiSimAdditional')?.value)});
+    $('#roiSimulatorResults').innerHTML=`<div class="roi-sim-result"><span>Clientes preservados</span><strong>${r.preservedClients.toLocaleString('pt-BR',{maximumFractionDigits:2})}</strong></div><div class="roi-sim-result"><span>Receita mensal protegida</span><strong>${fmtMoney(r.protectedMonthly)}</strong></div><div class="roi-sim-result"><span>Receita anual protegida</span><strong>${fmtMoney(r.protectedAnnual)}</strong></div><div class="roi-sim-result"><span>Benefício econômico</span><strong>${fmtMoney(r.economicBenefit)}</strong></div><div class="roi-sim-result"><span>ROI projetado</span><strong>${r.roiPct!=null?`${r.roiPct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})}%`:'—'}</strong></div>`;
+  }
+  function fillRoiSimulator(m){$('#roiSimClients').value=m.clients||'';$('#roiSimTicket').value=m.ticket||'';$('#roiSimChurn').value=m.origins.churn?(m.churnReference*100).toFixed(2):'';$('#roiSimProjectedChurn').value=m.origins.churn?(m.churnCurrent*100).toFixed(2):'';$('#roiSimCost').value=m.cost||'';$('#roiSimAttendances').value=m.attendances||'';$('#roiSimAdditional').value=m.additionalRevenue||'';updateRoiSimulator()}
+  function renderRoiOpportunities(){
+    const id=state.roiMonthId,rows=roiOpportunityRowsForMonth(id).sort((a,b)=>String(b.opportunity_date).localeCompare(String(a.opportunity_date))),body=$('#roiOpportunityRows');if(!body)return;
+    body.innerHTML=rows.map(r=>`<tr><td>${escapeHtml(new Date(`${r.opportunity_date}T12:00:00`).toLocaleDateString('pt-BR'))}</td><td><strong>${escapeHtml(r.client_name)}</strong><small>${escapeHtml(r.description||'')}</small></td><td>${escapeHtml(r.team_name||'—')}<small>${escapeHtml(r.technician_name||'Sem técnico')}</small></td><td>${escapeHtml(r.opportunity_type)}</td><td>${fmtMoney(r.potential_value)}</td><td>${fmtMoney(r.converted_value)}</td><td><span class="roi-status ${escapeHtml(r.status)}">${escapeHtml(ROI_STATUS_LABELS[r.status]||r.status)}</span></td><td>${escapeHtml(roiOriginLabel(r.source_origin))}${r.source_file?`<small>${escapeHtml(r.source_file)}</small>`:''}${r.imported_at?`<small>${escapeHtml(formatDateTime(r.imported_at))}</small>`:''}</td><td><div class="roi-opportunity-actions"><button type="button" data-roi-edit-opportunity="${escapeHtml(r.id)}">Editar</button><button type="button" data-roi-delete-opportunity="${escapeHtml(r.id)}">Excluir</button></div></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Nenhuma oportunidade cadastrada nesta competência.</td></tr>';
+  }
+  function populateRoiOpportunitySelectors(){
+    const squad=$('#roiOpportunitySquad'),list=$('#roiTechnicianList');if(squad)squad.innerHTML='<option value="">Sem equipe</option>'+Object.values(state.squads||{}).filter(Boolean).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
+    if(list){const names=new Set();Object.values(state.squads||{}).forEach(s=>Object.values(s.months||{}).forEach(m=>(m.technicians||[]).forEach(t=>names.add(titleWords(t.name)))));list.innerHTML=[...names].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(n=>`<option value="${escapeHtml(n)}"></option>`).join('')}
+  }
+  function resetRoiOpportunityForm(){const f=$('#roiOpportunityForm');if(f)f.reset();$('#roiOpportunityId').value='';$('#roiOpportunityStatus').value='pending';$('#roiOpportunityCancelEditBtn').classList.add('hidden');$('#roiOpportunitySaveBtn').textContent='Salvar oportunidade';if(state.roiMonthId)$('#roiOpportunityDate').value=`${state.roiMonthId}-01`}
+  async function saveRoiOpportunity(e){
+    e.preventDefault();if(!isSuperAdmin())return;const id=$('#roiOpportunityId').value,existing=(state.roiOpportunities||[]).find(r=>String(r.id)===String(id))||null,date=$('#roiOpportunityDate').value,client=$('#roiOpportunityClient').value.trim(),teamCode=$('#roiOpportunitySquad').value,team=teamCode?`Squad ${teamCode}`:'',squadId=teamCode?state.squads?.[teamCode]?.dbId||null:null,tech=$('#roiOpportunityTechnician').value.trim(),type=$('#roiOpportunityType').value.trim(),description=$('#roiOpportunityDescription').value.trim(),potential=Math.max(0,safe($('#roiOpportunityPotential').value)),converted=Math.max(0,safe($('#roiOpportunityConverted').value)),status=$('#roiOpportunityStatus').value||'pending';if(!date||!client||!type)return toast('Preencha data, cliente e tipo da oportunidade.');
+    const now=new Date().toISOString(),payload={organization_id:state.user.organizationId||'demo',opportunity_date:date,client_name:client,squad_id:squadId,team_name:team||null,technician_name:tech||null,opportunity_type:type,description:description||null,potential_value:Number(potential.toFixed(2)),converted_value:Number(converted.toFixed(2)),status,source_origin:'manual',source_file:null,source_row:null,import_key:null,imported_at:null,created_by:existing?.created_by||state.user.userId||null,updated_by:state.user.userId||null,updated_at:now};
+    try{
+      let saved;if(state.supabase){if(existing){const{data,error}=await state.supabase.from('support_roi_opportunities').update(payload).eq('id',existing.id).select('*').single();if(error)throw error;saved=data}else{const{data,error}=await state.supabase.from('support_roi_opportunities').insert(payload).select('*').single();if(error)throw error;saved=data}}
+      else{saved={...payload,id:existing?.id||`demo-roi-${Date.now()}`,created_at:existing?.created_at||now};const rows=(state.roiOpportunities||[]).filter(r=>String(r.id)!==String(saved.id));rows.push(saved);saveDemoRoiOpportunities(rows)}
+      state.roiOpportunities=[...(state.roiOpportunities||[]).filter(r=>String(r.id)!==String(saved.id)),saved];state.roiMonthId=roiOpportunityMonth(saved)||state.roiMonthId;await logAuditEvent(existing?'roi.opportunity_update':'roi.opportunity_create',{entityType:'support_roi_opportunity',entityId:saved.id,squadId:null,description:`Oportunidade de ROI ${existing?'alterada':'cadastrada'} para ${client}.`,beforeData:existing||{},afterData:saved,metadata:{period:roiOpportunityMonth(saved)}});resetRoiOpportunityForm();renderRoiSupport();toast('Oportunidade salva.');
+    }catch(err){console.error(err);toast('Não foi possível salvar a oportunidade. Confira a migração V2.30.0.');}
+  }
+  function editRoiOpportunity(id){const r=(state.roiOpportunities||[]).find(x=>String(x.id)===String(id));if(!r)return;$('#roiOpportunityId').value=r.id;$('#roiOpportunityDate').value=r.opportunity_date||'';$('#roiOpportunityClient').value=r.client_name||'';const code=String(r.team_name||'').replace(/^Squad\s+/i,'');$('#roiOpportunitySquad').value=state.squads?.[code]?code:'';$('#roiOpportunityTechnician').value=r.technician_name||'';$('#roiOpportunityType').value=r.opportunity_type||'';$('#roiOpportunityStatus').value=r.status||'pending';$('#roiOpportunityPotential').value=safe(r.potential_value)||'';$('#roiOpportunityConverted').value=safe(r.converted_value)||'';$('#roiOpportunityDescription').value=r.description||'';$('#roiOpportunityCancelEditBtn').classList.remove('hidden');$('#roiOpportunitySaveBtn').textContent='Salvar alteração';$('#roiOpportunityClient').focus()}
+  async function deleteRoiOpportunity(id){const r=(state.roiOpportunities||[]).find(x=>String(x.id)===String(id));if(!r)return;if(!await confirmDialog(`Excluir a oportunidade de ${r.client_name}? Esta ação remove o valor potencial e realizado desta oportunidade do histórico do ROI.`,{title:'Excluir oportunidade',confirmText:'Excluir',tone:'danger'}))return;try{if(state.supabase){const{error}=await state.supabase.from('support_roi_opportunities').delete().eq('id',r.id);if(error)throw error}else saveDemoRoiOpportunities((state.roiOpportunities||[]).filter(x=>String(x.id)!==String(r.id)));state.roiOpportunities=(state.roiOpportunities||[]).filter(x=>String(x.id)!==String(r.id));await logAuditEvent('roi.opportunity_delete',{entityType:'support_roi_opportunity',entityId:r.id,squadId:null,description:`Oportunidade de ROI excluída: ${r.client_name}.`,beforeData:r,afterData:{},metadata:{period:roiOpportunityMonth(r)}});renderRoiSupport();toast('Oportunidade excluída.')}catch(err){console.error(err);toast('Não foi possível excluir a oportunidade.')}
+  }
+  function roiCsvNumber(value){let raw=String(value??'').trim().replace(/R\$\s?/gi,'').replace(/\s/g,'');if(!raw)return 0;if(raw.includes(',')&&raw.includes('.'))raw=raw.replace(/\./g,'').replace(',','.');else if(raw.includes(','))raw=raw.replace(',','.');raw=raw.replace(/[^0-9.-]/g,'');return safe(raw)}
+  function roiParseMonth(value){const raw=String(value||'').trim();let m=raw.match(/^(\d{4})[-\/]?(\d{2})$/),year,month;if(m){year=Number(m[1]);month=Number(m[2]);}else{m=raw.match(/^(\d{2})[-\/](\d{4})$/);if(!m)return null;month=Number(m[1]);year=Number(m[2]);}return year>=2020&&year<=2100&&month>=1&&month<=12?`${year}-${String(month).padStart(2,'0')}`:null}
+  function roiParseDate(value){const parsed=parseCsvDate(value);if(!parsed)return null;const d=new Date(Date.UTC(parsed.year,parsed.month-1,parsed.day));return d.getUTCFullYear()===parsed.year&&d.getUTCMonth()===parsed.month-1&&d.getUTCDate()===parsed.day?parsed:null}
+  function parseRoiSettingsCsv(text,fileName){
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV de configurações vazio.');const headers=lines[0].map(normalizeHeader),idx={};headers.forEach((h,i)=>idx[h]=i);const required=['competencia','salarios','encargos','beneficios','ferramentas','telefonia','infraestrutura','treinamentos','horasextras','outroscustos','ticketmedio','churnreferenciapct','churnatualpct','metodologiaclientes','clientescarteira','clientesatendidos','clientesativos'];required.forEach(h=>{if(idx[h]==null)throw new Error(`Coluna obrigatória não encontrada: ${h}.`)});const rows=[],errors=[];
+    lines.slice(1).forEach((cols,i)=>{const line=i+2,period=roiParseMonth(cols[idx.competencia]),methodRaw=normalizeHeader(cols[idx.metodologiaclientes]),method=methodRaw.startsWith('carteira')?'portfolio':methodRaw.startsWith('atendid')?'served':methodRaw.startsWith('ativ')?'active':null;if(!period){errors.push(`Linha ${line}: competência inválida. Use AAAA-MM.`);return}if(!method){errors.push(`Linha ${line}: metodologia_clientes deve ser ativos, atendidos ou carteira.`);return}if(String(cols[idx.churnreferenciapct]??'').trim()===''||String(cols[idx.churnatualpct]??'').trim()===''){errors.push(`Linha ${line}: churn de referência e churn atual devem ser informados explicitamente, inclusive quando forem 0.`);return}const churnRef=roiCsvNumber(cols[idx.churnreferenciapct]),churnCur=roiCsvNumber(cols[idx.churnatualpct]);if(churnRef<0||churnRef>100||churnCur<0||churnCur>100){errors.push(`Linha ${line}: churn deve estar entre 0 e 100.`);return}rows.push({period,line,breakdown:{salaries:roiCsvNumber(cols[idx.salarios]),charges:roiCsvNumber(cols[idx.encargos]),benefits:roiCsvNumber(cols[idx.beneficios]),tools:roiCsvNumber(cols[idx.ferramentas]),telephony:roiCsvNumber(cols[idx.telefonia]),infrastructure:roiCsvNumber(cols[idx.infraestrutura]),training:roiCsvNumber(cols[idx.treinamentos]),overtime:roiCsvNumber(cols[idx.horasextras]),other:roiCsvNumber(cols[idx.outroscustos])},ticket:roiCsvNumber(cols[idx.ticketmedio]),churnReference:churnRef/100,churnCurrent:churnCur/100,method,portfolio:Math.max(0,Math.round(roiCsvNumber(cols[idx.clientescarteira]))),served:Math.max(0,Math.round(roiCsvNumber(cols[idx.clientesatendidos]))),active:Math.max(0,Math.round(roiCsvNumber(cols[idx.clientesativos]))),notes:idx.observacao!=null?String(cols[idx.observacao]||'').trim():'',fileName});});return{kind:'settings',fileName,rows,errors,total:lines.length-1};
+  }
+  function parseRoiOpportunitiesCsv(text,fileName){
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV de oportunidades vazio.');const headers=lines[0].map(normalizeHeader),idx={};headers.forEach((h,i)=>idx[h]=i);const required=['data','cliente','equipe','tecnico','tipo','descricao','valorpotencial','valorconvertido','status'];required.forEach(h=>{if(idx[h]==null)throw new Error(`Coluna obrigatória não encontrada: ${h}.`)});const rows=[],errors=[];
+    lines.slice(1).forEach((cols,i)=>{const line=i+2,date=roiParseDate(cols[idx.data]),client=String(cols[idx.cliente]||'').trim(),type=String(cols[idx.tipo]||'').trim(),statusRaw=normalizeHeader(cols[idx.status]),status=statusRaw.startsWith('convert')?'converted':statusRaw.startsWith('perd')?'lost':statusRaw.startsWith('cancel')?'canceled':statusRaw.startsWith('pendent')?'pending':null;if(!date||!client||!type||!status){errors.push(`Linha ${line}: confira data, cliente, tipo e status.`);return}const iso=`${date.year}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`,teamRaw=String(cols[idx.equipe]||'').trim(),teamMatch=teamRaw.match(/\b(?:squad\s*)?([ABDE])\b/i),teamCode=teamMatch?.[1]?.toUpperCase()||'',teamName=teamCode?`Squad ${teamCode}`:(teamRaw||null),potential=Math.max(0,roiCsvNumber(cols[idx.valorpotencial])),converted=Math.max(0,roiCsvNumber(cols[idx.valorconvertido]));rows.push({line,opportunity_date:iso,client_name:client,teamCode,team_name:teamName,technician_name:String(cols[idx.tecnico]||'').trim()||null,opportunity_type:type,description:String(cols[idx.descricao]||'').trim()||null,potential_value:potential,converted_value:converted,status,source_origin:'imported',source_file:fileName,source_row:line,import_key:`${fileName}|${line}`});});return{kind:'opportunities',fileName,rows,errors,total:lines.length-1};
+  }
+  function renderRoiImportPreview(pending){
+    state.roiPendingImport=pending;$('#roiImportTitle').textContent=pending.kind==='settings'?'Prévia • Configurações mensais':'Prévia • Oportunidades';$('#roiImportSummary').textContent=`${pending.fileName} • ${pending.rows.length} linha(s) válida(s) • ${pending.errors.length} erro(s)`;const errors=$('#roiImportErrors');errors.className=`roi-import-errors ${pending.errors.length?'':'success'}`;errors.innerHTML=pending.errors.length?pending.errors.slice(0,20).map(e=>`<div>• ${escapeHtml(e)}</div>`).join(''):'<div>✓ Estrutura validada. Revise a prévia e confirme para gravar.</div>';const head=$('#roiImportPreviewHead'),body=$('#roiImportPreviewRows');if(pending.kind==='settings'){head.innerHTML='<tr><th>Competência</th><th>Custo</th><th>Ticket</th><th>Churn ref.</th><th>Churn atual</th><th>Metodologia</th><th>Clientes</th></tr>';body.innerHTML=pending.rows.slice(0,20).map(r=>{const total=Object.values(r.breakdown).reduce((s,v)=>s+safe(v),0),clients=r.method==='active'?r.active:r.method==='served'?r.served:r.portfolio;return`<tr><td>${escapeHtml(r.period)}</td><td>${fmtMoney(total)}</td><td>${fmtMoney(r.ticket)}</td><td>${fmtPct(r.churnReference)}</td><td>${fmtPct(r.churnCurrent)}</td><td>${escapeHtml(ROI_METHOD_LABELS[r.method])}</td><td>${fmtInt(clients)}</td></tr>`}).join('')}else{head.innerHTML='<tr><th>Data</th><th>Cliente</th><th>Equipe</th><th>Técnico</th><th>Tipo</th><th>Potencial</th><th>Convertido</th><th>Status</th></tr>';body.innerHTML=pending.rows.slice(0,20).map(r=>`<tr><td>${escapeHtml(r.opportunity_date)}</td><td>${escapeHtml(r.client_name)}</td><td>${escapeHtml(r.team_name||'—')}</td><td>${escapeHtml(r.technician_name||'—')}</td><td>${escapeHtml(r.opportunity_type)}</td><td>${fmtMoney(r.potential_value)}</td><td>${fmtMoney(r.converted_value)}</td><td>${escapeHtml(ROI_STATUS_LABELS[r.status])}</td></tr>`).join('')}$('#roiImportConfirmBtn').disabled=!pending.rows.length;openModal('roiImportModal');
+  }
+  async function handleRoiSettingsCsvFile(e){const file=e.target.files?.[0];if(!file)return;try{renderRoiImportPreview(parseRoiSettingsCsv(await file.text(),file.name))}catch(err){toast(err.message||'CSV inválido.')}finally{e.target.value=''}}
+  async function handleRoiOpportunitiesCsvFile(e){const file=e.target.files?.[0];if(!file)return;try{renderRoiImportPreview(parseRoiOpportunitiesCsv(await file.text(),file.name))}catch(err){toast(err.message||'CSV inválido.')}finally{e.target.value=''}}
+  async function confirmRoiImport(){
+    const pending=state.roiPendingImport;if(!pending?.rows?.length)return;const btn=$('#roiImportConfirmBtn');btn.disabled=true;btn.textContent='Importando...';try{if(pending.kind==='settings')await importRoiSettingsRows(pending);else await importRoiOpportunityRows(pending);closeModal('roiImportModal');state.roiPendingImport=null;await ensureRoiDataLoaded(true);renderRoiSupport();toast(`${pending.rows.length} registro(s) importado(s) com sucesso.`)}catch(err){console.error(err);toast(err.message||'Não foi possível concluir a importação.')}finally{btn.disabled=false;btn.textContent='Confirmar importação'}}
+  async function importRoiSettingsRows(pending){
+    const now=new Date().toISOString(),payloads=pending.rows.map(r=>{const prev=state.supportCostCache?.[r.period]||{},auto=roiAutomaticMonthData(r.period),{year,month}=roiMonthParts(r.period),breakdown={};ROI_COST_FIELDS.forEach(([key,,label,description])=>breakdown[key]={value:Number(Math.max(0,safe(r.breakdown[key])).toFixed(2)),type:key,label,description,origin:'imported'});const tot=roiPayloadCostTotals(breakdown);return{organization_id:state.user.organizationId||'demo',year,month,payroll_cost:tot.payroll,other_costs:tot.other,technician_count:Math.max(1,Math.round(safe(prev.technician_count)||auto.technicians||1)),hours_per_day:Math.max(.5,safe(prev.hours_per_day)||8),roi_cost_breakdown:breakdown,roi_avg_ticket:Number(Math.max(0,r.ticket).toFixed(2)),roi_churn_reference:r.churnReference,roi_churn_current:r.churnCurrent,roi_portfolio_clients:r.portfolio,roi_served_clients:r.served,roi_active_clients:r.active,roi_client_method:r.method,roi_notes:r.notes||null,roi_data_origin:'imported',roi_field_origins:{costs:'imported',ticket:'imported',churn:'imported',clients_active:'imported',clients_served:'imported',clients_portfolio:'imported'},roi_source_file:pending.fileName,roi_imported_at:now,roi_created_by:prev.roi_created_by||state.user.userId||null,roi_created_at:prev.roi_created_at||now,roi_updated_by:state.user.userId||null,roi_updated_at:now,updated_by:state.user.userId||null,updated_at:now}});
+    if(state.supabase){const{error}=await state.supabase.from('support_monthly_costs').upsert(payloads,{onConflict:'organization_id,year,month'});if(error)throw error}else{const map=new Map(loadDemoSupportCosts().map(r=>[`${r.year}-${String(r.month).padStart(2,'0')}`,r]));payloads.forEach(r=>map.set(`${r.year}-${String(r.month).padStart(2,'0')}`,{...map.get(`${r.year}-${String(r.month).padStart(2,'0')}`),...r}));saveDemoSupportCosts([...map.values()])}await logAuditEvent('roi.settings_import',{entityType:'support_monthly_cost',entityId:pending.fileName,squadId:null,description:`Configurações mensais do ROI importadas de ${pending.fileName}.`,beforeData:{},afterData:{periods:pending.rows.map(r=>r.period)},metadata:{fileName:pending.fileName,validRows:pending.rows.length,errorRows:pending.errors.length}});
+  }
+  async function importRoiOpportunityRows(pending){
+    const now=new Date().toISOString(),payloads=pending.rows.map(r=>({organization_id:state.user.organizationId||'demo',opportunity_date:r.opportunity_date,client_name:r.client_name,squad_id:r.teamCode?state.squads?.[r.teamCode]?.dbId||null:null,team_name:r.team_name,technician_name:r.technician_name,opportunity_type:r.opportunity_type,description:r.description,potential_value:r.potential_value,converted_value:r.converted_value,status:r.status,source_origin:'imported',source_file:r.source_file,source_row:r.source_row,import_key:r.import_key,imported_at:now,created_by:state.user.userId||null,updated_by:state.user.userId||null,updated_at:now}));
+    if(state.supabase){const{error}=await state.supabase.from('support_roi_opportunities').upsert(payloads,{onConflict:'organization_id,import_key'});if(error)throw error}else{const map=new Map(loadDemoRoiOpportunities().map(r=>[r.import_key||r.id,r]));payloads.forEach((r,i)=>map.set(r.import_key,{...map.get(r.import_key),...r,id:map.get(r.import_key)?.id||`demo-import-${Date.now()}-${i}`,created_at:map.get(r.import_key)?.created_at||now}));saveDemoRoiOpportunities([...map.values()])}await logAuditEvent('roi.opportunities_import',{entityType:'support_roi_opportunity',entityId:pending.fileName,squadId:null,description:`Oportunidades de ROI importadas de ${pending.fileName}.`,beforeData:{},afterData:{rows:pending.rows.length,converted:pending.rows.filter(r=>r.status==='converted').length},metadata:{fileName:pending.fileName,validRows:pending.rows.length,errorRows:pending.errors.length}});
+  }
+  function openRoiMethod(method){
+    if(!state.roiMonthId)return;const m=roiMonthlyMetrics(state.roiMonthId),period=monthLabelFromId(m.id),source=(label,origin)=>`${label}: ${origin==='automatic'?'Automático / monitor':origin==='imported'?'Importado por CSV':origin==='mixed'?'Manual + importado':origin?'Cadastro manual':'Não informado'}`;const blocks=[];let title='Como este valor foi calculado?';
+    const add=(label,value,detail='')=>blocks.push(`<div class="roi-method-block"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${detail?`<p>${escapeHtml(detail)}</p>`:''}</div>`);
+    if(method==='cost'){title='Custo total do suporte';add('Fórmula','Soma das categorias de custo','Salários + encargos + benefícios + ferramentas + telefonia + infraestrutura + treinamentos + horas extras + outros custos. Quando ainda não existe detalhamento de ROI, o módulo reutiliza Pagamentos + Outros custos da tela Custos.');add('Período',period);add('Valor',fmtMoney(m.cost));add('Origem',source('Custo',m.origins.cost));}
+    else if(method==='attendances'){title='Atendimentos';add('Origem','Automático / monitor','Soma do consolidado mensal de atendimentos dos técnicos de todos os Squads na competência. Nenhum número é digitado no ROI.');add('Período',period);add('Valor',fmtInt(m.attendances));}
+    else if(method==='clients'){title='Clientes considerados';add('Metodologia',ROI_METHOD_LABELS[m.method]);add('Valor',m.clients?fmtInt(m.clients):'Não informado');add('Origem',source('Clientes',m.origins.clients));add('Regra','O custo por cliente e a retenção usam exatamente o conceito selecionado nesta competência.');}
+    else if(method==='cost-per-attendance'){title='Custo por atendimento';add('Fórmula','Custo total do suporte ÷ quantidade de atendimentos');add('Substituição',`${fmtMoney(m.cost)} ÷ ${fmtInt(m.attendances)}`);add('Resultado',m.costPerAttendance!=null?fmtMoney(m.costPerAttendance):'Indisponível');}
+    else if(method==='cost-per-client'){title='Custo por cliente';add('Fórmula','Custo total do suporte ÷ quantidade de clientes considerada');add('Metodologia',ROI_METHOD_LABELS[m.method]);add('Substituição',`${fmtMoney(m.cost)} ÷ ${m.clients?fmtInt(m.clients):'—'}`);add('Resultado',m.costPerClient!=null?fmtMoney(m.costPerClient):'Indisponível');}
+    else if(method==='churn'){title='Churn e retenção';add('Churn de referência',fmtPct(m.churnReference),source('Churn',m.origins.churn));add('Churn atual',fmtPct(m.churnCurrent));add('Diferença',`${(m.churnDelta*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} p.p.`);}
+    else if(method==='protected-revenue'){title='Receita protegida estimada';add('Fórmula 1','Clientes preservados = clientes × (churn referência − churn atual)');add('Clientes preservados',m.preservedClients.toLocaleString('pt-BR',{maximumFractionDigits:2}));add('Fórmula 2','Receita mensal protegida = clientes preservados × ticket médio');add('Estimativa mensal',fmtMoney(m.protectedMonthly));add('Equivalente anual',fmtMoney(m.protectedAnnual),'O equivalente anual é referência. O ROI mensal usa somente a receita protegida mensal para não misturar períodos.');}
+    else if(method==='additional-revenue'){title='Receita adicional realizada';add('Regra','Somente oportunidades com status Convertida entram no cálculo.');add('Oportunidades convertidas',String(m.oppRows.filter(r=>r.status==='converted').length));add('Valor realizado',fmtMoney(m.additionalRevenue));add('Origem',source('Oportunidades',m.origins.additional));}
+    else if(method==='economic-benefit'){title='Benefício econômico';add('Fórmula','Receita protegida estimada + Receita adicional realizada');add('Estimado',fmtMoney(m.protectedMonthly));add('Realizado',fmtMoney(m.additionalRevenue));add('Benefício total',fmtMoney(m.economicBenefit));}
+    else{title='ROI do suporte';add('Fórmula','ROI = (Benefício econômico − Custo do suporte) ÷ Custo do suporte × 100');add('Custo',fmtMoney(m.cost));add('Receita protegida estimada',m.isComplete?fmtMoney(m.protectedMonthly):'Aguardando base completa');add('Receita adicional realizada',fmtMoney(m.additionalRevenue));add('Benefício econômico',m.isComplete?fmtMoney(m.economicBenefit):'Aguardando base completa');add('ROI',m.isComplete&&m.roiPct!=null?`${m.roiPct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})}%`:'Indisponível','O cálculo oficial exige custo, clientes, ticket e churn na mesma competência. Valores projetados do simulador nunca entram aqui.');}
+    $('#roiMethodTitle').textContent=title;$('#roiMethodContent').innerHTML=`<div class="roi-method-block"><span>Competência</span><strong>${escapeHtml(period)}</strong><p>Todos os valores abaixo pertencem à mesma competência mensal.</p></div>${blocks.join('')}`;openModal('roiMethodModal');
+  }
+  function renderRoiSupport(){
+    if(!isSuperAdmin()||!$('#view-roi-support'))return;
+    if(!state.roiLoaded){$('#roiDataReadiness').textContent='Carregando base do ROI...';ensureRoiDataLoaded().then(()=>renderRoiSupport()).catch(err=>{console.error(err);$('#roiDataReadiness').textContent='Migração V2.30.0 necessária';toast('Não foi possível carregar o ROI. Confira a migração V2.30.0.');});return;}
+    const ids=roiMonthIds();if(!ids.length){$('#roiMonthSelect').innerHTML='';$('#roiDataReadiness').textContent='Sem competências disponíveis';return}if(!state.roiMonthId||!ids.includes(state.roiMonthId))state.roiMonthId=ids[ids.length-1];$('#roiMonthSelect').innerHTML=ids.slice().reverse().map(id=>`<option value="${id}" ${id===state.roiMonthId?'selected':''}>${escapeHtml(monthLabelFromId(id))}</option>`).join('');
+    const m=roiMonthlyMetrics(state.roiMonthId),prevId=ids.filter(id=>id<m.id).sort().pop(),previous=prevId?roiMonthlyMetrics(prevId):null,missing=[];if(!m.cost)missing.push('custos');if(!m.clients)missing.push('clientes');if(!m.ticket)missing.push('ticket médio');if(!m.origins.churn)missing.push('churn');$('#roiDataReadiness').textContent=missing.length?`Pendente: ${missing.join(', ')}`:'Base pronta para cálculo';
+    renderRoiKpis(m,previous);renderRoiSources(m);roiFillConfigForm(m);populateRoiOpportunitySelectors();renderRoiOpportunities();renderRoiHistory();fillRoiSimulator(m);if(!$('#roiOpportunityId').value&&!$('#roiOpportunityDate').value)resetRoiOpportunityForm();
+  }
+
+
   const SUPPORT_COST_DEMO_KEY='squadDashboardSupportMonthlyCostsV2281';
   function loadDemoSupportCosts(){try{const rows=JSON.parse(localStorage.getItem(SUPPORT_COST_DEMO_KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return[]}}
   function saveDemoSupportCosts(rows){localStorage.setItem(SUPPORT_COST_DEMO_KEY,JSON.stringify(rows||[]))}
@@ -1906,7 +2200,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const task=(async()=>{
       const {year,month}=supportCostMonthParts(id);let row=null;
       if(state.supabase){
-        const {data,error}=await state.supabase.from('support_monthly_costs').select('id,organization_id,year,month,payroll_cost,other_costs,technician_count,hours_per_day,updated_at').eq('organization_id',state.user.organizationId).eq('year',year).eq('month',month).maybeSingle();
+        const {data,error}=await state.supabase.from('support_monthly_costs').select('*').eq('organization_id',state.user.organizationId).eq('year',year).eq('month',month).maybeSingle();
         if(error)throw error;row=data||null;
       }else{
         row=loadDemoSupportCosts().find(r=>safe(r.year)===year&&safe(r.month)===month)||null;
@@ -1946,12 +2240,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   async function saveSupportCosts(){
     if(!isSuperAdmin())return;
     const id=state.supportCostMonthId;if(!id)return toast('Selecione uma competência.');
-    const before=clone(state.supportCostCache?.[id]||{}),{year,month}=supportCostMonthParts(id),payroll=Math.max(0,safe($('#supportPayrollCost')?.value)),other=Math.max(0,safe($('#supportOtherCosts')?.value)),detected=supportCostDetectedTechnicians(id),techs=Math.max(1,Math.round(safe($('#supportTechnicianCount')?.value)||detected||1)),hours=Math.max(.5,safe($('#supportHoursPerDay')?.value)||8),row={organization_id:state.user.organizationId||'demo',year,month,payroll_cost:Number(payroll.toFixed(2)),other_costs:Number(other.toFixed(2)),technician_count:techs,hours_per_day:Number(hours.toFixed(2)),updated_by:state.user.userId||null,updated_at:new Date().toISOString()};
+    const before=clone(state.supportCostCache?.[id]||{}),{year,month}=supportCostMonthParts(id),payroll=Math.max(0,safe($('#supportPayrollCost')?.value)),other=Math.max(0,safe($('#supportOtherCosts')?.value)),detected=supportCostDetectedTechnicians(id),techs=Math.max(1,Math.round(safe($('#supportTechnicianCount')?.value)||detected||1)),hours=Math.max(.5,safe($('#supportHoursPerDay')?.value)||8),now=new Date().toISOString(),legacyBreakdown={};
+    ROI_COST_FIELDS.forEach(([key,,label,description])=>legacyBreakdown[key]={value:key==='salaries'?Number(payroll.toFixed(2)):key==='other'?Number(other.toFixed(2)):0,type:key,label,description,origin:'manual'});
+    const row={organization_id:state.user.organizationId||'demo',year,month,payroll_cost:Number(payroll.toFixed(2)),other_costs:Number(other.toFixed(2)),technician_count:techs,hours_per_day:Number(hours.toFixed(2)),roi_cost_breakdown:legacyBreakdown,roi_data_origin:'manual',roi_field_origins:{...(before.roi_field_origins||{}),costs:'manual'},roi_created_by:before.roi_created_by||state.user.userId||null,roi_created_at:before.roi_created_at||now,roi_updated_by:state.user.userId||null,roi_updated_at:now,updated_by:state.user.userId||null,updated_at:now};
     const btn=$('#saveSupportCostsBtn');if(btn){btn.disabled=true;btn.textContent='Salvando...';}
     try{
       if(state.supabase){const {error}=await state.supabase.from('support_monthly_costs').upsert(row,{onConflict:'organization_id,year,month'});if(error)throw error;}
       else{let store=loadDemoSupportCosts().filter(r=>!(safe(r.year)===year&&safe(r.month)===month));store.push({...row,id:`demo-${id}`});saveDemoSupportCosts(store);}
-      await ensureSupportCostsLoaded(id,{force:true});await logAuditEvent('costs.support_update',{entityType:'support_monthly_cost',entityId:id,squadId:null,description:`Custos gerais do Suporte atualizados em ${monthLabelFromId(id)}.`,beforeData:before,afterData:row,metadata:{period:id}});toast(`Custo geral de ${monthLabelFromId(id)} salvo com segurança.`);
+      await ensureSupportCostsLoaded(id,{force:true});state.roiLoaded=false;await logAuditEvent('costs.support_update',{entityType:'support_monthly_cost',entityId:id,squadId:null,description:`Custos gerais do Suporte atualizados em ${monthLabelFromId(id)}.`,beforeData:before,afterData:row,metadata:{period:id,roiCostBreakdownSynchronized:true}});toast(`Custo geral de ${monthLabelFromId(id)} salvo com segurança.`);
     }catch(err){console.error(err);toast('Não foi possível salvar o custo geral. Confira a migração V2.28.1 e suas permissões.');}
     finally{if(btn){btn.disabled=false;btn.textContent='Salvar competência';}}
   }

@@ -21,12 +21,15 @@ for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) assertLocalRef(ro
 
 const financeScriptPosition = index.indexOf('js/finance-rules.js');
 const auditScriptPosition = index.indexOf('js/audit-utils.js');
+const roiScriptPosition = index.indexOf('js/roi-rules.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
 if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils.js.');
+if (roiScriptPosition < 0) errors.push('index.html não carrega js/roi-rules.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && auditScriptPosition > appScriptPosition) errors.push('js/audit-utils.js deve ser carregado antes de js/app.js.');
-for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
+if (appScriptPosition >= 0 && roiScriptPosition > appScriptPosition) errors.push('js/roi-rules.js deve ser carregado antes de js/app.js.');
+for (const id of ['view-audit','auditRows','confirmDialogPhraseInput','view-roi-support','roiMonthSelect','roiOpportunityForm','roiSimulatorResults','roiImportModal']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
 
@@ -37,8 +40,14 @@ for (const required of [
   'tests/audit-utils.test.js',
   'js/finance-rules.js',
   'js/audit-utils.js',
+  'js/roi-rules.js',
+  'tests/roi-rules.test.js',
+  'models/roi_configuracoes_mensais.csv',
+  'models/roi_oportunidades.csv',
+  'docs/ROI_SUPORTE.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
-  'supabase/migrations/MIGRACAO_V2.29.9.sql'
+  'supabase/migrations/MIGRACAO_V2.29.9.sql',
+  'supabase/migrations/MIGRACAO_V2.30.0.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -85,7 +94,10 @@ for (const auditMarker of [
   "'month.import_quality'",
   "'month.close'",
   "'month.reopen'",
-  "'finance.config_update'"
+  "'finance.config_update'",
+  "'roi.settings_update'",
+  "'roi.opportunity_create'",
+  "'roi.settings_import'"
 ]) {
   if (!appText.includes(auditMarker)) errors.push(`js/app.js deixou de registrar auditoria esperada: ${auditMarker}`);
 }
@@ -113,6 +125,33 @@ for (const sqlMarker of [
   'on table public.audit_logs to service_role;'
 ]) {
   if (!grantMigrationText.includes(sqlMarker)) errors.push(`Migração V2.29.9 incompleta: ${sqlMarker}`);
+}
+
+
+const roiMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.30.0.sql'), 'utf8')
+  .toLowerCase()
+  .replace(/\s+/g, ' ');
+for (const sqlMarker of [
+  'alter table public.support_monthly_costs',
+  'add column if not exists roi_cost_breakdown',
+  'add column if not exists roi_avg_ticket',
+  'add column if not exists roi_churn_reference',
+  'create table if not exists public.support_roi_opportunities',
+  'alter table public.support_roi_opportunities enable row level security',
+  'grant select, insert, update, delete on public.support_roi_opportunities to authenticated;'
+]) {
+  if (!roiMigrationText.includes(sqlMarker)) errors.push(`Migração V2.30.0 incompleta: ${sqlMarker}`);
+}
+
+for (const marker of [
+  'roiRules.calculateMonthlyRoi',
+  "from('support_roi_opportunities')",
+  "from('support_monthly_costs')",
+  'parseRoiSettingsCsv',
+  'parseRoiOpportunitiesCsv',
+  'renderRoiSupport'
+]) {
+  if (!appText.includes(marker)) errors.push(`Módulo ROI incompleto em js/app.js: ${marker}`);
 }
 
 // Toda nova migration que cria tabela em public deve declarar um GRANT explícito.

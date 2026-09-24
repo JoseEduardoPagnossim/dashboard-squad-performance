@@ -1,0 +1,3 @@
+data;cliente;equipe;tecnico;tipo;descricao;valor_potencial;valor_convertido;status
+2026-09-05;Empresa Exemplo A;Squad D;Maria Silva;Upgrade;Oportunidade identificada durante atendimento;1200,00;1200,00;Convertida
+2026-09-12;Empresa Exemplo B;Squad A;João Souza;Módulo adicional;Cliente demonstrou interesse em novo módulo;850,00;0,00;Pendente

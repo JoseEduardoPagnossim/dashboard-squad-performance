@@ -55,3 +55,10 @@ Mesmo sem secrets, um repositório público expõe fórmulas, regras internas, e
 - confirme que arquivos de exportação/importação com dados de clientes não foram adicionados ao Git;
 - revise `git diff` antes do commit;
 - publique frontend e migrations em etapas controladas.
+
+
+## ROI do Suporte
+
+A V2.30.0 trata custo e oportunidades como informação financeira restrita. A navegação do módulo é `super-only` e a tabela `support_roi_opportunities` possui RLS para Admin Geral da mesma organização. As alterações relevantes também são registradas em `audit_logs`.
+
+Os modelos CSV contêm apenas exemplos fictícios. Não versione arquivos reais de clientes ou exportações de produção no repositório.

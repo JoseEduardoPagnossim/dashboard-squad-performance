@@ -9,7 +9,7 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-dragon.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.29.9" />
+  <link rel="stylesheet" href="css/styles.css?v=2.30.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -47,7 +47,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.29.9 • Compatibilidade Data API</small>
+      <small class="login-version">V2.30.0 • ROI do Suporte Técnico</small>
     </div>
   </section>
 
@@ -73,6 +73,7 @@
           <button class="nav-btn active" data-view="individual"><span>◈</span> Meu desempenho</button>
           <button class="nav-btn" data-view="team"><span>♛</span> Visão do Squad</button>
           <button class="nav-btn super-only" data-view="indicators"><span>◔</span> Indicadores</button>
+          <button class="nav-btn super-only" data-view="roi-support"><span>↗</span> ROI do Suporte</button>
         </div>
         <div class="nav-group admin-only"><span class="nav-group-label">GESTÃO</span>
           <button class="nav-btn" data-view="admin" data-admin-section="operation"><span>↻</span> Operação</button>
@@ -105,7 +106,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.29.9 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.30.0 • Squads A, B, D e E</div>
     </aside>
 
     <main class="main">
@@ -593,6 +594,144 @@
       </section>
 
 
+      <section id="view-roi-support" class="view super-only">
+        <div class="help-hero card glass roi-hero">
+          <div><span class="eyebrow">PAINEL EXECUTIVO • FINANCEIRO</span><h2>ROI DO SUPORTE TÉCNICO</h2><p>Visão econômica do Suporte combinando os dados operacionais já existentes no monitor com custos, churn e premissas cadastradas ou importadas. Estimativas, realizados e projeções permanecem separados.</p></div>
+          <div class="help-role"><small>ESCOPO</small><strong>Suporte técnico completo</strong><span>Todos os Squads • acesso exclusivo do Admin Geral</span></div>
+        </div>
+
+        <article class="card roi-toolbar">
+          <div class="section-title"><div><span class="eyebrow">COMPETÊNCIA</span><h3>Período executivo</h3></div><span class="history-chip" id="roiDataReadiness">Carregando dados...</span></div>
+          <div class="roi-toolbar-grid">
+            <label><span>Mês analisado</span><select id="roiMonthSelect"></select><small>O cálculo principal é mensal para manter custo e benefício no mesmo período.</small></label>
+            <div class="roi-toolbar-actions"><button class="btn secondary" id="roiRefreshBtn" type="button">↻ Atualizar</button><button class="btn secondary" id="roiCopyPreviousBtn" type="button">Copiar premissas do mês anterior</button></div>
+          </div>
+        </article>
+
+        <div class="roi-kpi-grid" id="roiKpiGrid">
+          <article class="card roi-kpi"><span>Custo total do suporte</span><strong id="roiTotalCost">—</strong><small id="roiTotalCostCompare">Sem comparação</small><button type="button" class="roi-calc-link" data-roi-method="cost">Como este valor foi calculado?</button></article>
+          <article class="card roi-kpi"><span>Atendimentos</span><strong id="roiAttendances">0</strong><small id="roiAttendancesCompare">Fonte operacional do monitor</small><button type="button" class="roi-calc-link" data-roi-method="attendances">Ver origem do dado</button></article>
+          <article class="card roi-kpi"><span>Clientes considerados</span><strong id="roiClients">—</strong><small id="roiClientsMethod">Metodologia não definida</small><button type="button" class="roi-calc-link" data-roi-method="clients">Ver metodologia</button></article>
+          <article class="card roi-kpi"><span>Custo por atendimento</span><strong id="roiCostPerAttendance">—</strong><small id="roiCostPerAttendanceCompare">Custo ÷ atendimentos</small><button type="button" class="roi-calc-link" data-roi-method="cost-per-attendance">Como este valor foi calculado?</button></article>
+          <article class="card roi-kpi"><span>Custo por cliente</span><strong id="roiCostPerClient">—</strong><small id="roiCostPerClientCompare">Custo ÷ clientes considerados</small><button type="button" class="roi-calc-link" data-roi-method="cost-per-client">Como este valor foi calculado?</button></article>
+          <article class="card roi-kpi"><span>Churn atual</span><strong id="roiChurn">—</strong><small id="roiChurnCompare">Informe churn atual e referência</small><button type="button" class="roi-calc-link" data-roi-method="churn">Ver premissas</button></article>
+          <article class="card roi-kpi estimated"><span>Receita protegida estimada</span><strong id="roiProtectedRevenue">—</strong><small id="roiProtectedRevenueAnnual">Equivalente anual: —</small><button type="button" class="roi-calc-link" data-roi-method="protected-revenue">Como este valor foi calculado?</button></article>
+          <article class="card roi-kpi realized"><span>Receita adicional realizada</span><strong id="roiAdditionalRevenue">—</strong><small id="roiAdditionalRevenueDetail">Somente oportunidades convertidas</small><button type="button" class="roi-calc-link" data-roi-method="additional-revenue">Ver oportunidades</button></article>
+          <article class="card roi-kpi benefit"><span>Benefício econômico</span><strong id="roiEconomicBenefit">—</strong><small id="roiEconomicBenefitDetail">Estimado + realizado</small><button type="button" class="roi-calc-link" data-roi-method="economic-benefit">Como este valor foi calculado?</button></article>
+          <article class="card roi-kpi roi-highlight"><span>ROI do suporte</span><strong id="roiValue">—</strong><small id="roiValueCompare">Benefício − custo ÷ custo</small><button type="button" class="roi-calc-link" data-roi-method="roi">Como este valor foi calculado?</button></article>
+        </div>
+
+        <div class="roi-supporting-grid">
+          <article class="card roi-supporting-card"><span>Produtividade</span><strong id="roiProductivity">—</strong><small id="roiProductivityDetail">Atendimentos por técnico/dia útil</small></article>
+          <article class="card roi-supporting-card"><span>Clientes preservados</span><strong id="roiPreservedClients">—</strong><small>Estimativa derivada da redução do churn</small></article>
+          <article class="card roi-supporting-card"><span>Ticket médio</span><strong id="roiTicket">—</strong><small id="roiTicketOrigin">Aguardando premissa</small></article>
+          <article class="card roi-supporting-card"><span>Transparência dos dados</span><strong id="roiSourceSummary">—</strong><small>Automático • Manual • Importado</small></article>
+        </div>
+
+        <article class="card roi-source-card">
+          <div class="section-title"><div><span class="eyebrow">ORIGEM DOS DADOS</span><h3>De onde vieram os números?</h3></div><span class="muted">A origem acompanha cada competência</span></div>
+          <div id="roiSourceGrid" class="roi-source-grid"></div>
+        </article>
+
+        <details class="card roi-config-card" open>
+          <summary><span><span class="eyebrow">CONFIGURAÇÕES FINANCEIRAS DO SUPORTE</span><strong>Custos, clientes, ticket e churn</strong></span><small id="roiConfigStatus">Selecione uma competência</small></summary>
+          <div class="roi-config-body">
+            <div class="roi-form-section"><h4>Composição dos custos</h4><div class="roi-form-grid costs">
+              <label><span>Salários</span><input id="roiCostSalaries" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Encargos</span><input id="roiCostCharges" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Benefícios</span><input id="roiCostBenefits" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Ferramentas</span><input id="roiCostTools" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Telefonia</span><input id="roiCostTelephony" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Infraestrutura</span><input id="roiCostInfrastructure" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Treinamentos</span><input id="roiCostTraining" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Horas extras</span><input id="roiCostOvertime" type="number" min="0" step="0.01" inputmode="decimal"></label>
+              <label><span>Outros custos</span><input id="roiCostOther" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            </div></div>
+            <div class="roi-form-section"><h4>Premissas de retenção</h4><div class="roi-form-grid">
+              <label><span>Ticket médio mensal</span><input id="roiAvgTicket" type="number" min="0" step="0.01" inputmode="decimal"><small id="roiAvgTicketHint">Se vazio, o módulo reaproveita o ticket do Impacto financeiro quando existir.</small></label>
+              <label><span>Churn de referência (%)</span><input id="roiChurnReference" type="number" min="0" max="100" step="0.01" inputmode="decimal"><small>Base de comparação anterior/meta.</small></label>
+              <label><span>Churn atual (%)</span><input id="roiChurnCurrent" type="number" min="0" max="100" step="0.01" inputmode="decimal"><small>Percentual da competência.</small></label>
+              <label><span>Conceito de clientes</span><select id="roiClientMethod"><option value="active">Clientes ativos</option><option value="served">Clientes atendidos</option><option value="portfolio">Clientes da carteira</option></select><small>O conceito escolhido é exibido no cálculo.</small></label>
+              <label><span>Clientes da carteira</span><input id="roiPortfolioClients" type="number" min="0" step="1" inputmode="numeric"></label>
+              <label><span>Clientes atendidos</span><input id="roiServedClients" type="number" min="0" step="1" inputmode="numeric"></label>
+              <label><span>Clientes ativos</span><input id="roiActiveClients" type="number" min="0" step="1" inputmode="numeric"><small id="roiActiveClientsHint">Se vazio, reaproveita o total do Impacto financeiro quando existir.</small></label>
+              <label class="full"><span>Observação / premissa</span><input id="roiNotes" type="text" maxlength="500" placeholder="Ex.: churn comparado à média dos últimos 3 meses"></label>
+            </div></div>
+            <div class="roi-config-preview" id="roiConfigPreview"></div>
+            <div class="admin-actions"><button class="btn primary" id="roiSaveConfigBtn" type="button">Salvar configurações da competência</button></div>
+          </div>
+        </details>
+
+        <article class="card roi-import-card">
+          <div class="section-title"><div><span class="eyebrow">IMPORTAÇÃO DE DADOS</span><h3>CSV para histórico e oportunidades</h3></div><span class="muted">Prévia e validação antes de gravar</span></div>
+          <div class="roi-import-grid">
+            <div><strong>Configurações mensais</strong><p>Use para cadastrar várias competências de custos, churn, clientes e ticket de uma vez.</p><details class="roi-csv-help"><summary>Como preencher o modelo</summary><p><code>competencia</code> em AAAA-MM; custos e <code>ticket_medio</code> como números; churn em percentual de 0 a 100; <code>metodologia_clientes</code> como ativos, atendidos ou carteira; quantidades de clientes como inteiros. <code>observacao</code> é opcional.</p></details><div class="roi-import-actions"><a class="btn secondary" href="models/roi_configuracoes_mensais.csv" download>↓ Baixar modelo CSV</a><button class="btn primary" id="roiImportSettingsBtn" type="button">↑ Importar configurações</button></div></div>
+            <div><strong>Oportunidades do suporte</strong><p>Importe oportunidades comerciais em lote. Somente status Convertida compõe receita realizada.</p><details class="roi-csv-help"><summary>Como preencher o modelo</summary><p><code>data</code> em AAAA-MM-DD ou DD/MM/AAAA; cliente, tipo e status são obrigatórios; equipe pode ser “Squad A”, por exemplo; valores são numéricos; status aceitos: Pendente, Convertida, Perdida ou Cancelada.</p></details><div class="roi-import-actions"><a class="btn secondary" href="models/roi_oportunidades.csv" download>↓ Baixar modelo CSV</a><button class="btn primary" id="roiImportOpportunitiesBtn" type="button">↑ Importar oportunidades</button></div></div>
+          </div>
+          <input id="roiSettingsCsvInput" type="file" accept=".csv,text/csv" hidden>
+          <input id="roiOpportunitiesCsvInput" type="file" accept=".csv,text/csv" hidden>
+        </article>
+
+        <article class="card roi-opportunity-card">
+          <div class="section-title"><div><span class="eyebrow">RECEITA ADICIONAL</span><h3>Oportunidades geradas pelo suporte</h3></div><span class="muted">Realizado = somente Convertida</span></div>
+          <form id="roiOpportunityForm" class="roi-opportunity-form">
+            <input id="roiOpportunityId" type="hidden">
+            <label><span>Data</span><input id="roiOpportunityDate" type="date" required></label>
+            <label><span>Cliente</span><input id="roiOpportunityClient" type="text" required maxlength="160"></label>
+            <label><span>Equipe</span><select id="roiOpportunitySquad"><option value="">Sem equipe</option></select></label>
+            <label><span>Técnico</span><input id="roiOpportunityTechnician" type="text" list="roiTechnicianList" maxlength="160"><datalist id="roiTechnicianList"></datalist></label>
+            <label><span>Tipo</span><input id="roiOpportunityType" type="text" required maxlength="100" placeholder="Ex.: Upgrade, módulo, serviço"></label>
+            <label><span>Status</span><select id="roiOpportunityStatus"><option value="pending">Pendente</option><option value="converted">Convertida</option><option value="lost">Perdida</option><option value="canceled">Cancelada</option></select></label>
+            <label><span>Valor potencial</span><input id="roiOpportunityPotential" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label><span>Valor convertido</span><input id="roiOpportunityConverted" type="number" min="0" step="0.01" inputmode="decimal"></label>
+            <label class="full"><span>Descrição</span><input id="roiOpportunityDescription" type="text" maxlength="500"></label>
+            <div class="admin-actions full"><button class="btn secondary hidden" id="roiOpportunityCancelEditBtn" type="button">Cancelar edição</button><button class="btn primary" id="roiOpportunitySaveBtn" type="submit">Salvar oportunidade</button></div>
+          </form>
+          <div class="table-wrap roi-opportunity-table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Equipe / Técnico</th><th>Tipo</th><th>Potencial</th><th>Convertido</th><th>Status</th><th>Origem</th><th></th></tr></thead><tbody id="roiOpportunityRows"></tbody></table></div>
+        </article>
+
+        <section class="roi-history-section">
+          <div class="history-section-head card"><div><span class="eyebrow">HISTÓRICO</span><h2>Evolução do ROI</h2><p>Consolide mensalmente ou agrupe as competências por trimestre e ano sem misturar projeções do simulador.</p></div><label class="control select-wrap"><span>Agrupar por</span><select id="roiHistoryGrain"><option value="month">Mensal</option><option value="quarter">Trimestral</option><option value="year">Anual</option></select></label></div>
+          <article class="card roi-history-table-card"><div class="table-wrap"><table><thead><tr><th>Período</th><th>Custo</th><th>Atendimentos</th><th>Custo/Atend.</th><th>Churn</th><th>Receita protegida</th><th>Receita adicional</th><th>Benefício</th><th>ROI</th></tr></thead><tbody id="roiHistoryRows"></tbody></table></div></article>
+          <div class="roi-chart-grid">
+            <article class="card chart-card"><div class="section-title"><div><span class="eyebrow">ROI AO LONGO DO TEMPO</span><h3>Retorno por período</h3></div><span class="muted">%</span></div><div id="roiTrendChart" class="chart roi-chart"></div></article>
+            <article class="card chart-card"><div class="section-title"><div><span class="eyebrow">CUSTO X BENEFÍCIO</span><h3>Investimento e benefício econômico</h3></div><span class="muted">R$</span></div><div id="roiCostBenefitChart" class="chart roi-chart"></div></article>
+            <article class="card chart-card"><div class="section-title"><div><span class="eyebrow">CHURN X RECEITA PROTEGIDA</span><h3>Retenção estimada</h3></div><span class="muted">Churn atual e R$ protegido</span></div><div id="roiChurnProtectedChart" class="chart roi-chart"></div></article>
+            <article class="card chart-card"><div class="section-title"><div><span class="eyebrow">CUSTO POR ATENDIMENTO</span><h3>Evolução operacional</h3></div><span class="muted">R$ por atendimento</span></div><div id="roiCostAttendanceChart" class="chart roi-chart"></div></article>
+            <article class="card chart-card roi-benefit-composition-card"><div class="section-title"><div><span class="eyebrow">COMPOSIÇÃO DO BENEFÍCIO</span><h3>Estimado x realizado</h3></div><span class="muted">Retenção + receita adicional</span></div><div id="roiBenefitCompositionChart" class="chart roi-chart"></div></article>
+          </div>
+        </section>
+
+        <article class="card roi-simulator-card">
+          <div class="section-title"><div><span class="eyebrow">SIMULADOR DE IMPACTO</span><h3>SIMULAÇÃO / PROJEÇÃO</h3><p>Os resultados abaixo nunca são gravados nem misturados ao realizado.</p></div><span class="projection-chip">PROJEÇÃO</span></div>
+          <div class="roi-simulator-grid">
+            <label><span>Clientes</span><input id="roiSimClients" type="number" min="0" step="1"></label>
+            <label><span>Ticket médio</span><input id="roiSimTicket" type="number" min="0" step="0.01"></label>
+            <label><span>Churn atual (%)</span><input id="roiSimChurn" type="number" min="0" max="100" step="0.01"></label>
+            <label><span>Churn projetado (%)</span><input id="roiSimProjectedChurn" type="number" min="0" max="100" step="0.01"></label>
+            <label><span>Custo do suporte</span><input id="roiSimCost" type="number" min="0" step="0.01"></label>
+            <label><span>Atendimentos</span><input id="roiSimAttendances" type="number" min="0" step="1"></label>
+            <label><span>Receita adicional</span><input id="roiSimAdditional" type="number" min="0" step="0.01"></label>
+          </div>
+          <div class="roi-simulator-results" id="roiSimulatorResults"></div>
+        </article>
+
+        <article class="card roi-methodology-card">
+          <div class="section-title"><div><span class="eyebrow">PREMISSAS E METODOLOGIA</span><h3>Leitura correta para apresentação à diretoria</h3></div><button class="btn secondary" type="button" data-roi-method="roi">Abrir metodologia completa</button></div>
+          <div class="roi-methodology-grid">
+            <div><strong>Conceito de churn</strong><p>O módulo utiliza os percentuais de churn de referência e churn atual informados para a competência. A gestão deve manter a mesma metodologia de apuração ao comparar períodos.</p></div>
+            <div><strong>Conceito de cliente</strong><p>Cada competência declara se a base usada é clientes ativos, clientes atendidos ou clientes da carteira; essa escolha alimenta custo por cliente e retenção.</p></div>
+            <div><strong>Ticket médio</strong><p>É tratado como valor mensal. Pode ser reaproveitado do Impacto financeiro ou informado/importado especificamente para o ROI.</p></div>
+            <div><strong>Custos considerados</strong><p>Salários, encargos, benefícios, ferramentas, telefonia, infraestrutura, treinamentos, horas extras e outros custos do período.</p></div>
+            <div><strong>Receita protegida</strong><p>É uma <b>estimativa</b> baseada na diferença entre churn de referência e churn atual. Não é receita faturada.</p></div>
+            <div><strong>Receita adicional</strong><p>É <b>realizada</b> somente quando uma oportunidade está com status Convertida; valores potenciais não entram no ROI.</p></div>
+            <div><strong>ROI mensal</strong><p>Usa benefício econômico mensal e custo mensal na mesma competência. A exposição anual é exibida apenas como referência.</p></div>
+            <div><strong>Realizado, estimado e projetado</strong><p>Oportunidades convertidas são realizadas; retenção é estimada; o simulador é projeção e nunca é gravado no resultado oficial.</p></div>
+            <div><strong>Dados ausentes</strong><p>O sistema não inventa valores. Quando uma premissa não existe no monitor, o indicador fica pendente até cadastro manual ou importação.</p></div>
+          </div>
+        </article>
+      </section>
+
       <section id="view-feedbacks" class="view admin-only">
         <div class="feedback-hero card glass">
           <div><span class="eyebrow">ACOMPANHAMENTO MENSAL</span><h2>Feedbacks dos técnicos</h2><p>Gere uma base objetiva a partir dos indicadores da competência, revise com sua liderança e mantenha um histórico funcional por técnico.</p></div>
@@ -638,7 +777,7 @@
           <div class="section-title"><div><span class="eyebrow">HISTÓRICO IMUTÁVEL</span><h3>Últimas ações administrativas</h3></div><span class="muted" id="auditCountLabel">0 registros</span></div>
           <div class="audit-toolbar">
             <label class="search-field"><span>Buscar</span><input id="auditSearchInput" type="search" placeholder="Usuário, ação, competência ou descrição"></label>
-            <label class="filter-field"><span>Categoria</span><select id="auditCategoryFilter"><option value="all">Todas</option><option value="user">Usuários</option><option value="month">Competências / importações</option><option value="finance">Bonificação</option><option value="goals">Metas e métricas</option><option value="costs">Custos</option><option value="quality">Impacto financeiro</option></select></label>
+            <label class="filter-field"><span>Categoria</span><select id="auditCategoryFilter"><option value="all">Todas</option><option value="user">Usuários</option><option value="month">Competências / importações</option><option value="finance">Bonificação</option><option value="goals">Metas e métricas</option><option value="costs">Custos</option><option value="quality">Impacto financeiro</option><option value="roi">ROI do Suporte</option></select></label>
           </div>
           <div id="auditStatus" class="admin-note">Carregando auditoria...</div>
           <div class="table-wrap audit-table-wrap"><table class="audit-table"><thead><tr><th>Data / hora</th><th>Responsável</th><th>Ação</th><th>Escopo</th><th>Detalhes</th></tr></thead><tbody id="auditRows"></tbody></table></div>
@@ -883,6 +1022,10 @@
   </form></div></div>
 
 
+  <div id="roiMethodModal" class="modal" aria-hidden="true"><div class="modal-card roi-method-modal"><button class="modal-close" data-close="roiMethodModal">×</button><span class="eyebrow">TRANSPARÊNCIA DO INDICADOR</span><h2 id="roiMethodTitle">Como este valor foi calculado?</h2><div id="roiMethodContent" class="roi-method-content"></div><div class="modal-actions"><button class="btn secondary" data-close="roiMethodModal" type="button">Fechar</button></div></div></div>
+
+  <div id="roiImportModal" class="modal" aria-hidden="true" data-static-backdrop="true"><div class="modal-card roi-import-modal"><button class="modal-close" data-close="roiImportModal">×</button><span class="eyebrow">IMPORTAÇÃO ROI</span><h2 id="roiImportTitle">Prévia da importação</h2><p id="roiImportSummary">Valide os dados antes de confirmar.</p><div id="roiImportErrors" class="roi-import-errors"></div><div class="table-wrap roi-import-preview-wrap"><table><thead id="roiImportPreviewHead"></thead><tbody id="roiImportPreviewRows"></tbody></table></div><div class="modal-actions"><button class="btn secondary" id="roiImportCancelBtn" type="button">Cancelar</button><button class="btn primary" id="roiImportConfirmBtn" type="button">Confirmar importação</button></div></div></div>
+
   <div id="confirmDialog" class="modal" aria-hidden="true" data-static-backdrop="true" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle">
     <div class="modal-card confirm-dialog-card">
       <button class="modal-close" id="confirmDialogClose" type="button" aria-label="Fechar">×</button>
@@ -901,10 +1044,11 @@
   <div class="toast" id="toast"></div>
   <script src="js/config.js"></script>
   <script src="js/core-utils.js"></script>
-  <script src="js/audit-utils.js?v=2.29.9"></script>
+  <script src="js/audit-utils.js?v=2.30.0"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/app.js?v=2.29.9"></script>
+  <script src="js/finance-rules.js?v=2.30.0"></script>
+  <script src="js/roi-rules.js?v=2.30.0"></script>
+  <script src="js/app.js?v=2.30.0"></script>
 </body>
 </html>
