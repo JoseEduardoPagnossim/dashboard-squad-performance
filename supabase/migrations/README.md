@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.30.0.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.29.9.
 
 Depois:
 
@@ -42,7 +42,6 @@ V2.29.5
 V2.29.6
 V2.29.8
 V2.29.9
-V2.30.0
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -60,10 +59,3 @@ V2.30.0
 A migração não concede acesso ao role `anon`. O frontend exige autenticação e continua protegido por RLS/policies.
 
 Para qualquer tabela nova criada em `public`, inclua o `GRANT` necessário na mesma migração que contém o `CREATE TABLE`.
-
-
-## V2.30.0 — ROI do Suporte Técnico
-
-`MIGRACAO_V2.30.0.sql` amplia `support_monthly_costs` com as premissas mensais do ROI e cria `support_roi_opportunities` para receita adicional. A nova tabela possui RLS, `GRANT` explícito para `authenticated` e é restrita ao Admin Geral da organização.
-
-A migration não cria API, não concede `anon` e não remove dados existentes.

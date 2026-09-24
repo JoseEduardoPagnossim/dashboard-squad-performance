@@ -32,7 +32,7 @@
 
   function actionCategory(action=''){
     const prefix=String(action).split('.')[0];
-    return ['user','month','finance','goals','costs','quality','feedback','theme','roi'].includes(prefix)?prefix:'other';
+    return ['user','month','finance','goals','costs','quality','feedback','theme'].includes(prefix)?prefix:'other';
   }
 
   function actionLabel(action=''){
@@ -42,8 +42,7 @@
       'finance.config_update':'Regras financeiras alteradas','finance.technicians_update':'Valores financeiros alterados','finance.rules_copy':'Regras financeiras copiadas','finance.admin_commission':'Comissão do Admin Geral alterada',
       'goals.team_update':'Metas do Squad alteradas','goals.monthly_metrics_update':'Metas e métricas individuais alteradas',
       'costs.support_update':'Custos do Suporte alterados',
-      'quality.financial_import':'CSV de impacto financeiro importado','quality.financial_params_update':'Parâmetros de impacto financeiro alterados',
-      'roi.settings_update':'Configurações do ROI alteradas','roi.settings_import':'Configurações do ROI importadas','roi.opportunity_create':'Oportunidade de ROI criada','roi.opportunity_update':'Oportunidade de ROI alterada','roi.opportunity_delete':'Oportunidade de ROI excluída','roi.opportunities_import':'Oportunidades de ROI importadas'
+      'quality.financial_import':'CSV de impacto financeiro importado','quality.financial_params_update':'Parâmetros de impacto financeiro alterados'
     };
     return labels[action]||String(action||'Ação administrativa');
   }

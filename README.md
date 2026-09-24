@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.30.0`<br>
+**Versão atual:** `2.29.9`<br>
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
 
@@ -21,7 +21,6 @@ Principais áreas da aplicação:
 - metas, bonificação e comparação de modelos financeiros;
 - custos gerais do Suporte;
 - impacto financeiro da qualidade;
-- ROI do Suporte Técnico com custos, retenção, oportunidades, simulador e histórico;
 - feedbacks e histórico por técnico;
 - administração de usuários, Squads e temas;
 - importações operacionais em CSV e exportações em Excel/PDF.
@@ -39,10 +38,8 @@ dashboard-squad-performance/
 │   ├── core-utils.js       # utilidades compartilhadas
 │   ├── finance-rules.js    # regras financeiras puras e testáveis
 │   ├── audit-utils.js      # sanitização e proteções da auditoria
-│   ├── roi-rules.js        # fórmulas puras e agregação do ROI do Suporte
 │   ├── default-data.js     # dados demonstrativos anonimizados
 │   └── demo-users.js       # contas exclusivamente demonstrativas
-├── models/                 # modelos CSV do ROI
 ├── docs/
 │   ├── architecture.md     # visão técnica
 │   ├── database.md         # instalação e atualização do banco
@@ -52,8 +49,7 @@ dashboard-squad-performance/
 │   └── releases/           # histórico detalhado por versão
 ├── tests/
 │   ├── finance-rules.test.js # testes automáticos das regras financeiras
-│   ├── audit-utils.test.js   # testes das proteções de auditoria
-│   └── roi-rules.test.js     # testes das fórmulas e agregações do ROI
+│   └── audit-utils.test.js   # testes das proteções de auditoria
 ├── .github/workflows/
 │   └── quality.yml         # validação automática no GitHub Actions
 ├── supabase/
@@ -119,21 +115,6 @@ O workflow `.github/workflows/quality.yml` roda automaticamente em:
 
 Se a validação ou qualquer teste falhar, o workflow fica vermelho e informa qual regra precisa ser revisada. Ele não altera o deploy do GitHub Pages; funciona apenas como barreira de qualidade.
 
-
-## ROI do Suporte Técnico
-
-A V2.30.0 adiciona o módulo executivo **ROI do Suporte**, restrito ao Admin Geral. Ele combina dados operacionais já existentes com premissas mensais e oportunidades cadastradas/importadas, sem criar API nova.
-
-A regra de cálculo fica isolada em `js/roi-rules.js`; os modelos de importação ficam em `models/`. A documentação completa de fórmulas, origens, campos manuais e limitações está em [docs/ROI_SUPORTE.md](docs/ROI_SUPORTE.md), e o inventário da entrega em [docs/RELATORIO_IMPLEMENTACAO_ROI_V2.30.0.md](docs/RELATORIO_IMPLEMENTACAO_ROI_V2.30.0.md).
-
-Para atualizar uma base existente que já está na V2.29.9:
-
-1. execute `supabase/migrations/MIGRACAO_V2.30.0.sql`;
-2. publique o frontend V2.30.0;
-3. valide o **Quality Gate**;
-4. acesse **ROI do Suporte** como Admin Geral e cadastre/importe as premissas que não existirem no monitor.
-
-Nenhuma Edge Function precisa ser republicada por esta atualização.
 
 ## Auditoria e operações críticas
 

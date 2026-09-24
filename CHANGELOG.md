@@ -1,19 +1,5 @@
 # Changelog
 
-## 2.30.0
-
-- novo módulo executivo **ROI do Suporte Técnico**;
-- cards de custo, atendimentos, clientes, churn, receita protegida estimada, receita adicional realizada, benefício econômico e ROI;
-- custos detalhados e premissas mensais reaproveitando `support_monthly_costs`;
-- nova tabela `support_roi_opportunities` com RLS;
-- cadastro manual e importação CSV com prévia/validação, arquivo e data/hora de importação;
-- modelos CSV oficiais para configurações e oportunidades;
-- histórico mensal, trimestral e anual com gráficos;
-- simulador de impacto separado dos resultados realizados;
-- transparência de fórmula, período e origem dos dados;
-- regras puras em `js/roi-rules.js`, testes automatizados e Quality Gate ampliado;
-- nova migration `MIGRACAO_V2.30.0.sql` e `schema.sql` cumulativo atualizado.
-
 Histórico resumido do Soften Performance Hub. As notas completas de cada versão permanecem em `docs/releases/`.
 
 ## 2.29.9
@@ -80,7 +66,6 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 
 ## Notas completas
 
-- [2.30.0 — ROI do Suporte Técnico](docs/releases/ATUALIZACAO_V2.30.0.md)
 - [2.29.9 — Compatibilidade Data API do Supabase](docs/releases/ATUALIZACAO_V2.29.9.md)
 - [2.29.8 — Auditoria e proteção de operações críticas](docs/releases/ATUALIZACAO_V2.29.8.md)
 - [2.29.7 — Qualidade automatizada e testes financeiros](docs/releases/ATUALIZACAO_V2.29.7.md)

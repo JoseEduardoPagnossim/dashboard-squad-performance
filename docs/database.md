@@ -1,6 +1,6 @@
 # Banco de dados — Supabase
 
-Este documento representa o fluxo recomendado para a versão `2.30.0`.
+Este documento representa o fluxo recomendado para a versão `2.29.9`.
 
 ## Instalação nova
 
@@ -14,7 +14,7 @@ Em um projeto Supabase novo:
 6. configure URL e chave publishable/anon em `js/config.js`;
 7. valide login, leitura dos Squads e uma importação controlada antes de liberar o ambiente.
 
-`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.30.0, incluindo os `GRANT`s explícitos exigidos pela Data API.
+`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.29.9, incluindo os `GRANT`s explícitos exigidos pela Data API.
 
 ## Atualização de uma base existente
 
@@ -22,15 +22,13 @@ Não recrie o banco e não execute `schema.sql` sobre produção apenas para atu
 
 Use `supabase/migrations/README.md` para identificar a sequência histórica e execute somente as migrations ainda pendentes. Antes de qualquer alteração em produção, faça backup e valide a aplicação após a migration.
 
-Para uma base que já está na V2.29.9, execute apenas:
+Para uma base que já está na V2.29.8, execute apenas:
 
 ```text
-supabase/migrations/MIGRACAO_V2.30.0.sql
+supabase/migrations/MIGRACAO_V2.29.9.sql
 ```
 
-A V2.30.0 amplia `support_monthly_costs` para as premissas do ROI e cria `support_roi_opportunities`. O guia de implantação está em `docs/PASSO_A_PASSO_ROI_V2.30.0.md`.
-
-A compatibilidade com os `GRANT`s explícitos da Data API continua documentada em `docs/SUPABASE_DATA_API_GRANTS_2026.md`.
+A V2.29.9 torna explícitos os privilégios necessários para a Data API do Supabase. O passo a passo completo está em `docs/SUPABASE_DATA_API_GRANTS_2026.md`.
 
 ## Edge Functions
 
