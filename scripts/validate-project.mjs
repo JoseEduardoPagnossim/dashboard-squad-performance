@@ -37,7 +37,8 @@ for (const required of [
   'tests/audit-utils.test.js',
   'js/finance-rules.js',
   'js/audit-utils.js',
-  'supabase/migrations/MIGRACAO_V2.29.8.sql'
+  'supabase/migrations/MIGRACAO_V2.29.8.sql',
+  'supabase/migrations/MIGRACAO_V2.29.9.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -96,6 +97,39 @@ for (const sqlMarker of [
   'create or replace function public.log_audit_event'
 ]) {
   if (!migrationText.includes(sqlMarker)) errors.push(`Migração V2.29.8 incompleta: ${sqlMarker}`);
+}
+
+const grantMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.29.9.sql'), 'utf8')
+  .toLowerCase()
+  .replace(/\s+/g, ' ');
+for (const sqlMarker of [
+  'on table public.technician_finance_monthly to authenticated;',
+  'on table public.super_admin_commissions to authenticated;',
+  'on table public.profiles to service_role;',
+  'on table public.squads to service_role;',
+  'on table public.squad_months to service_role;',
+  'on table public.technician_monthly to service_role;',
+  'on table public.profile_squad_history to service_role;',
+  'on table public.audit_logs to service_role;'
+]) {
+  if (!grantMigrationText.includes(sqlMarker)) errors.push(`Migração V2.29.9 incompleta: ${sqlMarker}`);
+}
+
+// Toda nova migration que cria tabela em public deve declarar um GRANT explícito.
+// As duas tabelas da V2.18.0 são exceções históricas e foram remediadas pela V2.29.9.
+const grantRemediatedTables = new Set(['technician_finance_monthly', 'super_admin_commissions']);
+const migrationsDir = join(root, 'supabase', 'migrations');
+for (const migrationFile of readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))) {
+  const migrationSql = readFileSync(join(migrationsDir, migrationFile), 'utf8');
+  for (const match of migrationSql.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?public\.([a-z0-9_]+)/gi)) {
+    const table = match[1].toLowerCase();
+    if (grantRemediatedTables.has(table)) continue;
+    const escapedTable = table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const grantPattern = new RegExp(`grant\\s+[\\s\\S]*?on\\s+(?:table\\s+)?public\\.${escapedTable}\\b`, 'i');
+    if (!grantPattern.test(migrationSql)) {
+      errors.push(`${migrationFile} cria public.${table} sem GRANT explícito na mesma migration.`);
+    }
+  }
 }
 
 if (errors.length) {

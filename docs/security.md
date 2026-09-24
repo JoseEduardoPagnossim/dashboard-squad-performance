@@ -22,6 +22,14 @@ Sempre teste pelo menos estes perfis após mudanças de schema/policies:
 - Técnico.
 
 
+## Privilegios da Data API
+
+A partir da V2.29.9, as tabelas usadas via `supabase-js` e pelas Edge Functions possuem `GRANT`s explicitos. `GRANT` e RLS sao camadas diferentes: o primeiro permite a operacao SQL para o role; a segunda restringe as linhas acessiveis.
+
+O projeto nao concede novos privilegios ao role `anon`. Para novas tabelas em `public`, declare o `GRANT` necessario na mesma migration do `CREATE TABLE` e revise sequences quando utilizar `identity`/`serial`.
+
+Veja `docs/SUPABASE_DATA_API_GRANTS_2026.md`.
+
 ## Auditoria administrativa
 
 A V2.29.8 mantém os registros administrativos em `audit_logs`. A tabela tem RLS para leitura e não concede INSERT/UPDATE/DELETE ao cliente autenticado. Registros feitos pelo frontend passam por `log_audit_event`, que deriva o ator da sessão; operações de usuários executadas pelas Edge Functions são gravadas pelo backend.

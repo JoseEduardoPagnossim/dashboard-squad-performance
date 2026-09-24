@@ -2,6 +2,14 @@
 
 Histórico resumido do Soften Performance Hub. As notas completas de cada versão permanecem em `docs/releases/`.
 
+## 2.29.9
+
+- compatibilidade com a mudança de exposição automática da Data API do Supabase prevista para 30/10/2026;
+- nova migration `MIGRACAO_V2.29.9.sql` com `GRANT`s explícitos para frontend autenticado e Edge Functions;
+- nenhuma nova permissão para o role `anon`;
+- `schema.sql` cumulativo atualizado para novas instalações;
+- documentação e Quality Gate reforçados para futuras tabelas.
+
 ## 2.29.8
 
 - nova área **Gestão > Auditoria** com leitura por escopo e RLS;
@@ -58,6 +66,7 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 
 ## Notas completas
 
+- [2.29.9 — Compatibilidade Data API do Supabase](docs/releases/ATUALIZACAO_V2.29.9.md)
 - [2.29.8 — Auditoria e proteção de operações críticas](docs/releases/ATUALIZACAO_V2.29.8.md)
 - [2.29.7 — Qualidade automatizada e testes financeiros](docs/releases/ATUALIZACAO_V2.29.7.md)
 - [2.29.6 — Soften Performance Hub V2.29.6](docs/releases/ATUALIZACAO_V2.29.6.md)

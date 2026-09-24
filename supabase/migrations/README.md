@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.29.8.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.29.9.
 
 Depois:
 
@@ -41,6 +41,7 @@ V2.29.2
 V2.29.5
 V2.29.6
 V2.29.8
+V2.29.9
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -49,3 +50,12 @@ V2.29.8
 ## V2.29.8 — Auditoria
 
 `MIGRACAO_V2.29.8.sql` cria `audit_logs`, habilita RLS e disponibiliza a RPC `log_audit_event`. Depois da migração, republique `create-user` e `manage-user` para que as operações administrativas de usuários também sejam auditadas no backend.
+
+
+## V2.29.9 — Grants explícitos da Data API
+
+`MIGRACAO_V2.29.9.sql` adiciona os privilégios SQL explícitos exigidos pela nova política de exposição da Data API do Supabase. A migração cobre as duas tabelas financeiras criadas sem `GRANT` na V2.18.0 e os acessos das Edge Functions que usam `service_role`.
+
+A migração não concede acesso ao role `anon`. O frontend exige autenticação e continua protegido por RLS/policies.
+
+Para qualquer tabela nova criada em `public`, inclua o `GRANT` necessário na mesma migração que contém o `CREATE TABLE`.

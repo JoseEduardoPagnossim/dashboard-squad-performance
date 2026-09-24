@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.29.8`<br>
+**Versão atual:** `2.29.9`<br>
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
 
@@ -124,11 +124,14 @@ São auditadas, entre outras, criação/alteração/inativação/exclusão de us
 
 Ações destrutivas selecionadas usam confirmação reforçada: **EXCLUIR** para exclusões e **REABRIR** para reabertura de competência.
 
-Para atualizar uma base existente para a V2.29.8:
+Para atualizar uma base existente que já está na V2.29.8 para a V2.29.9:
 
-1. execute `supabase/migrations/MIGRACAO_V2.29.8.sql` no SQL Editor;
-2. republique as Edge Functions `create-user` e `manage-user`, pois elas agora registram as ações de usuários no backend;
-3. publique o frontend normalmente.
+1. faça backup do banco;
+2. execute `supabase/migrations/MIGRACAO_V2.29.9.sql` no SQL Editor;
+3. valide login, leitura dos Squads, gravação financeira e criação/edição de usuário;
+4. publique o frontend normalmente.
+
+A V2.29.9 torna explícitos os `GRANT`s usados pela Data API do Supabase e remove a dependência dos privilégios automáticos para as tabelas afetadas. Não é necessário republicar as Edge Functions apenas por esta migração.
 
 ## Publicação no GitHub Pages
 
