@@ -1,3 +1,11 @@
+# V2.34.1 — Responsividade da navegação e Indicadores
+
+- Sidebar passa para drawer responsivo em viewport estreita/zoom, com backdrop, fechamento por ESC e botão sempre acessível.
+- Breakpoint ampliado para 980 px para evitar desaparecimento da navegação ao aumentar o zoom.
+- Tela Indicadores reorganizada para tablet/celular: filtros, abas, KPIs, gráficos, cabeçalhos e ações empilham sem estourar a viewport.
+- Tabelas e matrizes largas mantêm rolagem horizontal controlada no celular.
+- Nenhuma regra de cálculo ou persistência foi alterada.
+
 ## V2.34.0 — Apresentação (Etapa 4: Administração)
 
 - Adicionada área administrativa no módulo Apresentação.

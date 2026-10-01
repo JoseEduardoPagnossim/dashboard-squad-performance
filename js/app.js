@@ -180,7 +180,20 @@
     $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view,btn.dataset.adminSection||null)));
     ['#topUserProfileBtn'].forEach(sel=>{const el=$(sel);if(!el)return;el.addEventListener('click',()=>showView('profile'));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('profile')}})});
     $('#profilePasswordForm').addEventListener('submit',handleProfilePasswordChange);
-    $('#mobileMenu').addEventListener('click',()=>$('.sidebar').classList.toggle('open'));
+    const mobileMenu=$('#mobileMenu');
+    const sidebar=$('.sidebar');
+    const sidebarBackdrop=$('#sidebarBackdrop');
+    const setSidebarOpen=(open)=>{
+      if(!sidebar||!mobileMenu)return;
+      sidebar.classList.toggle('open',!!open);
+      document.body.classList.toggle('sidebar-open',!!open);
+      mobileMenu.setAttribute('aria-expanded',open?'true':'false');
+      mobileMenu.setAttribute('aria-label',open?'Fechar menu lateral':'Abrir menu lateral');
+    };
+    mobileMenu?.addEventListener('click',()=>setSidebarOpen(!sidebar.classList.contains('open')));
+    sidebarBackdrop?.addEventListener('click',()=>setSidebarOpen(false));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sidebar?.classList.contains('open'))setSidebarOpen(false)});
+    window.addEventListener('resize',()=>{if(window.innerWidth>980&&sidebar?.classList.contains('open'))setSidebarOpen(false)});
     $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
     $('#monthSelect').addEventListener('change',e=>{state.currentId=e.target.value; chooseDefaultTech(); refreshSelectors(); render();});
     $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
@@ -639,6 +652,9 @@
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
     syncAnalysisDateControls();
     $('.sidebar').classList.remove('open');
+    document.body.classList.remove('sidebar-open');
+    $('#mobileMenu')?.setAttribute('aria-expanded','false');
+    $('#mobileMenu')?.setAttribute('aria-label','Abrir menu lateral');
     render();
     resetViewScroll();
   }

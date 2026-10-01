@@ -1325,3 +1325,142 @@ th{font-size:10.5px!important;line-height:1.35}td{font-size:12px!important;line-
 /* V2.29.8 - Auditoria e confirmações críticas */
 .audit-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.audit-hero h2{margin:4px 0 6px}.audit-hero p{margin:0;color:var(--muted);max-width:760px}.audit-log-card{padding:22px}.audit-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) minmax(220px,320px);gap:14px;margin:16px 0}.audit-toolbar label{display:flex;flex-direction:column;gap:6px}.audit-toolbar span{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}.audit-toolbar input,.audit-toolbar select{width:100%}.audit-table-wrap{margin-top:12px}.audit-table{min-width:940px}.audit-table td{vertical-align:top}.audit-actor{display:flex;flex-direction:column;gap:3px}.audit-actor strong{font-size:12px}.audit-actor small,.audit-detail small{color:var(--muted);font-size:10px}.audit-action-pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;background:rgba(240,163,58,.11);border:1px solid rgba(240,163,58,.2);color:var(--accent)}.audit-scope{display:flex;flex-direction:column;gap:3px}.audit-scope strong{font-size:11px}.audit-detail{min-width:270px}.audit-detail>span{display:block;font-size:11px;line-height:1.45}.audit-detail details{margin-top:7px}.audit-detail summary{cursor:pointer;color:var(--muted);font-size:10px;font-weight:700}.audit-json{margin:7px 0 0;padding:9px 10px;border-radius:10px;background:rgba(0,0,0,.16);border:1px solid var(--border);white-space:pre-wrap;word-break:break-word;font-size:9px;line-height:1.45;max-height:220px;overflow:auto}.audit-empty{padding:24px;text-align:center;color:var(--muted)}.confirm-phrase{display:flex;flex-direction:column;gap:7px;margin-top:16px}.confirm-phrase span{font-size:11px;font-weight:700;color:var(--muted)}.confirm-phrase input{width:100%;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.confirm-dialog-card #confirmDialogConfirm:disabled{opacity:.45;cursor:not-allowed;filter:saturate(.4)}
 @media(max-width:780px){.audit-hero{align-items:flex-start;flex-direction:column}.audit-toolbar{grid-template-columns:1fr}.audit-log-card{padding:16px}}
+
+/* ============================================================
+   V2.34.1 - RESPONSIVIDADE DA NAVEGACAO E INDICADORES
+   Corrige sidebar em zoom/telas estreitas e o painel executivo
+   em tablets e celulares sem alterar calculos ou dados.
+   ============================================================ */
+.sidebar-backdrop{display:none;border:0;padding:0;margin:0;background:rgba(2,8,18,.58);backdrop-filter:blur(3px)}
+
+/* Evita que filhos de grids/flex forcem largura maior que a viewport. */
+.main,.view,.card,#view-indicators,#view-indicators>*{min-width:0;max-width:100%}
+#view-indicators .chart,#view-indicators .chart-card,#view-indicators .indicator-card,#view-indicators .history-chart-card{min-width:0;max-width:100%}
+#view-indicators .chart svg{max-width:100%}
+#view-indicators .section-title>div,#view-indicators .history-section-head>div,#view-indicators .help-hero>div{min-width:0}
+#view-indicators h2,#view-indicators h3,#view-indicators p,#view-indicators .muted{overflow-wrap:anywhere}
+#view-indicators .table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* Antecipamos o modo compacto para que zoom do navegador nao faca a sidebar desaparecer sem controle. */
+@media(max-width:980px){
+  .app-shell{grid-template-columns:1fr!important}
+  .main{padding:0 16px 32px!important;width:100%;max-width:100vw;overflow-x:hidden}
+  .sidebar{
+    position:fixed!important;
+    inset:0 auto 0 0!important;
+    width:min(292px,86vw)!important;
+    height:100vh!important;
+    height:100dvh!important;
+    transform:translateX(-105%);
+    transition:transform .24s ease!important;
+    z-index:1200!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain;
+    box-shadow:18px 0 44px rgba(0,0,0,.32)!important;
+  }
+  .sidebar.open{transform:translateX(0)!important;left:0!important}
+  .sidebar-backdrop{
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:1190;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .2s ease,visibility .2s ease;
+  }
+  body.sidebar-open{overflow:hidden}
+  body.sidebar-open .sidebar-backdrop{opacity:1;visibility:visible;pointer-events:auto}
+  .mobile-menu{
+    display:grid!important;
+    place-items:center;
+    flex:0 0 42px;
+    width:42px;
+    height:42px;
+    padding:0!important;
+    border:1px solid var(--premium-border);
+    border-radius:12px;
+    background:color-mix(in srgb,var(--panel) 88%,transparent)!important;
+    position:relative;
+    z-index:20;
+  }
+  .topbar{min-width:0;padding:9px 0!important;gap:8px!important}
+  .top-title{display:none!important}
+  .top-actions{min-width:0;margin-left:auto!important;flex:1 1 auto;justify-content:flex-end;gap:6px!important;flex-wrap:wrap}
+  .top-actions>.control,.top-actions>.btn{min-width:0}
+  .campaign-visual{display:none!important}
+  .sidebar-nav{overflow:visible!important}
+}
+
+@media(max-width:720px){
+  .main{padding:0 12px 26px!important}
+  .topbar{align-items:flex-start!important}
+  .mobile-menu{position:sticky;top:10px}
+  .top-actions{width:calc(100% - 50px);justify-content:flex-end}
+
+  /* Indicadores: cabecalhos e controles passam a empilhar. */
+  #view-indicators{padding-top:14px}
+  #view-indicators .indicator-hero{padding:18px!important;align-items:flex-start!important;flex-direction:column!important;gap:14px!important}
+  #view-indicators .help-role{width:100%!important;text-align:left!important}
+  #view-indicators .indicator-section-tabs{
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:auto!important;
+    overflow-y:hidden;
+    flex-wrap:nowrap!important;
+    justify-content:flex-start;
+    scrollbar-width:thin;
+    -webkit-overflow-scrolling:touch;
+  }
+  #view-indicators .indicator-section-tab{flex:0 0 auto!important;white-space:nowrap}
+  #view-indicators .indicator-toolbar{padding:16px!important}
+  #view-indicators .indicator-toolbar>.section-title,
+  #view-indicators .section-title,
+  #view-indicators .history-section-head,
+  #view-indicators .sector-overview-head{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+    gap:8px!important;
+  }
+  #view-indicators .section-title>.muted,
+  #view-indicators .history-chip{max-width:100%;white-space:normal;text-align:left}
+  #view-indicators .indicator-filters{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;width:100%}
+  #view-indicators .indicator-filters .control{min-width:0!important;width:100%!important}
+  #view-indicators .indicator-date-quick{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important}
+  #view-indicators .indicator-date-quick button{width:100%!important;min-width:0;white-space:normal}
+  #view-indicators .indicator-action-group{grid-column:1/-1!important;display:grid!important;grid-template-columns:1fr!important;width:100%!important;margin-left:0!important}
+  #view-indicators .indicator-action-group .btn{width:100%!important;min-width:0!important;white-space:normal!important}
+  #view-indicators .indicator-kpis{grid-template-columns:1fr!important;gap:10px!important}
+  #view-indicators .indicator-kpi{padding:16px!important}
+  #view-indicators .indicator-kpi strong{font-size:26px!important}
+  #view-indicators .indicator-grid,#view-indicators .sector-chart-grid,#view-indicators .history-chart-grid,
+  #view-indicators .quality-squad-grid,#view-indicators .quality-chart-grid,#view-indicators .detail-ranking-grid,
+  #view-indicators .business-days-distribution-grid,#view-indicators .financial-strategic-grid{grid-template-columns:1fr!important}
+  #view-indicators .indicator-card,#view-indicators .chart-card,#view-indicators .history-chart-card,
+  #view-indicators .business-days-chart-card,#view-indicators .business-days-table-card,#view-indicators .detail-ranking-card{padding:16px!important}
+  #view-indicators .chart,#view-indicators .chart-lg,#view-indicators .history-chart,#view-indicators .business-days-chart,
+  #view-indicators .quality-chart-lg,#view-indicators .quality-distribution-chart{height:300px!important;min-height:300px!important;width:100%!important;overflow-x:auto}
+  #view-indicators .status-matrix-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #view-indicators .quality-source-note{padding:16px!important}
+  #view-indicators .quality-source-actions{width:100%;display:grid;gap:8px}
+  #view-indicators .quality-source-actions .btn{width:100%}
+  #view-indicators .business-days-toolbar{grid-template-columns:1fr!important;padding:14px!important}
+  #view-indicators .financial-impact-config-grid{grid-template-columns:1fr!important}
+  #view-indicators .financial-impact-actions{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}
+  #view-indicators .financial-impact-actions .btn{width:100%!important}
+}
+
+@media(max-width:480px){
+  .main{padding-left:10px!important;padding-right:10px!important}
+  .sidebar{width:min(286px,91vw)!important}
+  .top-actions{width:calc(100% - 48px)}
+  #view-indicators .indicator-filters{grid-template-columns:1fr!important}
+  #view-indicators .indicator-date-quick,#view-indicators .indicator-action-group{grid-column:1!important}
+  #view-indicators .indicator-date-quick{grid-template-columns:1fr 1fr!important}
+  #view-indicators .indicator-hero h2,#view-indicators .history-section-head h2{font-size:21px!important}
+  #view-indicators .section-title h3{font-size:16px!important}
+  #view-indicators .indicator-kpi strong{font-size:24px!important}
+  #view-indicators .chart,#view-indicators .chart-lg,#view-indicators .history-chart,#view-indicators .business-days-chart,
+  #view-indicators .quality-chart-lg,#view-indicators .quality-distribution-chart{height:270px!important;min-height:270px!important}
+}
