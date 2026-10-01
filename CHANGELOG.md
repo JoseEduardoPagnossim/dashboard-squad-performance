@@ -1,3 +1,15 @@
+## V2.33.0 — Apresentação (Etapa 3: TV contínua)
+
+- Carrossel de 20s com barra de progresso e contador regressivo.
+- Fullscreen por botão, duplo clique e tecla `F`.
+- Atalhos de teclado para carrossel, navegação e atualização.
+- Atualização automática dos dados a cada 5 minutos e botão de atualização manual.
+- Recuperação automática quando a conexão volta, com retentativa em 1 minuto durante falhas.
+- Últimos dados válidos permanecem na tela se a internet ou o Supabase ficarem indisponíveis.
+- Indicador visual de Online / Sincronizando / Sem conexão / Atenção.
+- Screen Wake Lock no modo TV quando suportado pelo navegador.
+- Versão atualizada para 2.33.0.
+
 ## V2.32.0 — Apresentação (Etapa 2: Ranking completo)
 
 - Porta as seis visualizações do `app_ranking` para o módulo Apresentação.

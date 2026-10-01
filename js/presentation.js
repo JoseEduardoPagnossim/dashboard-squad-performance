@@ -18,9 +18,20 @@
     activeMode:'day',
     carouselEnabled:true,
     autoSwitch:true,
-    timer:null,
+    manualPauseUntil:0,
+    carouselDuration:20000,
+    cycleStartedAt:Date.now(),
+    cycleTimer:null,
+    refreshEveryMs:5*60*1000,
+    refreshTimer:null,
+    reconnectTimer:null,
+    refreshInFlight:false,
+    refreshHandler:null,
+    lastSuccessfulRefresh:0,
+    lastRefreshError:null,
     bound:false,
-    rankings:null
+    rankings:null,
+    wakeLock:null
   };
 
   function $(selector){ return document.querySelector(selector); }
@@ -54,9 +65,46 @@
     url.hash='';
     return url.toString();
   }
-  function setDirectMode(active){ document.body.classList.toggle('presentation-direct',!!active); }
+  function setDirectMode(active){ document.body.classList.toggle('presentation-direct',!!active);if(active)requestWakeLock(); }
   function requestFullscreen(){ const el=document.documentElement;if(document.fullscreenElement)return Promise.resolve();return el.requestFullscreen?el.requestFullscreen():Promise.resolve(); }
   function exitFullscreen(){ if(!document.fullscreenElement)return Promise.resolve();return document.exitFullscreen?document.exitFullscreen():Promise.resolve(); }
+  function pad2(v){return String(v).padStart(2,'0')}
+  function clockLabel(ts=Date.now()){const d=new Date(ts);return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`}
+  async function requestWakeLock(){
+    if(!route.direct||document.hidden||!('wakeLock' in navigator))return;
+    try{state.wakeLock=await navigator.wakeLock.request('screen');state.wakeLock.addEventListener?.('release',()=>{state.wakeLock=null})}catch(e){}
+  }
+  function updateFullscreenButton(){const btn=$('#presentationFullscreenBtn');if(btn)btn.textContent=document.fullscreenElement?'⛶ Sair da tela cheia':'⛶ Tela cheia'}
+  function connectionState(kind,title,text){
+    const pill=$('#presentationConnectionPill'),banner=$('#presentationConnectionBanner'),pt=pill?.querySelector('strong');
+    if(pill){pill.classList.remove('online','syncing','offline','degraded');pill.classList.add(kind);if(pt)pt.textContent=kind==='online'?'Online':kind==='syncing'?'Sincronizando':kind==='offline'?'Sem conexão':'Atenção';}
+    if(banner){const show=kind==='offline'||kind==='degraded';banner.classList.toggle('hidden',!show);banner.classList.toggle('offline',kind==='offline');banner.classList.toggle('degraded',kind==='degraded');}
+    if($('#presentationConnectionTitle'))$('#presentationConnectionTitle').textContent=title||'';
+    if($('#presentationConnectionText'))$('#presentationConnectionText').textContent=text||'';
+  }
+  function syncNote(){
+    const el=$('#presentationSyncNote');if(!el)return;
+    if(state.refreshInFlight){el.textContent='Sincronizando dados agora…';return}
+    if(state.lastSuccessfulRefresh){el.textContent=`Última sincronização ${clockLabel(state.lastSuccessfulRefresh)} • automática a cada 5 min`;return}
+    el.textContent='Atualização automática a cada 5 min';
+  }
+  function scheduleReconnect(){
+    clearTimeout(state.reconnectTimer);state.reconnectTimer=setTimeout(()=>triggerRefresh('retry'),60000);
+  }
+  async function triggerRefresh(reason='manual'){
+    if(state.refreshInFlight||typeof state.refreshHandler!=='function')return;
+    if(navigator.onLine===false){connectionState('offline','Sem conexão','Exibindo os últimos dados carregados. Nova tentativa automática em 1 minuto.');scheduleReconnect();return;}
+    state.refreshInFlight=true;connectionState('syncing','Sincronizando','Buscando os dados mais recentes do Performance Hub…');syncNote();
+    const btn=$('#presentationRefreshBtn');if(btn){btn.disabled=true;btn.textContent='↻ Atualizando…'}
+    try{
+      await state.refreshHandler({reason});
+      state.lastSuccessfulRefresh=Date.now();state.lastRefreshError=null;connectionState('online');
+    }catch(err){
+      state.lastRefreshError=err;connectionState(navigator.onLine===false?'offline':'degraded',navigator.onLine===false?'Sem conexão':'Falha na atualização',navigator.onLine===false?'Exibindo os últimos dados carregados. A sincronização será retomada automaticamente.':'Não foi possível buscar novos dados. A apresentação continuará com a última atualização válida e tentará novamente em 1 minuto.');scheduleReconnect();
+    }finally{
+      state.refreshInFlight=false;if(btn){btn.disabled=false;btn.textContent='↻ Atualizar agora'}syncNote();
+    }
+  }
 
   function normalizeRows(rows){
     return (rows||[]).map(row=>{
@@ -173,8 +221,18 @@
     $$('[data-presentation-mode]').forEach(btn=>{const active=btn.dataset.presentationMode===state.activeMode;btn.classList.toggle('active',active);btn.setAttribute('aria-selected',active?'true':'false')});
     const meta=modeMeta();if($('#presentationRankingTitle'))$('#presentationRankingTitle').textContent=meta[0];if($('#presentationRankingSubtitle'))$('#presentationRankingSubtitle').textContent=meta[1];
     if($('#presentationCarouselBtn'))$('#presentationCarouselBtn').textContent=state.carouselEnabled?'🎠 Carrossel ON':'🎠 Carrossel OFF';
-    if($('#presentationCarouselNote'))$('#presentationCarouselNote').textContent=`Troca automática a cada 20s • ${state.carouselEnabled?'ativa':'pausada'}`;
+    updateCarouselProgress();syncNote();
   }
+  function updateCarouselProgress(now=Date.now()){
+    const note=$('#presentationCarouselNote'),bar=$('#presentationCycleProgress');
+    if(!state.carouselEnabled){if(note)note.textContent='Carrossel pausado';if(bar)bar.style.width='0%';return}
+    if(document.hidden){if(note)note.textContent='Carrossel aguardando a tela voltar ao foco';return}
+    if(state.manualPauseUntil>now){const sec=Math.max(1,Math.ceil((state.manualPauseUntil-now)/1000));if(note)note.textContent=`Troca manual • carrossel retoma em ${sec}s`;if(bar)bar.style.width='0%';return}
+    state.autoSwitch=true;
+    const elapsed=Math.max(0,now-state.cycleStartedAt),pct=Math.min(100,(elapsed/state.carouselDuration)*100),remaining=Math.max(0,Math.ceil((state.carouselDuration-elapsed)/1000));
+    if(note)note.textContent=`Próxima tela em ${remaining}s • carrossel ativo`;if(bar)bar.style.width=`${pct}%`;
+  }
+  function advanceCarousel(){const i=MODES.indexOf(state.activeMode);state.activeMode=MODES[(i+1)%MODES.length];state.cycleStartedAt=Date.now();renderAll();}
   function renderGroups(){
     const sel=$('#presentationGroupFilter');if(!sel||!state.rankings)return;const current=sel.value,groups=[...new Set(state.rankings.rows.map(r=>r.group))].sort((a,b)=>a.localeCompare(b,'pt-BR'));sel.innerHTML='<option value="">Todos os grupos</option>'+groups.map(g=>`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');if(groups.includes(current))sel.value=current;
   }
@@ -199,18 +257,51 @@
     if($('#presentationTotalRatings'))$('#presentationTotalRatings').textContent=formatNumber(r.summary.eval);
   }
   function renderAll(){if(!state.payload)return;renderHeader(state.payload);renderTabs();renderGroups();renderRanking();}
-  function setMode(mode,manual=true){if(!MODES.includes(mode))return;state.activeMode=mode;if(manual){state.autoSwitch=false;setTimeout(()=>{state.autoSwitch=true},60000)}renderAll();}
-  function toggleCarousel(){state.carouselEnabled=!state.carouselEnabled;renderTabs();}
+  function setMode(mode,manual=true){
+    if(!MODES.includes(mode))return;state.activeMode=mode;state.cycleStartedAt=Date.now();
+    if(manual){state.autoSwitch=false;state.manualPauseUntil=Date.now()+60000}else{state.autoSwitch=true;state.manualPauseUntil=0}
+    renderAll();
+  }
+  function toggleCarousel(){state.carouselEnabled=!state.carouselEnabled;state.cycleStartedAt=Date.now();if(state.carouselEnabled){state.autoSwitch=true;state.manualPauseUntil=0}renderTabs();}
   function bind(){
     if(state.bound)return;state.bound=true;
     $$('[data-presentation-mode]').forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.presentationMode,true)));
     $('#presentationCarouselBtn')?.addEventListener('click',toggleCarousel);
+    $('#presentationRefreshBtn')?.addEventListener('click',()=>triggerRefresh('manual'));
+    $('#presentationRetryBtn')?.addEventListener('click',()=>triggerRefresh('retry'));
     $('#presentationSearch')?.addEventListener('input',renderRanking);
     $('#presentationGroupFilter')?.addEventListener('change',renderRanking);
+    $('#view-presentation')?.addEventListener('dblclick',e=>{if(e.target.closest('button,input,select'))return;requestFullscreen().catch(()=>{})});
     window.addEventListener('resize',()=>{if(document.body.classList.contains('presentation-direct'))renderRanking()});
-    state.timer=setInterval(()=>{if(!state.autoSwitch||!state.carouselEnabled||document.hidden)return;const i=MODES.indexOf(state.activeMode);state.activeMode=MODES[(i+1)%MODES.length];renderAll()},20000);
+    window.addEventListener('online',()=>{connectionState('syncing','Conexão restabelecida','Sincronizando os dados mais recentes…');setTimeout(()=>triggerRefresh('online'),600)});
+    window.addEventListener('offline',()=>{connectionState('offline','Sem conexão','Exibindo os últimos dados carregados. A sincronização será retomada automaticamente.');scheduleReconnect()});
+    document.addEventListener('fullscreenchange',updateFullscreenButton);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.cycleStartedAt=Date.now();requestWakeLock();if(navigator.onLine!==false&&Date.now()-state.lastSuccessfulRefresh>state.refreshEveryMs)triggerRefresh('visible')}});
+    document.addEventListener('keydown',e=>{
+      if(e.target?.matches?.('input,select,textarea'))return;
+      if(e.key==='f'||e.key==='F'){e.preventDefault();(document.fullscreenElement?exitFullscreen():requestFullscreen()).catch(()=>{})}
+      else if(e.key===' '){e.preventDefault();toggleCarousel()}
+      else if(e.key==='ArrowRight'){e.preventDefault();const i=MODES.indexOf(state.activeMode);setMode(MODES[(i+1)%MODES.length],true)}
+      else if(e.key==='ArrowLeft'){e.preventDefault();const i=MODES.indexOf(state.activeMode);setMode(MODES[(i-1+MODES.length)%MODES.length],true)}
+      else if(e.key==='r'||e.key==='R'){e.preventDefault();triggerRefresh('keyboard')}
+    });
+    state.cycleTimer=setInterval(()=>{
+      const now=Date.now();updateCarouselProgress(now);
+      if(!state.carouselEnabled||document.hidden)return;
+      if(state.manualPauseUntil>now)return;
+      if(!state.autoSwitch){state.autoSwitch=true;state.cycleStartedAt=now;return}
+      if(now-state.cycleStartedAt>=state.carouselDuration)advanceCarousel();
+    },500);
+    state.refreshTimer=setInterval(()=>triggerRefresh('interval'),state.refreshEveryMs);
+    if(navigator.onLine===false)connectionState('offline','Sem conexão','Exibindo os últimos dados carregados. A sincronização será retomada automaticamente.');else connectionState('online');
+    updateFullscreenButton();requestWakeLock();
   }
-  function render(payload){state.payload=payload||{};state.rankings=calculate(payload?.rows||[]);bind();renderAll();}
+  function render(payload){
+    state.payload=payload||{};state.rankings=calculate(payload?.rows||[]);if(typeof payload?.refresh==='function')state.refreshHandler=payload.refresh;
+    if(payload?.refreshedAt)state.lastSuccessfulRefresh=new Date(payload.refreshedAt).getTime()||Date.now();
+    else if(!state.lastSuccessfulRefresh)state.lastSuccessfulRefresh=Date.now();
+    bind();renderAll();
+  }
 
-  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,__test:{calculate,normalizeRows}};
+  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,__test:{calculate,normalizeRows}};
 })();

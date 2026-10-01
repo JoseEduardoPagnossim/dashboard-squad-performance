@@ -204,3 +204,10 @@ Admin Geral pode escolher um Squad específico ou todos:
 ```
 
 Nesta primeira etapa a URL utiliza a autenticação já existente. Se a sessão estiver salva no navegador da TV, o painel entra diretamente no modo apresentação. Consulte `docs/APRESENTACAO_ETAPA1_V2.31.0.md`.
+
+
+## Apresentação para TV — Etapa 3 (V2.33.0)
+
+A apresentação agora foi preparada para operação contínua em TV: carrossel com contador e progresso, fullscreen por botão/atalho, atualização automática a cada 5 minutos, atualização manual, Screen Wake Lock quando suportado e recuperação automática após queda de conexão sem apagar os últimos dados válidos.
+
+Atalhos principais: `F` para fullscreen, `Espaço` para pausar/retomar o carrossel, setas para navegar e `R` para atualizar. Consulte `docs/APRESENTACAO_ETAPA3_V2.33.0.md`.

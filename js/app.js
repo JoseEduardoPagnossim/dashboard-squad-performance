@@ -61,6 +61,7 @@
     orgTechnicianOverview:[],
     orgDailyOverview:[],
     orgTechnicianDailyOverview:[],
+    presentationLastSyncAt:null,
     allTechniciansMetric:'points',
     allTechniciansRangeIds:[],
     dailyTechniciansMetric:'points',
@@ -683,8 +684,32 @@
     const rows=presentationDailyRows();
     const title=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;
     const subtitle=state.squadCode==='all'?'Ranking consolidado dos Squads carregados no Performance Hub.':'Ranking do Squad usando o histórico diário já armazenado no dashboard.';
-    window.SoftenPresentation?.render({rows,title,subtitle,periodLabel:analysisRangeLabel(),updatedLabel:`Fonte: Performance Hub • ${rows.length} registros diários no recorte`});
+    const syncDate=state.presentationLastSyncAt?new Date(state.presentationLastSyncAt):new Date(),time=syncDate.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    window.SoftenPresentation?.render({rows,title,subtitle,periodLabel:analysisRangeLabel(),updatedLabel:`Fonte: Performance Hub • ${rows.length} registros diários • sincronizado ${time}`,refreshedAt:syncDate.toISOString(),refresh:refreshPresentationData});
     const direct=!!PRESENTATION_ROUTE.enabled;window.SoftenPresentation?.setDirectMode(direct);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.toggle('hidden',!direct);
+  }
+  async function refreshPresentationData(){
+    if(!state.user)throw new Error('Sessão indisponível.');
+    if(!state.supabase){state.presentationLastSyncAt=new Date().toISOString();renderPresentation();return {updated:true,source:'local'}}
+    const backup={squads:state.squads,orgOverview:state.orgOverview,orgTechnicianOverview:state.orgTechnicianOverview,orgDailyOverview:state.orgDailyOverview,orgTechnicianDailyOverview:state.orgTechnicianDailyOverview,theme:state.theme,currentId:state.currentId,techName:state.techName};
+    try{
+      await loadSupabaseData();
+      if(state.squadCode!=='all'){
+        const squad=state.squads[state.squadCode];
+        if(!squad)throw new Error(`Squad ${state.squadCode} não está mais disponível.`);
+        const ids=Object.keys(squad.months||{}).sort().reverse();
+        if(!ids.includes(state.currentId))state.currentId=ids[0]||null;
+        const month=state.currentId?squad.months[state.currentId]:null;
+        if(month&&!month.technicians.some(t=>samePersonName(t.name,state.techName)))state.techName=month.technicians[0]?.name||'';
+        const refreshedTheme=resolveLegacyTheme(squad.theme||loadThemeForSquad(state.squadCode));
+        if(refreshedTheme){state.theme=refreshedTheme;applyTheme(state.theme)}
+      }
+      state.presentationLastSyncAt=new Date().toISOString();refreshSelectors();renderPresentation();
+      return {updated:true,at:state.presentationLastSyncAt};
+    }catch(err){
+      state.squads=backup.squads;state.orgOverview=backup.orgOverview;state.orgTechnicianOverview=backup.orgTechnicianOverview;state.orgDailyOverview=backup.orgDailyOverview;state.orgTechnicianDailyOverview=backup.orgTechnicianDailyOverview;state.theme=backup.theme;state.currentId=backup.currentId;state.techName=backup.techName;
+      throw err;
+    }
   }
   async function copyPresentationUrl(){
     const url=window.SoftenPresentation?.directUrl(state.squadCode)||window.location.href;
@@ -2852,7 +2877,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   async function enterSupabaseSession(authUser){
     const {data:profile,error}=await state.supabase.from('profiles').select('user_id,email,full_name,role,organization_id,squad_id,technician_name,squads(id,code,name)').eq('user_id',authUser.id).single();if(error)throw error;
     state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null};
-    await loadSupabaseData();await enterApp(state.user);
+    await loadSupabaseData();state.presentationLastSyncAt=new Date().toISOString();await enterApp(state.user);
   }
   async function loadSupabaseData(){
     const {data:squads,error}=await state.supabase.from('squads').select('id,code,name').eq('active',true).order('code');if(error)throw error;state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];
