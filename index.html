@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.31.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.31.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.32.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.32.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.31.0 • Compatibilidade Data API</small>
+      <small class="login-version">V2.32.0 • Compatibilidade Data API</small>
     </div>
   </section>
 
@@ -107,7 +107,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.31.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.32.0 • Squads A, B, D e E</div>
     </aside>
 
     <main class="main">
@@ -301,11 +301,12 @@
         <div class="presentation-shell">
           <div class="presentation-toolbar card glass">
             <div class="presentation-toolbar-copy">
-              <span class="eyebrow">MODO TV • ETAPA 1</span>
+              <span class="eyebrow">MODO TV • RANKING</span>
               <strong>Apresentação do Performance Hub</strong>
-              <small>Esta tela usa os dados já carregados no dashboard. A URL direta mantém o módulo aberto para uso em televisão ou monitor.</small>
+              <small>Seis visões do monitor original, agora alimentadas pelos dados já importados no dashboard.</small>
             </div>
             <div class="presentation-toolbar-actions">
+              <button class="btn secondary" id="presentationCarouselBtn" type="button">🎠 Carrossel ON</button>
               <button class="btn secondary" id="presentationCopyUrlBtn" type="button">Copiar URL da TV</button>
               <button class="btn secondary" id="presentationOpenUrlBtn" type="button">Abrir em nova tela</button>
               <button class="btn secondary" id="presentationFullscreenBtn" type="button">⛶ Tela cheia</button>
@@ -315,42 +316,59 @@
 
           <div class="presentation-hero card glass">
             <div class="presentation-hero-copy">
-              <span class="eyebrow">PERFORMANCE EM TEMPO DE EXIBIÇÃO</span>
+              <span class="eyebrow">PERFORMANCE SUPORTE TÉCNICO</span>
               <h2 id="presentationTitle">Squad</h2>
-              <p id="presentationSubtitle">Resumo operacional para apresentação em TV.</p>
+              <p id="presentationSubtitle">Rankings operacionais para exibição contínua em TV.</p>
             </div>
             <div class="presentation-hero-status">
               <span>PERÍODO EXIBIDO</span>
               <strong id="presentationPeriod">—</strong>
-              <small id="presentationUpdated">Dados carregados do dashboard</small>
+              <small id="presentationUpdated">Fonte: Performance Hub</small>
             </div>
           </div>
 
           <div class="presentation-kpis">
-            <article class="presentation-kpi card"><span>Técnicos</span><strong id="presentationTechCount">0</strong></article>
-            <article class="presentation-kpi card"><span>Atendimentos</span><strong id="presentationAtt">0</strong></article>
-            <article class="presentation-kpi card"><span>Avaliações</span><strong id="presentationEval">0</strong></article>
-            <article class="presentation-kpi card"><span>Média geral</span><strong id="presentationAvg">0,00</strong></article>
-            <article class="presentation-kpi card"><span>% avaliado</span><strong id="presentationEvalPct">0,0%</strong></article>
+            <article class="presentation-kpi card"><span>📅 Última data</span><strong id="presentationLastDate">—</strong><small>base da visão diária</small></article>
+            <article class="presentation-kpi card"><span>🔄 Dias no período</span><strong id="presentationDays">0</strong><small>datas consideradas</small></article>
+            <article class="presentation-kpi card"><span>🥇 Líder atendimentos</span><strong id="presentationAttLeader">—</strong><small>1º no período</small></article>
+            <article class="presentation-kpi card"><span>🏆 Líder notas</span><strong id="presentationNotesLeader">—</strong><small>1º por avaliações</small></article>
+            <article class="presentation-kpi card"><span>⭐ Média avaliações</span><strong id="presentationAvg">—</strong><small>média ponderada</small></article>
+            <article class="presentation-kpi card"><span>📊 Total avaliações</span><strong id="presentationTotalRatings">0</strong><small>no período selecionado</small></article>
           </div>
 
-          <div class="presentation-stage-grid">
-            <article class="presentation-ranking card">
-              <div class="presentation-section-head"><div><span class="eyebrow">PRÉVIA FUNCIONAL</span><h3>Ranking por atendimentos</h3></div><small id="presentationRankingHint">Dados do período selecionado</small></div>
-              <div id="presentationRankingList" class="presentation-ranking-list"></div>
+          <nav class="presentation-tabs-bar card" aria-label="Visualizações do ranking">
+            <div class="presentation-tabs" role="tablist">
+              <button class="presentation-tab active" data-presentation-mode="day" type="button" role="tab">Finalizados do Dia</button>
+              <button class="presentation-tab" data-presentation-mode="notesDay" type="button" role="tab">Notas do Dia</button>
+              <button class="presentation-tab" data-presentation-mode="general" type="button" role="tab">Finalizados Geral</button>
+              <button class="presentation-tab" data-presentation-mode="notesGeneral" type="button" role="tab">Notas Geral</button>
+              <button class="presentation-tab" data-presentation-mode="group" type="button" role="tab">Finalizados por Grupo</button>
+              <button class="presentation-tab" data-presentation-mode="notesGroup" type="button" role="tab">Notas por Grupo</button>
+            </div>
+            <div class="presentation-carousel-meta"><small id="presentationCarouselNote">Troca automática a cada 20s • ativa</small></div>
+          </nav>
+
+          <div class="presentation-spotlights" id="presentationSpotlights">
+            <article class="presentation-spotlight card">
+              <div class="presentation-spotlight-head"><strong>G6 em destaque</strong><span class="presentation-pill g6">G6</span></div>
+              <div class="presentation-mini-grid" id="presentationG6"></div>
             </article>
-            <article class="presentation-roadmap card">
-              <span class="eyebrow">ESTRUTURA PREPARADA</span>
-              <h3>Próximas telas do carrossel</h3>
-              <div class="presentation-roadmap-list">
-                <div class="presentation-roadmap-item"><strong>Finalizados do Dia</strong><small>Ranking diário usando o detalhamento já armazenado no dashboard.</small></div>
-                <div class="presentation-roadmap-item"><strong>Notas do Dia</strong><small>Avaliações do último dia disponível.</small></div>
-                <div class="presentation-roadmap-item"><strong>Finalizados Geral</strong><small>Ranking acumulado do período.</small></div>
-                <div class="presentation-roadmap-item"><strong>Notas Geral</strong><small>Ranking acumulado de avaliações.</small></div>
-                <div class="presentation-roadmap-item"><strong>Grupos</strong><small>Rankings por grupo entram na Etapa 2, preservando a lógica do app_ranking.</small></div>
-              </div>
+            <article class="presentation-spotlight card">
+              <div class="presentation-spotlight-head"><strong>Z4 • Zona de risco</strong><span class="presentation-pill z4">Z4</span></div>
+              <div class="presentation-mini-grid" id="presentationZ4"></div>
             </article>
           </div>
+
+          <article class="presentation-ranking card">
+            <div class="presentation-ranking-head">
+              <div><span class="eyebrow">CLASSIFICAÇÃO</span><h3 id="presentationRankingTitle">Ranking Att Finalizado do Dia</h3><p id="presentationRankingSubtitle">Mostra somente a última rodada encontrada no período.</p></div>
+              <div class="presentation-filters">
+                <input id="presentationSearch" type="search" placeholder="Buscar técnico...">
+                <select id="presentationGroupFilter"><option value="">Todos os grupos</option></select>
+              </div>
+            </div>
+            <div id="presentationRankingColumns" class="presentation-ranking-columns"></div>
+          </article>
         </div>
       </section>
 
@@ -964,7 +982,7 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/presentation.js?v=2.31.0"></script>
-  <script src="js/app.js?v=2.31.0"></script>
+  <script src="js/presentation.js?v=2.32.0"></script>
+  <script src="js/app.js?v=2.32.0"></script>
 </body>
 </html>

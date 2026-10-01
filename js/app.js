@@ -668,36 +668,22 @@
     renderAdmin();
   }
 
-  function presentationRows(){
-    if(state.squadCode!=='all'){
-      if(isTechnician()&&state.supabase)return gameRankingRowsForCurrentPeriod().map(r=>({...r,squadCode:state.squadCode}));
-      return periodTechniciansForSquad(currentSquad()).map(r=>({...r,squadCode:state.squadCode}));
-    }
-    const map=new Map();
-    for(const r of orgTechnicianDailyRows().filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day)))){
-      const key=`${r.squadCode}|${nameLinkKey(r.technicianName)}`,v=map.get(key)||{name:r.technicianName,squadCode:r.squadCode,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,totalEval:0,avg:0,evalPct:0};
-      v.att+=safe(r.att);v.notes5+=safe(r.notes5);v.notes4+=safe(r.notes4);v.notes3+=safe(r.notes3);v.notes2+=safe(r.notes2);v.notes1+=safe(r.notes1);map.set(key,v);
-    }
-    const rows=[...map.values()];
-    for(const r of rows){r.totalEval=r.notes5+r.notes4+r.notes3+r.notes2+r.notes1;r.avg=r.totalEval?truncate2((r.notes5*5+r.notes4*4+r.notes3*3+r.notes2*2+r.notes1)/r.totalEval):0;r.evalPct=r.att?roundTo(r.totalEval/r.att,4):0;}
-    return rows.sort((a,b)=>safe(b.att)-safe(a.att)||safe(b.totalEval)-safe(a.totalEval)||String(a.name).localeCompare(String(b.name),'pt-BR'));
+  function presentationDailyRows(){
+    const source=buildOrgTechnicianDailyOverviewFromState();
+    const rows=source.filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day))&&(state.squadCode==='all'||r.squadCode===state.squadCode));
+    return rows.map(r=>({
+      date:r.date||isoDateParts(r.year,r.month,r.day),
+      technician:r.technicianName,
+      group:r.squadCode,
+      quantity:safe(r.att),
+      notes:{5:safe(r.notes5),4:safe(r.notes4),3:safe(r.notes3),2:safe(r.notes2),1:safe(r.notes1)}
+    }));
   }
   function renderPresentation(){
-    const rows=presentationRows().sort((a,b)=>safe(b.att)-safe(a.att)||safe(b.totalEval)-safe(a.totalEval)||String(a.name).localeCompare(String(b.name),'pt-BR'));
-    const totals=rows.reduce((a,r)=>{a.att+=safe(r.att);a.eval+=safe(r.totalEval);a.weighted+=safe(r.avg)*safe(r.totalEval);return a;},{att:0,eval:0,weighted:0});
-    const avg=totals.eval?totals.weighted/totals.eval:0,evalPct=totals.att?totals.eval/totals.att:0;
+    const rows=presentationDailyRows();
     const title=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;
-    if($('#presentationTitle'))$('#presentationTitle').textContent=title;
-    if($('#presentationSubtitle'))$('#presentationSubtitle').textContent=state.squadCode==='all'?'Visão consolidada dos Squads carregados no Performance Hub.':'Os mesmos dados importados no dashboard, preparados para exibição contínua em TV.';
-    if($('#presentationPeriod'))$('#presentationPeriod').textContent=analysisRangeLabel();
-    if($('#presentationUpdated'))$('#presentationUpdated').textContent=`Fonte: Performance Hub • ${rows.length} técnicos no recorte`;
-    if($('#presentationTechCount'))$('#presentationTechCount').textContent=fmtInt(rows.length);
-    if($('#presentationAtt'))$('#presentationAtt').textContent=fmtInt(totals.att);
-    if($('#presentationEval'))$('#presentationEval').textContent=fmtInt(totals.eval);
-    if($('#presentationAvg'))$('#presentationAvg').textContent=safe(avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-    if($('#presentationEvalPct'))$('#presentationEvalPct').textContent=fmtPct(evalPct);
-    if($('#presentationRankingHint'))$('#presentationRankingHint').textContent=`${analysisRangeLabel()} • ordenado por atendimentos`;
-    const list=$('#presentationRankingList');if(list){list.innerHTML=rows.length?rows.slice(0,10).map((r,i)=>`<div class="presentation-rank-row"><div class="presentation-rank-pos">#${i+1}</div><div><div class="presentation-rank-name">${escapeHtml(r.name)}</div><span class="presentation-rank-squad">Squad ${escapeHtml(r.squadCode||state.squadCode)}</span></div><div class="presentation-rank-metric"><strong>${fmtInt(r.att)}</strong><span>ATENDIMENTOS</span></div><div class="presentation-rank-metric"><strong>${fmtInt(r.totalEval)}</strong><span>AVALIAÇÕES</span></div></div>`).join(''):'<div class="presentation-empty">Ainda não há dados disponíveis para o período selecionado.</div>';}
+    const subtitle=state.squadCode==='all'?'Ranking consolidado dos Squads carregados no Performance Hub.':'Ranking do Squad usando o histórico diário já armazenado no dashboard.';
+    window.SoftenPresentation?.render({rows,title,subtitle,periodLabel:analysisRangeLabel(),updatedLabel:`Fonte: Performance Hub • ${rows.length} registros diários no recorte`});
     const direct=!!PRESENTATION_ROUTE.enabled;window.SoftenPresentation?.setDirectMode(direct);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.toggle('hidden',!direct);
   }
   async function copyPresentationUrl(){

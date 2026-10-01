@@ -1,3 +1,13 @@
+## V2.32.0 — Apresentação (Etapa 2: Ranking completo)
+
+- Porta as seis visualizações do `app_ranking` para o módulo Apresentação.
+- Reproduz os cálculos de ranking diário, acumulado, notas e grupos.
+- Mantém critérios de desempate do monitor original.
+- Adiciona G6, Z4 e movimentação de posições.
+- Adiciona carrossel automático de 20 segundos e pausa temporária após troca manual de aba.
+- Mantém URL direta por Squad ou consolidada em `squad=all`.
+- Usa exclusivamente o histórico diário já salvo no Performance Hub; não exige nova importação de CSV.
+
 ## V2.30.3
 
 - Corrige o tema público exibido antes da autenticação: login e carregamento agora usam Brasil em Campo como fallback nativo.

@@ -170,6 +170,22 @@ A estrutura foi organizada para permitir uma modularização gradual sem reescre
 
 > Projeto de uso interno da Soften Sistemas.
 
+
+## Apresentação para TV — Etapa 2 (V2.32.0)
+
+O módulo **Apresentação** agora replica as seis visões do monitor `app_ranking` usando os dados diários já armazenados no Performance Hub:
+
+- Finalizados do Dia;
+- Notas do Dia;
+- Finalizados Geral;
+- Notas Geral;
+- Finalizados por Grupo;
+- Notas por Grupo.
+
+O carrossel alterna automaticamente a cada 20 segundos, preserva G6/Z4 e movimentação de posições entre a rodada atual e a anterior. Rankings de notas usam quantidade de avaliações como critério principal e média ponderada como desempate.
+
+A URL direta permanece `?view=presentation`, com `&squad=A|B|D|E|all` opcional. Consulte `docs/APRESENTACAO_ETAPA2_V2.32.0.md`.
+
 ## Apresentação para TV (V2.31.0)
 
 O Performance Hub possui um módulo **Apresentação** que reutiliza os dados já importados no dashboard. Não é necessário importar o mesmo CSV novamente em outro painel.
