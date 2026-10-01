@@ -15,6 +15,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
+  const PRESENTATION_ROUTE = window.SoftenPresentation?.route || {enabled:false,squad:'',direct:false};
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
@@ -191,6 +192,10 @@
     if($('#auditSearchInput'))$('#auditSearchInput').addEventListener('input',renderAuditRows);
     if($('#auditCategoryFilter'))$('#auditCategoryFilter').addEventListener('change',renderAuditRows);
     if($('#refreshAuditBtn'))$('#refreshAuditBtn').addEventListener('click',()=>renderAuditLogView(true));
+    if($('#presentationCopyUrlBtn'))$('#presentationCopyUrlBtn').addEventListener('click',copyPresentationUrl);
+    if($('#presentationOpenUrlBtn'))$('#presentationOpenUrlBtn').addEventListener('click',openPresentationUrl);
+    if($('#presentationFullscreenBtn'))$('#presentationFullscreenBtn').addEventListener('click',togglePresentationFullscreen);
+    if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').addEventListener('click',exitDirectPresentation);
     $('#createUserForm').addEventListener('submit',handleCreateUser);
     $('#newUserRole').addEventListener('change',syncCreateUserFields);
     $('#editUserForm').addEventListener('submit',handleEditUser);
@@ -353,14 +358,27 @@
   async function enterApp(user){
     state.user=user;
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;
-    state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
-    rememberLastSquad(state.squadCode);
-    chooseLatestMonth(); chooseDefaultTech();
-    state.theme=resolveLegacyTheme(state.squads[state.squadCode]?.theme||loadThemeForSquad(state.squadCode)); applyTheme(state.theme);
+    const requestedPresentationSquad=PRESENTATION_ROUTE.enabled?String(PRESENTATION_ROUTE.squad||'').toUpperCase():'';
+    if(PRESENTATION_ROUTE.enabled){
+      if(user.role==='super_admin')state.squadCode=requestedPresentationSquad==='ALL'?'all':(state.squads[requestedPresentationSquad]?requestedPresentationSquad:'all');
+      else state.squadCode=user.squadCode||'D';
+      state.currentView='presentation';
+    }else{
+      state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
+      state.currentView='individual';
+    }
+    if(state.squadCode==='all'){
+      state.currentId=null;state.techName='';state.theme=loadLastTheme();applyTheme(state.theme);
+    }else{
+      rememberLastSquad(state.squadCode);chooseLatestMonth();chooseDefaultTech();
+      state.theme=resolveLegacyTheme(state.squads[state.squadCode]?.theme||loadThemeForSquad(state.squadCode));applyTheme(state.theme);
+    }
     if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
     resetAnalysisRange(true);
-    applyPermissions(); refreshSelectors(); render();
+    applyPermissions();refreshSelectors();render();
     hideBoot();$('#loginScreen').classList.add('hidden');$('#appShell').classList.remove('hidden');
+    if(PRESENTATION_ROUTE.enabled){window.SoftenPresentation?.setDirectMode(true);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.remove('hidden');showView('presentation');}
+    else window.SoftenPresentation?.setDirectMode(false);
     initializeThemeAudio();
   }
   function applyPermissions(){
@@ -372,7 +390,7 @@
     $$('.super-help').forEach(el=>el.classList.toggle('hidden',!superAdmin));
     const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
     $('.technician-control').classList.toggle('hidden',isTechnician()||state.currentView!=='individual'||state.squadCode==='all'||costAdminView);
-    const analyticalView=['individual','team','indicators'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','audit','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
+    const analyticalView=['individual','team','indicators','presentation'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','audit','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
     syncAnalysisDateControls();
     if($('#topUserName'))$('#topUserName').textContent=state.user.fullName;
@@ -609,11 +627,11 @@
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;b.classList.toggle('active',sameView&&sameSection)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
-    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';
     const costAdminView=name==='admin'&&state.adminSection==='costs';
     $('.technician-control').classList.toggle('hidden',name!=='individual'||isTechnician()||state.squadCode==='all'||costAdminView);
-    const analytical=name==='individual'||name==='team'||name==='indicators';
+    const analytical=name==='individual'||name==='team'||name==='indicators'||name==='presentation';
     $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='users'||name==='audit'||name==='profile'||name==='my-feedbacks'||name==='help');
     if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!(name==='individual'||name==='team'));
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
@@ -641,6 +659,7 @@
     if(state.currentView==='help')renderHelp();
     if(state.currentView==='profile')renderProfile();
     if(state.currentView==='indicators')renderIndicators();
+    if(state.currentView==='presentation'){renderPresentation();return;}
     if(state.squadCode==='all'){renderTeam();renderAdmin();return}
     const m=currentMonth();
     $('#individualEmpty').classList.toggle('hidden',!!m);$('#individualContent').classList.toggle('hidden',!m);
@@ -648,6 +667,46 @@
     if(m){renderIndividual();renderTeam();}
     renderAdmin();
   }
+
+  function presentationRows(){
+    if(state.squadCode!=='all'){
+      if(isTechnician()&&state.supabase)return gameRankingRowsForCurrentPeriod().map(r=>({...r,squadCode:state.squadCode}));
+      return periodTechniciansForSquad(currentSquad()).map(r=>({...r,squadCode:state.squadCode}));
+    }
+    const map=new Map();
+    for(const r of orgTechnicianDailyRows().filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day)))){
+      const key=`${r.squadCode}|${nameLinkKey(r.technicianName)}`,v=map.get(key)||{name:r.technicianName,squadCode:r.squadCode,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,totalEval:0,avg:0,evalPct:0};
+      v.att+=safe(r.att);v.notes5+=safe(r.notes5);v.notes4+=safe(r.notes4);v.notes3+=safe(r.notes3);v.notes2+=safe(r.notes2);v.notes1+=safe(r.notes1);map.set(key,v);
+    }
+    const rows=[...map.values()];
+    for(const r of rows){r.totalEval=r.notes5+r.notes4+r.notes3+r.notes2+r.notes1;r.avg=r.totalEval?truncate2((r.notes5*5+r.notes4*4+r.notes3*3+r.notes2*2+r.notes1)/r.totalEval):0;r.evalPct=r.att?roundTo(r.totalEval/r.att,4):0;}
+    return rows.sort((a,b)=>safe(b.att)-safe(a.att)||safe(b.totalEval)-safe(a.totalEval)||String(a.name).localeCompare(String(b.name),'pt-BR'));
+  }
+  function renderPresentation(){
+    const rows=presentationRows().sort((a,b)=>safe(b.att)-safe(a.att)||safe(b.totalEval)-safe(a.totalEval)||String(a.name).localeCompare(String(b.name),'pt-BR'));
+    const totals=rows.reduce((a,r)=>{a.att+=safe(r.att);a.eval+=safe(r.totalEval);a.weighted+=safe(r.avg)*safe(r.totalEval);return a;},{att:0,eval:0,weighted:0});
+    const avg=totals.eval?totals.weighted/totals.eval:0,evalPct=totals.att?totals.eval/totals.att:0;
+    const title=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;
+    if($('#presentationTitle'))$('#presentationTitle').textContent=title;
+    if($('#presentationSubtitle'))$('#presentationSubtitle').textContent=state.squadCode==='all'?'Visão consolidada dos Squads carregados no Performance Hub.':'Os mesmos dados importados no dashboard, preparados para exibição contínua em TV.';
+    if($('#presentationPeriod'))$('#presentationPeriod').textContent=analysisRangeLabel();
+    if($('#presentationUpdated'))$('#presentationUpdated').textContent=`Fonte: Performance Hub • ${rows.length} técnicos no recorte`;
+    if($('#presentationTechCount'))$('#presentationTechCount').textContent=fmtInt(rows.length);
+    if($('#presentationAtt'))$('#presentationAtt').textContent=fmtInt(totals.att);
+    if($('#presentationEval'))$('#presentationEval').textContent=fmtInt(totals.eval);
+    if($('#presentationAvg'))$('#presentationAvg').textContent=safe(avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if($('#presentationEvalPct'))$('#presentationEvalPct').textContent=fmtPct(evalPct);
+    if($('#presentationRankingHint'))$('#presentationRankingHint').textContent=`${analysisRangeLabel()} • ordenado por atendimentos`;
+    const list=$('#presentationRankingList');if(list){list.innerHTML=rows.length?rows.slice(0,10).map((r,i)=>`<div class="presentation-rank-row"><div class="presentation-rank-pos">#${i+1}</div><div><div class="presentation-rank-name">${escapeHtml(r.name)}</div><span class="presentation-rank-squad">Squad ${escapeHtml(r.squadCode||state.squadCode)}</span></div><div class="presentation-rank-metric"><strong>${fmtInt(r.att)}</strong><span>ATENDIMENTOS</span></div><div class="presentation-rank-metric"><strong>${fmtInt(r.totalEval)}</strong><span>AVALIAÇÕES</span></div></div>`).join(''):'<div class="presentation-empty">Ainda não há dados disponíveis para o período selecionado.</div>';}
+    const direct=!!PRESENTATION_ROUTE.enabled;window.SoftenPresentation?.setDirectMode(direct);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.toggle('hidden',!direct);
+  }
+  async function copyPresentationUrl(){
+    const url=window.SoftenPresentation?.directUrl(state.squadCode)||window.location.href;
+    try{await navigator.clipboard.writeText(url);toast('URL da apresentação copiada.')}catch(e){window.prompt('Copie a URL da apresentação:',url)}
+  }
+  function openPresentationUrl(){const url=window.SoftenPresentation?.directUrl(state.squadCode)||window.location.href;window.open(url,'_blank','noopener');}
+  async function togglePresentationFullscreen(){try{if(document.fullscreenElement)await window.SoftenPresentation?.exitFullscreen();else await window.SoftenPresentation?.requestFullscreen();}catch(e){toast('O navegador bloqueou o modo tela cheia.')}}
+  function exitDirectPresentation(){window.location.href=window.SoftenPresentation?.normalUrl()||window.location.pathname;}
 
   function renderIndividual(){
     const m=currentMonth(),t=currentTech();if(!m||!t)return;const periodRows=gameRankingRowsForCurrentPeriod(),periodFromRanking=periodRows.find(r=>samePersonName(r.name,t.name)),localPeriod=periodTechnicianForCurrent(),period={...(periodFromRanking||localPeriod||{name:t.name,att:0,notes5:0,totalEval:0,avg:0,evalPct:0}),evaluationExcludedAtt:safe(localPeriod?.evaluationExcludedAtt),eligibleAtt:safe(localPeriod?.eligibleAtt)||safe(periodFromRanking?.att),daily:localPeriod?.daily||[]},periodGoal=periodGoalForTechnician(t);

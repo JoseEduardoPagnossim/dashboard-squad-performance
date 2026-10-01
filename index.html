@@ -9,7 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.30.3" />
+  <link rel="stylesheet" href="css/styles.css?v=2.31.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.31.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -47,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.30.3 • Compatibilidade Data API</small>
+      <small class="login-version">V2.31.0 • Compatibilidade Data API</small>
     </div>
   </section>
 
@@ -73,6 +74,7 @@
           <button class="nav-btn active" data-view="individual"><span>◈</span> Meu desempenho</button>
           <button class="nav-btn" data-view="team"><span>♛</span> Visão do Squad</button>
           <button class="nav-btn super-only" data-view="indicators"><span>◔</span> Indicadores</button>
+          <button class="nav-btn" data-view="presentation"><span>▣</span> Apresentação</button>
         </div>
         <div class="nav-group admin-only"><span class="nav-group-label">GESTÃO</span>
           <button class="nav-btn" data-view="admin" data-admin-section="operation"><span>↻</span> Operação</button>
@@ -105,7 +107,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.30.3 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.31.0 • Squads A, B, D e E</div>
     </aside>
 
     <main class="main">
@@ -294,6 +296,63 @@
         </div>
       </section>
 
+
+      <section id="view-presentation" class="view">
+        <div class="presentation-shell">
+          <div class="presentation-toolbar card glass">
+            <div class="presentation-toolbar-copy">
+              <span class="eyebrow">MODO TV • ETAPA 1</span>
+              <strong>Apresentação do Performance Hub</strong>
+              <small>Esta tela usa os dados já carregados no dashboard. A URL direta mantém o módulo aberto para uso em televisão ou monitor.</small>
+            </div>
+            <div class="presentation-toolbar-actions">
+              <button class="btn secondary" id="presentationCopyUrlBtn" type="button">Copiar URL da TV</button>
+              <button class="btn secondary" id="presentationOpenUrlBtn" type="button">Abrir em nova tela</button>
+              <button class="btn secondary" id="presentationFullscreenBtn" type="button">⛶ Tela cheia</button>
+              <button class="btn primary hidden" id="presentationExitDirectBtn" type="button">Sair da apresentação</button>
+            </div>
+          </div>
+
+          <div class="presentation-hero card glass">
+            <div class="presentation-hero-copy">
+              <span class="eyebrow">PERFORMANCE EM TEMPO DE EXIBIÇÃO</span>
+              <h2 id="presentationTitle">Squad</h2>
+              <p id="presentationSubtitle">Resumo operacional para apresentação em TV.</p>
+            </div>
+            <div class="presentation-hero-status">
+              <span>PERÍODO EXIBIDO</span>
+              <strong id="presentationPeriod">—</strong>
+              <small id="presentationUpdated">Dados carregados do dashboard</small>
+            </div>
+          </div>
+
+          <div class="presentation-kpis">
+            <article class="presentation-kpi card"><span>Técnicos</span><strong id="presentationTechCount">0</strong></article>
+            <article class="presentation-kpi card"><span>Atendimentos</span><strong id="presentationAtt">0</strong></article>
+            <article class="presentation-kpi card"><span>Avaliações</span><strong id="presentationEval">0</strong></article>
+            <article class="presentation-kpi card"><span>Média geral</span><strong id="presentationAvg">0,00</strong></article>
+            <article class="presentation-kpi card"><span>% avaliado</span><strong id="presentationEvalPct">0,0%</strong></article>
+          </div>
+
+          <div class="presentation-stage-grid">
+            <article class="presentation-ranking card">
+              <div class="presentation-section-head"><div><span class="eyebrow">PRÉVIA FUNCIONAL</span><h3>Ranking por atendimentos</h3></div><small id="presentationRankingHint">Dados do período selecionado</small></div>
+              <div id="presentationRankingList" class="presentation-ranking-list"></div>
+            </article>
+            <article class="presentation-roadmap card">
+              <span class="eyebrow">ESTRUTURA PREPARADA</span>
+              <h3>Próximas telas do carrossel</h3>
+              <div class="presentation-roadmap-list">
+                <div class="presentation-roadmap-item"><strong>Finalizados do Dia</strong><small>Ranking diário usando o detalhamento já armazenado no dashboard.</small></div>
+                <div class="presentation-roadmap-item"><strong>Notas do Dia</strong><small>Avaliações do último dia disponível.</small></div>
+                <div class="presentation-roadmap-item"><strong>Finalizados Geral</strong><small>Ranking acumulado do período.</small></div>
+                <div class="presentation-roadmap-item"><strong>Notas Geral</strong><small>Ranking acumulado de avaliações.</small></div>
+                <div class="presentation-roadmap-item"><strong>Grupos</strong><small>Rankings por grupo entram na Etapa 2, preservando a lógica do app_ranking.</small></div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
 
       <section id="view-indicators" class="view super-only">
         <div class="help-hero card glass indicator-hero">
@@ -905,6 +964,7 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/app.js?v=2.30.3"></script>
+  <script src="js/presentation.js?v=2.31.0"></script>
+  <script src="js/app.js?v=2.31.0"></script>
 </body>
 </html>

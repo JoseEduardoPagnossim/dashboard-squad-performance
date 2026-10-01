@@ -169,3 +169,22 @@ O resumo das versões está em [CHANGELOG.md](CHANGELOG.md). As notas completas 
 A estrutura foi organizada para permitir uma modularização gradual sem reescrever a aplicação. As utilidades genéricas já foram extraídas para `js/core-utils.js`; novas funcionalidades devem, sempre que possível, ser criadas em módulos específicos em vez de ampliar indefinidamente `js/app.js`.
 
 > Projeto de uso interno da Soften Sistemas.
+
+## Apresentação para TV (V2.31.0)
+
+O Performance Hub possui um módulo **Apresentação** que reutiliza os dados já importados no dashboard. Não é necessário importar o mesmo CSV novamente em outro painel.
+
+URL direta:
+
+```text
+?view=presentation
+```
+
+Admin Geral pode escolher um Squad específico ou todos:
+
+```text
+?view=presentation&squad=D
+?view=presentation&squad=all
+```
+
+Nesta primeira etapa a URL utiliza a autenticação já existente. Se a sessão estiver salva no navegador da TV, o painel entra diretamente no modo apresentação. Consulte `docs/APRESENTACAO_ETAPA1_V2.31.0.md`.

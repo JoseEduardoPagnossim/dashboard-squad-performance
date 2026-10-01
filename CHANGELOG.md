@@ -152,3 +152,13 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 - [2.4.0 — Atualização V2.3.0 → V2.4.0](docs/releases/ATUALIZACAO_V2.4.0.md)
 - [2.3.0 — Atualização V2.2.x → V2.3.0](docs/releases/ATUALIZACAO_V2.3.0.md)
 - [2.2.0 — Atualização V2.1.1 -> V2.2.0](docs/releases/ATUALIZACAO_V2.2.0.md)
+
+## V2.31.0 — Módulo Apresentação (Etapa 1)
+
+- Adicionado o módulo **Apresentação** ao menu Desempenho.
+- Criada URL direta para TV por `?view=presentation` e filtro opcional `squad`.
+- Apresentação consome os mesmos dados já carregados no Performance Hub, sem nova importação de CSV.
+- Adicionados indicadores de resumo e ranking inicial por atendimentos.
+- Criado layout direto para TV sem sidebar/topbar.
+- Adicionados atalhos de URL, nova tela e fullscreen.
+- Separação inicial em `js/presentation.js` e `css/presentation.css` para suportar a evolução do carrossel na Etapa 2.
