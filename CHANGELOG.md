@@ -1,4 +1,15 @@
+<<<<<<< HEAD
 ## 2.30.1
+=======
+## V2.30.2
+
+- Corrige superfícies visuais que ainda podiam exibir a arte Vermithor em cards e previews.
+- Hero, visão do Squad, ajuda, perfil, preview de aparência, login, carregamento e ambientação passam a receber a imagem do tema localmente.
+- Squads ainda salvos com o tema legado Vermithor herdam a última identidade personalizada conhecida, evitando o retorno do dragão ao alternar entre Squads.
+- O cache público deixa de ser sobrescrito por temas legados Vermithor.
+
+## 2.30.2
+>>>>>>> 0f8958d (Ajustes visuais.)
 - Corrige o Hero principal para exibir de forma visível a imagem configurada no tema.
 - A visão "Todos os Squads" agora preserva o tema do último Squad selecionado, sem voltar ao Vermithor.
 - Login e carregamento recuperam o último tema conhecido e, em atualizações, tentam também o tema salvo por Squad no cache local.
