@@ -13,6 +13,7 @@
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
   const DEFAULT_SOUNDTRACK_NAME = 'Fogo & Conquista';
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
+  const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,favicon:DEFAULT_FAVICON,name:'Casa do Dragão',campaignTitle:'Casa do Dragão',campaignTagline:'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.',preset:'vermithor',colors:{dark:clone(DEFAULT_DARK_COLORS),light:clone(DEFAULT_LIGHT_COLORS)},accent:DEFAULT_DARK_COLORS.accent,secondary:DEFAULT_DARK_COLORS.secondary,bg:DEFAULT_DARK_COLORS.bg,bg2:DEFAULT_DARK_COLORS.bg2,panel:DEFAULT_DARK_COLORS.panel,text:DEFAULT_DARK_COLORS.text,background:'assets/vermithor.png',opacity:.28};
@@ -112,9 +113,12 @@
   function loadColorModePreference(){try{const saved=localStorage.getItem(COLOR_MODE_KEY);if(saved==='light'||saved==='dark')return saved}catch(e){}return systemColorMode()}
   function hasStoredColorMode(){try{return ['light','dark'].includes(localStorage.getItem(COLOR_MODE_KEY))}catch(e){return false}}
   function loadThemeForSquad(code){const t=allThemes()[code];return normalizeThemePayload(t||DEFAULT_THEME)}
+  function loadLastTheme(){try{const t=JSON.parse(localStorage.getItem(LAST_THEME_KEY)||'null');return t?normalizeThemePayload(t):clone(DEFAULT_THEME)}catch(e){return clone(DEFAULT_THEME)}}
+  function rememberLastTheme(theme){try{localStorage.setItem(LAST_THEME_KEY,JSON.stringify(normalizeThemePayload(theme||DEFAULT_THEME)))}catch(err){console.warn('Não foi possível guardar o último tema para as telas públicas.',err)}}
   function saveTheme(){
     if(!state.squadCode||state.squadCode==='all')return;
     const themes=allThemes(); themes[state.squadCode]=state.theme; try{localStorage.setItem('squadDashboardThemesV2',JSON.stringify(themes));}catch(err){console.warn('Tema grande demais para o cache local; mantendo persistência no Supabase.',err);}
+    rememberLastTheme(state.theme);
     if(state.supabase) persistThemeToSupabase().catch(console.error);
   }
 
@@ -124,7 +128,8 @@
   function hideBoot(){const el=$('#bootScreen');if(el)el.classList.add('hidden')}
 
   async function boot(){
-    applyColorMode(state.colorMode,{persist:false,reapplyTheme:true});
+    applyColorMode(state.colorMode,{persist:false,reapplyTheme:false});
+    applyTheme(loadLastTheme());
     bindSystemColorMode();
     showBoot();
     bindStaticEvents();
@@ -2712,10 +2717,25 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     };
     state.theme=normalizeThemePayload(presets[name]||presets.vermithor);saveTheme();applyTheme(state.theme);toast(`Tema ${state.theme.name} aplicado.`)
   }
+  function applyCampaignIdentity(theme,safeBg,fallbackTitle,fallbackTagline){
+    const title=theme.campaignTitle||fallbackTitle||theme.name||'Performance';
+    const tagline=theme.campaignTagline||fallbackTagline||'Acompanhe, evolua e conquiste.';
+    const art=safeBg||(theme.preset==='vermithor'?'assets/casa-do-dragao-sidebar.png':'');
+    $$('[data-theme-art]').forEach(img=>{if(art){img.src=art;img.classList.remove('hidden')}else{img.removeAttribute('src');img.classList.add('hidden')}img.alt=`Arte da campanha ${title}`});
+    if($('#campaignVisual'))$('#campaignVisual').setAttribute('aria-label',`Campanha ${title}`);
+    if($('#campaignTitleDisplay'))$('#campaignTitleDisplay').textContent=title;
+    if($('#campaignTaglineDisplay'))$('#campaignTaglineDisplay').textContent=tagline;
+    if($('#soundWelcomeTitle'))$('#soundWelcomeTitle').textContent=`Entrar em ${title}`;
+    if($('#bootCampaignLabel'))$('#bootCampaignLabel').textContent=`${title} • ${tagline}`.toUpperCase();
+    if($('#houseMottoTitle'))$('#houseMottoTitle').textContent=title.toUpperCase();
+    if($('#houseMottoText'))$('#houseMottoText').textContent=tagline;
+  }
   function applyTheme(t){
     state.theme=normalizeThemePayload(t||DEFAULT_THEME);applyThemePalette(state.theme);const r=document.documentElement.style;
     if(state.theme.opacity!=null)r.setProperty('--hero-opacity',state.theme.opacity);const safeBg=sanitizeThemeBackground(state.theme.background),bg=safeBg?`url("${safeBg}")`:state.theme.preset==='vermithor'?"url('assets/vermithor.png')":'none';r.setProperty('--hero-img',bg);
     const fallbackTitle=state.theme.preset==='vermithor'?'Casa do Dragão':(state.theme.name||`Squad ${state.squadCode}`),fallbackTagline=state.theme.preset==='vermithor'?'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.':'Acompanhe, evolua e conquiste.';
+    applyCampaignIdentity(state.theme,safeBg,fallbackTitle,fallbackTagline);
+    rememberLastTheme(state.theme);
     if($('#campaignNameInput'))$('#campaignNameInput').value=state.theme.campaignTitle||fallbackTitle;if($('#campaignTaglineInput'))$('#campaignTaglineInput').value=state.theme.campaignTagline||fallbackTagline;applyFavicon(state.theme.favicon);if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName||'';if($('#soundtrackDefaultVolume'))$('#soundtrackDefaultVolume').value=Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100);if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100)}%`;applySoundtrack(state.theme);updateThemeName()
   }
   function updateThemeName(){if($('#themeName'))$('#themeName').textContent=state.theme?.name||state.theme?.campaignTitle||'Personalizado';syncColorModeUi()}
@@ -2734,7 +2754,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(f.size>750*1024){toast('Use um favicon de até 750 KB.');e.target.value='';return}
     const reader=new FileReader();reader.onload=()=>{state.theme.favicon=reader.result;state.theme.preset='custom';saveTheme();applyFavicon(state.theme.favicon);toast('Favicon do tema atualizado.')};reader.readAsDataURL(f);
   }
-  function resetFavicon(){if(!isAdmin())return;state.theme.favicon=DEFAULT_FAVICON;state.theme.preset='custom';if($('#faviconFile'))$('#faviconFile').value='';saveTheme();applyFavicon(DEFAULT_FAVICON);toast('Favicon padrão do dragão restaurado.')}
+  function resetFavicon(){if(!isAdmin())return;state.theme.favicon=DEFAULT_FAVICON;state.theme.preset='custom';if($('#faviconFile'))$('#faviconFile').value='';saveTheme();applyFavicon(DEFAULT_FAVICON);toast('Favicon padrão restaurado.')}
   function themePayload(){const t=normalizeThemePayload(state.theme);const d=t.colors.dark;return{schema:'squad-theme-v2',name:t.name||'Personalizado',campaignTitle:t.campaignTitle||t.name||`Squad ${state.squadCode}`,campaignTagline:t.campaignTagline||'',colors:clone(t.colors),accent:d.accent,secondary:d.secondary,bg:d.bg,bg2:d.bg2,panel:d.panel,panel2:d.panel2,text:d.text,muted:d.muted,border:d.border,background:t.background||null,favicon:t.favicon||DEFAULT_FAVICON,soundtrack:Object.prototype.hasOwnProperty.call(t,'soundtrack')?t.soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:t.soundtrackName||'',soundtrackVolume:clamp(Number(t.soundtrackVolume??.24),0,1),opacity:t.opacity??.28}}
   function downloadJson(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   function exportTheme(){if(!isAdmin()||!requireSpecificSquad())return;downloadJson(themePayload(),`tema-squad-${state.squadCode.toLowerCase()}.json`);toast('Tema exportado em JSON com paletas clara e escura.')}

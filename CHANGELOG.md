@@ -1,5 +1,13 @@
 # Changelog
 
+## V2.30.0 — Tema unificado nas telas e artes da campanha
+
+- A imagem definida em **Aparência > Imagem de fundo** passa a ser reutilizada no fundo principal, login, carregamento, boas-vindas da trilha e card lateral da campanha.
+- Nome e frase da campanha passam a atualizar também o card lateral, a tela de carregamento e o título de boas-vindas da trilha.
+- O último tema aplicado fica armazenado localmente para manter a identidade visual nas telas anteriores ao login. Em navegador novo, o tema padrão é usado até a primeira autenticação, quando o tema do Squad é carregado.
+- Mantido fallback para os assets originais quando não existe fundo personalizado.
+
+
 Histórico resumido do Soften Performance Hub. As notas completas de cada versão permanecem em `docs/releases/`.
 
 ## 2.29.9
