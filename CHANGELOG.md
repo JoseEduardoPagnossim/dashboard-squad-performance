@@ -1,3 +1,10 @@
+## V2.30.3
+
+- Corrige o tema público exibido antes da autenticação: login e carregamento agora usam Brasil em Campo como fallback nativo.
+- Remove o flash visual do dragão no primeiro carregamento ao trocar o `--hero-img` padrão do CSS e os `src` estáticos para a arte pública brasileira.
+- Mantém temas personalizados por Squad após o login; o fallback público só é usado quando ainda não há tema autenticado/cache disponível.
+- Mantém o preset Vermithor disponível de forma explícita, sem torná-lo novamente o tema padrão da aplicação.
+
 ## V2.30.2
 
 - Corrige superfícies visuais que ainda podiam exibir a arte Vermithor em cards e previews.

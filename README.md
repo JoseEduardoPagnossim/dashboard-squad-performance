@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.30.2`<br>
+**Versão atual:** `2.30.3`<br>
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
 
