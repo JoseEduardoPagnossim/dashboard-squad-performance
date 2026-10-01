@@ -1,4 +1,7 @@
-# V2.34.1 — Responsividade da navegação e Indicadores
+# V2.34.2
+
+- Corrigida a largura do filtro de Squad no topo para permanecer fixa ao alternar entre Todos os Squads e Squads individuais.
+- Mantida largura adaptada no breakpoint responsivo, evitando deslocamento dos controles em zoom alto.
 
 - Sidebar passa para drawer responsivo em viewport estreita/zoom, com backdrop, fechamento por ESC e botão sempre acessível.
 - Breakpoint ampliado para 980 px para evitar desaparecimento da navegação ao aumentar o zoom.

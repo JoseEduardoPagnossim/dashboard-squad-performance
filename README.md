@@ -213,6 +213,6 @@ A apresentação agora foi preparada para operação contínua em TV: carrossel 
 Atalhos principais: `F` para fullscreen, `Espaço` para pausar/retomar o carrossel, setas para navegar e `R` para atualizar. Consulte `docs/APRESENTACAO_ETAPA3_V2.33.0.md`.
 
 
-## Apresentação para TV — Etapa 4 (V2.34.1)
+## Apresentação para TV — Etapa 4 (V2.34.2)
 
-Administradores agora possuem um painel de configuração dentro de **Apresentação** para definir o Squad da TV, intervalo do carrossel, frequência de atualização, abas visíveis e sua ordem, layout em uma ou duas colunas, indicadores, G6/Z4 e filtros. As escolhas são incorporadas à URL da TV e também ficam salvas localmente. Consulte `docs/APRESENTACAO_ETAPA4_V2.34.1.md`.
+Administradores agora possuem um painel de configuração dentro de **Apresentação** para definir o Squad da TV, intervalo do carrossel, frequência de atualização, abas visíveis e sua ordem, layout em uma ou duas colunas, indicadores, G6/Z4 e filtros. As escolhas são incorporadas à URL da TV e também ficam salvas localmente. Consulte `docs/APRESENTACAO_ETAPA4_V2.34.2.md`.

@@ -473,6 +473,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .control:hover{border-color:var(--premium-border-strong);background:color-mix(in srgb,var(--panel2) 76%,transparent)}
 .control>span{font-size:10px;font-weight:650;color:var(--muted)}
 select{font-size:12px;font-weight:650;min-height:24px}
+/* Mantem o seletor de Squad estavel ao alternar entre opcoes com nomes de tamanhos diferentes. */
+#squadControl{flex:0 0 170px;width:170px;min-width:170px;max-width:170px;justify-content:space-between}
+#squadControl>span{flex:0 0 auto}
+#squadSelect{width:108px;min-width:108px;max-width:108px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
 .btn{
   min-height:40px;padding:10px 15px;border-radius:11px;
   font-size:11px;font-weight:750;letter-spacing:-.005em;
@@ -1389,6 +1393,8 @@ th{font-size:10.5px!important;line-height:1.35}td{font-size:12px!important;line-
   .top-title{display:none!important}
   .top-actions{min-width:0;margin-left:auto!important;flex:1 1 auto;justify-content:flex-end;gap:6px!important;flex-wrap:wrap}
   .top-actions>.control,.top-actions>.btn{min-width:0}
+  #squadControl{flex:0 0 164px;width:164px;min-width:164px;max-width:164px}
+  #squadSelect{width:102px;min-width:102px;max-width:102px}
   .campaign-visual{display:none!important}
   .sidebar-nav{overflow:visible!important}
 }
