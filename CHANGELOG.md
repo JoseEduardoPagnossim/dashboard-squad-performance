@@ -1,3 +1,9 @@
+## 2.30.1
+- Corrige o Hero principal para exibir de forma visível a imagem configurada no tema.
+- A visão "Todos os Squads" agora preserva o tema do último Squad selecionado, sem voltar ao Vermithor.
+- Login e carregamento recuperam o último tema conhecido e, em atualizações, tentam também o tema salvo por Squad no cache local.
+- O último Squad visualizado passa a ser lembrado para restaurar corretamente a identidade visual antes da autenticação.
+
 # Changelog
 
 ## V2.30.0 — Tema unificado nas telas e artes da campanha

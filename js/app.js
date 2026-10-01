@@ -14,6 +14,7 @@
   const DEFAULT_SOUNDTRACK_NAME = 'Fogo & Conquista';
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
+  const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,favicon:DEFAULT_FAVICON,name:'Casa do Dragão',campaignTitle:'Casa do Dragão',campaignTagline:'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.',preset:'vermithor',colors:{dark:clone(DEFAULT_DARK_COLORS),light:clone(DEFAULT_LIGHT_COLORS)},accent:DEFAULT_DARK_COLORS.accent,secondary:DEFAULT_DARK_COLORS.secondary,bg:DEFAULT_DARK_COLORS.bg,bg2:DEFAULT_DARK_COLORS.bg2,panel:DEFAULT_DARK_COLORS.panel,text:DEFAULT_DARK_COLORS.text,background:'assets/vermithor.png',opacity:.28};
@@ -113,10 +114,22 @@
   function loadColorModePreference(){try{const saved=localStorage.getItem(COLOR_MODE_KEY);if(saved==='light'||saved==='dark')return saved}catch(e){}return systemColorMode()}
   function hasStoredColorMode(){try{return ['light','dark'].includes(localStorage.getItem(COLOR_MODE_KEY))}catch(e){return false}}
   function loadThemeForSquad(code){const t=allThemes()[code];return normalizeThemePayload(t||DEFAULT_THEME)}
-  function loadLastTheme(){try{const t=JSON.parse(localStorage.getItem(LAST_THEME_KEY)||'null');return t?normalizeThemePayload(t):clone(DEFAULT_THEME)}catch(e){return clone(DEFAULT_THEME)}}
+  function loadLastTheme(){
+    try{
+      const direct=JSON.parse(localStorage.getItem(LAST_THEME_KEY)||'null');
+      if(direct)return normalizeThemePayload(direct);
+      const themes=allThemes(),lastCode=localStorage.getItem(LAST_SQUAD_KEY);
+      if(lastCode&&themes[lastCode])return normalizeThemePayload(themes[lastCode]);
+      if(themes.D)return normalizeThemePayload(themes.D);
+      const first=Object.values(themes).find(Boolean);
+      return first?normalizeThemePayload(first):clone(DEFAULT_THEME);
+    }catch(e){return clone(DEFAULT_THEME)}
+  }
   function rememberLastTheme(theme){try{localStorage.setItem(LAST_THEME_KEY,JSON.stringify(normalizeThemePayload(theme||DEFAULT_THEME)))}catch(err){console.warn('Não foi possível guardar o último tema para as telas públicas.',err)}}
+  function rememberLastSquad(code){if(!code||code==='all')return;try{localStorage.setItem(LAST_SQUAD_KEY,String(code))}catch(e){}}
   function saveTheme(){
     if(!state.squadCode||state.squadCode==='all')return;
+    rememberLastSquad(state.squadCode);
     const themes=allThemes(); themes[state.squadCode]=state.theme; try{localStorage.setItem('squadDashboardThemesV2',JSON.stringify(themes));}catch(err){console.warn('Tema grande demais para o cache local; mantendo persistência no Supabase.',err);}
     rememberLastTheme(state.theme);
     if(state.supabase) persistThemeToSupabase().catch(console.error);
@@ -334,6 +347,7 @@
     state.user=user;
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;
     state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
+    rememberLastSquad(state.squadCode);
     chooseLatestMonth(); chooseDefaultTech();
     state.theme=state.squads[state.squadCode]?.theme||loadThemeForSquad(state.squadCode); applyTheme(state.theme);
     if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
@@ -554,8 +568,14 @@
 
   async function selectSquad(code){
     if(!isSuperAdmin())return; state.squadCode=code;
-    if(code==='all'){state.currentId=null;state.techName='';state.theme=clone(DEFAULT_THEME);applyTheme(state.theme);if(state.currentView==='individual')showView('team');}
-    else{chooseLatestMonth();chooseDefaultTech();state.theme=state.squads[code]?.theme||loadThemeForSquad(code);applyTheme(state.theme);}
+    if(code==='all'){
+      state.currentId=null;state.techName='';
+      // A visão consolidada preserva a identidade visual do último Squad selecionado.
+      // O tema é visual e não interfere nos dados consolidados.
+      applyTheme(state.theme||loadLastTheme());
+      if(state.currentView==='individual')showView('team');
+    }
+    else{rememberLastSquad(code);chooseLatestMonth();chooseDefaultTech();state.theme=state.squads[code]?.theme||loadThemeForSquad(code);applyTheme(state.theme);}
     resetAnalysisRange(true);refreshSelectors();render();applyPermissions();
   }
   function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
