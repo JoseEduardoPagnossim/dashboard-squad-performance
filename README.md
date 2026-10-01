@@ -211,3 +211,8 @@ Nesta primeira etapa a URL utiliza a autenticação já existente. Se a sessão 
 A apresentação agora foi preparada para operação contínua em TV: carrossel com contador e progresso, fullscreen por botão/atalho, atualização automática a cada 5 minutos, atualização manual, Screen Wake Lock quando suportado e recuperação automática após queda de conexão sem apagar os últimos dados válidos.
 
 Atalhos principais: `F` para fullscreen, `Espaço` para pausar/retomar o carrossel, setas para navegar e `R` para atualizar. Consulte `docs/APRESENTACAO_ETAPA3_V2.33.0.md`.
+
+
+## Apresentação para TV — Etapa 4 (V2.34.0)
+
+Administradores agora possuem um painel de configuração dentro de **Apresentação** para definir o Squad da TV, intervalo do carrossel, frequência de atualização, abas visíveis e sua ordem, layout em uma ou duas colunas, indicadores, G6/Z4 e filtros. As escolhas são incorporadas à URL da TV e também ficam salvas localmente. Consulte `docs/APRESENTACAO_ETAPA4_V2.34.0.md`.

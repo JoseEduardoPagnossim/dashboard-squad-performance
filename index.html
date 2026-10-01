@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.33.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.33.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.34.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.34.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.33.0 • Compatibilidade Data API</small>
+      <small class="login-version">V2.34.0 • Compatibilidade Data API</small>
     </div>
   </section>
 
@@ -107,7 +107,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.33.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.34.0 • Squads A, B, D e E</div>
     </aside>
 
     <main class="main">
@@ -315,6 +315,33 @@
               <button class="btn primary hidden" id="presentationExitDirectBtn" type="button">Sair da apresentação</button>
             </div>
           </div>
+
+          <section class="presentation-admin card admin-only" id="presentationAdminPanel" aria-labelledby="presentationAdminTitle">
+            <div class="presentation-admin-head">
+              <div><span class="eyebrow">ADMINISTRAÇÃO DA TV</span><h3 id="presentationAdminTitle">Configurar apresentação</h3><p>Defina o que a televisão deve exibir. As escolhas são salvas neste navegador e também entram na URL gerada para a TV.</p></div>
+              <div class="presentation-admin-actions"><button class="btn secondary" id="presentationResetConfigBtn" type="button">Restaurar padrão</button><button class="btn primary" id="presentationApplyConfigBtn" type="button">Aplicar preferências</button></div>
+            </div>
+            <div class="presentation-config-grid">
+              <label><span>Squad da TV</span><select id="presentationConfigSquad"><option value="all">Todos os Squads</option><option value="A">Squad A</option><option value="B">Squad B</option><option value="D">Squad D</option><option value="E">Squad E</option></select></label>
+              <label><span>Intervalo do carrossel</span><select id="presentationConfigInterval"><option value="10">10 segundos</option><option value="15">15 segundos</option><option value="20">20 segundos</option><option value="30">30 segundos</option><option value="45">45 segundos</option><option value="60">60 segundos</option></select></label>
+              <label><span>Atualização automática</span><select id="presentationConfigRefresh"><option value="1">1 minuto</option><option value="2">2 minutos</option><option value="5">5 minutos</option><option value="10">10 minutos</option><option value="15">15 minutos</option></select></label>
+              <label><span>Layout do ranking</span><select id="presentationConfigColumns"><option value="auto">Automático</option><option value="1">1 coluna</option><option value="2">2 colunas</option></select></label>
+            </div>
+            <div class="presentation-config-toggles">
+              <label><input id="presentationConfigCarousel" type="checkbox" checked><span>Carrossel automático</span></label>
+              <label><input id="presentationConfigKpis" type="checkbox" checked><span>Mostrar indicadores superiores</span></label>
+              <label><input id="presentationConfigSpotlights" type="checkbox" checked><span>Mostrar G6 / Z4</span></label>
+              <label><input id="presentationConfigFilters" type="checkbox"><span>Mostrar busca/filtro na TV</span></label>
+            </div>
+            <div class="presentation-config-modes">
+              <div class="presentation-config-section-title"><div><strong>Abas e ordem do carrossel</strong><small>Marque as telas que entrarão na apresentação e use as setas para reorganizar.</small></div></div>
+              <div id="presentationConfigModeList" class="presentation-config-mode-list"></div>
+            </div>
+            <div class="presentation-config-url">
+              <div><span>URL configurada da TV</span><code id="presentationConfigUrl">—</code></div>
+              <div><button class="btn secondary compact" id="presentationConfigCopyBtn" type="button">Copiar URL</button><button class="btn secondary compact" id="presentationConfigOpenBtn" type="button">Abrir TV</button></div>
+            </div>
+          </section>
 
           <div class="presentation-hero card glass">
             <div class="presentation-hero-copy">
@@ -993,7 +1020,7 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/presentation.js?v=2.33.0"></script>
-  <script src="js/app.js?v=2.33.0"></script>
+  <script src="js/presentation.js?v=2.34.0"></script>
+  <script src="js/app.js?v=2.34.0"></script>
 </body>
 </html>

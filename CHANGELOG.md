@@ -1,3 +1,15 @@
+## V2.34.0 — Apresentação (Etapa 4: Administração)
+
+- Adicionada área administrativa no módulo Apresentação.
+- Configuração de Squad da TV, intervalo do carrossel e frequência de atualização.
+- Seleção e reordenação das seis abas do ranking.
+- Preferências de indicadores, G6/Z4, filtros e número de colunas.
+- URL da TV passa a carregar as preferências de forma autocontida.
+- Preferências administrativas também ficam salvas no navegador.
+- Botões para copiar a URL configurada e abrir a TV diretamente.
+- Mantida compatibilidade com URLs de apresentação das versões anteriores.
+- Versão atualizada para 2.34.0.
+
 ## V2.33.0 — Apresentação (Etapa 3: TV contínua)
 
 - Carrossel de 20s com barra de progresso e contador regressivo.

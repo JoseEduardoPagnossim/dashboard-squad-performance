@@ -6,7 +6,37 @@
     direct: params.get('view') === 'presentation'
   };
 
-  const MODES = ['day','notesDay','general','notesGeneral','group','notesGroup'];
+  const ALL_MODES = ['day','notesDay','general','notesGeneral','group','notesGroup'];
+  const MODE_LABELS = {day:'Finalizados do Dia',notesDay:'Notas do Dia',general:'Finalizados Geral',notesGeneral:'Notas Geral',group:'Finalizados por Grupo',notesGroup:'Notas por Grupo'};
+  const CONFIG_KEY = 'softenPresentationConfigV1';
+  const DEFAULT_CONFIG = {squad:'all',interval:20,refresh:5,columns:'auto',carousel:true,kpis:true,spotlights:true,filters:false,modes:[...ALL_MODES],start:'day'};
+  function boolParam(value,fallback){if(value==null||value==='')return fallback;return !['0','false','off','no'].includes(String(value).toLowerCase())}
+  function normalizeConfig(input={}){
+    const rawModes=Array.isArray(input.modes)?input.modes:String(input.modes||'').split(',');
+    const modes=rawModes.map(x=>String(x).trim()).filter((x,i,a)=>ALL_MODES.includes(x)&&a.indexOf(x)===i);
+    const cfg={...DEFAULT_CONFIG,...input};
+    cfg.squad=String(cfg.squad||'all').toUpperCase();if(cfg.squad==='ALL')cfg.squad='all';if(!['all','A','B','D','E'].includes(cfg.squad))cfg.squad='all';
+    cfg.interval=[10,15,20,30,45,60].includes(Number(cfg.interval))?Number(cfg.interval):20;
+    cfg.refresh=[1,2,5,10,15].includes(Number(cfg.refresh))?Number(cfg.refresh):5;
+    cfg.columns=['auto','1','2'].includes(String(cfg.columns))?String(cfg.columns):'auto';
+    cfg.carousel=cfg.carousel!==false;cfg.kpis=cfg.kpis!==false;cfg.spotlights=cfg.spotlights!==false;cfg.filters=cfg.filters===true;
+    cfg.modes=modes.length?modes:[...ALL_MODES];cfg.start=cfg.modes.includes(cfg.start)?cfg.start:cfg.modes[0];
+    return cfg;
+  }
+  function loadSavedConfig(){try{return normalizeConfig(JSON.parse(localStorage.getItem(CONFIG_KEY)||'{}'))}catch(e){return normalizeConfig()}}
+  function saveConfig(cfg){const next=normalizeConfig(cfg);try{localStorage.setItem(CONFIG_KEY,JSON.stringify(next))}catch(e){}return next}
+  function configFromUrl(){
+    if(!route.direct)return null;
+    const hasConfig=['interval','refresh','tabs','carousel','kpis','spots','filters','columns','start'].some(k=>params.has(k));
+    if(!hasConfig)return null;
+    return normalizeConfig({
+      squad:route.squad||'all',interval:Number(params.get('interval')||20),refresh:Number(params.get('refresh')||5),columns:params.get('columns')||'auto',
+      carousel:boolParam(params.get('carousel'),true),kpis:boolParam(params.get('kpis'),true),spotlights:boolParam(params.get('spots'),true),filters:boolParam(params.get('filters'),false),
+      modes:(params.get('tabs')||'').split(','),start:params.get('start')||''
+    });
+  }
+  function activeModes(){return state.config?.modes?.length?state.config.modes:ALL_MODES}
+
   const EXCLUDED_TECHNICIANS = [
     'Jose Eduardo Pagnossim','Heitor Drago Gois','João Paulo Cardoso','Eduardo Thomaz','Renata Romão',
     'LETICIA SANCHES','PAMELA MUNHOZ','HAMILTON MACHADO','JUAN DELFINO','LEONARDO TOFOLETTI',
@@ -15,6 +45,7 @@
 
   const state = {
     payload:null,
+    config:configFromUrl()||loadSavedConfig(),
     activeMode:'day',
     carouselEnabled:true,
     autoSwitch:true,
@@ -34,6 +65,8 @@
     wakeLock:null
   };
 
+  state.activeMode=state.config.start;state.carouselEnabled=state.config.carousel;state.carouselDuration=state.config.interval*1000;state.refreshEveryMs=state.config.refresh*60*1000;
+
   function $(selector){ return document.querySelector(selector); }
   function $$(selector){ return [...document.querySelectorAll(selector)]; }
   function num(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
@@ -49,21 +82,17 @@
   function formatDateBR(iso){
     const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:'-';
   }
-  function directUrl(squad){
-    const url = new URL(window.location.href);
-    url.searchParams.set('view','presentation');
-    if(squad && squad !== 'all') url.searchParams.set('squad',String(squad).toUpperCase());
-    else if(squad === 'all') url.searchParams.set('squad','all');
-    else url.searchParams.delete('squad');
-    url.hash='';
-    return url.toString();
+  function directUrl(squad,config=state.config){
+    const cfg=normalizeConfig({...config,squad:squad||config?.squad||'all'}),url=new URL(window.location.href);
+    url.searchParams.set('view','presentation');url.searchParams.set('squad',cfg.squad==='all'?'all':cfg.squad);
+    url.searchParams.set('interval',String(cfg.interval));url.searchParams.set('refresh',String(cfg.refresh));url.searchParams.set('columns',cfg.columns);
+    url.searchParams.set('carousel',cfg.carousel?'1':'0');url.searchParams.set('kpis',cfg.kpis?'1':'0');url.searchParams.set('spots',cfg.spotlights?'1':'0');url.searchParams.set('filters',cfg.filters?'1':'0');
+    url.searchParams.set('tabs',cfg.modes.join(','));url.searchParams.set('start',cfg.start||cfg.modes[0]);url.hash='';return url.toString();
   }
   function normalUrl(){
     const url = new URL(window.location.href);
-    url.searchParams.delete('view');
-    url.searchParams.delete('squad');
-    url.hash='';
-    return url.toString();
+    ['view','squad','interval','refresh','columns','carousel','kpis','spots','filters','tabs','start'].forEach(k=>url.searchParams.delete(k));
+    url.hash='';return url.toString();
   }
   function setDirectMode(active){ document.body.classList.toggle('presentation-direct',!!active);if(active)requestWakeLock(); }
   function requestFullscreen(){ const el=document.documentElement;if(document.fullscreenElement)return Promise.resolve();return el.requestFullscreen?el.requestFullscreen():Promise.resolve(); }
@@ -85,8 +114,8 @@
   function syncNote(){
     const el=$('#presentationSyncNote');if(!el)return;
     if(state.refreshInFlight){el.textContent='Sincronizando dados agora…';return}
-    if(state.lastSuccessfulRefresh){el.textContent=`Última sincronização ${clockLabel(state.lastSuccessfulRefresh)} • automática a cada 5 min`;return}
-    el.textContent='Atualização automática a cada 5 min';
+    if(state.lastSuccessfulRefresh){el.textContent=`Última sincronização ${clockLabel(state.lastSuccessfulRefresh)} • automática a cada ${state.config.refresh} min`;return}
+    el.textContent=`Atualização automática a cada ${state.config.refresh} min`;
   }
   function scheduleReconnect(){
     clearTimeout(state.reconnectTimer);state.reconnectTimer=setTimeout(()=>triggerRefresh('retry'),60000);
@@ -211,14 +240,16 @@
   }
   function renderSpotlights(rows){
     const wrap=$('#presentationSpotlights');if(!wrap)return;
-    const groupMode=['group','notesGroup'].includes(state.activeMode);wrap.classList.toggle('hidden',groupMode);if(groupMode)return;
+    const groupMode=['group','notesGroup'].includes(state.activeMode),hide=groupMode||!state.config.spotlights;wrap.classList.toggle('hidden',hide);if(hide)return;
     const g6=rows.slice(0,6),z4=rows.slice(-4);
     const mini=item=>`<div class="presentation-mini-row"><span>${item.position}º</span><strong>${escapeHtml(item.technician)}</strong><b>${formatNumber(item.totalQuantity)}</b></div>`;
     $('#presentationG6').innerHTML=g6.length?g6.map(mini).join(''):'<div class="presentation-empty small">Sem dados</div>';
     $('#presentationZ4').innerHTML=z4.length?z4.map(mini).join(''):'<div class="presentation-empty small">Sem dados</div>';
   }
   function renderTabs(){
-    $$('[data-presentation-mode]').forEach(btn=>{const active=btn.dataset.presentationMode===state.activeMode;btn.classList.toggle('active',active);btn.setAttribute('aria-selected',active?'true':'false')});
+    const modes=activeModes(),tabs=$('.presentation-tabs');
+    $$('[data-presentation-mode]').forEach(btn=>{const mode=btn.dataset.presentationMode,enabled=modes.includes(mode),active=mode===state.activeMode;btn.classList.toggle('hidden',!enabled);btn.classList.toggle('active',active);btn.setAttribute('aria-selected',active?'true':'false');if(enabled&&tabs)tabs.appendChild(btn)});
+    if(!modes.includes(state.activeMode))state.activeMode=modes[0];
     const meta=modeMeta();if($('#presentationRankingTitle'))$('#presentationRankingTitle').textContent=meta[0];if($('#presentationRankingSubtitle'))$('#presentationRankingSubtitle').textContent=meta[1];
     if($('#presentationCarouselBtn'))$('#presentationCarouselBtn').textContent=state.carouselEnabled?'🎠 Carrossel ON':'🎠 Carrossel OFF';
     updateCarouselProgress();syncNote();
@@ -232,15 +263,16 @@
     const elapsed=Math.max(0,now-state.cycleStartedAt),pct=Math.min(100,(elapsed/state.carouselDuration)*100),remaining=Math.max(0,Math.ceil((state.carouselDuration-elapsed)/1000));
     if(note)note.textContent=`Próxima tela em ${remaining}s • carrossel ativo`;if(bar)bar.style.width=`${pct}%`;
   }
-  function advanceCarousel(){const i=MODES.indexOf(state.activeMode);state.activeMode=MODES[(i+1)%MODES.length];state.cycleStartedAt=Date.now();renderAll();}
+  function advanceCarousel(){const modes=activeModes(),i=modes.indexOf(state.activeMode);state.activeMode=modes[(i+1)%modes.length];state.cycleStartedAt=Date.now();renderAll();}
   function renderGroups(){
     const sel=$('#presentationGroupFilter');if(!sel||!state.rankings)return;const current=sel.value,groups=[...new Set(state.rankings.rows.map(r=>r.group))].sort((a,b)=>a.localeCompare(b,'pt-BR'));sel.innerHTML='<option value="">Todos os grupos</option>'+groups.map(g=>`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');if(groups.includes(current))sel.value=current;
   }
   function renderRanking(){
     const rows=activeRows(),container=$('#presentationRankingColumns');if(!container)return;renderSpotlights(rows);
     if(!rows.length){container.innerHTML='<div class="presentation-empty">Nenhum dado encontrado para esta visualização.</div>';return;}
-    const groupMode=['group','notesGroup'].includes(state.activeMode),direct=document.body.classList.contains('presentation-direct');
-    if(!groupMode&&(direct||rows.length>8)){const half=Math.ceil(rows.length/2);container.classList.add('two-columns');container.innerHTML=`<div>${buildTable(rows.slice(0,half),rows.length)}</div><div>${buildTable(rows.slice(half),rows.length)}</div>`;}
+    const groupMode=['group','notesGroup'].includes(state.activeMode),direct=document.body.classList.contains('presentation-direct'),layout=state.config.columns;
+    const two=layout==='2'||(layout==='auto'&&!groupMode&&(direct||rows.length>8));
+    if(two){const half=Math.ceil(rows.length/2);container.classList.add('two-columns');container.innerHTML=`<div>${buildTable(rows.slice(0,half),rows.length)}</div><div>${buildTable(rows.slice(half),rows.length)}</div>`;}
     else{container.classList.remove('two-columns');container.innerHTML=`<div>${buildTable(rows,rows.length)}</div>`;}
   }
   function renderHeader(payload){
@@ -256,15 +288,49 @@
     if($('#presentationAvg'))$('#presentationAvg').textContent=r.summary.eval?formatDecimal(r.summary.avg):'-';
     if($('#presentationTotalRatings'))$('#presentationTotalRatings').textContent=formatNumber(r.summary.eval);
   }
-  function renderAll(){if(!state.payload)return;renderHeader(state.payload);renderTabs();renderGroups();renderRanking();}
+  function renderAll(){if(!state.payload)return;
+    if(route.direct)$('#presentationAdminPanel')?.classList.add('hidden');
+    $('.presentation-kpis')?.classList.toggle('hidden',!state.config.kpis);
+    $('.presentation-filters')?.classList.toggle('hidden',route.direct&&!state.config.filters);
+    renderHeader(state.payload);renderTabs();renderGroups();renderRanking();renderAdminConfig();
+  }
+  function restartRefreshTimer(){clearInterval(state.refreshTimer);state.refreshEveryMs=state.config.refresh*60*1000;state.refreshTimer=setInterval(()=>triggerRefresh('interval'),state.refreshEveryMs)}
+  function applyRuntimeConfig(config,persist=true){
+    state.config=normalizeConfig(config);if(persist&&!route.direct)state.config=saveConfig(state.config);
+    state.carouselDuration=state.config.interval*1000;state.carouselEnabled=state.config.carousel;state.refreshEveryMs=state.config.refresh*60*1000;
+    if(!activeModes().includes(state.activeMode))state.activeMode=state.config.start||activeModes()[0];
+    if(state.bound)restartRefreshTimer();state.cycleStartedAt=Date.now();
+    return state.config;
+  }
+  function configFromForm(){
+    const rows=$$('#presentationConfigModeList [data-config-mode]'),modes=rows.filter(r=>r.querySelector('input')?.checked).map(r=>r.dataset.configMode);
+    return normalizeConfig({squad:$('#presentationConfigSquad')?.value||'all',interval:Number($('#presentationConfigInterval')?.value||20),refresh:Number($('#presentationConfigRefresh')?.value||5),columns:$('#presentationConfigColumns')?.value||'auto',carousel:!!$('#presentationConfigCarousel')?.checked,kpis:!!$('#presentationConfigKpis')?.checked,spotlights:!!$('#presentationConfigSpotlights')?.checked,filters:!!$('#presentationConfigFilters')?.checked,modes,start:modes[0]});
+  }
+  function updateConfigUrl(){const el=$('#presentationConfigUrl');if(!el)return;const cfg=configFromForm();el.textContent=directUrl(cfg.squad,cfg);el.title=el.textContent}
+  function moveConfigMode(mode,delta){const list=$('#presentationConfigModeList'),row=list?.querySelector(`[data-config-mode="${mode}"]`);if(!row||!list)return;const sib=delta<0?row.previousElementSibling:row.nextElementSibling;if(sib)list.insertBefore(delta<0?row:sib,delta<0?sib:row);updateConfigUrl()}
+  function renderAdminConfig(){
+    const panel=$('#presentationAdminPanel');if(!panel||route.direct)return;const cfg=state.config;
+    const list=$('#presentationConfigModeList');if(list&&!list.dataset.ready){list.innerHTML=cfg.modes.concat(ALL_MODES.filter(m=>!cfg.modes.includes(m))).map(mode=>`<div class="presentation-config-mode" data-config-mode="${mode}"><label><input type="checkbox" ${cfg.modes.includes(mode)?'checked':''}><span>${MODE_LABELS[mode]}</span></label><div><button type="button" data-mode-up="${mode}" title="Mover para cima">↑</button><button type="button" data-mode-down="${mode}" title="Mover para baixo">↓</button></div></div>`).join('');list.dataset.ready='1'}
+    const set=(id,val)=>{const e=$(id);if(e)e.value=String(val)};set('#presentationConfigSquad',cfg.squad);set('#presentationConfigInterval',cfg.interval);set('#presentationConfigRefresh',cfg.refresh);set('#presentationConfigColumns',cfg.columns);
+    if($('#presentationConfigCarousel'))$('#presentationConfigCarousel').checked=cfg.carousel;if($('#presentationConfigKpis'))$('#presentationConfigKpis').checked=cfg.kpis;if($('#presentationConfigSpotlights'))$('#presentationConfigSpotlights').checked=cfg.spotlights;if($('#presentationConfigFilters'))$('#presentationConfigFilters').checked=cfg.filters;updateConfigUrl();
+  }
+  function bindAdminConfig(){
+    $('#presentationAdminPanel')?.addEventListener('change',e=>{if(e.target.matches('input,select'))updateConfigUrl()});
+    $('#presentationConfigModeList')?.addEventListener('click',e=>{const up=e.target.closest('[data-mode-up]'),down=e.target.closest('[data-mode-down]');if(up)moveConfigMode(up.dataset.modeUp,-1);if(down)moveConfigMode(down.dataset.modeDown,1)});
+    $('#presentationApplyConfigBtn')?.addEventListener('click',()=>{const cfg=applyRuntimeConfig(configFromForm(),true);window.dispatchEvent(new CustomEvent('soften:presentation-config-applied',{detail:cfg}));renderAll()});
+    $('#presentationResetConfigBtn')?.addEventListener('click',()=>{state.config=saveConfig(DEFAULT_CONFIG);const list=$('#presentationConfigModeList');if(list){list.dataset.ready='';list.innerHTML=''}renderAll()});
+    $('#presentationConfigCopyBtn')?.addEventListener('click',async()=>{const url=directUrl(configFromForm().squad,configFromForm());try{await navigator.clipboard.writeText(url)}catch(e){window.prompt('Copie a URL:',url)}});
+    $('#presentationConfigOpenBtn')?.addEventListener('click',()=>{const cfg=configFromForm();window.open(directUrl(cfg.squad,cfg),'_blank','noopener')});
+  }
+
   function setMode(mode,manual=true){
-    if(!MODES.includes(mode))return;state.activeMode=mode;state.cycleStartedAt=Date.now();
+    if(!activeModes().includes(mode))return;state.activeMode=mode;state.cycleStartedAt=Date.now();
     if(manual){state.autoSwitch=false;state.manualPauseUntil=Date.now()+60000}else{state.autoSwitch=true;state.manualPauseUntil=0}
     renderAll();
   }
-  function toggleCarousel(){state.carouselEnabled=!state.carouselEnabled;state.cycleStartedAt=Date.now();if(state.carouselEnabled){state.autoSwitch=true;state.manualPauseUntil=0}renderTabs();}
+  function toggleCarousel(){state.carouselEnabled=!state.carouselEnabled;state.config.carousel=state.carouselEnabled;if(!route.direct)saveConfig(state.config);state.cycleStartedAt=Date.now();if(state.carouselEnabled){state.autoSwitch=true;state.manualPauseUntil=0}renderTabs();}
   function bind(){
-    if(state.bound)return;state.bound=true;
+    if(state.bound)return;state.bound=true;bindAdminConfig();
     $$('[data-presentation-mode]').forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.presentationMode,true)));
     $('#presentationCarouselBtn')?.addEventListener('click',toggleCarousel);
     $('#presentationRefreshBtn')?.addEventListener('click',()=>triggerRefresh('manual'));
@@ -281,8 +347,8 @@
       if(e.target?.matches?.('input,select,textarea'))return;
       if(e.key==='f'||e.key==='F'){e.preventDefault();(document.fullscreenElement?exitFullscreen():requestFullscreen()).catch(()=>{})}
       else if(e.key===' '){e.preventDefault();toggleCarousel()}
-      else if(e.key==='ArrowRight'){e.preventDefault();const i=MODES.indexOf(state.activeMode);setMode(MODES[(i+1)%MODES.length],true)}
-      else if(e.key==='ArrowLeft'){e.preventDefault();const i=MODES.indexOf(state.activeMode);setMode(MODES[(i-1+MODES.length)%MODES.length],true)}
+      else if(e.key==='ArrowRight'){e.preventDefault();const modes=activeModes(),i=modes.indexOf(state.activeMode);setMode(modes[(i+1)%modes.length],true)}
+      else if(e.key==='ArrowLeft'){e.preventDefault();const modes=activeModes(),i=modes.indexOf(state.activeMode);setMode(modes[(i-1+modes.length)%modes.length],true)}
       else if(e.key==='r'||e.key==='R'){e.preventDefault();triggerRefresh('keyboard')}
     });
     state.cycleTimer=setInterval(()=>{
@@ -292,16 +358,17 @@
       if(!state.autoSwitch){state.autoSwitch=true;state.cycleStartedAt=now;return}
       if(now-state.cycleStartedAt>=state.carouselDuration)advanceCarousel();
     },500);
-    state.refreshTimer=setInterval(()=>triggerRefresh('interval'),state.refreshEveryMs);
+    restartRefreshTimer();
     if(navigator.onLine===false)connectionState('offline','Sem conexão','Exibindo os últimos dados carregados. A sincronização será retomada automaticamente.');else connectionState('online');
     updateFullscreenButton();requestWakeLock();
   }
   function render(payload){
+    applyRuntimeConfig(state.config,false);
     state.payload=payload||{};state.rankings=calculate(payload?.rows||[]);if(typeof payload?.refresh==='function')state.refreshHandler=payload.refresh;
     if(payload?.refreshedAt)state.lastSuccessfulRefresh=new Date(payload.refreshedAt).getTime()||Date.now();
     else if(!state.lastSuccessfulRefresh)state.lastSuccessfulRefresh=Date.now();
     bind();renderAll();
   }
 
-  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,__test:{calculate,normalizeRows}};
+  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,getConfig:()=>normalizeConfig(state.config),applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);renderAll()},__test:{calculate,normalizeRows,normalizeConfig}};
 })();

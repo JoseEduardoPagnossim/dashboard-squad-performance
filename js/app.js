@@ -197,6 +197,7 @@
     if($('#presentationOpenUrlBtn'))$('#presentationOpenUrlBtn').addEventListener('click',openPresentationUrl);
     if($('#presentationFullscreenBtn'))$('#presentationFullscreenBtn').addEventListener('click',togglePresentationFullscreen);
     if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').addEventListener('click',exitDirectPresentation);
+    window.addEventListener('soften:presentation-config-applied',async e=>{if(!isAdmin())return;const cfg=e.detail||{},requested=String(cfg.squad||state.squadCode);if(isSuperAdmin()&&requested&&requested!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(requested))){await selectSquad(requested);}else renderPresentation();});
     $('#createUserForm').addEventListener('submit',handleCreateUser);
     $('#newUserRole').addEventListener('change',syncCreateUserFields);
     $('#editUserForm').addEventListener('submit',handleEditUser);
@@ -712,10 +713,10 @@
     }
   }
   async function copyPresentationUrl(){
-    const url=window.SoftenPresentation?.directUrl(state.squadCode)||window.location.href;
+    const cfg=window.SoftenPresentation?.getConfig?.(),target=cfg?.squad||state.squadCode;const url=window.SoftenPresentation?.directUrl(target,cfg)||window.location.href;
     try{await navigator.clipboard.writeText(url);toast('URL da apresentação copiada.')}catch(e){window.prompt('Copie a URL da apresentação:',url)}
   }
-  function openPresentationUrl(){const url=window.SoftenPresentation?.directUrl(state.squadCode)||window.location.href;window.open(url,'_blank','noopener');}
+  function openPresentationUrl(){const cfg=window.SoftenPresentation?.getConfig?.(),target=cfg?.squad||state.squadCode,url=window.SoftenPresentation?.directUrl(target,cfg)||window.location.href;window.open(url,'_blank','noopener');}
   async function togglePresentationFullscreen(){try{if(document.fullscreenElement)await window.SoftenPresentation?.exitFullscreen();else await window.SoftenPresentation?.requestFullscreen();}catch(e){toast('O navegador bloqueou o modo tela cheia.')}}
   function exitDirectPresentation(){window.location.href=window.SoftenPresentation?.normalUrl()||window.location.pathname;}
 
