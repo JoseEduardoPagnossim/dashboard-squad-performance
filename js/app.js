@@ -113,9 +113,6 @@
   function systemColorMode(){return window.matchMedia?.('(prefers-color-scheme: light)').matches?'light':'dark'}
   function loadColorModePreference(){try{const saved=localStorage.getItem(COLOR_MODE_KEY);if(saved==='light'||saved==='dark')return saved}catch(e){}return systemColorMode()}
   function hasStoredColorMode(){try{return ['light','dark'].includes(localStorage.getItem(COLOR_MODE_KEY))}catch(e){return false}}
-<<<<<<< HEAD
-  function loadThemeForSquad(code){const t=allThemes()[code];return normalizeThemePayload(t||DEFAULT_THEME)}
-=======
   function isLegacyVermithorTheme(theme){const t=normalizeThemePayload(theme||DEFAULT_THEME);return t.preset==='vermithor'||(!t.preset&&(!t.campaignTitle||t.campaignTitle==='Casa do Dragão'||t.campaignTitle==='Dragão Vermithor'))}
   function resolveLegacyTheme(theme){
     const t=normalizeThemePayload(theme||DEFAULT_THEME);
@@ -124,7 +121,6 @@
     return shared&&!isLegacyVermithorTheme(shared)&&sanitizeThemeBackground(shared.background)?normalizeThemePayload(shared):t;
   }
   function loadThemeForSquad(code){const t=allThemes()[code];return resolveLegacyTheme(t||DEFAULT_THEME)}
->>>>>>> 0f8958d (Ajustes visuais.)
   function loadLastTheme(){
     try{
       const direct=JSON.parse(localStorage.getItem(LAST_THEME_KEY)||'null');
@@ -136,11 +132,7 @@
       return first?normalizeThemePayload(first):clone(DEFAULT_THEME);
     }catch(e){return clone(DEFAULT_THEME)}
   }
-<<<<<<< HEAD
-  function rememberLastTheme(theme){try{localStorage.setItem(LAST_THEME_KEY,JSON.stringify(normalizeThemePayload(theme||DEFAULT_THEME)))}catch(err){console.warn('Não foi possível guardar o último tema para as telas públicas.',err)}}
-=======
   function rememberLastTheme(theme){try{const normalized=normalizeThemePayload(theme||DEFAULT_THEME);if(isLegacyVermithorTheme(normalized))return;localStorage.setItem(LAST_THEME_KEY,JSON.stringify(normalized))}catch(err){console.warn('Não foi possível guardar o último tema para as telas públicas.',err)}}
->>>>>>> 0f8958d (Ajustes visuais.)
   function rememberLastSquad(code){if(!code||code==='all')return;try{localStorage.setItem(LAST_SQUAD_KEY,String(code))}catch(e){}}
   function saveTheme(){
     if(!state.squadCode||state.squadCode==='all')return;
@@ -590,11 +582,7 @@
       applyTheme(state.theme||loadLastTheme());
       if(state.currentView==='individual')showView('team');
     }
-<<<<<<< HEAD
-    else{rememberLastSquad(code);chooseLatestMonth();chooseDefaultTech();state.theme=state.squads[code]?.theme||loadThemeForSquad(code);applyTheme(state.theme);}
-=======
     else{rememberLastSquad(code);chooseLatestMonth();chooseDefaultTech();state.theme=resolveLegacyTheme(state.squads[code]?.theme||loadThemeForSquad(code));applyTheme(state.theme);}
->>>>>>> 0f8958d (Ajustes visuais.)
     resetAnalysisRange(true);refreshSelectors();render();applyPermissions();
   }
   function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
@@ -2761,11 +2749,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const tagline=theme.campaignTagline||fallbackTagline||'Acompanhe, evolua e conquiste.';
     const art=safeBg||(theme.preset==='vermithor'?'assets/casa-do-dragao-sidebar.png':'');
     $$('[data-theme-art]').forEach(img=>{if(art){img.src=art;img.classList.remove('hidden')}else{img.removeAttribute('src');img.classList.add('hidden')}img.alt=`Arte da campanha ${title}`});
-<<<<<<< HEAD
-=======
     const cssArt=art?`url(\"${art}\")`:'none';
     $$('.hero,.team-hero,.help-hero,.profile-hero,.theme-preview,.login-screen,.boot-card,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
->>>>>>> 0f8958d (Ajustes visuais.)
     if($('#campaignVisual'))$('#campaignVisual').setAttribute('aria-label',`Campanha ${title}`);
     if($('#campaignTitleDisplay'))$('#campaignTitleDisplay').textContent=title;
     if($('#campaignTaglineDisplay'))$('#campaignTaglineDisplay').textContent=tagline;

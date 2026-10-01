@@ -4,11 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-<<<<<<< HEAD
-**Versão atual:** `2.30.1`<br>
-=======
 **Versão atual:** `2.30.2`<br>
->>>>>>> 0f8958d (Ajustes visuais.)
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
 
@@ -128,16 +124,6 @@ São auditadas, entre outras, criação/alteração/inativação/exclusão de us
 
 Ações destrutivas selecionadas usam confirmação reforçada: **EXCLUIR** para exclusões e **REABRIR** para reabertura de competência.
 
-<<<<<<< HEAD
-Para atualizar uma base existente que já está na V2.29.8 para a V2.30.1:
-
-1. faça backup do banco;
-2. execute `supabase/migrations/MIGRACAO_V2.30.1.sql` no SQL Editor;
-3. valide login, leitura dos Squads, gravação financeira e criação/edição de usuário;
-4. publique o frontend normalmente.
-
-A V2.30.1 torna explícitos os `GRANT`s usados pela Data API do Supabase e remove a dependência dos privilégios automáticos para as tabelas afetadas. Não é necessário republicar as Edge Functions apenas por esta migração.
-=======
 Para atualizar uma base existente que já está na V2.29.8 para a V2.30.2:
 
 1. faça backup do banco;
@@ -146,7 +132,6 @@ Para atualizar uma base existente que já está na V2.29.8 para a V2.30.2:
 4. publique o frontend normalmente.
 
 A V2.30.2 torna explícitos os `GRANT`s usados pela Data API do Supabase e remove a dependência dos privilégios automáticos para as tabelas afetadas. Não é necessário republicar as Edge Functions apenas por esta migração.
->>>>>>> 0f8958d (Ajustes visuais.)
 
 ## Publicação no GitHub Pages
 
