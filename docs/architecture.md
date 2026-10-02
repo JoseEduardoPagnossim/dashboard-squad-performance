@@ -92,3 +92,11 @@ A Apresentação expõe `syncAdminConfig()` para que a configuração da TV seja
 A tabela `finance_calculation_memory` funciona como trilha imutável da bonificação. Registros podem ser inseridos e lidos por administradores autorizados do Squad, mas não atualizados ou excluídos por usuários autenticados. O fechamento do mês preserva `financeRuleVersion` e `financeRuleFingerprint` também em `closed_snapshot`.
 
 O simulador trabalha exclusivamente sobre uma cópia em memória da competência e executa o mesmo pipeline de cálculo usado pelo valor oficial. Nenhuma simulação chama rotinas de persistência. A memória centralizada depende da migration V2.39.0; na ausência dela, a aplicação preserva um fallback local sem impedir o restante do fluxo financeiro.
+
+## V2.40.0 — TV / Comunicação
+
+`js/tv-engine.js` concentra normalização de playlists/dispositivos, classificação de presença, resumo do monitor, geração de chaves e URLs dinâmicas e payloads de heartbeat. O `presentation.js` continua responsável pelo runtime da apresentação e emite telemetria a cada 30 segundos quando a rota contém `tv=<device_key>`.
+
+TVs cadastradas usam uma URL estável e carregam sua playlist por `get_presentation_device_config`. Durante cada sincronização de dados, a rota verifica se a playlist foi alterada e reaplica a configuração sem exigir troca da URL física. As URLs legadas com configuração inteira na query string permanecem suportadas.
+
+O `app.js` gerencia playlists, dispositivos, monitor e persistência. Na ausência da migration V2.40.0, existe fallback local; em produção, a fonte compartilhada é o Supabase com RLS e RPCs restritas.

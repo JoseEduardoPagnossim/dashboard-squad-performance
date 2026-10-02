@@ -26,6 +26,7 @@ const chartEngineScriptPosition = index.indexOf('js/chart-engine.js');
 const importEngineScriptPosition = index.indexOf('js/import-engine.js');
 const predictiveEngineScriptPosition = index.indexOf('js/predictive-engine.js');
 const settingsEngineScriptPosition = index.indexOf('js/settings-engine.js');
+const tvEngineScriptPosition = index.indexOf('js/tv-engine.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
 if (financeAdvancedScriptPosition < 0) errors.push('index.html não carrega js/finance-advanced.js.');
@@ -34,6 +35,7 @@ if (chartEngineScriptPosition < 0) errors.push('index.html não carrega js/chart
 if (importEngineScriptPosition < 0) errors.push('index.html não carrega js/import-engine.js.');
 if (predictiveEngineScriptPosition < 0) errors.push('index.html não carrega js/predictive-engine.js.');
 if (settingsEngineScriptPosition < 0) errors.push('index.html não carrega js/settings-engine.js.');
+if (tvEngineScriptPosition < 0) errors.push('index.html não carrega js/tv-engine.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
 if (financeAdvancedScriptPosition >= 0 && financeScriptPosition >= 0 && financeAdvancedScriptPosition < financeScriptPosition) errors.push('js/finance-advanced.js deve carregar depois de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeAdvancedScriptPosition > appScriptPosition) errors.push('js/finance-advanced.js deve ser carregado antes de js/app.js.');
@@ -42,6 +44,7 @@ if (appScriptPosition >= 0 && chartEngineScriptPosition > appScriptPosition) err
 if (appScriptPosition >= 0 && importEngineScriptPosition > appScriptPosition) errors.push('js/import-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && predictiveEngineScriptPosition > appScriptPosition) errors.push('js/predictive-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && settingsEngineScriptPosition > appScriptPosition) errors.push('js/settings-engine.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && tvEngineScriptPosition > appScriptPosition) errors.push('js/tv-engine.js deve ser carregado antes de js/app.js.');
 for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
@@ -56,11 +59,13 @@ for (const required of [
   'tests/import-engine.test.js',
   'tests/predictive-engine.test.js',
   'tests/settings-engine.test.js',
+  'tests/tv-engine.test.js',
   'tests/project-structure.test.js',
   'js/chart-engine.js',
   'js/import-engine.js',
   'js/predictive-engine.js',
   'js/settings-engine.js',
+  'js/tv-engine.js',
   'js/finance-rules.js',
   'js/finance-advanced.js',
   'js/audit-utils.js',
@@ -68,7 +73,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
   'supabase/migrations/MIGRACAO_V2.38.0.sql',
-  'supabase/migrations/MIGRACAO_V2.39.0.sql'
+  'supabase/migrations/MIGRACAO_V2.39.0.sql',
+  'supabase/migrations/MIGRACAO_V2.40.0.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -101,6 +107,7 @@ if (!appText.includes('window.SoftenImportEngine')) errors.push('js/app.js não 
 if (!appText.includes('window.SoftenPredictiveEngine')) errors.push('js/app.js não depende explicitamente do motor preditivo.');
 if (!appText.includes('window.SoftenSettingsEngine')) errors.push('js/app.js não depende explicitamente do motor de configurações.');
 if (!appText.includes('window.SoftenFinanceAdvanced')) errors.push('js/app.js não depende explicitamente do motor financeiro avançado.');
+if (!appText.includes('window.SoftenTvEngine')) errors.push('js/app.js não depende explicitamente do motor de TV/Comunicação.');
 for (const duplicatedChartPrimitive of ['smoothSvgPath','smoothAreaPath','splitChartPointSegments','chartDataLabelSvg','chartValueText']) {
   if (appText.includes(`function ${duplicatedChartPrimitive}(`)) errors.push(`Primitiva de gráfico duplicada em js/app.js: ${duplicatedChartPrimitive}.`);
 }
@@ -163,6 +170,18 @@ for (const sqlMarker of [
   'revoke update, delete on public.finance_calculation_memory'
 ]) {
   if (!financeMemoryMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.39.0 incompleta: ${sqlMarker}`);
+}
+
+
+const tvMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.40.0.sql'), 'utf8').toLowerCase().replace(/\s+/g, ' ');
+for (const sqlMarker of [
+  'create table if not exists public.presentation_playlists',
+  'create table if not exists public.presentation_devices',
+  'create or replace function public.get_presentation_device_config',
+  'create or replace function public.touch_presentation_device',
+  'alter table public.presentation_devices enable row level security'
+]) {
+  if (!tvMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.40.0 incompleta: ${sqlMarker}`);
 }
 
 // Toda nova migration que cria tabela em public deve declarar um GRANT explícito.

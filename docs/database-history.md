@@ -412,3 +412,11 @@ Execute `supabase/migrations/MIGRACAO_V2.39.0.sql` antes de usar a memória fina
 A tabela `finance_calculation_memory` preserva snapshots por competência com versão e assinatura da regra, modelo oficial, parâmetros financeiros, resumo da folha e valores calculados por técnico. Os registros são somente leitura após a criação: `authenticated` recebe `SELECT` e `INSERT`, sem `UPDATE`/`DELETE`.
 
 As policies exigem escopo administrativo do Squad e respeitam as restrições granulares `finance.view`, `finance.manage` e, no fechamento, `month.manage`.
+
+## V2.40.0 — playlists, TVs e heartbeat
+
+Execute `supabase/migrations/MIGRACAO_V2.40.0.sql` antes de utilizar monitoramento compartilhado de TVs.
+
+Foram adicionadas as tabelas `presentation_playlists` e `presentation_devices`, com RLS por organização/Squad. TVs cadastradas recebem uma chave estável, consultam a playlist atual pela RPC `get_presentation_device_config` e registram presença/telemetria pela RPC `touch_presentation_device`.
+
+O heartbeat não concede permissão para alterar playlist, Squad ou regras de apresentação. A classificação Online/Atenção/Offline é calculada pelo frontend a partir de `last_seen_at`.

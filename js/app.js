@@ -20,6 +20,9 @@
   if(!predictiveEngine) throw new Error('SoftenPredictiveEngine não carregado. Verifique js/predictive-engine.js.');
   const settingsEngine = window.SoftenSettingsEngine;
   if(!settingsEngine) throw new Error('SoftenSettingsEngine não carregado. Verifique js/settings-engine.js.');
+  const tvEngine = window.SoftenTvEngine;
+  if(!tvEngine) throw new Error('SoftenTvEngine não carregado. Verifique js/tv-engine.js.');
+  const {normalizePlaylist:normalizeTvPlaylist,normalizeDevice:normalizeTvDevice,statusForDevice:tvDeviceStatus,monitorSummary:tvMonitorSummary,humanAge:tvHumanAge,generateDeviceKey:generateTvDeviceKey,deviceUrl:buildTvDeviceUrl,heartbeatPayload:buildTvHeartbeatPayload}=tvEngine;
   const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups}=settingsEngine;
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
@@ -85,6 +88,16 @@
     orgDailyOverview:[],
     orgTechnicianDailyOverview:[],
     presentationLastSyncAt:null,
+    presentationPlaylists:[],
+    presentationDevices:[],
+    presentationOpsLoaded:false,
+    presentationOpsLoading:null,
+    presentationOpsRemote:true,
+    presentationPlaylistSelectedId:null,
+    presentationRouteDevice:null,
+    presentationRoutePlaylist:null,
+    presentationRouteConfigSignature:'',
+    presentationMonitorTimer:null,
     allTechniciansMetric:'points',
     allTechniciansRangeIds:[],
     dailyTechniciansMetric:'points',
@@ -225,6 +238,7 @@
       const previousSection=state.adminSection;state.adminSection='operation';
       try{renderAdmin();}finally{state.adminSection=previousSection;}
       window.SoftenPresentation?.syncAdminConfig?.();
+      renderPresentationOpsAdmin();
     }
     const groups=settingsPermissionGroups(state.user?.role||'technician');if($('#settingsPermissionOverview'))$('#settingsPermissionOverview').innerHTML=Object.entries(groups).map(([section,items])=>`<div><strong>${escapeHtml(section)}</strong><span>${items.filter(p=>perms[p.key]).length}/${items.length} ativas</span></div>`).join('');
     applySettingsModuleFilter();
@@ -454,6 +468,15 @@
     if($('#presentationFullscreenBtn'))$('#presentationFullscreenBtn').addEventListener('click',togglePresentationFullscreen);
     if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').addEventListener('click',exitDirectPresentation);
     window.addEventListener('soften:presentation-config-applied',async e=>{if(!isAdmin())return;const cfg=e.detail||{},requested=String(cfg.squad||state.squadCode);if(isSuperAdmin()&&requested&&requested!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(requested))){await selectSquad(requested);}else renderPresentation();});
+    window.addEventListener('soften:presentation-heartbeat',e=>persistPresentationHeartbeat(e.detail||{}));
+    $('#presentationPlaylistSelect')?.addEventListener('change',e=>selectPresentationPlaylist(e.target.value));
+    $('#presentationPlaylistNewBtn')?.addEventListener('click',newPresentationPlaylistDraft);
+    $('#presentationPlaylistLoadBtn')?.addEventListener('click',loadSelectedPresentationPlaylist);
+    $('#presentationPlaylistSaveBtn')?.addEventListener('click',savePresentationPlaylist);
+    $('#presentationPlaylistDeleteBtn')?.addEventListener('click',deletePresentationPlaylist);
+    $('#presentationMonitorRefreshBtn')?.addEventListener('click',()=>ensurePresentationOpsLoaded(true));
+    $('#presentationCreateDeviceBtn')?.addEventListener('click',createPresentationDevice);
+    $('#presentationDeviceRows')?.addEventListener('click',handlePresentationDeviceAction);
     $('#createUserForm').addEventListener('submit',handleCreateUser);
     $('#newUserRole').addEventListener('change',syncCreateUserFields);
     $('#editUserForm').addEventListener('submit',handleEditUser);
@@ -627,7 +650,8 @@
 
   async function enterApp(user){
     state.user=user;loadUserUiPreferences(user);
-    state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;
+    state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
+    if(PRESENTATION_ROUTE.enabled)await preparePresentationRouteContext();
     const requestedPresentationSquad=PRESENTATION_ROUTE.enabled?String(PRESENTATION_ROUTE.squad||'').toUpperCase():'';
     if(PRESENTATION_ROUTE.enabled){
       if(user.role==='super_admin')state.squadCode=requestedPresentationSquad==='ALL'?'all':(state.squads[requestedPresentationSquad]?requestedPresentationSquad:'all');
@@ -650,6 +674,7 @@
     if(PRESENTATION_ROUTE.enabled){window.SoftenPresentation?.setDirectMode(true);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.remove('hidden');showView('presentation');}
     else window.SoftenPresentation?.setDirectMode(false);
     initializeThemeAudio();
+    clearInterval(state.presentationMonitorTimer);state.presentationMonitorTimer=setInterval(()=>{if(state.currentView==='settings'&&state.settingsModule==='presentation'&&isAdmin())ensurePresentationOpsLoaded(true);},30000);
   }
   function applyPermissions(){
     const admin=isAdmin(), superAdmin=isSuperAdmin();
@@ -667,7 +692,7 @@
       'costs.view':['#saveSupportCostsBtn','#copyPreviousSupportCostsBtn'],
       'feedback.manage':['#generateSquadFeedbacksBtn','#regenerateSquadFeedbacksBtn','#feedbackSaveDraftBtn','#feedbackFinalizeBtn','#feedbackRegenerateBtn'],
       'appearance.manage':['#adminThemeBtn','#importThemeBtn','#exportThemeBtn','#saveChartPrefsBtn','#resetChartPrefsBtn','#removeBg'],
-      'presentation.manage':['#presentationApplyConfigBtn','#presentationResetConfigBtn']
+      'presentation.manage':['#presentationApplyConfigBtn','#presentationResetConfigBtn','#presentationPlaylistSaveBtn','#presentationPlaylistDeleteBtn','#presentationCreateDeviceBtn']
     };
     for(const [permission,selectors] of Object.entries(permissionButtons))for(const selector of selectors){const el=$(selector);if(el)el.disabled=!hasPermission(permission);}
     const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
@@ -962,6 +987,79 @@
     renderAdmin();
   }
 
+
+  const TV_PLAYLIST_LOCAL_KEY='softenPresentationPlaylistsV240';
+  const TV_DEVICE_LOCAL_KEY='softenPresentationDevicesV240';
+  function tvLocalKey(base){return `${base}:${state.user?.organizationId||'demo'}`}
+  function tvSquadCodeFromId(id){if(!id)return 'all';const row=Object.values(state.squads||{}).find(s=>String(s?.dbId||'')===String(id));return row?.code||'all'}
+  function loadLocalTvRows(base,normalizer){try{const rows=JSON.parse(localStorage.getItem(tvLocalKey(base))||'[]');return(Array.isArray(rows)?rows:[]).map(normalizer)}catch(e){return[]}}
+  function saveLocalTvRows(base,rows){try{localStorage.setItem(tvLocalKey(base),JSON.stringify(rows||[]))}catch(e){console.warn('Não foi possível salvar configuração local da TV.',e)}}
+  function presentationPlaylistById(id){return(state.presentationPlaylists||[]).find(p=>String(p.id)===String(id))||null}
+  function presentationDeviceById(id){return(state.presentationDevices||[]).find(d=>String(d.id)===String(id))||null}
+  function playlistSquadId(config){const code=String(config?.squad||'all').toUpperCase();return code==='ALL'||code==='all'?null:(state.squads?.[code]?.dbId||null)}
+  function allowedPresentationConfig(config){const cfg=clone(config||{});if(!isSuperAdmin())cfg.squad=state.user?.squadCode||state.squadCode||'D';return cfg}
+  function tvOpsUnavailableMessage(err){const msg=String(err?.message||err||'');return /presentation_(playlists|devices)|get_presentation_device_config|touch_presentation_device|does not exist|schema cache/i.test(msg)}
+  async function ensurePresentationOpsLoaded(force=false){
+    if(!isAdmin()||!hasPermission('presentation.manage'))return[];
+    if(state.presentationOpsLoaded&&!force){renderPresentationOpsAdminRows();return state.presentationPlaylists}
+    if(state.presentationOpsLoading)return state.presentationOpsLoading;
+    state.presentationOpsLoading=(async()=>{
+      try{
+        if(state.supabase){
+          const [{data:pls,error:pe},{data:devs,error:de}]=await Promise.all([
+            state.supabase.from('presentation_playlists').select('id,organization_id,squad_id,name,description,config,active,created_at,updated_at').order('name'),
+            state.supabase.from('presentation_devices').select('id,organization_id,squad_id,playlist_id,device_key,name,location,active,last_seen_at,last_refresh_at,last_mode,connection_state,viewport,app_version,user_agent,created_at,updated_at').order('name')
+          ]);if(pe)throw pe;if(de)throw de;
+          state.presentationPlaylists=(pls||[]).map(row=>normalizeTvPlaylist({...row,squad:tvSquadCodeFromId(row.squad_id)}));state.presentationDevices=(devs||[]).map(row=>normalizeTvDevice({...row,squad:tvSquadCodeFromId(row.squad_id)}));state.presentationOpsRemote=true;
+        }else{
+          state.presentationPlaylists=loadLocalTvRows(TV_PLAYLIST_LOCAL_KEY,normalizeTvPlaylist);state.presentationDevices=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice);state.presentationOpsRemote=false;
+        }
+        state.presentationOpsLoaded=true;renderPresentationOpsAdminRows();return state.presentationPlaylists;
+      }catch(err){
+        console.warn('Central de TVs usando fallback local. Execute a migração V2.40.0 para sincronização compartilhada.',err);
+        state.presentationPlaylists=loadLocalTvRows(TV_PLAYLIST_LOCAL_KEY,normalizeTvPlaylist);state.presentationDevices=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice);state.presentationOpsRemote=false;state.presentationOpsLoaded=true;renderPresentationOpsAdminRows();
+        if(!tvOpsUnavailableMessage(err))toast('Monitoramento remoto das TVs indisponível; usando dados locais deste navegador.');return state.presentationPlaylists;
+      }finally{state.presentationOpsLoading=null}
+    })();return state.presentationOpsLoading;
+  }
+  function renderPresentationOpsAdmin(){if(!isAdmin()||!hasPermission('presentation.manage')||!$('#presentationPlaylistSelect'))return;renderPresentationOpsAdminRows();ensurePresentationOpsLoaded(false)}
+  function renderPresentationOpsAdminRows(){
+    const playlistSelect=$('#presentationPlaylistSelect'),devicePlaylist=$('#presentationDevicePlaylist'),rowsEl=$('#presentationDeviceRows');if(!playlistSelect||!devicePlaylist||!rowsEl)return;
+    const playlists=(state.presentationPlaylists||[]).filter(p=>p.active!==false),selected=playlists.some(p=>String(p.id)===String(state.presentationPlaylistSelectedId))?String(state.presentationPlaylistSelectedId):'';
+    playlistSelect.innerHTML='<option value="">Nova playlist</option>'+playlists.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} • ${escapeHtml(String(p.config?.squad||p.squad||'all').toUpperCase()==='ALL'?'Todos':`Squad ${p.config?.squad||p.squad}`)}</option>`).join('');playlistSelect.value=selected;
+    devicePlaylist.innerHTML='<option value="">Selecione uma playlist</option>'+playlists.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+    if($('#presentationPlaylistCount'))$('#presentationPlaylistCount').textContent=`${playlists.length} ${playlists.length===1?'playlist':'playlists'}`;
+    const summary=tvMonitorSummary(state.presentationDevices||[]);if($('#presentationMonitorTotal'))$('#presentationMonitorTotal').textContent=summary.total;if($('#presentationMonitorOnline'))$('#presentationMonitorOnline').textContent=summary.online;if($('#presentationMonitorAttention'))$('#presentationMonitorAttention').textContent=summary.attention;if($('#presentationMonitorOffline'))$('#presentationMonitorOffline').textContent=summary.offline+summary.never+summary.inactive;
+    if($('#presentationPlaylistStatus'))$('#presentationPlaylistStatus').textContent=state.presentationOpsRemote?'Sincronizado no Supabase • alterações ficam disponíveis para todas as TVs.':'Modo local • execute a MIGRACAO_V2.40.0.sql para sincronizar playlists, TVs e status entre navegadores.';
+    if(!state.presentationDevices?.length){rowsEl.innerHTML='<tr><td colspan="6" class="muted">Nenhuma TV cadastrada.</td></tr>';return;}
+    rowsEl.innerHTML=state.presentationDevices.map(d=>{const status=tvDeviceStatus(d),pl=presentationPlaylistById(d.playlistId),url=buildTvDeviceUrl(window.location.href,d.deviceKey),playlistOptions=playlists.map(p=>`<option value="${escapeHtml(p.id)}" ${String(p.id)===String(d.playlistId)?'selected':''}>${escapeHtml(p.name)}</option>`).join('');return `<tr data-tv-device="${escapeHtml(d.id)}"><td><div class="tv-device-name"><strong>${escapeHtml(d.name)}</strong><small>${escapeHtml(d.location||d.deviceKey)}</small></div></td><td><select class="tv-device-playlist-select" data-tv-playlist-select><option value="">Sem playlist</option>${playlistOptions}</select></td><td><span class="tv-status-pill ${status.key}">${escapeHtml(status.label)}</span></td><td><div class="tv-device-meta">${escapeHtml(tvHumanAge(d.lastSeenAt))}${d.lastRefreshAt?`<br>dados ${escapeHtml(tvHumanAge(d.lastRefreshAt))}`:''}</div></td><td><div class="tv-device-meta"><strong>${escapeHtml(d.lastMode||'—')}</strong>${d.viewport?.width?`<br>${escapeHtml(`${d.viewport.width}×${d.viewport.height}`)}`:''}</div></td><td><div class="tv-device-actions"><button type="button" data-tv-action="save" title="Salvar playlist">Salvar</button><button type="button" data-tv-action="copy" data-tv-url="${escapeHtml(url)}">Copiar URL</button><button type="button" data-tv-action="open" data-tv-url="${escapeHtml(url)}">Abrir</button><button type="button" data-tv-action="toggle">${d.active?'Pausar':'Ativar'}</button><button type="button" data-tv-action="delete">Excluir</button></div></td></tr>`}).join('');
+  }
+  function selectPresentationPlaylist(id){state.presentationPlaylistSelectedId=id||null;const p=presentationPlaylistById(id);if($('#presentationPlaylistName'))$('#presentationPlaylistName').value=p?.name||'';if($('#presentationPlaylistDescription'))$('#presentationPlaylistDescription').value=p?.description||'';if($('#presentationPlaylistStatus'))$('#presentationPlaylistStatus').textContent=p?'Playlist selecionada. Use “Carregar no editor” para revisar as telas antes de alterar.':'Nova playlist: ajuste a configuração da TV acima e salve.';}
+  function newPresentationPlaylistDraft(){state.presentationPlaylistSelectedId=null;$('#presentationPlaylistSelect').value='';$('#presentationPlaylistName').value='';$('#presentationPlaylistDescription').value='';$('#presentationPlaylistName').focus();if($('#presentationPlaylistStatus'))$('#presentationPlaylistStatus').textContent='Nova playlist: a configuração atual do editor será usada ao salvar.';}
+  function loadSelectedPresentationPlaylist(){const p=presentationPlaylistById(state.presentationPlaylistSelectedId);if(!p)return toast('Selecione uma playlist.');window.SoftenPresentation?.loadAdminDraft?.(p.config||{});if($('#presentationPlaylistStatus'))$('#presentationPlaylistStatus').textContent=`${p.name} carregada no editor. Revise e salve para aplicar alterações.`;}
+  async function savePresentationPlaylist(){
+    if(!requirePermission('presentation.manage'))return;const name=String($('#presentationPlaylistName')?.value||'').trim(),description=String($('#presentationPlaylistDescription')?.value||'').trim();if(!name)return toast('Informe um nome para a playlist.');let config=allowedPresentationConfig(window.SoftenPresentation?.getFormConfig?.()||window.SoftenPresentation?.getConfig?.()||{});const existing=presentationPlaylistById(state.presentationPlaylistSelectedId),now=new Date().toISOString(),localId=existing?.id||`playlist-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+    try{
+      if(state.supabase&&state.presentationOpsRemote){const payload={organization_id:state.user.organizationId,squad_id:playlistSquadId(config),name,description,config,active:true,updated_by:state.user.userId,updated_at:now};let data,error;if(existing?.id){({data,error}=await state.supabase.from('presentation_playlists').update(payload).eq('id',existing.id).select('id').single());}else{payload.created_by=state.user.userId;({data,error}=await state.supabase.from('presentation_playlists').insert(payload).select('id').single());}if(error)throw error;state.presentationPlaylistSelectedId=data.id;}else{const rows=loadLocalTvRows(TV_PLAYLIST_LOCAL_KEY,normalizeTvPlaylist),next=normalizeTvPlaylist({id:localId,name,description,config,squad:config.squad,active:true,createdAt:existing?.createdAt||now,updatedAt:now});const ix=rows.findIndex(r=>String(r.id)===String(localId));if(ix>=0)rows[ix]=next;else rows.push(next);saveLocalTvRows(TV_PLAYLIST_LOCAL_KEY,rows);state.presentationPlaylistSelectedId=localId;}
+      await logAuditEvent(existing?'presentation.playlist_update':'presentation.playlist_create',{entityType:'presentation_playlist',entityId:state.presentationPlaylistSelectedId,squadId:playlistSquadId(config),description:`Playlist ${name} ${existing?'atualizada':'criada'} para a Apresentação/TV.`,beforeData:existing||{},afterData:{name,description,config},metadata:{squad:config.squad}});state.presentationOpsLoaded=false;await ensurePresentationOpsLoaded(true);selectPresentationPlaylist(state.presentationPlaylistSelectedId);toast(existing?'Playlist atualizada.':'Playlist criada.');
+    }catch(err){console.error(err);toast('Não foi possível salvar a playlist. Confira a migração V2.40.0.');}
+  }
+  async function deletePresentationPlaylist(){const p=presentationPlaylistById(state.presentationPlaylistSelectedId);if(!p)return toast('Selecione uma playlist.');const linked=(state.presentationDevices||[]).filter(d=>String(d.playlistId)===String(p.id)).length;if(!await confirmDialog(`Excluir a playlist ${p.name}? ${linked?`${linked} TV(s) ficarão sem playlist atribuída.`:'Nenhuma TV está vinculada a ela.'}`,{title:'Excluir playlist',confirmText:'Excluir',tone:'danger'}))return;try{if(state.supabase&&state.presentationOpsRemote){const {error}=await state.supabase.from('presentation_playlists').delete().eq('id',p.id);if(error)throw error;}else{saveLocalTvRows(TV_PLAYLIST_LOCAL_KEY,loadLocalTvRows(TV_PLAYLIST_LOCAL_KEY,normalizeTvPlaylist).filter(x=>String(x.id)!==String(p.id)));const devices=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice).map(d=>String(d.playlistId)===String(p.id)?{...d,playlistId:null}:d);saveLocalTvRows(TV_DEVICE_LOCAL_KEY,devices);}await logAuditEvent('presentation.playlist_delete',{entityType:'presentation_playlist',entityId:p.id,squadId:playlistSquadId(p.config),description:`Playlist ${p.name} excluída.`,beforeData:p,afterData:{deleted:true},metadata:{linkedDevices:linked}});state.presentationPlaylistSelectedId=null;state.presentationOpsLoaded=false;newPresentationPlaylistDraft();await ensurePresentationOpsLoaded(true);toast('Playlist excluída.');}catch(err){console.error(err);toast('Não foi possível excluir a playlist.');}}
+  async function createPresentationDevice(){
+    if(!requirePermission('presentation.manage'))return;const name=String($('#presentationDeviceName')?.value||'').trim(),location=String($('#presentationDeviceLocation')?.value||'').trim(),playlistId=$('#presentationDevicePlaylist')?.value||'',playlist=presentationPlaylistById(playlistId);if(!name)return toast('Informe o nome da TV.');if(!playlist)return toast('Selecione uma playlist para a TV.');const deviceKey=generateTvDeviceKey('tv'),config=allowedPresentationConfig(playlist.config||{}),now=new Date().toISOString(),localId=`device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+    try{let id=localId;if(state.supabase&&state.presentationOpsRemote){const payload={organization_id:state.user.organizationId,squad_id:playlistSquadId(config),playlist_id:playlist.id,device_key:deviceKey,name,location,active:true,connection_state:'unknown',created_by:state.user.userId,updated_by:state.user.userId,created_at:now,updated_at:now};const {data,error}=await state.supabase.from('presentation_devices').insert(payload).select('id').single();if(error)throw error;id=data.id;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice);rows.push(normalizeTvDevice({id,deviceKey,name,location,playlistId:playlist.id,squad:config.squad,active:true,createdAt:now,updatedAt:now}));saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}await logAuditEvent('presentation.device_create',{entityType:'presentation_device',entityId:id,squadId:playlistSquadId(config),description:`TV ${name} cadastrada com a playlist ${playlist.name}.`,afterData:{name,location,playlistId:playlist.id,deviceKey},metadata:{playlist:playlist.name,squad:config.squad}});$('#presentationDeviceName').value='';$('#presentationDeviceLocation').value='';state.presentationOpsLoaded=false;await ensurePresentationOpsLoaded(true);const url=buildTvDeviceUrl(window.location.href,deviceKey);try{await navigator.clipboard.writeText(url);toast('TV cadastrada e URL copiada.');}catch(e){toast('TV cadastrada. Use “Copiar URL” na tabela.');}}
+    catch(err){console.error(err);toast('Não foi possível cadastrar a TV. Confira a migração V2.40.0.');}
+  }
+  async function handlePresentationDeviceAction(e){const btn=e.target.closest('[data-tv-action]');if(!btn)return;const row=btn.closest('[data-tv-device]'),device=presentationDeviceById(row?.dataset.tvDevice);if(!device)return;const action=btn.dataset.tvAction;if(action==='copy'){const url=btn.dataset.tvUrl||buildTvDeviceUrl(window.location.href,device.deviceKey);try{await navigator.clipboard.writeText(url);toast('URL da TV copiada.');}catch(err){window.prompt('Copie a URL da TV:',url)}return;}if(action==='open'){window.open(btn.dataset.tvUrl||buildTvDeviceUrl(window.location.href,device.deviceKey),'_blank','noopener');return;}if(action==='save'){const playlistId=row.querySelector('[data-tv-playlist-select]')?.value||null;await updatePresentationDevice(device,{playlistId});return;}if(action==='toggle'){await updatePresentationDevice(device,{active:!device.active});return;}if(action==='delete'){if(!await confirmDialog(`Excluir a TV ${device.name}? A URL cadastrada deixará de ser monitorada.`,{title:'Excluir TV',confirmText:'Excluir',tone:'danger'}))return;await deletePresentationDevice(device);}}
+  async function updatePresentationDevice(device,changes={}){const playlist=changes.playlistId?presentationPlaylistById(changes.playlistId):null,config=playlist?.config||{},next={...device,...changes,playlistId:changes.playlistId===undefined?device.playlistId:changes.playlistId,squad:playlist?config.squad:device.squad,updatedAt:new Date().toISOString()};try{if(state.supabase&&state.presentationOpsRemote){const payload={playlist_id:next.playlistId||null,squad_id:next.playlistId?playlistSquadId(config):playlistSquadId({squad:device.squad}),active:next.active,updated_by:state.user.userId,updated_at:next.updatedAt};const {error}=await state.supabase.from('presentation_devices').update(payload).eq('id',device.id);if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>String(d.id)===String(device.id));if(ix>=0)rows[ix]=normalizeTvDevice(next);saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}await logAuditEvent('presentation.device_update',{entityType:'presentation_device',entityId:device.id,squadId:playlistSquadId(playlist?.config||{squad:device.squad}),description:`TV ${device.name} atualizada.`,beforeData:device,afterData:next});state.presentationOpsLoaded=false;await ensurePresentationOpsLoaded(true);toast('TV atualizada.');}catch(err){console.error(err);toast('Não foi possível atualizar a TV.');}}
+  async function deletePresentationDevice(device){try{if(state.supabase&&state.presentationOpsRemote){const {error}=await state.supabase.from('presentation_devices').delete().eq('id',device.id);if(error)throw error;}else saveLocalTvRows(TV_DEVICE_LOCAL_KEY,loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice).filter(d=>String(d.id)!==String(device.id)));await logAuditEvent('presentation.device_delete',{entityType:'presentation_device',entityId:device.id,squadId:playlistSquadId({squad:device.squad}),description:`TV ${device.name} excluída do monitoramento.`,beforeData:device,afterData:{deleted:true}});state.presentationOpsLoaded=false;await ensurePresentationOpsLoaded(true);toast('TV excluída.');}catch(err){console.error(err);toast('Não foi possível excluir a TV.');}}
+  function routeBundleSignature(bundle){try{return JSON.stringify({d:bundle?.device?.id||bundle?.device?.device_key||'',p:bundle?.playlist?.id||'',u:bundle?.playlist?.updated_at||'',c:bundle?.playlist?.config||{}})}catch(e){return''}}
+  async function fetchPresentationRouteBundle(){const key=String(PRESENTATION_ROUTE.tv||'').trim();if(!key)return null;if(state.supabase){const {data,error}=await state.supabase.rpc('get_presentation_device_config',{p_device_key:key});if(error)throw error;return data||null;}const devices=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),device=devices.find(d=>d.deviceKey===key&&d.active);if(!device)return null;const playlist=loadLocalTvRows(TV_PLAYLIST_LOCAL_KEY,normalizeTvPlaylist).find(p=>String(p.id)===String(device.playlistId)&&p.active);return{device,playlist};}
+  function applyPresentationRouteBundle(bundle){if(!bundle)return null;const device=normalizeTvDevice(bundle.device||{}),playlist=bundle.playlist?normalizeTvPlaylist(bundle.playlist):null;state.presentationRouteDevice=device;state.presentationRoutePlaylist=playlist;const config=playlist?.config?allowedPresentationConfig(playlist.config):allowedPresentationConfig({...window.SoftenPresentation?.getConfig?.(),squad:device.squad});window.SoftenPresentation?.applyConfig?.(config);PRESENTATION_ROUTE.squad=config.squad||device.squad||PRESENTATION_ROUTE.squad;PRESENTATION_ROUTE.playlist=playlist?.id||device.playlistId||'';state.presentationRouteConfigSignature=routeBundleSignature(bundle);return config;}
+  async function preparePresentationRouteContext(){if(!PRESENTATION_ROUTE.tv)return;try{const bundle=await fetchPresentationRouteBundle();if(bundle)applyPresentationRouteBundle(bundle);else console.warn('TV cadastrada não encontrada ou inativa; mantendo parâmetros da URL.');}catch(err){console.warn('Não foi possível carregar a configuração dinâmica da TV. Mantendo a configuração disponível na URL/local.',err);}}
+  async function refreshPresentationRouteConfig(){if(!PRESENTATION_ROUTE.tv)return false;try{const bundle=await fetchPresentationRouteBundle();if(!bundle)return false;const sig=routeBundleSignature(bundle);if(sig===state.presentationRouteConfigSignature)return false;const config=applyPresentationRouteBundle(bundle),target=String(config?.squad||'all');if(isSuperAdmin()&&target!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(target)))await selectSquad(target);return true;}catch(err){console.warn('Falha ao verificar atualização da playlist da TV.',err);return false}}
+  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.40.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
+
   function presentationDailyRows(){
     const source=buildOrgTechnicianDailyOverviewFromState();
     const rows=source.filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day))&&(state.squadCode==='all'||r.squadCode===state.squadCode));
@@ -983,6 +1081,7 @@
   }
   async function refreshPresentationData(){
     if(!state.user)throw new Error('Sessão indisponível.');
+    await refreshPresentationRouteConfig();
     if(!state.supabase){state.presentationLastSyncAt=new Date().toISOString();renderPresentation();return {updated:true,source:'local'}}
     const backup={squads:state.squads,orgOverview:state.orgOverview,orgTechnicianOverview:state.orgTechnicianOverview,orgDailyOverview:state.orgDailyOverview,orgTechnicianDailyOverview:state.orgTechnicianDailyOverview,theme:state.theme,currentId:state.currentId,techName:state.techName};
     try{

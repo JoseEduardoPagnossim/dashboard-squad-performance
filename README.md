@@ -4,16 +4,28 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.39.0`<br>
+**Versão atual:** `2.40.0`<br>
 
 
 
+
+## V2.40.0 — TV / Comunicação
+
+A V2.40.0 transforma a Apresentação em uma central de comunicação para múltiplas telas. O Admin pode criar **playlists nomeadas**, reutilizar a mesma programação em várias TVs, cadastrar cada dispositivo físico e gerar uma **URL dinâmica por TV**.
+
+As TVs cadastradas enviam um heartbeat periódico com estado de conexão, última sincronização, tela atual e resolução. O monitor classifica cada dispositivo como **Online**, **Atenção**, **Offline**, **Inativo** ou **Nunca conectou**. Alterações na playlist atribuída são reaplicadas automaticamente na próxima sincronização da TV, sem precisar trocar a URL física.
+
+O novo `js/tv-engine.js` concentra normalização, status, resumo do monitor, URL de dispositivo e payload de heartbeat.
+
+> Execute `supabase/migrations/MIGRACAO_V2.40.0.sql` antes de usar playlists compartilhadas, múltiplas TVs e monitoramento entre navegadores. Sem a migration, o painel mantém fallback local neste navegador.
+
+Detalhes operacionais e de segurança: `docs/TV_COMUNICACAO_V2.40.0.md`.
 
 ## V2.39.0 — Financeiro avançado
 
-A V2.39.0 acrescenta governança e rastreabilidade à bonificação sem alterar as regras oficiais já consolidadas. O motor financeiro passa a expor uma **versão de regra** (`FR-2.39.0-1`) e uma **assinatura determinística da configuração**, permitindo identificar com quais parâmetros cada valor foi calculado.
+A V2.39.0 acrescenta governança e rastreabilidade à bonificação sem alterar as regras oficiais já consolidadas. O motor financeiro expõe a **versão de regra** (`FR-2.39.0-1`) e uma **assinatura determinística da configuração**, permitindo identificar com quais parâmetros cada valor foi calculado.
 
-A tela de Bonificação agora inclui **memória de cálculo imutável**, **simulador de cenários sem gravação**, e uma explicação passo a passo do valor de cada técnico. O fechamento congela versão, assinatura, configurações e valores calculados. Excel e PDF também carregam a identificação da regra usada.
+A tela de Bonificação inclui **memória de cálculo imutável**, **simulador de cenários sem gravação** e explicação passo a passo do valor de cada técnico. O fechamento congela versão, assinatura, configurações e valores calculados. Excel e PDF também carregam a identificação da regra usada.
 
 > Execute `supabase/migrations/MIGRACAO_V2.39.0.sql` para centralizar a memória de cálculo no Supabase. Sem a migration, o painel continua funcionando e mantém fallback local no navegador para as memórias criadas.
 
@@ -88,6 +100,7 @@ dashboard-squad-performance/
 │   ├── import-engine.js    # prévia e segurança das importações
 │   ├── predictive-engine.js# projeções e alertas
 │   ├── settings-engine.js  # layouts e permissões
+│   ├── tv-engine.js        # playlists, dispositivos e monitoramento de TV
 │   ├── audit-utils.js      # sanitização e proteções da auditoria
 │   ├── default-data.js     # dados demonstrativos anonimizados
 │   └── demo-users.js       # contas exclusivamente demonstrativas

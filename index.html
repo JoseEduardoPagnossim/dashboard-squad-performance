@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.39.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.39.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.40.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.40.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.39.0 • Financeiro avançado</small>
+      <small class="login-version">V2.40.0 • TV / Comunicação</small>
     </div>
   </section>
 
@@ -108,7 +108,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.39.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.40.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -347,6 +347,32 @@
             <div class="presentation-config-url">
               <div><span>URL configurada da TV</span><code id="presentationConfigUrl">—</code></div>
               <div><button class="btn secondary compact" id="presentationConfigCopyBtn" type="button">Copiar URL</button><button class="btn secondary compact" id="presentationConfigOpenBtn" type="button">Abrir TV</button></div>
+            </div>
+            <div class="tv-management-divider"><span>V2.40 • TV / COMUNICAÇÃO</span><strong>Playlists, múltiplas TVs e monitoramento</strong><small>A URL cadastrada de cada TV acompanha a playlist atribuída. Alterações na playlist entram na próxima sincronização da tela.</small></div>
+            <div class="tv-management-grid">
+              <section class="tv-management-card">
+                <div class="tv-management-head"><div><span class="eyebrow">PLAYLISTS</span><h4>Programação das TVs</h4><p>Salve conjuntos de telas e preferências para reutilizar em uma ou várias TVs.</p></div><span class="tv-count-chip" id="presentationPlaylistCount">0 playlists</span></div>
+                <div class="tv-form-grid">
+                  <label class="full"><span>Playlist</span><select id="presentationPlaylistSelect"><option value="">Nova playlist</option></select></label>
+                  <label><span>Nome</span><input id="presentationPlaylistName" type="text" maxlength="80" placeholder="Ex.: TV Suporte"></label>
+                  <label><span>Descrição</span><input id="presentationPlaylistDescription" type="text" maxlength="180" placeholder="Ex.: Ranking e qualidade do suporte"></label>
+                </div>
+                <div class="tv-management-actions"><button class="btn secondary compact" id="presentationPlaylistNewBtn" type="button">+ Nova</button><button class="btn secondary compact" id="presentationPlaylistLoadBtn" type="button">Carregar no editor</button><button class="btn primary compact" id="presentationPlaylistSaveBtn" type="button">Salvar playlist</button><button class="btn secondary compact danger-action" id="presentationPlaylistDeleteBtn" type="button">Excluir</button></div>
+                <small class="tv-management-status" id="presentationPlaylistStatus">A configuração acima pode ser usada como uma playlist nomeada.</small>
+              </section>
+              <section class="tv-management-card tv-monitor-card">
+                <div class="tv-management-head"><div><span class="eyebrow">MÚLTIPLAS TVs</span><h4>Cadastro e monitoramento</h4><p>Cadastre cada tela física, atribua uma playlist e acompanhe se ela está conectada.</p></div><button class="btn secondary compact" id="presentationMonitorRefreshBtn" type="button">↻ Atualizar status</button></div>
+                <div class="tv-monitor-summary" id="presentationMonitorSummary">
+                  <div><span>Total</span><strong id="presentationMonitorTotal">0</strong></div><div class="online"><span>Online</span><strong id="presentationMonitorOnline">0</strong></div><div class="attention"><span>Atenção</span><strong id="presentationMonitorAttention">0</strong></div><div class="offline"><span>Offline</span><strong id="presentationMonitorOffline">0</strong></div>
+                </div>
+                <div class="tv-form-grid tv-device-create">
+                  <label><span>Nome da TV</span><input id="presentationDeviceName" type="text" maxlength="80" placeholder="Ex.: TV Sala Suporte"></label>
+                  <label><span>Local</span><input id="presentationDeviceLocation" type="text" maxlength="120" placeholder="Ex.: Sala principal"></label>
+                  <label class="full"><span>Playlist atribuída</span><select id="presentationDevicePlaylist"><option value="">Selecione uma playlist</option></select></label>
+                </div>
+                <div class="tv-management-actions"><button class="btn primary compact" id="presentationCreateDeviceBtn" type="button">+ Cadastrar TV</button></div>
+                <div class="tv-device-table-wrap"><table class="tv-device-table"><thead><tr><th>TV</th><th>Playlist</th><th>Status</th><th>Último sinal</th><th>Tela atual</th><th>Ações</th></tr></thead><tbody id="presentationDeviceRows"><tr><td colspan="6" class="muted">Nenhuma TV cadastrada.</td></tr></tbody></table></div>
+              </section>
             </div>
           </section>
 
@@ -1132,13 +1158,14 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.39.0"></script>
-  <script src="js/finance-advanced.js?v=2.39.0"></script>
-  <script src="js/presentation.js?v=2.39.0"></script>
-  <script src="js/chart-engine.js?v=2.39.0"></script>
-  <script src="js/import-engine.js?v=2.39.0"></script>
-  <script src="js/predictive-engine.js?v=2.39.0"></script>
-  <script src="js/settings-engine.js?v=2.39.0"></script>
-  <script src="js/app.js?v=2.39.0"></script>
+  <script src="js/finance-rules.js?v=2.40.0"></script>
+  <script src="js/finance-advanced.js?v=2.40.0"></script>
+  <script src="js/tv-engine.js?v=2.40.0"></script>
+  <script src="js/presentation.js?v=2.40.0"></script>
+  <script src="js/chart-engine.js?v=2.40.0"></script>
+  <script src="js/import-engine.js?v=2.40.0"></script>
+  <script src="js/predictive-engine.js?v=2.40.0"></script>
+  <script src="js/settings-engine.js?v=2.40.0"></script>
+  <script src="js/app.js?v=2.40.0"></script>
 </body>
 </html>

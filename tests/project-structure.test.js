@@ -10,6 +10,7 @@ const engine = readFileSync(join(root, 'js', 'chart-engine.js'), 'utf8');
 const predictiveEngine = readFileSync(join(root, 'js', 'predictive-engine.js'), 'utf8');
 const settingsEngine = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf8');
 const financeAdvancedEngine = readFileSync(join(root, 'js', 'finance-advanced.js'), 'utf8');
+const tvEngine = readFileSync(join(root, 'js', 'tv-engine.js'), 'utf8');
 
 test('chart-engine carrega antes do app principal', () => {
   const enginePos = index.indexOf('js/chart-engine.js');
@@ -150,4 +151,44 @@ test('V2.39 inclui migration de memoria financeira imutavel', () => {
   assert.match(migration, /alter table public\.finance_calculation_memory enable row level security/);
   assert.match(migration, /grant select, insert on public\.finance_calculation_memory to authenticated/);
   assert.match(migration, /revoke update, delete on public\.finance_calculation_memory/);
+});
+
+
+test('tv-engine carrega antes da apresentacao e do app principal', () => {
+  const tvPos = index.indexOf('js/tv-engine.js');
+  const presentationPos = index.indexOf('js/presentation.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(tvPos >= 0, 'tv-engine.js deve estar no index.html');
+  assert.ok(presentationPos > tvPos, 'tv-engine.js deve carregar antes de presentation.js');
+  assert.ok(appPos > tvPos, 'tv-engine.js deve carregar antes de app.js');
+});
+
+test('V2.40 possui playlists, multiplas TVs e monitoramento', () => {
+  for (const id of ['presentationPlaylistSelect','presentationPlaylistName','presentationPlaylistSaveBtn','presentationDeviceName','presentationDevicePlaylist','presentationCreateDeviceBtn','presentationDeviceRows','presentationMonitorSummary','presentationMonitorRefreshBtn']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /window\.SoftenTvEngine/);
+  assert.match(app, /ensurePresentationOpsLoaded/);
+  assert.match(app, /savePresentationPlaylist/);
+  assert.match(app, /createPresentationDevice/);
+  assert.match(app, /persistPresentationHeartbeat/);
+  assert.match(app, /preparePresentationRouteContext/);
+  for (const marker of ['statusForDevice','monitorSummary','generateDeviceKey','deviceUrl','heartbeatPayload']) assert.ok(tvEngine.includes(marker), `tv-engine.js deve conter ${marker}`);
+});
+
+test('V2.40 inclui migration para playlists, dispositivos e heartbeat', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.40.0.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /create table if not exists public\.presentation_playlists/);
+  assert.match(migration, /create table if not exists public\.presentation_devices/);
+  assert.match(migration, /create or replace function public\.get_presentation_device_config/);
+  assert.match(migration, /create or replace function public\.touch_presentation_device/);
+  assert.match(migration, /alter table public\.presentation_devices enable row level security/);
+});
+
+test('apresentacao direta envia heartbeat quando usa uma TV cadastrada', () => {
+  const presentation = readFileSync(join(root, 'js', 'presentation.js'), 'utf8');
+  assert.match(presentation, /route\.tv/);
+  assert.match(presentation, /soften:presentation-heartbeat/);
+  assert.match(presentation, /restartHeartbeat/);
+  assert.match(presentation, /getRuntimeStatus/);
 });

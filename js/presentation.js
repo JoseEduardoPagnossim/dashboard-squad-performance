@@ -3,7 +3,9 @@
   const route = {
     enabled: params.get('view') === 'presentation',
     squad: (params.get('squad') || '').trim().toUpperCase(),
-    direct: params.get('view') === 'presentation'
+    direct: params.get('view') === 'presentation',
+    tv: (params.get('tv') || '').trim(),
+    playlist: (params.get('playlist') || '').trim()
   };
 
   const ALL_MODES = ['day','notesDay','general','notesGeneral','group','notesGroup'];
@@ -71,7 +73,9 @@
     fitRaf:0,
     fitObserver:null,
     appliedScale:1,
-    appliedDensity:'normal'
+    appliedDensity:'normal',
+    heartbeatTimer:null,
+    connectionKind:'online'
   };
 
   state.activeMode=state.config.start;state.carouselEnabled=state.config.carousel;state.carouselDuration=state.config.interval*1000;state.refreshEveryMs=state.config.refresh*60*1000;
@@ -100,7 +104,7 @@
   }
   function normalUrl(){
     const url = new URL(window.location.href);
-    ['view','squad','interval','refresh','columns','fit','scale','density','safe','carousel','kpis','spots','filters','tabs','start'].forEach(k=>url.searchParams.delete(k));
+    ['view','squad','interval','refresh','columns','fit','scale','density','safe','carousel','kpis','spots','filters','tabs','start','tv','playlist'].forEach(k=>url.searchParams.delete(k));
     url.hash='';return url.toString();
   }
   function setDirectMode(active){ document.body.classList.toggle('presentation-direct',!!active);if(active){requestWakeLock();scheduleDisplayFit();}else{resetDisplayFit();} }
@@ -143,6 +147,7 @@
   function scheduleDisplayFit(){cancelAnimationFrame(state.fitRaf);state.fitRaf=requestAnimationFrame(()=>requestAnimationFrame(applyDisplayFit))}
 
   function connectionState(kind,title,text){
+    state.connectionKind=kind||'online';
     const pill=$('#presentationConnectionPill'),banner=$('#presentationConnectionBanner'),pt=pill?.querySelector('strong');
     if(pill){pill.classList.remove('online','syncing','offline','degraded');pill.classList.add(kind);if(pt)pt.textContent=kind==='online'?'Online':kind==='syncing'?'Sincronizando':kind==='offline'?'Sem conexão':'Atenção';}
     if(banner){const show=kind==='offline'||kind==='degraded';banner.classList.toggle('hidden',!show);banner.classList.toggle('offline',kind==='offline');banner.classList.toggle('degraded',kind==='degraded');}
@@ -165,12 +170,26 @@
     const btn=$('#presentationRefreshBtn');if(btn){btn.disabled=true;btn.textContent='↻ Atualizando…'}
     try{
       await state.refreshHandler({reason});
-      state.lastSuccessfulRefresh=Date.now();state.lastRefreshError=null;connectionState('online');
+      state.lastSuccessfulRefresh=Date.now();state.lastRefreshError=null;connectionState('online');emitHeartbeat('refresh');
     }catch(err){
       state.lastRefreshError=err;connectionState(navigator.onLine===false?'offline':'degraded',navigator.onLine===false?'Sem conexão':'Falha na atualização',navigator.onLine===false?'Exibindo os últimos dados carregados. A sincronização será retomada automaticamente.':'Não foi possível buscar novos dados. A apresentação continuará com a última atualização válida e tentará novamente em 1 minuto.');scheduleReconnect();
     }finally{
       state.refreshInFlight=false;if(btn){btn.disabled=false;btn.textContent='↻ Atualizar agora'}syncNote();
     }
+  }
+
+
+  function runtimeStatus(){
+    return {deviceKey:route.tv||'',playlistId:route.playlist||'',mode:state.activeMode,lastRefreshAt:state.lastSuccessfulRefresh?new Date(state.lastSuccessfulRefresh).toISOString():null,connectionState:state.connectionKind||'online',viewport:{width:window.innerWidth||0,height:window.innerHeight||0,devicePixelRatio:window.devicePixelRatio||1,fullscreen:!!document.fullscreenElement},appVersion:'2.40.0'};
+  }
+  function emitHeartbeat(reason='interval'){
+    if(!route.direct||!route.tv)return;
+    window.dispatchEvent(new CustomEvent('soften:presentation-heartbeat',{detail:{...runtimeStatus(),reason}}));
+  }
+  function restartHeartbeat(){
+    clearInterval(state.heartbeatTimer);state.heartbeatTimer=null;
+    if(!route.direct||!route.tv)return;
+    emitHeartbeat('start');state.heartbeatTimer=setInterval(()=>emitHeartbeat('interval'),30000);
   }
 
   function normalizeRows(rows){
@@ -346,18 +365,24 @@
   }
   function updateConfigUrl(){const el=$('#presentationConfigUrl');if(!el)return;const cfg=configFromForm();el.textContent=directUrl(cfg.squad,cfg);el.title=el.textContent}
   function moveConfigMode(mode,delta){const list=$('#presentationConfigModeList'),row=list?.querySelector(`[data-config-mode="${mode}"]`);if(!row||!list)return;const sib=delta<0?row.previousElementSibling:row.nextElementSibling;if(sib)list.insertBefore(delta<0?row:sib,delta<0?sib:row);updateConfigUrl()}
-  function renderAdminConfig(){
-    const panel=$('#presentationAdminPanel');if(!panel||route.direct)return;const cfg=state.config;
-    const list=$('#presentationConfigModeList');if(list&&!list.dataset.ready){list.innerHTML=cfg.modes.concat(ALL_MODES.filter(m=>!cfg.modes.includes(m))).map(mode=>`<div class="presentation-config-mode" data-config-mode="${mode}"><label><input type="checkbox" ${cfg.modes.includes(mode)?'checked':''}><span>${MODE_LABELS[mode]}</span></label><div><button type="button" data-mode-up="${mode}" title="Mover para cima">↑</button><button type="button" data-mode-down="${mode}" title="Mover para baixo">↓</button></div></div>`).join('');list.dataset.ready='1'}
+  function populateAdminForm(config){
+    const cfg=normalizeConfig(config||state.config),list=$('#presentationConfigModeList');
+    if(list){list.innerHTML=cfg.modes.concat(ALL_MODES.filter(m=>!cfg.modes.includes(m))).map(mode=>`<div class="presentation-config-mode" data-config-mode="${mode}"><label><input type="checkbox" ${cfg.modes.includes(mode)?'checked':''}><span>${MODE_LABELS[mode]}</span></label><div><button type="button" data-mode-up="${mode}" title="Mover para cima">↑</button><button type="button" data-mode-down="${mode}" title="Mover para baixo">↓</button></div></div>`).join('');list.dataset.ready='1'}
     const set=(id,val)=>{const e=$(id);if(e)e.value=String(val)};set('#presentationConfigSquad',cfg.squad);set('#presentationConfigInterval',cfg.interval);set('#presentationConfigRefresh',cfg.refresh);set('#presentationConfigColumns',cfg.columns);set('#presentationConfigFit',cfg.fit);set('#presentationConfigScale',cfg.scale);set('#presentationConfigDensity',cfg.density);set('#presentationConfigSafe',cfg.safe);
     if($('#presentationConfigCarousel'))$('#presentationConfigCarousel').checked=cfg.carousel;if($('#presentationConfigKpis'))$('#presentationConfigKpis').checked=cfg.kpis;if($('#presentationConfigSpotlights'))$('#presentationConfigSpotlights').checked=cfg.spotlights;if($('#presentationConfigFilters'))$('#presentationConfigFilters').checked=cfg.filters;updateConfigUrl();
+    return cfg;
   }
+  function renderAdminConfig(){
+    const panel=$('#presentationAdminPanel');if(!panel||route.direct)return;
+    const list=$('#presentationConfigModeList');if(!list?.dataset.ready)populateAdminForm(state.config);else updateConfigUrl();
+  }
+  function loadAdminDraft(config){if(route.direct)return normalizeConfig(config);return populateAdminForm(config)}
   function bindAdminConfig(){
     if(state.adminBound)return;state.adminBound=true;
     $('#presentationAdminPanel')?.addEventListener('change',e=>{if(e.target.matches('input,select'))updateConfigUrl()});
     $('#presentationConfigModeList')?.addEventListener('click',e=>{const up=e.target.closest('[data-mode-up]'),down=e.target.closest('[data-mode-down]');if(up)moveConfigMode(up.dataset.modeUp,-1);if(down)moveConfigMode(down.dataset.modeDown,1)});
     $('#presentationApplyConfigBtn')?.addEventListener('click',()=>{const cfg=applyRuntimeConfig(configFromForm(),true);window.dispatchEvent(new CustomEvent('soften:presentation-config-applied',{detail:cfg}));renderAll()});
-    $('#presentationResetConfigBtn')?.addEventListener('click',()=>{state.config=saveConfig(DEFAULT_CONFIG);const list=$('#presentationConfigModeList');if(list){list.dataset.ready='';list.innerHTML=''}renderAdminConfig();if(state.payload)renderAll()});
+    $('#presentationResetConfigBtn')?.addEventListener('click',()=>{state.config=saveConfig(DEFAULT_CONFIG);populateAdminForm(state.config);if(state.payload)renderAll()});
     $('#presentationConfigCopyBtn')?.addEventListener('click',async()=>{const url=directUrl(configFromForm().squad,configFromForm());try{await navigator.clipboard.writeText(url)}catch(e){window.prompt('Copie a URL:',url)}});
     $('#presentationConfigOpenBtn')?.addEventListener('click',()=>{const cfg=configFromForm();window.open(directUrl(cfg.squad,cfg),'_blank','noopener')});
   }
@@ -366,7 +391,7 @@
   function setMode(mode,manual=true){
     if(!activeModes().includes(mode))return;state.activeMode=mode;state.cycleStartedAt=Date.now();
     if(manual){state.autoSwitch=false;state.manualPauseUntil=Date.now()+60000}else{state.autoSwitch=true;state.manualPauseUntil=0}
-    renderAll();
+    renderAll();emitHeartbeat('mode');
   }
   function toggleCarousel(){state.carouselEnabled=!state.carouselEnabled;state.config.carousel=state.carouselEnabled;if(!route.direct)saveConfig(state.config);state.cycleStartedAt=Date.now();if(state.carouselEnabled){state.autoSwitch=true;state.manualPauseUntil=0}renderTabs();}
   function bind(){
@@ -401,15 +426,15 @@
     restartRefreshTimer();
     if('ResizeObserver' in window){state.fitObserver=new ResizeObserver(()=>scheduleDisplayFit());const shell=$('.presentation-shell');if(shell)state.fitObserver.observe(shell)}
     if(navigator.onLine===false)connectionState('offline','Sem conexão','Exibindo os últimos dados carregados. A sincronização será retomada automaticamente.');else connectionState('online');
-    updateFullscreenButton();requestWakeLock();
+    updateFullscreenButton();requestWakeLock();restartHeartbeat();
   }
   function render(payload){
     applyRuntimeConfig(state.config,false);
     state.payload=payload||{};state.rankings=calculate(payload?.rows||[]);if(typeof payload?.refresh==='function')state.refreshHandler=payload.refresh;
     if(payload?.refreshedAt)state.lastSuccessfulRefresh=new Date(payload.refreshedAt).getTime()||Date.now();
     else if(!state.lastSuccessfulRefresh)state.lastSuccessfulRefresh=Date.now();
-    bind();renderAll();
+    bind();renderAll();emitHeartbeat('render');
   }
 
-  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,getConfig:()=>normalizeConfig(state.config),applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);if(state.payload)renderAll();else renderAdminConfig()},syncAdminConfig,fit:()=>{scheduleDisplayFit()},__test:{calculate,normalizeRows,normalizeConfig}};
+  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,getConfig:()=>normalizeConfig(state.config),getFormConfig:()=>configFromForm(),loadAdminDraft,applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);if(state.payload)renderAll();else renderAdminConfig()},syncAdminConfig,getRuntimeStatus:runtimeStatus,emitHeartbeat,fit:()=>{scheduleDisplayFit()},__test:{calculate,normalizeRows,normalizeConfig}};
 })();

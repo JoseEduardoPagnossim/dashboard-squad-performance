@@ -67,3 +67,15 @@ As tabelas sensíveis utilizam Row Level Security. A aplicação diferencia Admi
 ## Histórico
 
 O guia antigo e detalhado de evolução foi preservado em `docs/database-history.md` apenas como referência histórica. Para instalações novas, use este documento e `supabase/schema.sql`.
+
+## V2.40.0 — Apresentação / TV
+
+Para playlists compartilhadas, múltiplas TVs e monitoramento centralizado, execute:
+
+```text
+supabase/migrations/MIGRACAO_V2.40.0.sql
+```
+
+A migration cria `presentation_playlists` e `presentation_devices`. A primeira guarda a programação reutilizável; a segunda registra o dispositivo físico, sua playlist atribuída e a telemetria mais recente. As RPCs `get_presentation_device_config` e `touch_presentation_device` permitem que uma TV autenticada da mesma organização leia somente sua programação e atualize somente heartbeat/telemetria.
+
+Sem a migration, a aplicação mantém fallback em `localStorage`, adequado apenas para demonstração/contingência local.

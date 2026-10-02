@@ -32,7 +32,7 @@
 
   function actionCategory(action=''){
     const prefix=String(action).split('.')[0];
-    return ['user','month','finance','goals','costs','quality','feedback','theme'].includes(prefix)?prefix:'other';
+    return ['user','month','finance','goals','costs','quality','feedback','theme','presentation'].includes(prefix)?prefix:'other';
   }
 
   function actionLabel(action=''){
@@ -42,7 +42,8 @@
       'finance.config_update':'Regras financeiras alteradas','finance.technicians_update':'Valores financeiros alterados','finance.rules_copy':'Regras financeiras copiadas','finance.admin_commission':'Comissão do Admin Geral alterada','finance.memory_snapshot':'Memória financeira registrada',
       'goals.team_update':'Metas do Squad alteradas','goals.monthly_metrics_update':'Metas e métricas individuais alteradas',
       'costs.support_update':'Custos do Suporte alterados',
-      'quality.financial_import':'CSV de impacto financeiro importado','quality.financial_params_update':'Parâmetros de impacto financeiro alterados'
+      'quality.financial_import':'CSV de impacto financeiro importado','quality.financial_params_update':'Parâmetros de impacto financeiro alterados',
+      'presentation.playlist_create':'Playlist de TV criada','presentation.playlist_update':'Playlist de TV alterada','presentation.playlist_delete':'Playlist de TV excluída','presentation.device_create':'TV cadastrada','presentation.device_update':'TV alterada','presentation.device_delete':'TV excluída'
     };
     return labels[action]||String(action||'Ação administrativa');
   }

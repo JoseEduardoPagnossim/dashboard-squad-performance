@@ -1,3 +1,12 @@
+## V2.40.0 — TV / Comunicação
+- Playlists nomeadas para reutilizar configurações de apresentação.
+- Cadastro de múltiplas TVs com URL dinâmica por dispositivo.
+- Monitoramento por heartbeat: online, atenção, offline, última sincronização, tela atual e resolução.
+- Alterações em playlists são recarregadas pelas TVs cadastradas durante a sincronização automática.
+- Persistência compartilhada no Supabase com RLS, RPC de configuração por dispositivo e heartbeat restrito à telemetria.
+- Fallback local preserva a operação em ambiente demo ou antes da migration.
+- Amplia a suíte automatizada para **86 testes**, incluindo motor de TV, URLs dinâmicas, heartbeat, status e estrutura da migration.
+
 ## V2.39.0 — Financeiro avançado
 
 - adiciona versão explícita do motor financeiro (`FR-2.39.0-1`) em cada cálculo;
