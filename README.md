@@ -4,11 +4,11 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.35.0`<br>
+**Versão atual:** `2.35.1`<br>
 
-## V2.35.0 — Estrutura e estabilidade
+## V2.35.1 — Estrutura e estabilidade
 
-A V2.35.0 inicia a modularização do front-end sem alterar as regras de negócio. O novo `js/chart-engine.js` concentra preferências, escalas, geometria SVG, estilos de linha/ponto, rótulos e interação dos gráficos. O `app.js` passa a consumir esse núcleo em vez de manter primitivas duplicadas. A suíte automatizada também foi ampliada para validar o motor de gráficos e a estrutura de carregamento.
+A V2.35.1 inicia a modularização do front-end sem alterar as regras de negócio. O novo `js/chart-engine.js` concentra preferências, escalas, geometria SVG, estilos de linha/ponto, rótulos e interação dos gráficos. O `app.js` passa a consumir esse núcleo em vez de manter primitivas duplicadas. A suíte automatizada também foi ampliada para validar o motor de gráficos e a estrutura de carregamento.
 
 **Repositório:** `dashboard-squad-performance`<br>
 **GitHub Pages:** `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`

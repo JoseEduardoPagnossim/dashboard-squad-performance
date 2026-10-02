@@ -32,3 +32,13 @@ test('motor exporta as primitivas centrais esperadas', () => {
     assert.ok(engine.includes(marker), `chart-engine.js deve conter ${marker}`);
   }
 });
+
+
+test('gráfico diário inicializa visual antes de usar linha e pontos', () => {
+  const start = app.indexOf('function renderChart(');
+  const end = app.indexOf('function renderDaily(', start);
+  assert.ok(start >= 0 && end > start, 'renderChart deve existir');
+  const renderChartBlock = app.slice(start, end);
+  assert.match(renderChartBlock, /visual=chartEngineLineVisual\(prefs\)/);
+  assert.ok(renderChartBlock.indexOf('visual=chartEngineLineVisual(prefs)') < renderChartBlock.indexOf('visual.pointRadius'), 'visual deve ser inicializado antes do primeiro uso');
+});

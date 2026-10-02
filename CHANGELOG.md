@@ -1,4 +1,4 @@
-## V2.35.0 — Estrutura e estabilidade
+## V2.35.1 — Estrutura e estabilidade
 
 - criado `js/chart-engine.js` como núcleo único das regras visuais e geométricas dos gráficos;
 - preferências de gráficos, escala percentual, altura, espessura, pontos e densidade de rótulos agora passam pelo mesmo motor;

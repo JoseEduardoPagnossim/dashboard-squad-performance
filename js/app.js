@@ -873,7 +873,7 @@
     const data=(periodMode?(t.daily||[]):(t.daily||[]).filter(d=>d.day<=Math.max(m.latestDay||31,1)&&!d.off)).filter(d=>!d.off);
     if(!data.length){el.innerHTML='<div class="muted">Sem lançamentos diários disponíveis no período.</div>';return;}
     el.classList.add('interactive-chart','chart-modern','daily-premium-chart');
-    const prefs=currentChartPreferences(),chartId=nextChartRenderId('daily'),w=720,h=configuredChartHeight(230),p={l:34,r:16,t:15,b:30};
+    const prefs=currentChartPreferences(),visual=chartEngineLineVisual(prefs),chartId=nextChartRenderId('daily'),w=720,h=configuredChartHeight(230),p={l:34,r:16,t:15,b:30};
     const maxVal=Math.max(5,...data.flatMap(d=>[safe(d.att),safe(d.notes5)]));
     const x=i=>p.l+(data.length<=1?(w-p.l-p.r)/2:i*(w-p.l-p.r)/(data.length-1));
     const y=v=>p.t+(h-p.t-p.b)-(safe(v)/maxVal)*(h-p.t-p.b),baseline=h-p.b;
