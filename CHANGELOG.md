@@ -1,3 +1,19 @@
+## V2.36.0 — Central de Importação
+
+- nova Central de Importação em Administração;
+- prévia por competência antes da gravação;
+- comparação Atual x Novo por Squad;
+- validações para mês fechado, valores negativos, linhas ignoradas, vínculos não encontrados/ambíguos e quedas relevantes;
+- confirmação reforçada com a palavra `IMPORTAR` quando existem alertas;
+- checksum simples do arquivo para rastreabilidade;
+- histórico recente com tipo, competência, arquivo, escopo, risco e status;
+- snapshot de segurança das competências tocadas;
+- restauração automática do snapshot se uma importação falhar no meio da gravação;
+- reversão da última importação concluída por até 30 minutos, bloqueada se uma competência afetada tiver sido fechada;
+- persistência opcional do histórico no Supabase via `import_batches`;
+- novo `js/import-engine.js` com regras testáveis de prévia e validação;
+- suíte ampliada para 49 testes automatizados.
+
 ## V2.35.1 — Estrutura e estabilidade
 
 - criado `js/chart-engine.js` como núcleo único das regras visuais e geométricas dos gráficos;

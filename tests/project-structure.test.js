@@ -42,3 +42,19 @@ test('gráfico diário inicializa visual antes de usar linha e pontos', () => {
   assert.match(renderChartBlock, /visual=chartEngineLineVisual\(prefs\)/);
   assert.ok(renderChartBlock.indexOf('visual=chartEngineLineVisual(prefs)') < renderChartBlock.indexOf('visual.pointRadius'), 'visual deve ser inicializado antes do primeiro uso');
 });
+
+test('import-engine carrega antes do app principal', () => {
+  const enginePos = index.indexOf('js/import-engine.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(enginePos >= 0, 'import-engine.js deve estar no index.html');
+  assert.ok(appPos > enginePos, 'import-engine.js deve carregar antes de app.js');
+});
+
+test('central de importacao possui preview, historico e reversao', () => {
+  for (const id of ['importPreviewBlock','importPreviewSummary','importValidationList','importComparisonRows','importHistoryRows','undoLastImportBtn']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /window\.SoftenImportEngine/);
+  assert.match(app, /captureImportSnapshot/);
+  assert.match(app, /undoLastImport/);
+});

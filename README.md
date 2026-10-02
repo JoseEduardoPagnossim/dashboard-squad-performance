@@ -4,7 +4,15 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.35.1`<br>
+**Versão atual:** `2.36.0`<br>
+
+## V2.36.0 — Central de Importação
+
+A V2.36.0 adiciona uma camada de segurança ao fluxo de CSV. Antes de gravar, o sistema cria uma prévia por Squad, compara o arquivo com a competência atual e classifica riscos. Quedas relevantes, vínculos não reconhecidos, linhas inválidas, valores negativos e competências fechadas passam a ser sinalizados antes da confirmação.
+
+A tela de Administração também ganhou histórico recente de importações, checksum do arquivo, registro no Supabase quando a migração V2.36.0 estiver aplicada e reversão controlada da última importação por até 30 minutos usando snapshot anterior. O módulo `js/import-engine.js` concentra as regras puras de prévia e validação e possui testes próprios.
+
+> Para persistir o histórico entre navegadores, execute `supabase/migrations/MIGRACAO_V2.36.0.sql` no Supabase. Sem a migration, o sistema continua funcionando e mantém o histórico local do navegador.
 
 ## V2.35.1 — Estrutura e estabilidade
 
