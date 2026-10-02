@@ -4,7 +4,14 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.36.0`<br>
+**Versão atual:** `2.37.0`<br>
+
+
+## V2.37.0 — Gestão preditiva
+
+A V2.37.0 adiciona uma camada preditiva aos Indicadores do Admin Geral. A competência de referência passa a exibir **Realizado × Meta × Projeção**, confiança da projeção por maturidade dos dias úteis, comparação com o mesmo corte da competência anterior, alertas automáticos e técnicos com maior risco de não fechamento das metas.
+
+O novo módulo `js/predictive-engine.js` concentra as regras puras de projeção, comparação, classificação de risco e geração de alertas, com testes próprios. A projeção de volume usa o ritmo médio por dia útil; a taxa de avaliação permanece como tendência da taxa observada, sem inventar crescimento futuro.
 
 ## V2.36.0 — Central de Importação
 

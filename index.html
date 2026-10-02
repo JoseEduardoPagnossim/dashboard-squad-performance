@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.36.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.36.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.37.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.37.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.36.0 • Central de Importação</small>
+      <small class="login-version">V2.37.0 • Gestão preditiva</small>
     </div>
   </section>
 
@@ -107,7 +107,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.36.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.37.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -495,6 +495,28 @@
             <p id="indicatorPeriodStatusSupport">Compara o resultado mensal da equipe no período selecionado</p>
           </article>
         </div>
+
+        <section class="predictive-management-section">
+          <article class="card predictive-management-head">
+            <div><span class="eyebrow">GESTÃO PREDITIVA</span><h2>Realizado × Meta × Projeção</h2><p>Projeção de fechamento baseada no ritmo por dia útil da competência de referência, com comparação pelo mesmo corte do mês anterior.</p></div>
+            <div class="predictive-head-meta"><span class="history-chip" id="predictivePeriod">Competência</span><span class="predictive-confidence low" id="predictiveConfidence">Confiança baixa</span></div>
+          </article>
+          <div id="predictiveKpis" class="predictive-kpis"></div>
+          <div class="predictive-grid">
+            <article class="card predictive-alert-card">
+              <div class="section-title"><div><span class="eyebrow">ALERTAS AUTOMÁTICOS</span><h3>Prioridades para ação</h3></div><span class="muted">Critérios objetivos de ritmo, meta e comparação</span></div>
+              <div id="predictiveAlerts" class="predictive-alerts"></div>
+            </article>
+            <article class="card predictive-table-card">
+              <div class="section-title"><div><span class="eyebrow">POR SQUAD</span><h3>Projeção da competência</h3></div><span class="muted">Mesmo corte de dias úteis</span></div>
+              <div class="table-wrap predictive-table-wrap"><table><thead><tr><th>Squad</th><th>Realizado</th><th>Meta</th><th>Projeção</th><th>Status</th><th>% Aval.</th><th>Meta %</th><th>Comparação</th></tr></thead><tbody id="predictiveSquadRows"></tbody></table></div>
+            </article>
+          </div>
+          <article class="card predictive-risk-card">
+            <div class="section-title"><div><span class="eyebrow">ATENÇÃO INDIVIDUAL</span><h3>Técnicos com sinais de risco</h3></div><span class="muted">Até 8 maiores prioridades da competência</span></div>
+            <div class="table-wrap predictive-table-wrap"><table><thead><tr><th>Técnico</th><th>Squad</th><th>Proj. atend.</th><th>Proj. Nota 5</th><th>% Avaliação</th><th>Risco</th></tr></thead><tbody id="predictiveRiskRows"></tbody></table></div>
+          </article>
+        </section>
 
         <article class="card indicator-finance-ranking-card">
           <div class="section-title"><div><span class="eyebrow">BONIFICAÇÃO</span><h3>Ranking por valor recebido</h3></div><span class="muted" id="indicatorFinanceRankingNote">Soma dos valores oficiais no período</span></div>
@@ -1029,9 +1051,10 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/presentation.js?v=2.36.0"></script>
-  <script src="js/chart-engine.js?v=2.36.0"></script>
-  <script src="js/import-engine.js?v=2.36.0"></script>
-  <script src="js/app.js?v=2.36.0"></script>
+  <script src="js/presentation.js?v=2.37.0"></script>
+  <script src="js/chart-engine.js?v=2.37.0"></script>
+  <script src="js/import-engine.js?v=2.37.0"></script>
+  <script src="js/predictive-engine.js?v=2.37.0"></script>
+  <script src="js/app.js?v=2.37.0"></script>
 </body>
 </html>

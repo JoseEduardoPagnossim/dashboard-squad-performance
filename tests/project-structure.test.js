@@ -7,6 +7,7 @@ const root = join(__dirname, '..');
 const index = readFileSync(join(root, 'index.html'), 'utf8');
 const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 const engine = readFileSync(join(root, 'js', 'chart-engine.js'), 'utf8');
+const predictiveEngine = readFileSync(join(root, 'js', 'predictive-engine.js'), 'utf8');
 
 test('chart-engine carrega antes do app principal', () => {
   const enginePos = index.indexOf('js/chart-engine.js');
@@ -57,4 +58,22 @@ test('central de importacao possui preview, historico e reversao', () => {
   assert.match(app, /window\.SoftenImportEngine/);
   assert.match(app, /captureImportSnapshot/);
   assert.match(app, /undoLastImport/);
+});
+
+
+test('predictive-engine carrega antes do app principal', () => {
+  const enginePos = index.indexOf('js/predictive-engine.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(enginePos >= 0, 'predictive-engine.js deve estar no index.html');
+  assert.ok(appPos > enginePos, 'predictive-engine.js deve carregar antes de app.js');
+});
+
+test('gestao preditiva possui KPIs, alertas e comparativos', () => {
+  for (const id of ['predictiveKpis','predictiveAlerts','predictiveSquadRows','predictiveRiskRows','predictiveConfidence']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /window\.SoftenPredictiveEngine/);
+  assert.match(app, /renderPredictiveManagement/);
+  assert.match(app, /predictiveScopeData/);
+  for (const marker of ['projectCount','countMetric','rateMetric','technicianRisk','buildAlerts']) assert.ok(predictiveEngine.includes(marker), `predictive-engine.js deve conter ${marker}`);
 });

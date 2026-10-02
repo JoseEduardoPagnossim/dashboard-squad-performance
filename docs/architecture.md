@@ -59,3 +59,7 @@ Não há roteamento SPA dependente do nome do repositório. Os arquivos usam cam
 `js/chart-engine.js` é carregado antes de `js/app.js` e concentra a infraestrutura compartilhada de gráficos: normalização das preferências, escala percentual, altura, estilo de linhas/pontos, densidade de rótulos, geração de caminhos/áreas SVG, gradientes e interação de tooltip/legenda.
 
 Os renderizadores de negócio continuam em `app.js` nesta etapa para preservar o comportamento das telas, mas consomem o mesmo motor. Novos gráficos devem usar `window.SoftenChartEngine` e não recriar primitivas equivalentes localmente. O script `scripts/validate-project.mjs` verifica essa dependência e bloqueia regressões de duplicação.
+
+## V2.37.0 — Motor preditivo
+
+`js/predictive-engine.js` concentra funções puras de projeção por dias úteis, comparação entre competências, confiança da projeção, risco individual e alertas automáticos. O `app.js` permanece responsável por preparar os dados da competência e renderizar a experiência do usuário. O motor preditivo não grava dados e não interfere no fechamento oficial, nas metas ou na bonificação.

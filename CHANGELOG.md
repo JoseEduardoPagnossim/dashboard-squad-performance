@@ -1,3 +1,13 @@
+## V2.37.0 — Gestão preditiva
+
+- Realizado × Meta × Projeção para atendimentos, notas 5 e % de avaliação.
+- Projeção por ritmo de dias úteis e indicador de confiança (baixa, média ou alta).
+- Comparação com a competência anterior usando o mesmo corte de dias úteis.
+- Alertas automáticos de risco, desaceleração, gap de avaliação e concentração de técnicos em atenção.
+- Visão por Squad com status preditivo e tabela dos técnicos com maiores sinais de risco.
+- Novo motor `js/predictive-engine.js` testável e desacoplado do `app.js`.
+- Suíte ampliada com testes de projeção, comparação, risco e estrutura.
+
 ## V2.36.0 — Central de Importação
 
 - nova Central de Importação em Administração;
