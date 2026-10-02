@@ -4,8 +4,17 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.37.0`<br>
+**Versão atual:** `2.38.0`<br>
 
+
+
+## V2.38.0 — Configurações e personalização
+
+A V2.38.0 cria uma **Central de Configurações** disponível para todos os perfis. Cada usuário pode organizar os blocos principais das telas permitidas, escolher densidade compacta ou confortável e ocultar informações que não utiliza no dia a dia. A preferência é individual e pode ser sincronizada pelo Supabase com a migração da versão.
+
+Também entra o novo `js/settings-engine.js`, responsável pelos layouts e pelas permissões granulares. O Admin Geral pode retirar permissões específicas de um usuário sem criar novos perfis, sempre respeitando o limite do papel base — overrides nunca elevam privilégios de `technician` ou `squad_admin`.
+
+> Execute `supabase/migrations/MIGRACAO_V2.38.0.sql` para sincronizar layouts entre dispositivos e persistir as permissões específicas.
 
 ## V2.37.0 — Gestão preditiva
 

@@ -63,3 +63,12 @@ Os renderizadores de negócio continuam em `app.js` nesta etapa para preservar o
 ## V2.37.0 — Motor preditivo
 
 `js/predictive-engine.js` concentra funções puras de projeção por dias úteis, comparação entre competências, confiança da projeção, risco individual e alertas automáticos. O `app.js` permanece responsável por preparar os dados da competência e renderizar a experiência do usuário. O motor preditivo não grava dados e não interfere no fechamento oficial, nas metas ou na bonificação.
+
+## V2.38.0 — Configurações e personalização
+
+- `js/settings-engine.js` centraliza matriz de permissões por papel, overrides restritivos e definição dos layouts personalizáveis.
+- `profiles.permissions` guarda somente restrições específicas; o papel base continua sendo o teto de acesso.
+- `profiles.ui_preferences` guarda layout/densidade pessoal e pode ser atualizado pelo próprio usuário via `save_my_ui_preferences`.
+- A aplicação mantém fallback em `localStorage`, preservando o funcionamento caso a migration ainda não tenha sido aplicada.
+- A Central de Configurações funciona como ponto de entrada para preferências pessoais e atalhos administrativos.
+

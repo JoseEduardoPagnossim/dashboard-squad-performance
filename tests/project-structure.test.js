@@ -8,6 +8,7 @@ const index = readFileSync(join(root, 'index.html'), 'utf8');
 const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 const engine = readFileSync(join(root, 'js', 'chart-engine.js'), 'utf8');
 const predictiveEngine = readFileSync(join(root, 'js', 'predictive-engine.js'), 'utf8');
+const settingsEngine = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf8');
 
 test('chart-engine carrega antes do app principal', () => {
   const enginePos = index.indexOf('js/chart-engine.js');
@@ -76,4 +77,22 @@ test('gestao preditiva possui KPIs, alertas e comparativos', () => {
   assert.match(app, /renderPredictiveManagement/);
   assert.match(app, /predictiveScopeData/);
   for (const marker of ['projectCount','countMetric','rateMetric','technicianRisk','buildAlerts']) assert.ok(predictiveEngine.includes(marker), `predictive-engine.js deve conter ${marker}`);
+});
+
+
+test('settings-engine carrega antes do app principal', () => {
+  const enginePos = index.indexOf('js/settings-engine.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(enginePos >= 0, 'settings-engine.js deve estar no index.html');
+  assert.ok(appPos > enginePos, 'settings-engine.js deve carregar antes de app.js');
+});
+
+test('central de configuracoes possui layout e permissoes granulares', () => {
+  for (const id of ['view-settings','layoutViewSelect','layoutBlockList','saveLayoutBtn','editUserPermissions','settingsPermissionOverview']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /window\.SoftenSettingsEngine/);
+  assert.match(app, /applyPersonalLayout/);
+  assert.match(app, /hasPermission/);
+  for (const marker of ['effectivePermissions','normalizeLayout','moveBlock','toggleBlock']) assert.ok(settingsEngine.includes(marker), `settings-engine.js deve conter ${marker}`);
 });

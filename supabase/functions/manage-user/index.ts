@@ -10,6 +10,19 @@ const normalizeTech = (value: unknown) => String(value ?? '').normalize('NFKC').
 const linkKey = (value: unknown) => normalizeTech(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'')
 const periodKey = (year:number,month:number)=>year*100+month
 const previousPeriod = (year:number,month:number)=>month===1?{year:year-1,month:12}:{year,month:month-1}
+const permissionKeys = new Set(['dashboard.customize','presentation.view','presentation.manage','indicators.view','data.import','goals.manage','month.manage','finance.view','finance.manage','costs.view','feedback.manage','users.manage','audit.view','appearance.manage','permissions.manage'])
+const normalizePermissions = (value:unknown) => {
+  const raw=(value&&typeof value==='object'&&!Array.isArray(value)?value:{}) as Record<string,unknown>
+  const out:Record<string,boolean>={}
+  for(const [key,val] of Object.entries(raw))if(permissionKeys.has(key)&&val===false)out[key]=false
+  return out
+}
+const roleDefaults:Record<string,Set<string>>={
+  super_admin:new Set([...permissionKeys]),
+  squad_admin:new Set(['dashboard.customize','presentation.view','presentation.manage','data.import','goals.manage','month.manage','finance.view','finance.manage','feedback.manage','users.manage','audit.view','appearance.manage']),
+  technician:new Set(['dashboard.customize','presentation.view'])
+}
+const hasPermission=(profile:any,key:string)=>roleDefaults[profile?.role]?.has(key)===true&&profile?.permissions?.[key]!==false
 const writeAudit = async (admin:any, requester:any, event:{action:string;entityType:string;entityId?:string|null;squadId?:string|null;description?:string;beforeData?:unknown;afterData?:unknown;metadata?:unknown}) => {
   try {
     const { error } = await admin.from('audit_logs').insert({organization_id:requester.organization_id,squad_id:event.squadId||null,actor_user_id:requester.user_id,actor_name:requester.full_name||'Administrador',actor_email:requester.email||null,actor_role:requester.role,action:event.action,entity_type:event.entityType,entity_id:event.entityId||null,description:event.description||null,before_data:event.beforeData||{},after_data:event.afterData||{},metadata:event.metadata||{}})
@@ -28,13 +41,13 @@ Deno.serve(async (req) => {
     const admin=createClient(supabaseUrl,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}})
     const {data:authData,error:authError}=await admin.auth.getUser(token)
     if(authError||!authData.user)return json({error:'Sessão inválida.'},401)
-    const {data:requester}=await admin.from('profiles').select('user_id,organization_id,squad_id,role,active,full_name,email').eq('user_id',authData.user.id).eq('active',true).single()
-    if(!requester||!['super_admin','squad_admin'].includes(requester.role))return json({error:'Sem permissão para gerenciar usuários.'},403)
+    const {data:requester}=await admin.from('profiles').select('user_id,organization_id,squad_id,role,active,full_name,email,permissions').eq('user_id',authData.user.id).eq('active',true).single()
+    if(!requester||!['super_admin','squad_admin'].includes(requester.role)||!hasPermission(requester,'users.manage'))return json({error:'Sem permissão para gerenciar usuários.'},403)
 
     const body=await req.json(),action=String(body.action||''),targetId=String(body.user_id||'')
     if(!targetId)return json({error:'Usuário não informado.'},400)
     if(targetId===requester.user_id)return json({error:'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.'},403)
-    const {data:target,error:targetError}=await admin.from('profiles').select('user_id,organization_id,squad_id,full_name,email,role,technician_name,active,created_at').eq('user_id',targetId).single()
+    const {data:target,error:targetError}=await admin.from('profiles').select('user_id,organization_id,squad_id,full_name,email,role,technician_name,active,created_at,permissions').eq('user_id',targetId).single()
     if(targetError||!target||target.organization_id!==requester.organization_id)return json({error:'Usuário não encontrado no seu escopo.'},404)
     if(requester.role==='squad_admin'&&(target.role!=='technician'||target.squad_id!==requester.squad_id))return json({error:'Admin do Squad pode gerenciar somente técnicos do próprio Squad.'},403)
 
@@ -64,10 +77,14 @@ Deno.serve(async (req) => {
 
     const fullName=String(body.full_name||'').replace(/\s+/g,' ').trim()
     if(!fullName)return json({error:'Informe o nome completo.'},400)
-    let role=target.role, squadId=target.squad_id, technicianName=target.technician_name
+    let role=target.role, squadId=target.squad_id, technicianName=target.technician_name, permissions=normalizePermissions(target.permissions)
     let targetSquadCode:string|null=null
     if(requester.role==='super_admin'){
       role=String(body.role||target.role)
+      if(Object.prototype.hasOwnProperty.call(body,'permissions')){
+        if(!hasPermission(requester,'permissions.manage'))return json({error:'Sem permissão para definir permissões específicas.'},403)
+        permissions=normalizePermissions(body.permissions)
+      }
       if(!['super_admin','squad_admin','technician'].includes(role))return json({error:'Perfil inválido.'},400)
       if(role==='super_admin'){squadId=null;technicianName=null}
       else{
@@ -96,7 +113,7 @@ Deno.serve(async (req) => {
 
     const {error:authUpdateError}=await admin.auth.admin.updateUserById(targetId,{user_metadata:{full_name:fullName}})
     if(authUpdateError)return json({error:authUpdateError.message||'Não foi possível atualizar o usuário no Auth.'},400)
-    const {error:profileError}=await admin.from('profiles').update({full_name:fullName,role,squad_id:squadId,technician_name:technicianName,updated_at:new Date().toISOString()}).eq('user_id',targetId)
+    const {error:profileError}=await admin.from('profiles').update({full_name:fullName,role,squad_id:squadId,technician_name:technicianName,permissions,updated_at:new Date().toISOString()}).eq('user_id',targetId)
     if(profileError)return json({error:profileError.message||'Não foi possível atualizar o perfil.'},400)
 
     // Registra a vigência e preserva meses anteriores quando um técnico troca de Squad.
@@ -130,8 +147,8 @@ Deno.serve(async (req) => {
     }
 
     if(!targetSquadCode&&squadId){const {data:s}=await admin.from('squads').select('code').eq('id',squadId).maybeSingle();targetSquadCode=s?.code||null}
-    await writeAudit(admin,requester,{action:'user.update',entityType:'profile',entityId:targetId,squadId:squadId||target.squad_id||null,description:`Usuário ${fullName} atualizado${squadChanged?' e movimentado de Squad':''}.`,beforeData:{full_name:target.full_name,email:target.email,role:target.role,squad_id:target.squad_id,technician_name:target.technician_name,active:target.active},afterData:{full_name:fullName,email:target.email,role,squad_id:squadId,squad_code:targetSquadCode,technician_name:technicianName,active:target.active},metadata:squadChanged?{effective_year:effectiveYear,effective_month:effectiveMonth,previous_squad_id:target.squad_id}:{} })
-    return json({ok:true,user:{id:targetId,email:target.email,full_name:fullName,role,squad_code:targetSquadCode,technician_name:technicianName,active:target.active},movement:squadChanged?{effective_year:effectiveYear,effective_month:effectiveMonth}:null})
+    await writeAudit(admin,requester,{action:'user.update',entityType:'profile',entityId:targetId,squadId:squadId||target.squad_id||null,description:`Usuário ${fullName} atualizado${squadChanged?' e movimentado de Squad':''}.`,beforeData:{full_name:target.full_name,email:target.email,role:target.role,squad_id:target.squad_id,technician_name:target.technician_name,active:target.active,permissions:target.permissions||{}},afterData:{full_name:fullName,email:target.email,role,squad_id:squadId,squad_code:targetSquadCode,technician_name:technicianName,active:target.active,permissions},metadata:squadChanged?{effective_year:effectiveYear,effective_month:effectiveMonth,previous_squad_id:target.squad_id}:{} })
+    return json({ok:true,user:{id:targetId,email:target.email,full_name:fullName,role,squad_code:targetSquadCode,technician_name:technicianName,active:target.active,permissions},movement:squadChanged?{effective_year:effectiveYear,effective_month:effectiveMonth}:null})
   } catch(error) {
     console.error(error)
     return json({error:error instanceof Error?error.message:'Erro interno ao gerenciar usuário.'},500)

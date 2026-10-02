@@ -1,3 +1,16 @@
+## V2.38.0 — Configurações e personalização
+
+- nova Central de Configurações acessível a todos os perfis;
+- layout individual com ordem, visibilidade e densidade dos principais blocos de Meu desempenho, Visão do Squad e Indicadores;
+- preferências salvas localmente e sincronizáveis pelo Supabase;
+- novo motor `js/settings-engine.js` para layouts e matriz de permissões;
+- permissões granulares restritivas por usuário, sem ultrapassar o limite do papel base;
+- Admin Geral passa a editar permissões específicas no cadastro de usuário;
+- navegação e principais ações administrativas passam a respeitar as permissões efetivas;
+- Edge Functions de usuários passam a validar a permissão `users.manage`;
+- nova migração V2.38.0 com `profiles.permissions`, `profiles.ui_preferences` e RPC de preferências pessoais;
+- suíte automatizada ampliada com testes de permissões e layouts.
+
 ## V2.37.0 — Gestão preditiva
 
 - Realizado × Meta × Projeção para atendimentos, notas 5 e % de avaliação.

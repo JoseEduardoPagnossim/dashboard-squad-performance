@@ -16,6 +16,9 @@
   const {checksumText:importChecksum,summarizeService:summarizeServiceImport,summarizeQuality:summarizeQualityImport,validatePreview:validateImportPreview,historySummary:normalizeImportHistory,canRollback:canRollbackImport}=importEngine;
   const predictiveEngine = window.SoftenPredictiveEngine;
   if(!predictiveEngine) throw new Error('SoftenPredictiveEngine não carregado. Verifique js/predictive-engine.js.');
+  const settingsEngine = window.SoftenSettingsEngine;
+  if(!settingsEngine) throw new Error('SoftenSettingsEngine não carregado. Verifique js/settings-engine.js.');
+  const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups}=settingsEngine;
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -51,6 +54,9 @@
     theme:clone(DEFAULT_THEME),
     chartPreferences:clone(DEFAULT_CHART_PREFERENCES),
     appearanceScope:'squad',
+    uiPreferences:defaultUiPreferences(),
+    layoutDraft:null,
+    editPermissionDraft:{},
     colorMode:loadColorModePreference(),
     currentView:'individual',
     adminSection:'operation',
@@ -105,6 +111,71 @@
     audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
   };
 
+
+  function userPreferenceStorageKey(user=state.user){return `softenPerformanceUiPreferencesV1:${user?.userId||user?.email||'anonymous'}`}
+  function loadLocalUiPreferences(user=state.user){try{return normalizeUiPreferences(JSON.parse(localStorage.getItem(userPreferenceStorageKey(user))||'{}'))}catch(e){return defaultUiPreferences()}}
+  function saveLocalUiPreferences(prefs=state.uiPreferences,user=state.user){try{localStorage.setItem(userPreferenceStorageKey(user),JSON.stringify(normalizeUiPreferences(prefs)))}catch(e){console.warn('Não foi possível salvar o layout local.',e)}}
+  function effectivePermissionsFor(user=state.user){return settingsEffectivePermissions(user?.role||'technician',user?.permissions||{})}
+  function hasPermission(key,user=state.user){return effectivePermissionsFor(user)[key]===true}
+  function requirePermission(key,message='Você não possui permissão para esta ação.'){if(hasPermission(key))return true;toast(message);return false}
+  function loadUserUiPreferences(user=state.user){
+    const local=loadLocalUiPreferences(user),remote=user?.uiPreferences&&typeof user.uiPreferences==='object'?normalizeUiPreferences(user.uiPreferences):null;
+    state.uiPreferences=remote||local;saveLocalUiPreferences(state.uiPreferences,user);return state.uiPreferences;
+  }
+  function layoutRootForView(view){return view==='individual'?'#individualContent':view==='team'?'#teamContent':view==='indicators'?'#indicatorPerformancePanel':null}
+  function clearPersonalLayout(view){
+    const def=settingsLayoutDefinition(view);if(!def)return;
+    for(const block of def.blocks){const el=$(block.selector);if(!el)continue;el.classList.remove('layout-user-hidden');el.style.order='';}
+    const root=$(layoutRootForView(view));if(root){root.classList.remove('personal-layout-root','layout-density-compact');root.removeAttribute('data-layout-density');}
+  }
+  function applyPersonalLayout(view=state.currentView){
+    const def=settingsLayoutDefinition(view);if(!def)return;clearPersonalLayout(view);
+    const layout=normalizeUiLayout(view,state.uiPreferences?.layouts?.[view]),root=$(layoutRootForView(view));if(!root)return;
+    root.classList.add('personal-layout-root');root.dataset.layoutDensity=layout.density;root.classList.toggle('layout-density-compact',layout.density==='compact');
+    layout.order.forEach((key,index)=>{const block=def.blocks.find(b=>b.key===key),el=block?$(block.selector):null;if(!el)return;el.style.order=String(index);el.classList.toggle('layout-user-hidden',layout.hidden.includes(key));});
+  }
+  function visibleLayoutViews(){return ['individual','team',...(hasPermission('indicators.view')?['indicators']:[])]}
+  function currentLayoutDraft(){
+    const view=$('#layoutViewSelect')?.value||visibleLayoutViews()[0]||'individual';
+    if(!state.layoutDraft||state.layoutDraft.view!==view)state.layoutDraft={view,layout:normalizeUiLayout(view,state.uiPreferences?.layouts?.[view])};
+    return state.layoutDraft;
+  }
+  function renderLayoutEditor(){
+    const select=$('#layoutViewSelect');if(!select)return;
+    const allowed=visibleLayoutViews();select.innerHTML=allowed.map(v=>`<option value="${v}">${escapeHtml(settingsLayoutDefinition(v)?.label||v)}</option>`).join('');
+    if(!allowed.includes(select.value))select.value=allowed[0]||'individual';
+    if(!state.layoutDraft||state.layoutDraft.view!==select.value)state.layoutDraft={view:select.value,layout:normalizeUiLayout(select.value,state.uiPreferences?.layouts?.[select.value])};
+    const {view,layout}=state.layoutDraft,def=settingsLayoutDefinition(view);$('#layoutDensitySelect').value=layout.density;
+    $('#layoutBlockList').innerHTML=layout.order.map((key,index)=>{const block=def.blocks.find(b=>b.key===key);if(!block)return'';const visible=!layout.hidden.includes(key);return `<div class="layout-block-row" data-layout-key="${escapeHtml(key)}"><label><input type="checkbox" data-layout-visible="${escapeHtml(key)}" ${visible?'checked':''}><span><strong>${escapeHtml(block.label)}</strong><small>${visible?'Visível no painel':'Oculto no painel'}</small></span></label><div class="layout-order-actions"><button type="button" class="table-action" data-layout-move="up" ${index===0?'disabled':''}>↑</button><button type="button" class="table-action" data-layout-move="down" ${index===layout.order.length-1?'disabled':''}>↓</button></div></div>`}).join('');
+  }
+  function renderSettings(){
+    if(!$('#view-settings'))return;const perms=effectivePermissionsFor(),enabled=Object.values(perms).filter(Boolean).length;
+    $('#settingsRoleLabel').textContent=roleLabel(state.user?.role||'');$('#settingsPermissionSummary').textContent=`${enabled} permissões ativas no perfil`;
+    $('#layoutSaveStatus').textContent=hasPermission('dashboard.customize')?'Personalizável':'Bloqueado';
+    $('#layoutViewSelect').disabled=!hasPermission('dashboard.customize');$('#layoutDensitySelect').disabled=!hasPermission('dashboard.customize');$('#saveLayoutBtn').disabled=!hasPermission('dashboard.customize');$('#resetLayoutBtn').disabled=!hasPermission('dashboard.customize');
+    renderLayoutEditor();
+    const groups=settingsPermissionGroups(state.user?.role||'technician');if($('#settingsPermissionOverview'))$('#settingsPermissionOverview').innerHTML=Object.entries(groups).map(([section,items])=>`<div><strong>${escapeHtml(section)}</strong><span>${items.filter(p=>perms[p.key]).length}/${items.length} ativas</span></div>`).join('');
+  }
+  async function persistMyUiPreferences(){
+    saveLocalUiPreferences(state.uiPreferences);
+    if(!state.supabase)return true;
+    try{const {error}=await state.supabase.rpc('save_my_ui_preferences',{p_preferences:normalizeUiPreferences(state.uiPreferences)});if(error)throw error;state.user.uiPreferences=clone(state.uiPreferences);return true}catch(err){console.warn('Preferências salvas localmente; persistência no Supabase indisponível. Execute a migração V2.38.0.',err);return false}
+  }
+  async function saveCurrentLayout(){
+    if(!requirePermission('dashboard.customize'))return;const draft=currentLayoutDraft();draft.layout.density=$('#layoutDensitySelect').value==='compact'?'compact':'comfortable';
+    state.uiPreferences=normalizeUiPreferences({...state.uiPreferences,layouts:{...(state.uiPreferences?.layouts||{}),[draft.view]:draft.layout}});applyPersonalLayout(draft.view);const remote=await persistMyUiPreferences();$('#layoutSaveStatus').textContent=remote?'Salvo':'Salvo localmente';toast(remote?'Layout salvo.':'Layout salvo neste navegador. Execute a migração V2.38.0 para sincronizar entre dispositivos.');
+  }
+  async function resetCurrentLayout(){
+    if(!requirePermission('dashboard.customize'))return;const view=$('#layoutViewSelect').value;state.layoutDraft={view,layout:normalizeUiLayout(view,{})};state.uiPreferences=normalizeUiPreferences({...state.uiPreferences,layouts:{...(state.uiPreferences?.layouts||{}),[view]:state.layoutDraft.layout}});renderLayoutEditor();applyPersonalLayout(view);await persistMyUiPreferences();$('#layoutSaveStatus').textContent='Padrão restaurado';toast('Layout restaurado para o padrão.');
+  }
+  function changeLayoutDraftMove(key,direction){const draft=currentLayoutDraft();draft.layout=moveUiBlock(draft.view,draft.layout,key,direction);renderLayoutEditor()}
+  function changeLayoutDraftVisibility(key,visible){const draft=currentLayoutDraft();draft.layout=toggleUiBlock(draft.view,draft.layout,key,visible);renderLayoutEditor()}
+  function renderPermissionEditor(role=$('#editUserRole')?.value||'technician'){
+    const wrap=$('#editUserPermissions');if(!wrap)return;const section=$('#editUserPermissionsSection');section?.classList.toggle('hidden',!isSuperAdmin()||!hasPermission('permissions.manage'));if(!isSuperAdmin()||!hasPermission('permissions.manage'))return;
+    const groups=settingsPermissionGroups(role),raw=state.editPermissionDraft||{};wrap.innerHTML=Object.entries(groups).map(([group,items])=>`<div class="permission-group"><strong>${escapeHtml(group)}</strong>${items.map(item=>`<label><input type="checkbox" data-user-permission="${escapeHtml(item.key)}" ${raw[item.key]===false?'':'checked'}><span>${escapeHtml(item.label)}</span></label>`).join('')}</div>`).join('');
+  }
+  function collectPermissionOverrides(){const out={};$$('[data-user-permission]').forEach(input=>{if(!input.checked)out[input.dataset.userPermission]=false});return out}
+
   function currentChartPreferences(){return normalizeChartPreferences(state.theme?.chartPreferences||state.chartPreferences||DEFAULT_CHART_PREFERENCES)}
   function applyChartPreferences(prefs){
     const cfg=applyChartCssVariables(document.documentElement.style,prefs);
@@ -141,7 +212,7 @@
     if(state.appearanceScope==='all'&&isSuperAdmin())return Object.keys(state.squads||{}).filter(code=>code!=='all');
     return state.squadCode&&state.squadCode!=='all'?[state.squadCode]:[];
   }
-  function canEditAppearance(){return isAdmin()&&appearanceScopeCodes().length>0}
+  function canEditAppearance(){return isAdmin()&&hasPermission('appearance.manage')&&appearanceScopeCodes().length>0}
   function appearanceScopeLabel(){const codes=appearanceScopeCodes();return state.appearanceScope==='all'&&isSuperAdmin()?`todos os Squads (${codes.join(', ')})`:(codes[0]?`Squad ${codes[0]}`:'nenhum Squad')}
   function previewChartPreferences(){
     if(!canEditAppearance())return;
@@ -218,7 +289,7 @@
   function rememberLastSquad(code){if(!code||code==='all')return;try{localStorage.setItem(LAST_SQUAD_KEY,String(code))}catch(e){}}
   let themePersistTimer=null;
   function saveTheme(){
-    const codes=appearanceScopeCodes();if(!codes.length)return;
+    if(!hasPermission('appearance.manage'))return;const codes=appearanceScopeCodes();if(!codes.length)return;
     if(state.squadCode&&state.squadCode!=='all')rememberLastSquad(state.squadCode);
     const normalized=normalizeThemePayload(state.theme),themes=allThemes();
     codes.forEach(code=>{themes[code]=clone(normalized);if(state.squads?.[code])state.squads[code].theme=clone(normalized)});
@@ -261,6 +332,16 @@
     $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
     $('#logoutBtn').addEventListener('click',logout);
     $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view,btn.dataset.adminSection||null)));
+    if($('#layoutViewSelect'))$('#layoutViewSelect').addEventListener('change',()=>{state.layoutDraft=null;renderLayoutEditor();});
+    if($('#layoutDensitySelect'))$('#layoutDensitySelect').addEventListener('change',()=>{const draft=currentLayoutDraft();draft.layout.density=$('#layoutDensitySelect').value==='compact'?'compact':'comfortable';});
+    if($('#layoutBlockList'))$('#layoutBlockList').addEventListener('click',e=>{const move=e.target.closest('[data-layout-move]');if(move){const row=move.closest('[data-layout-key]');if(row)changeLayoutDraftMove(row.dataset.layoutKey,move.dataset.layoutMove);}});
+    if($('#layoutBlockList'))$('#layoutBlockList').addEventListener('change',e=>{const input=e.target.closest('[data-layout-visible]');if(input)changeLayoutDraftVisibility(input.dataset.layoutVisible,!!input.checked);});
+    if($('#saveLayoutBtn'))$('#saveLayoutBtn').addEventListener('click',saveCurrentLayout);
+    if($('#resetLayoutBtn'))$('#resetLayoutBtn').addEventListener('click',resetCurrentLayout);
+    $$('[data-settings-route]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.permission&&!hasPermission(btn.dataset.permission))return toast('Você não possui permissão para esta configuração.');showView('admin',btn.dataset.settingsRoute)}));
+    $$('[data-settings-view]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.permission&&!hasPermission(btn.dataset.permission))return toast('Você não possui permissão para esta tela.');showView(btn.dataset.settingsView)}));
+    if($('#openUsersPermissionsBtn'))$('#openUsersPermissionsBtn').addEventListener('click',()=>showView('users'));
+    if($('#resetUserPermissionsBtn'))$('#resetUserPermissionsBtn').addEventListener('click',()=>{state.editPermissionDraft={};renderPermissionEditor($('#editUserRole').value);});
     ['#topUserProfileBtn'].forEach(sel=>{const el=$(sel);if(!el)return;el.addEventListener('click',()=>showView('profile'));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('profile')}})});
     $('#profilePasswordForm').addEventListener('submit',handleProfilePasswordChange);
     const mobileMenu=$('#mobileMenu');
@@ -280,12 +361,12 @@
     $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
     $('#monthSelect').addEventListener('change',e=>{state.currentId=e.target.value; chooseDefaultTech(); refreshSelectors(); render();});
     $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
-    $('#adminImportBtn').addEventListener('click',()=>openImport('service'));
-    if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>openImport('quality'));
-    if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>openImport('quality'));
-    $('#adminThemeBtn').addEventListener('click',()=>{if(canEditAppearance())openModal('themeModal');else toast('Selecione um Squad específico ou use Todos os Squads como Admin Geral.')});
-    if($('#openUsersBtn'))$('#openUsersBtn').addEventListener('click',()=>showView('users'));
-    $('#newUserBtn').addEventListener('click',openCreateUser);
+    $('#adminImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('service')});
+    if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
+    if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
+    $('#adminThemeBtn').addEventListener('click',()=>{if(!requirePermission('appearance.manage'))return;if(canEditAppearance())openModal('themeModal');else toast('Selecione um Squad específico ou use Todos os Squads como Admin Geral.')});
+    if($('#openUsersBtn'))$('#openUsersBtn').addEventListener('click',()=>{if(requirePermission('users.manage'))showView('users')});
+    $('#newUserBtn').addEventListener('click',()=>{if(requirePermission('users.manage'))openCreateUser()});
     if($('#auditSearchInput'))$('#auditSearchInput').addEventListener('input',renderAuditRows);
     if($('#auditCategoryFilter'))$('#auditCategoryFilter').addEventListener('change',renderAuditRows);
     if($('#refreshAuditBtn'))$('#refreshAuditBtn').addEventListener('click',()=>renderAuditLogView(true));
@@ -297,7 +378,7 @@
     $('#createUserForm').addEventListener('submit',handleCreateUser);
     $('#newUserRole').addEventListener('change',syncCreateUserFields);
     $('#editUserForm').addEventListener('submit',handleEditUser);
-    $('#editUserRole').addEventListener('change',syncEditUserFields);
+    $('#editUserRole').addEventListener('change',()=>{syncEditUserFields();state.editPermissionDraft={};renderPermissionEditor($('#editUserRole').value);});
     $('#editUserSquad').addEventListener('change',syncEditUserFields);
     $('#userSearchInput').addEventListener('input',renderUserRows);
     $('#userRoleFilter').addEventListener('change',renderUserRows);
@@ -461,7 +542,7 @@
   }
 
   async function enterApp(user){
-    state.user=user;
+    state.user=user;loadUserUiPreferences(user);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;
     const requestedPresentationSquad=PRESENTATION_ROUTE.enabled?String(PRESENTATION_ROUTE.squad||'').toUpperCase():'';
     if(PRESENTATION_ROUTE.enabled){
@@ -493,9 +574,20 @@
     $$('.tech-only').forEach(el=>el.classList.toggle('hidden',!isTechnician()));
     $$('.admin-help').forEach(el=>el.classList.toggle('hidden',!admin));
     $$('.super-help').forEach(el=>el.classList.toggle('hidden',!superAdmin));
+    $$('[data-permission]').forEach(el=>{const allowed=hasPermission(el.dataset.permission);el.classList.toggle('permission-hidden',!allowed);if('disabled' in el)el.disabled=!allowed;});
+    if($('#operationNavBtn'))$('#operationNavBtn').classList.toggle('permission-hidden',!(hasPermission('data.import')||hasPermission('goals.manage')||hasPermission('month.manage')));
+    const permissionButtons={
+      'data.import':['#adminImportBtn','#adminQualityImportBtn','#qualityImportBtn','#confirmCsvImportBtn','#undoLastImportBtn'],
+      'goals.manage':['#saveGoalsBtn','#autoGoalBtn','#saveMonthlyMetricsBtn','#saveScoreSettingsBtn','#copyPreviousGoalsBtn'],
+      'finance.manage':['#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn','#saveSuperAdminCommissionBtn'],
+      'costs.view':['#saveSupportCostsBtn','#copyPreviousSupportCostsBtn'],
+      'feedback.manage':['#generateSquadFeedbacksBtn','#regenerateSquadFeedbacksBtn','#feedbackSaveDraftBtn','#feedbackFinalizeBtn','#feedbackRegenerateBtn'],
+      'appearance.manage':['#adminThemeBtn','#importThemeBtn','#exportThemeBtn','#saveChartPrefsBtn','#resetChartPrefsBtn','#removeBg']
+    };
+    for(const [permission,selectors] of Object.entries(permissionButtons))for(const selector of selectors){const el=$(selector);if(el)el.disabled=!hasPermission(permission);}
     const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
     $('.technician-control').classList.toggle('hidden',isTechnician()||state.currentView!=='individual'||state.squadCode==='all'||costAdminView);
-    const analyticalView=['individual','team','indicators','presentation'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','audit','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
+    const analyticalView=['individual','team','indicators','presentation'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','audit','settings','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
     syncAnalysisDateControls();
     if($('#topUserName'))$('#topUserName').textContent=state.user.fullName;
@@ -724,20 +816,27 @@
   function showView(name,adminSection=null){
     if((name==='admin'||name==='users'||name==='feedbacks'||name==='audit')&&!isAdmin())return;
     if(name==='my-feedbacks'&&!isTechnician())return;
-    if(name==='indicators'&&!isSuperAdmin())return;
-    if(name==='admin'&&adminSection==='costs'&&!isSuperAdmin())return;
+    if(name==='indicators'&&!hasPermission('indicators.view'))return toast('Você não possui permissão para visualizar Indicadores.');
+    if(name==='presentation'&&!hasPermission('presentation.view'))return toast('Você não possui permissão para visualizar a Apresentação.');
+    if(name==='users'&&!hasPermission('users.manage'))return toast('Você não possui permissão para gerenciar usuários.');
+    if(name==='feedbacks'&&!hasPermission('feedback.manage'))return toast('Você não possui permissão para gerenciar feedbacks.');
+    if(name==='audit'&&!hasPermission('audit.view'))return toast('Você não possui permissão para visualizar a auditoria.');
+    if(name==='admin'&&adminSection==='operation'&&!hasPermission('data.import')&&!hasPermission('goals.manage')&&!hasPermission('month.manage'))return toast('Você não possui permissão para administrar a operação.');
+    if(name==='admin'&&adminSection==='finance'&&!hasPermission('finance.view'))return toast('Você não possui permissão para visualizar a bonificação administrativa.');
+    if(name==='admin'&&adminSection==='costs'&&!hasPermission('costs.view'))return toast('Você não possui permissão para visualizar os custos.');
+    if(name==='admin'&&adminSection==='appearance'&&!hasPermission('appearance.manage'))return toast('Você não possui permissão para alterar a aparência.');
     if(name==='individual'&&state.squadCode==='all')name='team';
     if(name==='admin'&&adminSection)state.adminSection=adminSection;
     state.currentView=name;
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;b.classList.toggle('active',sameView&&sameSection)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
-    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';
     const costAdminView=name==='admin'&&state.adminSection==='costs';
     $('.technician-control').classList.toggle('hidden',name!=='individual'||isTechnician()||state.squadCode==='all'||costAdminView);
     const analytical=name==='individual'||name==='team'||name==='indicators'||name==='presentation';
-    $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='users'||name==='audit'||name==='profile'||name==='my-feedbacks'||name==='help');
+    $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='users'||name==='audit'||name==='settings'||name==='profile'||name==='my-feedbacks'||name==='help');
     if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!(name==='individual'||name==='team'));
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
     syncAnalysisDateControls();
@@ -765,14 +864,16 @@
     if(state.currentView==='users')renderUsers().catch(err=>{console.error(err);toast('Não foi possível carregar os usuários.')});
     if(state.currentView==='audit'){renderAuditLogView().catch(err=>{console.error(err);toast('Não foi possível carregar a auditoria.')});return;}
     if(state.currentView==='help')renderHelp();
+    if(state.currentView==='settings'){renderSettings();return;}
     if(state.currentView==='profile')renderProfile();
-    if(state.currentView==='indicators')renderIndicators();
+    if(state.currentView==='indicators'){renderIndicators();applyPersonalLayout('indicators');}
     if(state.currentView==='presentation'){renderPresentation();return;}
     if(state.squadCode==='all'){renderTeam();renderAdmin();return}
     const m=currentMonth();
     $('#individualEmpty').classList.toggle('hidden',!!m);$('#individualContent').classList.toggle('hidden',!m);
     $('#teamEmpty').classList.toggle('hidden',!!m);$('#teamContent').classList.toggle('hidden',!m);
-    if(m){renderIndividual();renderTeam();}
+    if(m){renderIndividual();renderTeam();applyPersonalLayout('individual');applyPersonalLayout('team');}
+    if(state.currentView==='indicators')applyPersonalLayout('indicators');
     renderAdmin();
   }
 
@@ -1725,7 +1826,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const store=loadDemoFeedbackStore();payloads.forEach(p=>{const ix=store.findIndex(r=>r.squad_code===state.squadCode&&safe(r.year)===safe(p.year)&&safe(r.month)===safe(p.month)&&samePersonName(r.technician_name,p.technician_name));const row={...p,id:ix>=0?store[ix].id:`demo-feedback-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,squad_code:state.squadCode,organization_id:p.organization_id||'demo-org',squad_id:p.squad_id||`demo-${state.squadCode}`};if(ix>=0)store[ix]=row;else store.push(row)});saveDemoFeedbackStore(store);return store.filter(r=>r.squad_code===state.squadCode&&safe(r.year)===safe(currentMonth().year)&&safe(r.month)===safe(currentMonth().month)).map(normalizeFeedbackRow);
   }
   async function generateSquadFeedbacks(){
-    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth(),squad=currentSquad();if(!m)return toast('Selecione uma competência com dados.');const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded(),techs=feedbackMonthTechs(m),missing=techs.filter(t=>!feedbackRowForTech(rows,t.name));if(!missing.length)return toast('Todos os feedbacks desta competência já foram gerados.');const btn=$('#generateSquadFeedbacksBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='Gerando...';try{const payloads=missing.map(t=>feedbackPayloadForTech(t,generatedFeedbackForTech(t,m,squad)));const saved=await persistGeneratedFeedbacks(payloads);state.feedbackCache[key]=state.supabase?[...rows,...saved.filter(n=>!feedbackRowForTech(rows,n.technician_name))]:saved;toast(`${missing.length} feedback(s) gerado(s) como rascunho.`);renderFeedbacks();}catch(err){console.error(err);toast('Não foi possível gerar os feedbacks. Confira a migração V2.25.0.');}finally{btn.disabled=false;btn.textContent=old;}}
+    if(!isAdmin()||!hasPermission('feedback.manage')||!requireSpecificSquad())return;const m=currentMonth(),squad=currentSquad();if(!m)return toast('Selecione uma competência com dados.');const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded(),techs=feedbackMonthTechs(m),missing=techs.filter(t=>!feedbackRowForTech(rows,t.name));if(!missing.length)return toast('Todos os feedbacks desta competência já foram gerados.');const btn=$('#generateSquadFeedbacksBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='Gerando...';try{const payloads=missing.map(t=>feedbackPayloadForTech(t,generatedFeedbackForTech(t,m,squad)));const saved=await persistGeneratedFeedbacks(payloads);state.feedbackCache[key]=state.supabase?[...rows,...saved.filter(n=>!feedbackRowForTech(rows,n.technician_name))]:saved;toast(`${missing.length} feedback(s) gerado(s) como rascunho.`);renderFeedbacks();}catch(err){console.error(err);toast('Não foi possível gerar os feedbacks. Confira a migração V2.25.0.');}finally{btn.disabled=false;btn.textContent=old;}}
   async function generateSingleFeedback(techName){const m=currentMonth(),squad=currentSquad(),t=feedbackMonthTechs(m).find(x=>samePersonName(x.name,techName));if(!t)return;const key=feedbackScopeKey(squad,m),rows=await ensureFeedbacksLoaded();try{const saved=await persistGeneratedFeedbacks([feedbackPayloadForTech(t,generatedFeedbackForTech(t,m,squad))]);const row=saved.find(x=>samePersonName(x.technician_name,t.name))||saved[0];state.feedbackCache[key]=[...rows.filter(x=>!samePersonName(x.technician_name,t.name)),row];renderFeedbacks();openFeedbackEditor(row,t);}catch(err){console.error(err);toast('Não foi possível gerar este feedback.');}}
 
   async function regenerateSquadFeedbacks(){
@@ -1753,7 +1854,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     state.feedbackEditor={row,t};const snap=row.generated_snapshot&&Object.keys(row.generated_snapshot).length?row.generated_snapshot:feedbackSnapshotForTech(t);$('#feedbackEditorTech').textContent=titleWords(t.name);$('#feedbackEditorPeriod').textContent=`${currentMonth().monthName} ${currentMonth().year} • Squad ${state.squadCode}`;const finalized=row.status==='finalized';$('#feedbackEditorStatus').textContent=finalized?'FINALIZADO':'RASCUNHO';$('#feedbackEditorStatus').className=`feedback-status-badge ${finalized?'finalized':'draft'}`;$('#feedbackSummary').value=row.summary||'';$('#feedbackStrengths').value=row.strengths||'';$('#feedbackImprovements').value=row.improvement_points||'';$('#feedbackNextGoals').value=row.next_month_goals||'';$('#feedbackManagerNotes').value=row.manager_notes||'';$('#feedbackVisibleToTechnician').checked=!!row.visible_to_technician;$('#feedbackEditorMetrics').innerHTML=[['Atendimentos',fmtInt(snap.att)],['Avaliações',fmtInt(snap.totalEval)],['% avaliação',fmtPct(snap.evalPct)],['Nota média',safe(snap.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})],['Pontuação',fmtNum(snap.points)],['Ranking',snap.rank?`#${snap.rank}`:'—']].map(([a,b])=>`<div class="feedback-editor-metric"><span>${a}</span><strong>${b}</strong></div>`).join('');openModal('feedbackEditorModal');
   }
   async function saveFeedbackEditor(status='draft'){
-    const editor=state.feedbackEditor;if(!editor?.row||!editor?.t)return;const row=editor.row,key=feedbackScopeKey(),now=new Date().toISOString(),payload={summary:$('#feedbackSummary').value.trim(),strengths:$('#feedbackStrengths').value.trim(),improvement_points:$('#feedbackImprovements').value.trim(),next_month_goals:$('#feedbackNextGoals').value.trim(),manager_notes:$('#feedbackManagerNotes').value.trim(),visible_to_technician:$('#feedbackVisibleToTechnician').checked,status,updated_by:state.user.userId||null,updated_at:now,finalized_at:status==='finalized'?now:null};const btn=status==='finalized'?$('#feedbackFinalizeBtn'):$('#feedbackSaveDraftBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='Salvando...';try{let saved;if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').update(payload).eq('id',row.id).select('*').single();if(error)throw error;saved=normalizeFeedbackRow(data);}else{const store=loadDemoFeedbackStore(),ix=store.findIndex(x=>x.id===row.id);saved=normalizeFeedbackRow({...row,...payload});if(ix>=0)store[ix]=saved;saveDemoFeedbackStore(store);}state.feedbackCache[key]=(state.feedbackCache[key]||[]).map(x=>x.id===saved.id?saved:x);state.feedbackEditor={row:saved,t:editor.t};closeModal('feedbackEditorModal');renderFeedbacks();toast(status==='finalized'?'Feedback finalizado.':'Rascunho salvo.');}catch(err){console.error(err);toast('Não foi possível salvar o feedback.');}finally{btn.disabled=false;btn.textContent=old;}}
+    if(!hasPermission('feedback.manage'))return toast('Você não possui permissão para gerenciar feedbacks.');const editor=state.feedbackEditor;if(!editor?.row||!editor?.t)return;const row=editor.row,key=feedbackScopeKey(),now=new Date().toISOString(),payload={summary:$('#feedbackSummary').value.trim(),strengths:$('#feedbackStrengths').value.trim(),improvement_points:$('#feedbackImprovements').value.trim(),next_month_goals:$('#feedbackNextGoals').value.trim(),manager_notes:$('#feedbackManagerNotes').value.trim(),visible_to_technician:$('#feedbackVisibleToTechnician').checked,status,updated_by:state.user.userId||null,updated_at:now,finalized_at:status==='finalized'?now:null};const btn=status==='finalized'?$('#feedbackFinalizeBtn'):$('#feedbackSaveDraftBtn');btn.disabled=true;const old=btn.textContent;btn.textContent='Salvando...';try{let saved;if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').update(payload).eq('id',row.id).select('*').single();if(error)throw error;saved=normalizeFeedbackRow(data);}else{const store=loadDemoFeedbackStore(),ix=store.findIndex(x=>x.id===row.id);saved=normalizeFeedbackRow({...row,...payload});if(ix>=0)store[ix]=saved;saveDemoFeedbackStore(store);}state.feedbackCache[key]=(state.feedbackCache[key]||[]).map(x=>x.id===saved.id?saved:x);state.feedbackEditor={row:saved,t:editor.t};closeModal('feedbackEditorModal');renderFeedbacks();toast(status==='finalized'?'Feedback finalizado.':'Rascunho salvo.');}catch(err){console.error(err);toast('Não foi possível salvar o feedback.');}finally{btn.disabled=false;btn.textContent=old;}}
   async function loadMyFeedbacks(force=false){if(!isTechnician())return[];if(state.myFeedbacks&&!force)return state.myFeedbacks;if(state.myFeedbackLoading)return state.myFeedbacks||[];state.myFeedbackLoading=true;try{let rows=[];if(state.supabase){const {data,error}=await state.supabase.from('technician_feedbacks').select('*').eq('technician_user_id',state.user.userId).eq('status','finalized').eq('visible_to_technician',true).order('year',{ascending:false}).order('month',{ascending:false});if(error)throw error;rows=(data||[]).map(normalizeFeedbackRow);}else rows=loadDemoFeedbackStore().filter(r=>r.status==='finalized'&&r.visible_to_technician&&samePersonName(r.technician_name,state.user.techName)).sort((a,b)=>(safe(b.year)*100+safe(b.month))-(safe(a.year)*100+safe(a.month))).map(normalizeFeedbackRow);state.myFeedbacks=rows;return rows;}catch(err){console.error(err);state.myFeedbacks=[];return[]}finally{state.myFeedbackLoading=false;if(state.currentView==='my-feedbacks')renderMyFeedbacks();}}
   function renderMyFeedbacks(){if(!isTechnician()||!$('#myFeedbackRows'))return;if(!state.myFeedbacks){$('#myFeedbackRows').innerHTML='<div class="card chart-empty">Carregando feedbacks...</div>';loadMyFeedbacks();return;}const rows=state.myFeedbacks;$('#myFeedbackRows').innerHTML=rows.map(r=>{const snap=r.generated_snapshot||{},period=`${MONTHS_PT[Math.max(0,safe(r.month)-1)]||r.month}/${r.year}`;return `<article class="card my-feedback-card"><div class="my-feedback-head"><div><span class="eyebrow">${escapeHtml(period)} • SQUAD ${escapeHtml(snap.squad||state.user.squadCode||'')}</span><h3>Feedback mensal</h3><p>Finalizado em ${r.finalized_at?formatDateTime(r.finalized_at):'data não informada'}</p></div><span class="feedback-status-badge finalized">FINALIZADO</span></div><div class="my-feedback-sections"><div class="my-feedback-block full"><span>Resumo</span><p>${escapeHtml(r.summary||'—')}</p></div><div class="my-feedback-block"><span>Pontos positivos</span><p>${escapeHtml(r.strengths||'—')}</p></div><div class="my-feedback-block"><span>Pontos de desenvolvimento</span><p>${escapeHtml(r.improvement_points||'—')}</p></div><div class="my-feedback-block"><span>Compromissos</span><p>${escapeHtml(r.next_month_goals||'—')}</p></div><div class="my-feedback-block"><span>Observações do gestor</span><p>${escapeHtml(r.manager_notes||'Sem observações adicionais.')}</p></div></div></article>`}).join('')||'<div class="empty-state"><div>✎</div><h2>Nenhum feedback compartilhado</h2><p>Quando seu gestor finalizar e liberar um feedback mensal, ele aparecerá aqui.</p></div>';}
 
@@ -1830,14 +1931,22 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderUserRows();
   }
   async function loadUserDirectory(){
-    if(!isAdmin())return;
+    if(!isAdmin()||!hasPermission('users.manage'))return;
     if(state.supabase){
-      let q=state.supabase.from('profiles').select('user_id,email,full_name,role,squad_id,technician_name,active,squads(code,name)').order('full_name');
-      if(!isSuperAdmin() && currentSquad()?.dbId) q=q.eq('squad_id',currentSquad().dbId);
-      const {data,error}=await q;if(error)throw error;
-      state.userDirectory=(data||[]).map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:p.role,squadCode:p.squads?.code||null,techName:p.technician_name||'',active:p.active!==false}));
+      let rows=null;
+      try{
+        let q=state.supabase.from('profiles').select('user_id,email,full_name,role,squad_id,technician_name,active,permissions,squads(code,name)').order('full_name');
+        if(!isSuperAdmin() && currentSquad()?.dbId) q=q.eq('squad_id',currentSquad().dbId);
+        const {data,error}=await q;if(error)throw error;rows=data||[];
+      }catch(err){
+        console.warn('Permissões granulares ainda não disponíveis no banco; usando perfis padrão.',err);
+        let q=state.supabase.from('profiles').select('user_id,email,full_name,role,squad_id,technician_name,active,squads(code,name)').order('full_name');
+        if(!isSuperAdmin() && currentSquad()?.dbId) q=q.eq('squad_id',currentSquad().dbId);
+        const {data,error}=await q;if(error)throw error;rows=data||[];
+      }
+      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:p.role,squadCode:p.squads?.code||null,techName:p.technician_name||'',active:p.active!==false,permissions:p.permissions||{}}));
     }else{
-      state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:u.role,squadCode:u.squadCode||null,techName:u.techName||'',active:u.active!==false}));
+      state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:u.role,squadCode:u.squadCode||null,techName:u.techName||'',active:u.active!==false,permissions:u.permissions||{}}));
     }
     state.userDirectoryLoaded=true;
   }
@@ -1864,7 +1973,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function directoryUserById(userId){return (state.userDirectory||[]).find(u=>String(u.userId)===String(userId))||null}
   function canManageDirectoryUser(u){
-    if(!u||!isAdmin())return false;
+    if(!u||!isAdmin()||!hasPermission('users.manage'))return false;
     if(String(u.userId)===String(state.user?.userId))return false;
     if(isSuperAdmin())return true;
     return u.role==='technician'&&u.squadCode===state.user.squadCode;
@@ -1885,7 +1994,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     squadSel.innerHTML='<option value="">Sem Squad</option>'+allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
     squadSel.value=u.squadCode||'';squadSel.dataset.originalSquad=u.squadCode||'';$('#editUserTechName').value=u.techName||'';
     const now=new Date(),year=now.getFullYear(),month=now.getMonth()+1;$('#editUserEffectiveMonth').value=`${year}-${String(month).padStart(2,'0')}`;
-    syncEditUserFields();openModal('editUserModal');
+    state.editPermissionDraft={...(u.permissions||{})};syncEditUserFields();renderPermissionEditor(u.role);openModal('editUserModal');
   }
   function syncEditUserFields(){
     const role=$('#editUserRole').value,isSuper=role==='super_admin';
@@ -1901,7 +2010,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{
       const role=isSuperAdmin()?$('#editUserRole').value:u.role,squadCode=role==='super_admin'?null:(isSuperAdmin()?$('#editUserSquad').value:u.squadCode),techName=role==='technician'?normalizeName($('#editUserTechName').value):null;
       const period=$('#editUserEffectiveMonth').value||'',parts=period.split('-').map(Number);
-      const payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null};
+      const permissions=isSuperAdmin()&&hasPermission('permissions.manage')?collectPermissionOverrides():u.permissions||{};
+      const payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null,permissions};
       if(!payload.fullName)throw new Error('Informe o nome completo.');if(role!=='super_admin'&&!state.squads[squadCode])throw new Error('Selecione um Squad válido.');if(role==='technician'&&!techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
       if(state.supabase)await manageSupabaseUser('update',payload);else updateDemoUser({...payload,active:u.active});
       state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('editUserModal');toast(`Usuário ${payload.fullName} atualizado${u.squadCode!==squadCode?` e movimentado para o Squad ${squadCode}`:''}.`);
@@ -1918,18 +2028,18 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{if(state.supabase)await manageSupabaseUser('delete',{userId:u.userId});else deleteDemoUser(u);state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();toast(`Usuário ${u.fullName} excluído.`)}catch(err){console.error(err);toast(humanManageUserError(err))}
   }
   async function manageSupabaseUser(action,payload){
-    const body={action,user_id:payload.userId,full_name:payload.fullName,role:payload.role,squad_code:payload.squadCode,technician_name:payload.techName,active:payload.active,effective_year:payload.effectiveYear,effective_month:payload.effectiveMonth};
+    const body={action,user_id:payload.userId,full_name:payload.fullName,role:payload.role,squad_code:payload.squadCode,technician_name:payload.techName,active:payload.active,effective_year:payload.effectiveYear,effective_month:payload.effectiveMonth,permissions:payload.permissions};
     const {data,error}=await state.supabase.functions.invoke('manage-user',{body});if(error)throw await edgeFunctionErrorMessage(error);if(data?.error)throw new Error(data.error);return data
   }
   function updateDemoUser(p){
-    const list=loadDemoCreatedUsers(),i=list.findIndex(x=>String(x.userId)===String(p.userId));if(i>=0){list[i]={...list[i],fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,active:p.active};saveDemoCreatedUsers(list);return}
+    const list=loadDemoCreatedUsers(),i=list.findIndex(x=>String(x.userId)===String(p.userId));if(i>=0){list[i]={...list[i],fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,active:p.active,permissions:p.permissions||list[i].permissions||{}};saveDemoCreatedUsers(list);return}
     throw new Error('Usuários de demonstração padrão não são editáveis. Crie um usuário demo para testar esta função.');
   }
   function deleteDemoUser(u){const list=loadDemoCreatedUsers(),next=list.filter(x=>String(x.userId)!==String(u.userId));if(next.length===list.length)throw new Error('Usuários de demonstração padrão não podem ser excluídos.');saveDemoCreatedUsers(next)}
-  function humanManageUserError(err){const m=String(err?.message||err||'');if(/function|failed to fetch|non-2xx/i.test(m))return'Falha no servidor. Confira se a Edge Function manage-user V2.19.0 foi publicada.';if(/self|próprio|proprio/i.test(m))return'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.';if(/movimenta.*futur|competência.*futur/i.test(m))return'A movimentação deve começar no mês atual ou em uma competência anterior.';return m||'Não foi possível concluir a operação.'}
+  function humanManageUserError(err){const m=String(err?.message||err||'');if(/function|failed to fetch|non-2xx/i.test(m))return'Falha no servidor. Confira se a Edge Function manage-user V2.38.0 foi publicada.';if(/self|próprio|proprio/i.test(m))return'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.';if(/movimenta.*futur|competência.*futur/i.test(m))return'A movimentação deve começar no mês atual ou em uma competência anterior.';return m||'Não foi possível concluir a operação.'}
 
   function openCreateUser(){
-    if(!isAdmin())return;
+    if(!isAdmin()||!hasPermission('users.manage'))return;
     $('#createUserForm').reset();$('#createUserError').textContent='';
     const roleSel=$('#newUserRole');
     if(isSuperAdmin()) roleSel.innerHTML='<option value="technician">Técnico</option><option value="squad_admin">Admin do Squad</option><option value="super_admin">Admin geral</option>';
@@ -2093,6 +2203,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     updateSupportCostPreview();
   }
   async function saveSupportCosts(){
+    if(!hasPermission('costs.view'))return toast('Você não possui permissão para alterar os custos.');
     if(!isSuperAdmin())return;
     const id=state.supportCostMonthId;if(!id)return toast('Selecione uma competência.');
     const before=clone(state.supportCostCache?.[id]||{}),{year,month}=supportCostMonthParts(id),payroll=Math.max(0,safe($('#supportPayrollCost')?.value)),other=Math.max(0,safe($('#supportOtherCosts')?.value)),detected=supportCostDetectedTechnicians(id),techs=Math.max(1,Math.round(safe($('#supportTechnicianCount')?.value)||detected||1)),hours=Math.max(.5,safe($('#supportHoursPerDay')?.value)||8),row={organization_id:state.user.organizationId||'demo',year,month,payroll_cost:Number(payroll.toFixed(2)),other_costs:Number(other.toFixed(2)),technician_count:techs,hours_per_day:Number(hours.toFixed(2)),updated_by:state.user.userId||null,updated_at:new Date().toISOString()};
@@ -2180,6 +2291,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
 
   function monthlyMetricsAuditSnapshot(m){return(m?.technicians||[]).map(t=>({name:t.name,evaluationExcludedAtt:normalizedEvaluationExcludedAtt(t),goalAtt:safe(t.goalAtt),goalEval:safe(t.goalEval),evalPct:safe(t.evalPct),points:safe(t.points),goalsHit:safe(t.goalsHit),status:t.status||''}))}
   async function saveMonthlyMetrics(){
+    if(!hasPermission('goals.manage'))return toast('Você não possui permissão para alterar metas individuais.');
     if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar metas ou bonificações.');return}const btn=$('#saveMonthlyMetricsBtn');btn.disabled=true;btn.textContent='Salvando...';const before=monthlyMetricsAuditSnapshot(m);
     try{
       for(const row of $$('#monthlyMetricsRows [data-metric-tech]')){
@@ -2191,6 +2303,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
 
   async function saveScoreSettings(){
+    if(!hasPermission('goals.manage'))return toast('Você não possui permissão para alterar referências.');
     if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar os parâmetros.');return}const btn=$('#saveScoreSettingsBtn');btn.disabled=true;btn.textContent='Recalculando...';
     try{
       m.scoreSettings={
@@ -2377,12 +2490,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function financeConfigAuditSnapshot(m){return{model:financeModelForMonth(m),compare:m.financeCompare!==false,technicianCompare:m.financeTechCompare===true,individualCap:Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000,settings:clone(financeSettingsForMonth(m)),monthData:clone(m.financeMonthData||{}),comparison:clone(m.financeComparison||{})}}
   function financeTechnicianAuditSnapshot(m){return(m?.technicians||[]).map(t=>({name:t.name,evaluationExcludedAtt:normalizedEvaluationExcludedAtt(t),manualBonus:safe(t.financeManualBonus),salesCommission:safe(t.salesCommission),vacation:!!t.vacation,excludeFromGroupCount:!!t.excludeFromGroupCount,final:safe(t.financeData?.final),financeStatus:t.financeData?.financeStatus||''}))}
   async function saveFinanceConfiguration(){
+    if(!hasPermission('finance.manage'))return toast('Você não possui permissão para alterar a bonificação.');
     if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return toast('Reabra o mês antes de alterar a bonificação.');
     const before=financeConfigAuditSnapshot(m),nextModel=$('#financeModelIndividual')?.checked?'individual':'squad',nextCap=Math.max(0,safe($('#financeIndividualCap')?.value||7000));
     if(!await confirmDialog(`Salvar as regras financeiras de ${m.monthName} ${m.year} e recalcular a bonificação do Squad ${state.squadCode}? Modelo oficial: ${financeModelLabel(nextModel)} • teto Individual: ${fmtMoney(nextCap)}.`,{title:'Recalcular bonificação',confirmText:'Salvar e recalcular',tone:'warning'}))return;
     try{m.financeModel=nextModel;m.financeCompare=$('#financeCompareToggle')?.checked!==false;m.financeTechCompare=$('#financeTechnicianCompareToggle')?.checked===true;m.financeIndividualCap=nextCap;m.financeSettings=collectFinanceSettingsFromUi(m);m.financeMonthData={customersStart:Math.max(0,safe($('#financeCustomersStart').value)),canceledCount:Math.max(0,safe($('#financeCanceledCount').value))};recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);await logAuditEvent('finance.config_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Regras financeiras e modelo oficial recalculados para ${m.monthName} ${m.year}.`,beforeData:before,afterData:financeConfigAuditSnapshot(m),metadata:{period:m.id,squad:state.squadCode}});state.financeRankingCache={};render();toast(`Modelo ${financeModelLabel(m.financeModel)} salvo como oficial e bonificação recalculada.`)}catch(err){console.error(err);toast('Não foi possível salvar. Confira se as migrações V2.19.0 e V2.20.0 foram executadas.')}
   }
   async function saveFinanceTechnicians(){
+    if(!hasPermission('finance.manage'))return toast('Você não possui permissão para alterar valores financeiros.');
     if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return toast('Reabra o mês antes de alterar os valores financeiros.');
     const before=financeTechnicianAuditSnapshot(m);
     if(!await confirmDialog(`Salvar os ajustes financeiros individuais de ${m.monthName} ${m.year}? Bônus manuais, vendas, férias, atendimentos sem avaliação e participação na Base do Squad serão recalculados.`,{title:'Salvar ajustes financeiros',confirmText:'Salvar ajustes',tone:'warning'}))return;
@@ -2394,7 +2509,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     for(const t of m.technicians||[]){if(!t.dbId)continue;const row={technician_month_id:t.dbId,manual_bonus:safe(t.financeManualBonus),sales_commission:safe(t.salesCommission),vacation:!!t.vacation,exclude_from_group_count:!!t.excludeFromGroupCount,calculated:t.financeData||{},updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('technician_finance_monthly').upsert(row,{onConflict:'technician_month_id'}).select('id').single();if(error)throw error;t.financeDbId=data.id}
     await persistCalculatedScores(m);
   }
-  async function copyFinanceRulesFromPreviousMonth(){if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return;const prev=previousMonthForCurrent(m);if(!prev)return toast('Não existe mês anterior neste Squad.');if(!await confirmDialog(`Copiar as faixas e parâmetros financeiros de ${prev.monthName} ${prev.year}? O modelo oficial, cancelamento e valores individuais não serão copiados.`,{title:'Copiar regras financeiras',confirmText:'Copiar',tone:'warning'}))return;const before=financeConfigAuditSnapshot(m);m.financeSettings=clone(financeSettingsForMonth(prev));m.financeIndividualCap=Number.isFinite(Number(prev.financeIndividualCap))?safe(prev.financeIndividualCap):7000;recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);await logAuditEvent('finance.rules_copy',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Regras financeiras copiadas de ${prev.monthName} ${prev.year} para ${m.monthName} ${m.year}.`,beforeData:before,afterData:financeConfigAuditSnapshot(m),metadata:{period:m.id,sourcePeriod:prev.id,squad:state.squadCode}});render();toast('Regras financeiras copiadas do mês anterior.')}
+  async function copyFinanceRulesFromPreviousMonth(){if(!isAdmin()||!hasPermission('finance.manage')||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return;const prev=previousMonthForCurrent(m);if(!prev)return toast('Não existe mês anterior neste Squad.');if(!await confirmDialog(`Copiar as faixas e parâmetros financeiros de ${prev.monthName} ${prev.year}? O modelo oficial, cancelamento e valores individuais não serão copiados.`,{title:'Copiar regras financeiras',confirmText:'Copiar',tone:'warning'}))return;const before=financeConfigAuditSnapshot(m);m.financeSettings=clone(financeSettingsForMonth(prev));m.financeIndividualCap=Number.isFinite(Number(prev.financeIndividualCap))?safe(prev.financeIndividualCap):7000;recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);await logAuditEvent('finance.rules_copy',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Regras financeiras copiadas de ${prev.monthName} ${prev.year} para ${m.monthName} ${m.year}.`,beforeData:before,afterData:financeConfigAuditSnapshot(m),metadata:{period:m.id,sourcePeriod:prev.id,squad:state.squadCode}});render();toast('Regras financeiras copiadas do mês anterior.')}
   function financeReportRows(m){return (m?.technicians||[]).map(t=>{const d=t.financeData||{},sq=d.models?.squad||d,ind=d.models?.individual||d,official=financeModelForMonth(m);return{'Técnico':titleWords(t.name),'Status financeiro':d.financeStatus||'','Atendimentos':safe(t.att),'Atend. sem avaliação':normalizedEvaluationExcludedAtt(t),'Base elegível avaliação':eligibleEvaluationAttendance(t),'Atend./dia individual':safe(ind.avgPerDay),'Notas 5':safe(t.notes5),'% Notas 5 individual':safe(ind.notes5Pct),'Base Squad - comissão atend.':safe(sq.commissionAtt),'Base Squad - comissão N5':safe(sq.commissionNotes5),'Base Squad - final':safe(sq.final),'Individual - comissão atend.':safe(ind.commissionAtt),'Individual - comissão N5':safe(ind.commissionNotes5),'Individual - antes do teto':safe(ind.preCapFinal),'Individual - ajuste teto':safe(ind.capAdjustment),'Individual - final':safe(ind.final),'Diferença Individual x Squad':safe(ind.final)-safe(sq.final),'Modelo oficial':financeModelLabel(official),'Valor oficial':safe(d.final),'Multiplicador cancelamento':safe(d.cancelMultiplier||1),'Base após cancelamento':safe(d.afterCancel),'Base após férias':safe(d.afterVacationBase??d.afterCancel),'Ajuste férias sobre a base':safe(d.vacationBaseAdjustment),'Bônus manual':safe(d.manualBonus),'Prêmio atendimento':safe(d.topAttBonus),'Prêmio Notas 5':safe(d.topNotes5Bonus),'Comissão vendas':safe(d.salesCommission),'Desconto':safe(d.discount),'Redistribuição':safe(d.redistribution),'Férias':t.vacation?'SIM':'NÃO','Conta na Base do Squad':t.excludeFromGroupCount?'NÃO':'SIM','Participa desconto/redistribuição':d.financialAdjustmentEligible===false?'NÃO':'SIM'}})}
   function reportAdminRows(m){if(!m)return[];return (state.superAdminCommissions||[]).filter(c=>safe(c.year)===safe(m.year)&&safe(c.month)===safe(m.month)).map(c=>({'Admin Geral':c.name||'Admin geral','Comissão final':safe(c.amount),'Observação':c.notes||''}))}
   function loadExternalScriptOnce(src,test){return new Promise((resolve,reject)=>{if(test?.())return resolve();const existing=[...document.scripts].find(x=>x.src===src);if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return}const sc=document.createElement('script');sc.src=src;sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca de exportação.'));document.head.appendChild(sc)})}
@@ -2427,7 +2542,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){console.error(err);toast('Não foi possível copiar as metas do mês anterior.')}
   }
   async function closeMonth(id){
-    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m||m.isClosed)return;
+    if(!isAdmin()||!hasPermission('month.manage')||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m||m.isClosed)return;
     if(!await confirmDialog(`Fechar ${m.monthName} ${m.year}? Dados, metas, pontuação e bonificação financeira ficarão congelados até que o mês seja reaberto.`,{title:'Fechar competência',confirmText:'Fechar mês',tone:'warning'}))return;
     const before={isClosed:!!m.isClosed,teamResult:m.teamResult||'',technicians:(m.technicians||[]).length,financeModel:financeModelForMonth(m),financeTotal:safe(m.financeComparison?.[financeModelForMonth(m)==='individual'?'individualTotal':'squadTotal'])};
     try{
@@ -2440,7 +2555,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){console.error(err);toast('Não foi possível fechar o mês. Confira as migrações V2.4.0, V2.18.0, V2.19.0 e V2.20.0.')}
   }
   async function reopenMonth(id){
-    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m||!m.isClosed)return;
+    if(!isAdmin()||!hasPermission('month.manage')||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m||!m.isClosed)return;
     if(!await confirmDialog(`Reabrir ${m.monthName} ${m.year}? O mês voltará a aceitar importações e alterações. Ao concluir a correção, feche-o novamente.`,{title:'Reabrir competência',confirmText:'Reabrir mês',tone:'warning',requireText:'REABRIR'}))return;
     const before={isClosed:true,closedAt:m.closedAt||null,closedBy:m.closedBy||null,snapshotVersion:safe(m.closedSnapshot?.version),teamResult:m.teamResult||'',financeModel:financeModelForMonth(m)};
     try{
@@ -2464,7 +2579,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
 
   async function deleteImportedMonth(id){
-    if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m)return;if(m.isClosed){toast('Mês fechado não pode ser excluído. Reabra-o primeiro.');return}
+    if(!isAdmin()||!hasPermission('month.manage')||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m)return;if(m.isClosed){toast('Mês fechado não pode ser excluído. Reabra-o primeiro.');return}
     if(!await confirmDialog(`Excluir ${m.monthName} ${m.year} do Squad ${state.squadCode}? Isso remove os dados importados e as métricas manuais deste mês.`,{title:'Excluir competência',confirmText:'Excluir mês',tone:'danger',requireText:'EXCLUIR'}))return;
     const before={period:m.id,monthName:m.monthName,year:m.year,sourceFile:m.sourceFile||'',latestDay:safe(m.latestDay),technicians:(m.technicians||[]).length,isClosed:false};const entityId=m.dbId||m.id,squadId=auditSquadId();
     try{if(state.supabase&&m.dbId){const {error}=await state.supabase.from('squad_months').delete().eq('id',m.dbId);if(error)throw error;}delete currentSquad().months[id];const ids=Object.keys(currentMonths()).sort().reverse();state.currentId=ids[0]||null;chooseDefaultTech();saveDemoSquads();await logAuditEvent('month.delete',{entityType:'squad_month',entityId,squadId,description:`Competência ${m.monthName} ${m.year} excluída do Squad ${state.squadCode}.`,beforeData:before,afterData:{deleted:true},metadata:{period:id,squad:state.squadCode}});refreshSelectors();render();toast('Mês importado excluído.')}catch(err){console.error(err);toast('Não foi possível excluir este mês.')}
@@ -2473,7 +2588,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function businessDaysMonFri(y,m){let c=0,days=new Date(y,m,0).getDate();for(let d=1;d<=days;d++){const dow=new Date(y,m-1,d).getDay();if(dow>=1&&dow<=5)c++}return c}
   function autoTeamAttGoal(m){return businessDaysMonFri(m.year,m.month)*10*Math.max(1,m.technicians.length)}
   function teamSettings(m){if(m?.isClosed&&m.closedSnapshot?.teamGoals)return{teamGoalAtt:safe(m.closedSnapshot.teamGoals.teamGoalAtt),teamGoalEvalPct:safe(m.closedSnapshot.teamGoals.teamGoalEvalPct)};const saved=m?.settings||{};return{teamGoalAtt:safe(saved.teamGoalAtt)||autoTeamAttGoal(m),teamGoalEvalPct:Number.isFinite(Number(saved.teamGoalEvalPct))?Number(saved.teamGoalEvalPct):.343}}
-  async function saveTeamGoals(){if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}const before=clone(teamSettings(m));try{const att=Math.max(0,safe($('#teamGoalAttInput').value)),pct=Math.max(0,safe($('#teamGoalPctInput').value))/100;m.settings={...(m.settings||{}),teamGoalAtt:att||autoTeamAttGoal(m),teamGoalEvalPct:pct};recalculateMonth(m);saveDemoSquads();if(state.supabase){const {error}=await state.supabase.from('squad_months').update({team_goal_att:m.settings.teamGoalAtt,team_goal_eval_pct:m.settings.teamGoalEvalPct,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error}await logAuditEvent('goals.team_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Metas do Squad ${state.squadCode} atualizadas para ${m.monthName} ${m.year}.`,beforeData:before,afterData:clone(teamSettings(m)),metadata:{period:m.id,squad:state.squadCode}});renderTeam();renderAdmin();toast('Metas salvas para '+m.monthName+'.')}catch(err){console.error(err);toast('Não foi possível salvar as metas.')}}
+  async function saveTeamGoals(){if(!isAdmin()||!hasPermission('goals.manage')||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}const before=clone(teamSettings(m));try{const att=Math.max(0,safe($('#teamGoalAttInput').value)),pct=Math.max(0,safe($('#teamGoalPctInput').value))/100;m.settings={...(m.settings||{}),teamGoalAtt:att||autoTeamAttGoal(m),teamGoalEvalPct:pct};recalculateMonth(m);saveDemoSquads();if(state.supabase){const {error}=await state.supabase.from('squad_months').update({team_goal_att:m.settings.teamGoalAtt,team_goal_eval_pct:m.settings.teamGoalEvalPct,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error}await logAuditEvent('goals.team_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Metas do Squad ${state.squadCode} atualizadas para ${m.monthName} ${m.year}.`,beforeData:before,afterData:clone(teamSettings(m)),metadata:{period:m.id,squad:state.squadCode}});renderTeam();renderAdmin();toast('Metas salvas para '+m.monthName+'.')}catch(err){console.error(err);toast('Não foi possível salvar as metas.')}}
   function useAutomaticTeamGoal(){const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}$('#teamGoalAttInput').value=autoTeamAttGoal(m);if(!$('#teamGoalPctInput').value)$('#teamGoalPctInput').value='34.3';toast('Meta automática calculada. Clique em Salvar metas.')}
   function deriveTotals(list){const att=(list||[]).reduce((s,t)=>s+safe(t.att),0),evaluationExcludedAtt=(list||[]).reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0),eligibleAtt=Math.max(0,att-evaluationExcludedAtt),evals=(list||[]).reduce((s,t)=>s+safe(t.totalEval),0),points=(list||[]).reduce((s,t)=>s+safe(t.points),0);return{att,evaluationExcludedAtt,eligibleAtt,eval:evals,evalPct:eligibleAtt?evals/eligibleAtt:0,points}}
   function goalLine(noun,current,goal){if(!goal)return'Meta não encontrada.';if(current>=goal)return`Meta atingida: ${fmtInt(current-goal)} ${noun} acima do objetivo.`;return`Faltam ${fmtInt(goal-current)} ${noun} para atingir a meta.`}
@@ -3023,7 +3138,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function loadScript(src){return new Promise((resolve,reject)=>{if(window.supabase)return resolve();const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Falha ao carregar biblioteca Supabase.'));document.head.appendChild(s)})}
   async function enterSupabaseSession(authUser){
     const {data:profile,error}=await state.supabase.from('profiles').select('user_id,email,full_name,role,organization_id,squad_id,technician_name,squads(id,code,name)').eq('user_id',authUser.id).single();if(error)throw error;
-    state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null};
+    let permissions={},uiPreferences=null;
+    try{const {data:extra,error:extraError}=await state.supabase.from('profiles').select('permissions,ui_preferences').eq('user_id',authUser.id).single();if(extraError)throw extraError;permissions=extra?.permissions||{};uiPreferences=extra?.ui_preferences||null}catch(err){console.warn('Configurações V2.38 ainda não migradas no Supabase; usando padrões locais.',err)}
+    state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null,permissions,uiPreferences};
     await loadSupabaseData();state.presentationLastSyncAt=new Date().toISOString();await enterApp(state.user);
   }
   async function loadSupabaseData(){

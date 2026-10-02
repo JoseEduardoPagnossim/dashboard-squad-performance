@@ -24,17 +24,20 @@ const auditScriptPosition = index.indexOf('js/audit-utils.js');
 const chartEngineScriptPosition = index.indexOf('js/chart-engine.js');
 const importEngineScriptPosition = index.indexOf('js/import-engine.js');
 const predictiveEngineScriptPosition = index.indexOf('js/predictive-engine.js');
+const settingsEngineScriptPosition = index.indexOf('js/settings-engine.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
 if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils.js.');
 if (chartEngineScriptPosition < 0) errors.push('index.html não carrega js/chart-engine.js.');
 if (importEngineScriptPosition < 0) errors.push('index.html não carrega js/import-engine.js.');
 if (predictiveEngineScriptPosition < 0) errors.push('index.html não carrega js/predictive-engine.js.');
+if (settingsEngineScriptPosition < 0) errors.push('index.html não carrega js/settings-engine.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && auditScriptPosition > appScriptPosition) errors.push('js/audit-utils.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && chartEngineScriptPosition > appScriptPosition) errors.push('js/chart-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && importEngineScriptPosition > appScriptPosition) errors.push('js/import-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && predictiveEngineScriptPosition > appScriptPosition) errors.push('js/predictive-engine.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && settingsEngineScriptPosition > appScriptPosition) errors.push('js/settings-engine.js deve ser carregado antes de js/app.js.');
 for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
@@ -47,15 +50,18 @@ for (const required of [
   'tests/chart-engine.test.js',
   'tests/import-engine.test.js',
   'tests/predictive-engine.test.js',
+  'tests/settings-engine.test.js',
   'tests/project-structure.test.js',
   'js/chart-engine.js',
   'js/import-engine.js',
   'js/predictive-engine.js',
+  'js/settings-engine.js',
   'js/finance-rules.js',
   'js/audit-utils.js',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
-  'supabase/migrations/MIGRACAO_V2.36.0.sql'
+  'supabase/migrations/MIGRACAO_V2.36.0.sql',
+  'supabase/migrations/MIGRACAO_V2.38.0.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -86,6 +92,7 @@ if (appText.includes('squad-dashboard-v2.1.0')) errors.push('Referência ao nome
 if (!appText.includes('window.SoftenChartEngine')) errors.push('js/app.js não depende explicitamente do motor central de gráficos.');
 if (!appText.includes('window.SoftenImportEngine')) errors.push('js/app.js não depende explicitamente do motor de importação.');
 if (!appText.includes('window.SoftenPredictiveEngine')) errors.push('js/app.js não depende explicitamente do motor preditivo.');
+if (!appText.includes('window.SoftenSettingsEngine')) errors.push('js/app.js não depende explicitamente do motor de configurações.');
 for (const duplicatedChartPrimitive of ['smoothSvgPath','smoothAreaPath','splitChartPointSegments','chartDataLabelSvg','chartValueText']) {
   if (appText.includes(`function ${duplicatedChartPrimitive}(`)) errors.push(`Primitiva de gráfico duplicada em js/app.js: ${duplicatedChartPrimitive}.`);
 }

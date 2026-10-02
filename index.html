@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.37.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.37.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.38.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.38.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.37.0 • Gestão preditiva</small>
+      <small class="login-version">V2.38.0 • Configurações e personalização</small>
     </div>
   </section>
 
@@ -73,20 +73,21 @@
         <div class="nav-group"><span class="nav-group-label">DESEMPENHO</span>
           <button class="nav-btn active" data-view="individual"><span>◈</span> Meu desempenho</button>
           <button class="nav-btn" data-view="team"><span>♛</span> Visão do Squad</button>
-          <button class="nav-btn super-only" data-view="indicators"><span>◔</span> Indicadores</button>
-          <button class="nav-btn" data-view="presentation"><span>▣</span> Apresentação</button>
+          <button class="nav-btn super-only" data-permission="indicators.view" data-view="indicators"><span>◔</span> Indicadores</button>
+          <button class="nav-btn" data-permission="presentation.view" data-view="presentation"><span>▣</span> Apresentação</button>
         </div>
         <div class="nav-group admin-only"><span class="nav-group-label">GESTÃO</span>
-          <button class="nav-btn" data-view="admin" data-admin-section="operation"><span>↻</span> Operação</button>
-          <button class="nav-btn" data-view="admin" data-admin-section="finance"><span>R$</span> Bonificação</button>
-          <button class="nav-btn super-only" data-view="admin" data-admin-section="costs"><span>⏱</span> Custos</button>
-          <button class="nav-btn" data-view="feedbacks"><span>✎</span> Feedbacks</button>
-          <button class="nav-btn" data-view="users"><span>♟</span> Usuários</button>
-          <button class="nav-btn" data-view="audit"><span>⌁</span> Auditoria</button>
-          <button class="nav-btn" data-view="admin" data-admin-section="appearance"><span>✦</span> Aparência</button>
+          <button class="nav-btn" id="operationNavBtn" data-view="admin" data-admin-section="operation"><span>↻</span> Operação</button>
+          <button class="nav-btn" data-permission="finance.view" data-view="admin" data-admin-section="finance"><span>R$</span> Bonificação</button>
+          <button class="nav-btn super-only" data-permission="costs.view" data-view="admin" data-admin-section="costs"><span>⏱</span> Custos</button>
+          <button class="nav-btn" data-permission="feedback.manage" data-view="feedbacks"><span>✎</span> Feedbacks</button>
+          <button class="nav-btn" data-permission="users.manage" data-view="users"><span>♟</span> Usuários</button>
+          <button class="nav-btn" data-permission="audit.view" data-view="audit"><span>⌁</span> Auditoria</button>
+          <button class="nav-btn" data-permission="appearance.manage" data-view="admin" data-admin-section="appearance"><span>✦</span> Aparência</button>
         </div>
         <div class="nav-group"><span class="nav-group-label">CONTA</span>
           <button class="nav-btn tech-only" data-view="my-feedbacks"><span>✎</span> Meus feedbacks</button>
+          <button class="nav-btn" data-view="settings"><span>⚙</span> Configurações</button>
           <button class="nav-btn" data-view="profile"><span>◉</span> Meu perfil</button>
           <button class="nav-btn" data-view="help"><span>?</span> Como usar</button>
           <button class="nav-btn logout-nav" id="logoutBtn" type="button"><span>↪</span> Sair</button>
@@ -107,7 +108,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.37.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.38.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -317,7 +318,7 @@
             </div>
           </div>
 
-          <section class="presentation-admin card admin-only" id="presentationAdminPanel" aria-labelledby="presentationAdminTitle">
+          <section class="presentation-admin card admin-only" id="presentationAdminPanel" data-permission="presentation.manage" aria-labelledby="presentationAdminTitle">
             <div class="presentation-admin-head">
               <div><span class="eyebrow">ADMINISTRAÇÃO DA TV</span><h3 id="presentationAdminTitle">Configurar apresentação</h3><p>Defina o que a televisão deve exibir. As escolhas são salvas neste navegador e também entram na URL gerada para a TV.</p></div>
               <div class="presentation-admin-actions"><button class="btn secondary" id="presentationResetConfigBtn" type="button">Restaurar padrão</button><button class="btn primary" id="presentationApplyConfigBtn" type="button">Aplicar preferências</button></div>
@@ -801,6 +802,46 @@
       </section>
 
 
+      <section id="view-settings" class="view">
+        <div class="settings-hero card glass">
+          <div><span class="eyebrow">CENTRAL DE CONFIGURAÇÕES</span><h2>Personalize sua experiência</h2><p>Organize os principais blocos do painel sem alterar dados, metas ou cálculos. Administradores também encontram atalhos de gestão e governança.</p></div>
+          <div class="settings-user-summary"><small>PERFIL ATUAL</small><strong id="settingsRoleLabel">—</strong><span id="settingsPermissionSummary">—</span></div>
+        </div>
+
+        <div class="settings-grid">
+          <article class="card settings-card settings-layout-card">
+            <div class="section-title"><div><span class="eyebrow">MEU PAINEL</span><h3>Layout personalizável</h3></div><span class="period-chip" id="layoutSaveStatus">Padrão</span></div>
+            <p>Escolha a tela, ordene os blocos e oculte o que não precisa aparecer no seu dia a dia. A configuração é individual.</p>
+            <div class="settings-form-row">
+              <label><span>Tela</span><select id="layoutViewSelect"><option value="individual">Meu desempenho</option><option value="team">Visão do Squad</option><option value="indicators">Indicadores</option></select></label>
+              <label><span>Densidade</span><select id="layoutDensitySelect"><option value="comfortable">Confortável</option><option value="compact">Compacta</option></select></label>
+            </div>
+            <div id="layoutBlockList" class="layout-block-list"></div>
+            <div class="admin-actions"><button class="btn secondary" id="resetLayoutBtn" type="button">Restaurar padrão</button><button class="btn primary" id="saveLayoutBtn" type="button">Salvar meu layout</button></div>
+          </article>
+
+          <article class="card settings-card admin-only">
+            <div class="section-title"><div><span class="eyebrow">GESTÃO CENTRALIZADA</span><h3>Atalhos administrativos</h3></div><span class="muted">Acesso conforme suas permissões</span></div>
+            <p>As configurações continuam separadas por responsabilidade, mas ficam acessíveis a partir de um único ponto.</p>
+            <div class="settings-shortcuts">
+              <button class="settings-shortcut" data-settings-route="operation" data-permission="data.import"><span>↻</span><strong>Operação</strong><small>Importações, metas e competência</small></button>
+              <button class="settings-shortcut" data-settings-route="finance" data-permission="finance.view"><span>R$</span><strong>Bonificação</strong><small>Regras e valores financeiros</small></button>
+              <button class="settings-shortcut" data-settings-route="appearance" data-permission="appearance.manage"><span>✦</span><strong>Aparência</strong><small>Tema, gráficos e identidade</small></button>
+              <button class="settings-shortcut" data-settings-view="presentation" data-permission="presentation.view"><span>▣</span><strong>Apresentação</strong><small>TV e carrossel operacional</small></button>
+              <button class="settings-shortcut" data-settings-view="users" data-permission="users.manage"><span>♟</span><strong>Usuários</strong><small>Perfis, vínculos e acessos</small></button>
+              <button class="settings-shortcut" data-settings-view="audit" data-permission="audit.view"><span>⌁</span><strong>Auditoria</strong><small>Histórico de alterações</small></button>
+            </div>
+          </article>
+
+          <article class="card settings-card super-only settings-governance-card">
+            <div class="section-title"><div><span class="eyebrow">GOVERNANÇA</span><h3>Permissões específicas</h3></div><span class="period-chip">Admin Geral</span></div>
+            <p>Os perfis continuam definindo o limite máximo de acesso. Dentro desse limite, o Admin Geral pode retirar permissões específicas de cada usuário sem criar novos perfis.</p>
+            <div id="settingsPermissionOverview" class="permission-overview"></div>
+            <div class="admin-actions"><button class="btn primary" id="openUsersPermissionsBtn" type="button">Gerenciar permissões dos usuários</button></div>
+          </article>
+        </div>
+      </section>
+
       <section id="view-profile" class="view">
         <div class="profile-hero card glass">
           <div class="profile-identity">
@@ -970,6 +1011,11 @@
     <label id="editTechnicianNameField"><span>Nome do técnico no CSV</span><input id="editUserTechName" type="text" autocomplete="off"><small>O vínculo ignora espaços extras, caracteres invisíveis e acentuação.</small></label>
     <label id="editMovementPeriodField" class="hidden"><span>Movimentação válida a partir de</span><input id="editUserEffectiveMonth" type="month"><small>Meses anteriores permanecem no Squad antigo. Movimentações futuras não são aceitas; use o mês atual ou uma competência anterior.</small></label>
     <div class="admin-note">Alterar o Squad registra a movimentação sem reescrever o passado. Para bloquear ou liberar o login, use <b>Inativar/Reativar</b> na listagem.</div>
+    <section id="editUserPermissionsSection" class="user-permissions-editor super-only">
+      <div class="user-permissions-head"><div><span class="eyebrow">PERMISSÕES ESPECÍFICAS</span><h3>Ajustar acesso dentro do perfil</h3></div><button type="button" class="btn secondary compact" id="resetUserPermissionsBtn">Restaurar padrão do perfil</button></div>
+      <p>Desmarcar uma permissão restringe aquele usuário. O sistema nunca concede por aqui algo que o perfil selecionado normalmente não pode acessar.</p>
+      <div id="editUserPermissions" class="permission-editor-grid"></div>
+    </section>
     <div id="editUserError" class="login-error"></div>
     <div class="modal-actions"><button class="btn secondary" type="button" data-close="editUserModal">Cancelar</button><button class="btn primary" id="editUserSubmit" type="submit">Salvar alterações</button></div>
   </form></div></div>
@@ -1051,10 +1097,11 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/presentation.js?v=2.37.0"></script>
-  <script src="js/chart-engine.js?v=2.37.0"></script>
-  <script src="js/import-engine.js?v=2.37.0"></script>
-  <script src="js/predictive-engine.js?v=2.37.0"></script>
-  <script src="js/app.js?v=2.37.0"></script>
+  <script src="js/presentation.js?v=2.38.0"></script>
+  <script src="js/chart-engine.js?v=2.38.0"></script>
+  <script src="js/import-engine.js?v=2.38.0"></script>
+  <script src="js/predictive-engine.js?v=2.38.0"></script>
+  <script src="js/settings-engine.js?v=2.38.0"></script>
+  <script src="js/app.js?v=2.38.0"></script>
 </body>
 </html>
