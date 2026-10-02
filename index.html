@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.34.2" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.34.2" />
+  <link rel="stylesheet" href="css/styles.css?v=2.34.4" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.34.4" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.34.2 • Compatibilidade Data API</small>
+      <small class="login-version">V2.34.4 • Compatibilidade Data API</small>
     </div>
   </section>
 
@@ -107,7 +107,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.34.2 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.34.4 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -327,6 +327,10 @@
               <label><span>Intervalo do carrossel</span><select id="presentationConfigInterval"><option value="10">10 segundos</option><option value="15">15 segundos</option><option value="20">20 segundos</option><option value="30">30 segundos</option><option value="45">45 segundos</option><option value="60">60 segundos</option></select></label>
               <label><span>Atualização automática</span><select id="presentationConfigRefresh"><option value="1">1 minuto</option><option value="2">2 minutos</option><option value="5">5 minutos</option><option value="10">10 minutos</option><option value="15">15 minutos</option></select></label>
               <label><span>Layout do ranking</span><select id="presentationConfigColumns"><option value="auto">Automático</option><option value="1">1 coluna</option><option value="2">2 colunas</option></select></label>
+              <label><span>Ajuste à tela</span><select id="presentationConfigFit"><option value="auto">Automático</option><option value="width">Ajustar pela largura</option><option value="height">Ajustar pela altura</option><option value="fill">Preencher tela</option><option value="none">Sem ajuste</option></select></label>
+              <label><span>Escala</span><select id="presentationConfigScale"><option value="auto">Automática</option><option value="75">75%</option><option value="80">80%</option><option value="85">85%</option><option value="90">90%</option><option value="95">95%</option><option value="100">100%</option><option value="105">105%</option><option value="110">110%</option></select></label>
+              <label><span>Densidade</span><select id="presentationConfigDensity"><option value="auto">Automática</option><option value="compact">Compacta</option><option value="normal">Normal</option><option value="wide">Ampla</option></select></label>
+              <label><span>Margem de segurança</span><select id="presentationConfigSafe"><option value="0">0 px</option><option value="8">8 px</option><option value="16">16 px</option><option value="24">24 px</option><option value="32">32 px</option></select></label>
             </div>
             <div class="presentation-config-toggles">
               <label><input id="presentationConfigCarousel" type="checkbox" checked><span>Carrossel automático</span></label>
@@ -378,6 +382,7 @@
             <div class="presentation-carousel-meta">
               <small id="presentationCarouselNote">Troca automática a cada 20s • ativa</small>
               <small id="presentationSyncNote">Atualização automática a cada 5 min</small>
+              <small id="presentationFitNote">Ajuste automático à tela</small>
             </div>
             <div class="presentation-cycle-track" aria-hidden="true"><span id="presentationCycleProgress"></span></div>
           </nav>
@@ -1021,7 +1026,7 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/presentation.js?v=2.34.2"></script>
-  <script src="js/app.js?v=2.34.2"></script>
+  <script src="js/presentation.js?v=2.34.4"></script>
+  <script src="js/app.js?v=2.34.4"></script>
 </body>
 </html>

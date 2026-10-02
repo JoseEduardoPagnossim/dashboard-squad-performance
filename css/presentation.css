@@ -29,3 +29,93 @@
 .presentation-direct #presentationAdminPanel{display:none!important}
 @media(max-width:1180px){.presentation-config-grid{grid-template-columns:repeat(2,1fr)}.presentation-config-mode-list{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.presentation-admin-head,.presentation-config-url{grid-template-columns:1fr;display:grid}.presentation-admin-actions{justify-content:flex-start}.presentation-config-grid,.presentation-config-mode-list{grid-template-columns:1fr}}
+
+/* ===== Ajuste automático para TV • V2.34.4 ===== */
+html.presentation-tv-fit,
+html.presentation-tv-fit body{
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  overflow:hidden!important;
+  overscroll-behavior:none;
+}
+body.presentation-direct{
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  overflow:hidden!important;
+}
+body.presentation-direct .app-shell,
+body.presentation-direct .main,
+body.presentation-direct #view-presentation{
+  width:100%;
+  height:100vh;
+  height:100dvh;
+  min-height:0!important;
+  max-height:100vh;
+  max-height:100dvh;
+  overflow:hidden!important;
+}
+body.presentation-direct #view-presentation{position:relative!important;padding:0!important;margin:0!important}
+body.presentation-direct .presentation-shell{transform-origin:top left;will-change:transform;contain:layout style}
+body.presentation-direct .presentation-toolbar{position:relative!important;top:auto!important}
+body.presentation-direct .presentation-config-url code{max-width:100%}
+
+/* Densidade compacta: prioriza caber mais linhas sem sacrificar legibilidade. */
+body.presentation-direct.presentation-density-compact .presentation-shell{gap:6px}
+body.presentation-direct.presentation-density-compact .presentation-toolbar{padding:5px 8px}
+body.presentation-direct.presentation-density-compact .presentation-toolbar-copy strong{font-size:14px}
+body.presentation-direct.presentation-density-compact .presentation-toolbar-actions{gap:5px}
+body.presentation-direct.presentation-density-compact .presentation-toolbar .btn{min-height:27px;padding:5px 8px;font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-connection-pill{height:27px;font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-hero{min-height:82px;padding:10px 14px;gap:12px}
+body.presentation-direct.presentation-density-compact .presentation-hero h2{font-size:30px;margin:3px 0 5px}
+body.presentation-direct.presentation-density-compact .presentation-hero p{font-size:10px}
+body.presentation-direct.presentation-density-compact .presentation-hero-status{padding:8px 11px;min-width:210px}
+body.presentation-direct.presentation-density-compact .presentation-hero-status strong{font-size:17px}
+body.presentation-direct.presentation-density-compact .presentation-kpis{gap:6px}
+body.presentation-direct.presentation-density-compact .presentation-kpi{min-height:49px;padding:6px 9px}
+body.presentation-direct.presentation-density-compact .presentation-kpi span{font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-kpi strong{font-size:15px;margin-top:3px}
+body.presentation-direct.presentation-density-compact .presentation-kpi small{font-size:7px;margin-top:1px}
+body.presentation-direct.presentation-density-compact .presentation-tabs-bar{padding:5px 7px 8px}
+body.presentation-direct.presentation-density-compact .presentation-tab{padding:5px 8px;font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-carousel-meta small{font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-spotlights{gap:6px}
+body.presentation-direct.presentation-density-compact .presentation-spotlight{padding:5px 7px}
+body.presentation-direct.presentation-density-compact .presentation-spotlight-head{margin-bottom:4px}
+body.presentation-direct.presentation-density-compact .presentation-spotlight-head strong{font-size:10px}
+body.presentation-direct.presentation-density-compact .presentation-mini-grid{gap:3px}
+body.presentation-direct.presentation-density-compact .presentation-mini-row{padding:2px 4px;grid-template-columns:24px minmax(0,1fr) auto}
+body.presentation-direct.presentation-density-compact .presentation-mini-row span,
+body.presentation-direct.presentation-density-compact .presentation-mini-row strong{font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-mini-row b{font-size:9px}
+body.presentation-direct.presentation-density-compact .presentation-ranking{padding:7px 9px;min-height:0}
+body.presentation-direct.presentation-density-compact .presentation-ranking-head{margin-bottom:5px;gap:7px}
+body.presentation-direct.presentation-density-compact .presentation-ranking-head h3{font-size:15px}
+body.presentation-direct.presentation-density-compact .presentation-ranking-head p{font-size:8px;margin-top:2px}
+body.presentation-direct.presentation-density-compact .presentation-filters input,
+body.presentation-direct.presentation-density-compact .presentation-filters select{height:26px;font-size:8px}
+body.presentation-direct.presentation-density-compact .presentation-table td{height:19px;padding:1px 4px;font-size:7.5px}
+body.presentation-direct.presentation-density-compact .presentation-table th{padding:3px 4px;font-size:6.5px}
+body.presentation-direct.presentation-density-compact .presentation-move,
+body.presentation-direct.presentation-density-compact .presentation-status,
+body.presentation-direct.presentation-density-compact .presentation-squad-badge{padding:2px 4px;font-size:6.5px}
+body.presentation-direct.presentation-density-compact .presentation-medal{width:12px;height:12px;font-size:6px}
+
+/* Densidade ampla: aproveita TVs grandes quando há pouco conteúdo. */
+body.presentation-direct.presentation-density-wide .presentation-shell{gap:14px}
+body.presentation-direct.presentation-density-wide .presentation-toolbar{padding:10px 14px}
+body.presentation-direct.presentation-density-wide .presentation-hero{min-height:145px;padding:20px 24px}
+body.presentation-direct.presentation-density-wide .presentation-kpi{min-height:78px;padding:12px 14px}
+body.presentation-direct.presentation-density-wide .presentation-kpi strong{font-size:21px}
+body.presentation-direct.presentation-density-wide .presentation-ranking{padding:15px 17px;min-height:390px}
+body.presentation-direct.presentation-density-wide .presentation-table td{height:29px;padding:4px 7px;font-size:10px}
+body.presentation-direct.presentation-density-wide .presentation-table th{padding:6px 7px;font-size:8px}
+
+/* Administração: os novos controles usam a mesma grade dos demais. */
+.presentation-config-grid{grid-template-columns:repeat(4,minmax(150px,1fr))}
+@media(max-width:1180px){.presentation-config-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}}
+@media(max-width:700px){.presentation-config-grid{grid-template-columns:1fr}}
+body.presentation-direct .main{padding:0!important;margin-left:0!important;max-width:none!important}

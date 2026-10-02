@@ -1470,3 +1470,147 @@ th{font-size:10.5px!important;line-height:1.35}td{font-size:12px!important;line-
   #view-indicators .chart,#view-indicators .chart-lg,#view-indicators .history-chart,#view-indicators .business-days-chart,
   #view-indicators .quality-chart-lg,#view-indicators .quality-distribution-chart{height:270px!important;min-height:270px!important}
 }
+
+/* ============================================================
+   V2.34.3 - CONTROLES ESTAVEIS / FILTROS SEM REFLUXO
+   Padroniza dimensoes dos filtros para impedir que mudem de
+   tamanho conforme Squad, mes, tecnico, datas ou preset ativo.
+   ============================================================ */
+:root{
+  --top-control-h:44px;
+  --top-squad-w:142px;
+  --top-month-w:132px;
+  --top-tech-w:176px;
+  --top-date-w:170px;
+  --top-quick-w:206px;
+  --top-user-w:138px;
+}
+
+/* Base comum: o conteudo nunca deve alterar a caixa externa. */
+.top-actions{align-items:center!important;min-width:0}
+.top-actions>.control,
+.top-actions>.analysis-date-control,
+.top-actions>.color-mode-toggle,
+.top-actions>.top-user{box-sizing:border-box;flex-shrink:0}
+.top-actions .control{height:var(--top-control-h);min-height:var(--top-control-h);max-height:var(--top-control-h);overflow:hidden}
+.top-actions .select-wrap{display:grid!important;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:7px}
+.top-actions .select-wrap>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions .select-wrap>select{
+  width:100%!important;min-width:0!important;max-width:none!important;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#squadControl{width:var(--top-squad-w)!important;min-width:var(--top-squad-w)!important;max-width:var(--top-squad-w)!important;flex-basis:var(--top-squad-w)!important}
+.month-control{width:var(--top-month-w)!important;min-width:var(--top-month-w)!important;max-width:var(--top-month-w)!important;flex-basis:var(--top-month-w)!important}
+.technician-control{width:var(--top-tech-w)!important;min-width:var(--top-tech-w)!important;max-width:var(--top-tech-w)!important;flex-basis:var(--top-tech-w)!important}
+#squadSelect,#monthSelect,#techSelect{width:100%!important;min-width:0!important;max-width:none!important}
+
+/* Datas do cabecalho: largura e altura identicas, independentemente do valor. */
+.analysis-date-control{height:var(--top-control-h);min-height:var(--top-control-h);max-height:var(--top-control-h);align-items:center!important;gap:7px!important;flex-shrink:0}
+.analysis-date-control .date-control{
+  width:var(--top-date-w)!important;min-width:var(--top-date-w)!important;max-width:var(--top-date-w)!important;
+  height:var(--top-control-h)!important;min-height:var(--top-control-h)!important;max-height:var(--top-control-h)!important;
+  padding:5px 8px 4px 10px!important;box-sizing:border-box;overflow:visible;
+}
+.analysis-date-control .date-control>span{height:11px;line-height:11px;margin:0!important;white-space:nowrap}
+.analysis-date-control .date-input-shell{height:23px;min-height:23px}
+.analysis-date-control .date-text-input{height:23px;line-height:23px;padding-top:0!important;padding-bottom:0!important;font-variant-numeric:tabular-nums}
+.analysis-date-control .date-range-arrow{flex:0 0 10px;width:10px;text-align:center;margin:0!important}
+.analysis-date-control .date-quick.compact{
+  width:var(--top-quick-w)!important;min-width:var(--top-quick-w)!important;max-width:var(--top-quick-w)!important;
+  height:var(--top-control-h)!important;min-height:var(--top-control-h)!important;max-height:var(--top-control-h)!important;
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px!important;padding:3px!important;box-sizing:border-box;overflow:hidden;
+}
+.analysis-date-control .date-quick.compact button{
+  width:100%!important;min-width:0!important;max-width:none!important;height:36px!important;min-height:36px!important;
+  padding:4px 5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.analysis-date-control .date-quick.compact button:nth-child(n+5){display:none!important}
+
+/* Acoes que tambem participam da mesma linha. */
+.top-actions>.color-mode-toggle{width:var(--top-control-h)!important;min-width:var(--top-control-h)!important;max-width:var(--top-control-h)!important;height:var(--top-control-h)!important}
+.top-actions>.top-user{
+  width:var(--top-user-w)!important;min-width:var(--top-user-w)!important;max-width:var(--top-user-w)!important;
+  height:var(--top-control-h)!important;min-height:var(--top-control-h)!important;max-height:var(--top-control-h)!important;
+  overflow:hidden;
+}
+.top-actions>.top-user>div{min-width:0;overflow:hidden}
+.top-actions>.top-user b,.top-actions>.top-user small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Filtros internos do painel de Indicadores tambem deixam de variar com o conteudo. */
+#view-indicators .indicator-filters{display:grid!important;grid-template-columns:190px 190px minmax(330px,1fr) auto;align-items:start!important;gap:8px!important;width:100%}
+#view-indicators .indicator-filters>.date-control{
+  width:190px!important;min-width:190px!important;max-width:190px!important;
+  min-height:48px;box-sizing:border-box;
+}
+#view-indicators .indicator-date-quick{
+  width:100%!important;min-width:330px!important;max-width:none!important;
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));align-self:start!important;
+}
+#view-indicators .indicator-date-quick button{width:100%!important;min-width:0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#view-indicators .indicator-action-group{display:flex;align-items:stretch;gap:8px;min-width:0}
+#view-indicators .indicator-action-group .btn{min-height:42px;box-sizing:border-box}
+
+/* Demais selects/filtros: a opcao escolhida nao redefine a largura do campo. */
+.control.select-wrap select,
+.csv-period select,
+.audit-toolbar select,
+.fullscreen-chart-controls select,
+.presentation-filters select,
+.presentation-admin-grid select{
+  box-sizing:border-box;min-width:0;max-width:100%;text-overflow:ellipsis;
+}
+
+/* Zoom intermediario: mantem dimensoes estaveis e permite reorganizar a linha. */
+@media(max-width:1450px) and (min-width:981px){
+  :root{
+    --top-squad-w:136px;
+    --top-month-w:124px;
+    --top-tech-w:158px;
+    --top-date-w:156px;
+    --top-quick-w:194px;
+    --top-user-w:128px;
+  }
+  .top-actions{flex-wrap:wrap!important;justify-content:flex-end!important;row-gap:7px!important}
+  .analysis-date-control{flex-wrap:nowrap!important}
+  .topbar{padding-top:8px!important;padding-bottom:8px!important}
+}
+
+/* Modo drawer/tablet: controles ocupam uma grade previsivel, nao tamanhos pelo texto. */
+@media(max-width:980px){
+  .topbar{align-items:flex-start!important}
+  .top-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start!important;gap:7px!important;width:calc(100% - 50px)!important}
+  .top-actions>.control{width:100%!important;min-width:0!important;max-width:none!important;flex-basis:auto!important}
+  #squadControl,.month-control,.technician-control{width:100%!important;min-width:0!important;max-width:none!important;flex-basis:auto!important}
+  .analysis-date-control{
+    grid-column:1/-1;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;
+    display:grid!important;grid-template-columns:minmax(0,1fr) 10px minmax(0,1fr);gap:7px!important;
+  }
+  .analysis-date-control.hidden{display:none!important}
+  .analysis-date-control .date-control{width:100%!important;min-width:0!important;max-width:none!important}
+  .analysis-date-control .date-quick.compact{grid-column:1/-1;width:100%!important;min-width:0!important;max-width:none!important}
+  .top-actions>.color-mode-toggle{justify-self:end}
+  .top-actions>.top-user{width:138px!important;min-width:138px!important;max-width:138px!important;justify-self:end}
+  #view-indicators .indicator-filters{grid-template-columns:1fr 1fr!important}
+  #view-indicators .indicator-filters>.date-control{width:100%!important;min-width:0!important;max-width:none!important}
+  #view-indicators .indicator-date-quick{grid-column:1/-1!important;min-width:0!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
+  #view-indicators .indicator-action-group{grid-column:1/-1!important;display:grid!important;grid-template-columns:1fr 1fr!important}
+}
+
+@media(max-width:720px){
+  .top-actions{grid-template-columns:minmax(0,1fr) auto!important}
+  #squadControl,.month-control,.technician-control{grid-column:1/-1}
+  .analysis-date-control{grid-template-columns:1fr 1fr!important}
+  .analysis-date-control .date-range-arrow{display:none!important}
+  .analysis-date-control .date-quick.compact{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  #view-indicators .indicator-date-quick{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #view-indicators .indicator-action-group{grid-template-columns:1fr!important}
+}
+
+@media(max-width:480px){
+  .top-actions{grid-template-columns:1fr auto!important}
+  .analysis-date-control{grid-template-columns:1fr!important}
+  .analysis-date-control .date-control,.analysis-date-control .date-quick.compact{grid-column:1!important}
+  .analysis-date-control .date-quick.compact{grid-template-columns:repeat(2,minmax(0,1fr))!important;height:auto!important;max-height:none!important}
+  #view-indicators .indicator-filters{grid-template-columns:1fr!important}
+  #view-indicators .indicator-date-quick,#view-indicators .indicator-action-group{grid-column:1!important}
+}

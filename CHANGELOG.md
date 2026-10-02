@@ -1,3 +1,20 @@
+# V2.34.4
+
+- Apresentação em TV passa a usar encaixe automático baseado na área útil da tela, com referência 16:9 de 1920x1080.
+- Modo direto bloqueia barras de rolagem e recalcula a escala ao redimensionar, entrar/sair do fullscreen ou alterar o conteúdo.
+- Novas opções administrativas: Ajuste à tela, Escala, Densidade e Margem de segurança.
+- Escala pode ser automática ou ajustada entre 75% e 110% como multiplicador do encaixe calculado.
+- Densidade automática escolhe Compacta, Normal ou Ampla conforme resolução e volume de linhas.
+- URLs da TV carregam fit, scale, density e safe, permitindo configuração diferente por televisão.
+- Mantidos carrossel, atualização automática, tolerância a queda de conexão e preferências existentes.
+
+# V2.34.3
+
+- Padroniza dimensoes de todos os filtros do cabecalho para impedir reflow ao alternar Squad, mes, tecnico, datas e atalhos de periodo.
+- Squad, mes, tecnico, datas, presets, tema e usuario passam a ocupar caixas estaveis no desktop.
+- Filtros do painel Indicadores recebem grade previsivel e deixam de variar conforme o conteudo.
+- Breakpoints de zoom/tablet/celular reorganizam os controles sem recalcular suas larguras pelo texto selecionado.
+
 # V2.34.2
 
 - Corrigida a largura do filtro de Squad no topo para permanecer fixa ao alternar entre Todos os Squads e Squads individuais.
