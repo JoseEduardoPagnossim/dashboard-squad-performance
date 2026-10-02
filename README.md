@@ -4,10 +4,18 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.40.0`<br>
+**Versão atual:** `2.40.1`<br>
 
 
 
+
+## V2.40.1 — Como usar atualizado
+
+A área **Como usar** foi reescrita para refletir o painel atual. O guia agora possui busca por assunto, atalhos para as principais telas, mapa completo dos módulos, passo a passo de importação, gestão preditiva, bonificação, configurações, usuários, feedbacks e TV/Comunicação.
+
+O conteúdo respeita o perfil conectado: tópicos administrativos e recursos exclusivos do Admin Geral continuam ocultos quando não fazem parte do escopo do usuário. Também foram incluídos glossário prático de acesso, rotina mensal recomendada, regras de fechamento e aviso sobre recursos que dependem das migrations V2.36, V2.38, V2.39 e V2.40.
+
+A V2.40.1 não exige nova migration. A suíte passa a **90 testes automatizados**.
 
 ## V2.40.0 — TV / Comunicação
 

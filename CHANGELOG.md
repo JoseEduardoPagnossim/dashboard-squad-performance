@@ -1,3 +1,14 @@
+## V2.40.1 — Como usar atualizado
+- Reescreve o guia interno para refletir todas as áreas do painel atual.
+- Adiciona busca textual dentro do Como usar e contador de tópicos encontrados.
+- Adiciona atalhos contextuais para Meu desempenho, Visão do Squad, Indicadores, Apresentação, Operação, Bonificação, Configurações e Meu perfil.
+- Adiciona mapa dos módulos com objetivo, momento de uso e acesso direto.
+- Documenta Central de Importação, Operação/metas, gestão preditiva, Financeiro avançado, Central de Configurações, TV/Comunicação, usuários/permissões e feedbacks.
+- Atualiza a matriz de permissões para o modelo granular da V2.38+.
+- Explica playlists, URL fixa de TV, heartbeat e estados Online/Atenção/Offline.
+- Mantém o conteúdo sensível ao perfil e às permissões do usuário conectado.
+- Não exige migration nova e amplia a suíte para **90 testes automatizados**.
+
 ## V2.40.0 — TV / Comunicação
 - Playlists nomeadas para reutilizar configurações de apresentação.
 - Cadastro de múltiplas TVs com URL dinâmica por dispositivo.

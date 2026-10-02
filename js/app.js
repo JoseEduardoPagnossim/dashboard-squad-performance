@@ -432,6 +432,9 @@
     $$('[data-open-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.openSettingsModule)));
     $$('#settingsModuleNav [data-settings-module-filter]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.settingsModuleFilter,{scroll:false})));
     if($('#settingsSearchInput'))$('#settingsSearchInput').addEventListener('input',()=>{state.settingsModule='all';applySettingsModuleFilter();});
+    if($('#helpSearchInput'))$('#helpSearchInput').addEventListener('input',applyHelpSearch);
+    if($('#clearHelpSearchBtn'))$('#clearHelpSearchBtn').addEventListener('click',()=>{$('#helpSearchInput').value='';applyHelpSearch();$('#helpSearchInput').focus();});
+    $$('[data-help-view],[data-help-admin-section],[data-help-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openHelpTarget(btn)));
     if($('#settingsMonthSelect'))$('#settingsMonthSelect').addEventListener('change',e=>{if(!e.target.value)return;state.currentId=e.target.value;chooseDefaultTech();refreshSelectors();renderSettings();});
     if($('#openUsersPermissionsBtn'))$('#openUsersPermissionsBtn').addEventListener('click',()=>showView('users'));
     if($('#resetUserPermissionsBtn'))$('#resetUserPermissionsBtn').addEventListener('click',()=>{state.editPermissionDraft={};renderPermissionEditor($('#editUserRole').value);});
@@ -1058,7 +1061,7 @@
   function applyPresentationRouteBundle(bundle){if(!bundle)return null;const device=normalizeTvDevice(bundle.device||{}),playlist=bundle.playlist?normalizeTvPlaylist(bundle.playlist):null;state.presentationRouteDevice=device;state.presentationRoutePlaylist=playlist;const config=playlist?.config?allowedPresentationConfig(playlist.config):allowedPresentationConfig({...window.SoftenPresentation?.getConfig?.(),squad:device.squad});window.SoftenPresentation?.applyConfig?.(config);PRESENTATION_ROUTE.squad=config.squad||device.squad||PRESENTATION_ROUTE.squad;PRESENTATION_ROUTE.playlist=playlist?.id||device.playlistId||'';state.presentationRouteConfigSignature=routeBundleSignature(bundle);return config;}
   async function preparePresentationRouteContext(){if(!PRESENTATION_ROUTE.tv)return;try{const bundle=await fetchPresentationRouteBundle();if(bundle)applyPresentationRouteBundle(bundle);else console.warn('TV cadastrada não encontrada ou inativa; mantendo parâmetros da URL.');}catch(err){console.warn('Não foi possível carregar a configuração dinâmica da TV. Mantendo a configuração disponível na URL/local.',err);}}
   async function refreshPresentationRouteConfig(){if(!PRESENTATION_ROUTE.tv)return false;try{const bundle=await fetchPresentationRouteBundle();if(!bundle)return false;const sig=routeBundleSignature(bundle);if(sig===state.presentationRouteConfigSignature)return false;const config=applyPresentationRouteBundle(bundle),target=String(config?.squad||'all');if(isSuperAdmin()&&target!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(target)))await selectSquad(target);return true;}catch(err){console.warn('Falha ao verificar atualização da playlist da TV.',err);return false}}
-  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.40.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
+  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.40.1',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
 
   function presentationDailyRows(){
     const source=buildOrgTechnicianDailyOverviewFromState();
@@ -2100,10 +2103,34 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return m||'Não foi possível alterar a senha.';
   }
 
+  function normalizeHelpSearchText(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
+  function openHelpTarget(btn){
+    if(!btn)return;
+    const permission=btn.dataset.permission||'';
+    if(permission&&!hasPermission(permission))return toast('Você não possui permissão para esta tela.');
+    if(btn.dataset.helpSettingsModule)return openSettingsModule(btn.dataset.helpSettingsModule);
+    if(btn.dataset.helpAdminSection)return showView('admin',btn.dataset.helpAdminSection);
+    if(btn.dataset.helpView)return showView(btn.dataset.helpView);
+  }
+  function applyHelpSearch(){
+    const input=$('#helpSearchInput');if(!input)return;
+    const query=normalizeHelpSearchText(input.value),items=$$('#view-help .help-searchable');let visible=0;
+    for(const item of items){
+      const haystack=normalizeHelpSearchText(`${item.dataset.helpSearch||''} ${item.textContent||''}`),roleHidden=item.classList.contains('hidden'),match=!query||haystack.includes(query);
+      item.classList.toggle('help-filtered-out',!match);
+      if(match&&!roleHidden)visible++;
+      if(query&&match&&item.tagName==='DETAILS'&&!roleHidden)item.open=true;
+    }
+    if($('#clearHelpSearchBtn'))$('#clearHelpSearchBtn').classList.toggle('hidden',!query);
+    if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
+    if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
+  }
   function renderHelp(){
     if(!state.user)return;
     $('#helpRoleName').textContent=roleLabel(state.user.role);
     $('#helpRoleScope').textContent=isSuperAdmin()?'Todos os Squads':`Squad ${state.user.squadCode}`;
+    if($('#helpRoleAccess'))$('#helpRoleAccess').textContent=isSuperAdmin()?'Gestão de todos os Squads • acesso sujeito às permissões específicas':isAdmin()?`Gestão do Squad ${state.user.squadCode} • acesso sujeito às permissões específicas`:'Consulta pessoal, Visão do Squad, Apresentação e recursos liberados';
+    applyHelpSearch();
   }
 
   async function renderUsers(){
