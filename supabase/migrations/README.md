@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.29.9.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.39.0.
 
 Depois:
 
@@ -42,6 +42,9 @@ V2.29.5
 V2.29.6
 V2.29.8
 V2.29.9
+V2.36.0
+V2.38.0
+V2.39.0
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -59,3 +62,8 @@ V2.29.9
 A migração não concede acesso ao role `anon`. O frontend exige autenticação e continua protegido por RLS/policies.
 
 Para qualquer tabela nova criada em `public`, inclua o `GRANT` necessário na mesma migração que contém o `CREATE TABLE`.
+
+
+## V2.39.0 — Memória financeira
+
+`MIGRACAO_V2.39.0.sql` cria `finance_calculation_memory` para preservar a memória imutável dos cálculos de bonificação, com RLS por Squad e permissões financeiras granulares. Execute a migration para compartilhar o histórico entre navegadores e gestores.

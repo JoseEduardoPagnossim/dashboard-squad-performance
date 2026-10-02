@@ -403,3 +403,12 @@ Regras:
 - recortes diários/parciais permanecem com taxa bruta, pois o ajuste é mensal e não é distribuído artificialmente pelos dias.
 
 A migração também atualiza `get_org_squad_monthly_overview()` e `get_my_squad_game_ranking(date,date)` para manter a mesma regra nas visões agregadas e no ranking acessado pelo técnico.
+
+
+## V2.39.0 — memória imutável de bonificação
+
+Execute `supabase/migrations/MIGRACAO_V2.39.0.sql` antes de usar a memória financeira centralizada.
+
+A tabela `finance_calculation_memory` preserva snapshots por competência com versão e assinatura da regra, modelo oficial, parâmetros financeiros, resumo da folha e valores calculados por técnico. Os registros são somente leitura após a criação: `authenticated` recebe `SELECT` e `INSERT`, sem `UPDATE`/`DELETE`.
+
+As policies exigem escopo administrativo do Squad e respeitam as restrições granulares `finance.view`, `finance.manage` e, no fechamento, `month.manage`.

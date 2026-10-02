@@ -20,6 +20,7 @@ const index = readFileSync(indexPath, 'utf8');
 for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) assertLocalRef(root, match[1], 'index.html');
 
 const financeScriptPosition = index.indexOf('js/finance-rules.js');
+const financeAdvancedScriptPosition = index.indexOf('js/finance-advanced.js');
 const auditScriptPosition = index.indexOf('js/audit-utils.js');
 const chartEngineScriptPosition = index.indexOf('js/chart-engine.js');
 const importEngineScriptPosition = index.indexOf('js/import-engine.js');
@@ -27,12 +28,15 @@ const predictiveEngineScriptPosition = index.indexOf('js/predictive-engine.js');
 const settingsEngineScriptPosition = index.indexOf('js/settings-engine.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
+if (financeAdvancedScriptPosition < 0) errors.push('index.html não carrega js/finance-advanced.js.');
 if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils.js.');
 if (chartEngineScriptPosition < 0) errors.push('index.html não carrega js/chart-engine.js.');
 if (importEngineScriptPosition < 0) errors.push('index.html não carrega js/import-engine.js.');
 if (predictiveEngineScriptPosition < 0) errors.push('index.html não carrega js/predictive-engine.js.');
 if (settingsEngineScriptPosition < 0) errors.push('index.html não carrega js/settings-engine.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
+if (financeAdvancedScriptPosition >= 0 && financeScriptPosition >= 0 && financeAdvancedScriptPosition < financeScriptPosition) errors.push('js/finance-advanced.js deve carregar depois de js/finance-rules.js.');
+if (appScriptPosition >= 0 && financeAdvancedScriptPosition > appScriptPosition) errors.push('js/finance-advanced.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && auditScriptPosition > appScriptPosition) errors.push('js/audit-utils.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && chartEngineScriptPosition > appScriptPosition) errors.push('js/chart-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && importEngineScriptPosition > appScriptPosition) errors.push('js/import-engine.js deve ser carregado antes de js/app.js.');
@@ -46,6 +50,7 @@ for (const required of [
   '.github/workflows/quality.yml',
   'package.json',
   'tests/finance-rules.test.js',
+  'tests/finance-advanced.test.js',
   'tests/audit-utils.test.js',
   'tests/chart-engine.test.js',
   'tests/import-engine.test.js',
@@ -57,11 +62,13 @@ for (const required of [
   'js/predictive-engine.js',
   'js/settings-engine.js',
   'js/finance-rules.js',
+  'js/finance-advanced.js',
   'js/audit-utils.js',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
-  'supabase/migrations/MIGRACAO_V2.38.0.sql'
+  'supabase/migrations/MIGRACAO_V2.38.0.sql',
+  'supabase/migrations/MIGRACAO_V2.39.0.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -93,6 +100,7 @@ if (!appText.includes('window.SoftenChartEngine')) errors.push('js/app.js não d
 if (!appText.includes('window.SoftenImportEngine')) errors.push('js/app.js não depende explicitamente do motor de importação.');
 if (!appText.includes('window.SoftenPredictiveEngine')) errors.push('js/app.js não depende explicitamente do motor preditivo.');
 if (!appText.includes('window.SoftenSettingsEngine')) errors.push('js/app.js não depende explicitamente do motor de configurações.');
+if (!appText.includes('window.SoftenFinanceAdvanced')) errors.push('js/app.js não depende explicitamente do motor financeiro avançado.');
 for (const duplicatedChartPrimitive of ['smoothSvgPath','smoothAreaPath','splitChartPointSegments','chartDataLabelSvg','chartValueText']) {
   if (appText.includes(`function ${duplicatedChartPrimitive}(`)) errors.push(`Primitiva de gráfico duplicada em js/app.js: ${duplicatedChartPrimitive}.`);
 }
@@ -115,7 +123,8 @@ for (const auditMarker of [
   "'month.import_quality'",
   "'month.close'",
   "'month.reopen'",
-  "'finance.config_update'"
+  "'finance.config_update'",
+  "'finance.memory_snapshot'"
 ]) {
   if (!appText.includes(auditMarker)) errors.push(`js/app.js deixou de registrar auditoria esperada: ${auditMarker}`);
 }
@@ -143,6 +152,17 @@ for (const sqlMarker of [
   'on table public.audit_logs to service_role;'
 ]) {
   if (!grantMigrationText.includes(sqlMarker)) errors.push(`Migração V2.29.9 incompleta: ${sqlMarker}`);
+}
+
+
+const financeMemoryMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.39.0.sql'), 'utf8').toLowerCase().replace(/\s+/g, ' ');
+for (const sqlMarker of [
+  'create table if not exists public.finance_calculation_memory',
+  'alter table public.finance_calculation_memory enable row level security',
+  'grant select, insert on public.finance_calculation_memory to authenticated',
+  'revoke update, delete on public.finance_calculation_memory'
+]) {
+  if (!financeMemoryMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.39.0 incompleta: ${sqlMarker}`);
 }
 
 // Toda nova migration que cria tabela em public deve declarar um GRANT explícito.

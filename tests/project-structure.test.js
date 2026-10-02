@@ -9,6 +9,7 @@ const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 const engine = readFileSync(join(root, 'js', 'chart-engine.js'), 'utf8');
 const predictiveEngine = readFileSync(join(root, 'js', 'predictive-engine.js'), 'utf8');
 const settingsEngine = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf8');
+const financeAdvancedEngine = readFileSync(join(root, 'js', 'finance-advanced.js'), 'utf8');
 
 test('chart-engine carrega antes do app principal', () => {
   const enginePos = index.indexOf('js/chart-engine.js');
@@ -116,4 +117,37 @@ test('configuração da apresentação pode ser sincronizada fora da tela de TV'
   assert.match(presentation, /function syncAdminConfig\(/);
   assert.match(presentation, /syncAdminConfig,/);
   assert.match(app, /SoftenPresentation\?\.syncAdminConfig/);
+});
+
+
+test('finance-advanced carrega entre regras financeiras e app principal', () => {
+  const rulesPos = index.indexOf('js/finance-rules.js');
+  const advancedPos = index.indexOf('js/finance-advanced.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(advancedPos >= 0, 'finance-advanced.js deve estar no index.html');
+  assert.ok(advancedPos > rulesPos, 'finance-advanced.js deve carregar depois de finance-rules.js');
+  assert.ok(appPos > advancedPos, 'finance-advanced.js deve carregar antes de app.js');
+});
+
+test('V2.39 possui simulador, memoria e explicacao financeira completa', () => {
+  for (const id of ['financeSelfExplanation','financeSimulatorCard','financeSimulatorTech','runFinanceSimulationBtn','financeSimulationResult','financeMemoryCard','financeMemoryRows','recordFinanceMemoryBtn','financeRuleVersion','financeRuleFingerprint','configFinanceRuleVersion','configFinanceRuleFingerprint']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /window\.SoftenFinanceAdvanced/);
+  assert.match(app, /recordFinanceCalculationMemory/);
+  assert.match(app, /runFinanceSimulation/);
+  assert.match(app, /financeRuleVersionForMonth/);
+  assert.match(app, /financeRuleFingerprintForMonth/);
+  assert.match(app, /financeRuleVersion:financeRuleVersionForMonth\(m\)/);
+  for (const marker of ['ruleFingerprint','buildCalculationExplanation','buildCalculationMemory','memoryDelta','simulationDelta']) {
+    assert.ok(financeAdvancedEngine.includes(marker), `finance-advanced.js deve conter ${marker}`);
+  }
+});
+
+test('V2.39 inclui migration de memoria financeira imutavel', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.39.0.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /create table if not exists public\.finance_calculation_memory/);
+  assert.match(migration, /alter table public\.finance_calculation_memory enable row level security/);
+  assert.match(migration, /grant select, insert on public\.finance_calculation_memory to authenticated/);
+  assert.match(migration, /revoke update, delete on public\.finance_calculation_memory/);
 });

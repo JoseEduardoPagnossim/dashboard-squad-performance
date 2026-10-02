@@ -1,3 +1,19 @@
+## V2.39.0 — Financeiro avançado
+
+- adiciona versão explícita do motor financeiro (`FR-2.39.0-1`) em cada cálculo;
+- cria assinatura determinística das regras e parâmetros da competência;
+- adiciona memória de cálculo com fotografia das configurações, modelo, valores por técnico e total da folha;
+- registra memórias automaticamente ao salvar regras, ajustes individuais, copiar regras e fechar a competência;
+- adiciona registro manual de memória para auditorias pontuais;
+- cria simulador por técnico sem alterar ou persistir dados oficiais;
+- simulador recalcula Base do Squad, status, prêmios, redistribuição, férias e teto sobre uma cópia da competência;
+- adiciona explicação completa, passo a passo, da bonificação no painel do técnico e na administração;
+- fechamento passa a congelar versão e assinatura das regras;
+- relatórios Excel/PDF passam a identificar versão e assinatura do cálculo;
+- nova tabela imutável `finance_calculation_memory` via `MIGRACAO_V2.39.0.sql`;
+- fallback local mantém o histórico disponível no navegador quando a migration ainda não foi executada;
+- adiciona `js/finance-advanced.js` e amplia a suíte automatizada para 77 testes.
+
 ## V2.38.1 — Centralização das configurações
 
 - transforma **Configurações** no ponto único para regras e comportamento dos módulos;

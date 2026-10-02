@@ -5,6 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
+  const FINANCE_RULE_VERSION = 'FR-2.39.0-1';
   const safe = value => Number.isFinite(Number(value)) ? Number(value) : 0;
   const clone = value => JSON.parse(JSON.stringify(value));
 
@@ -134,6 +135,7 @@
     const preCapFinal = mode === 'individual' ? Math.max(0, rawAfterVacationBase) : rawAfterVacationBase;
     return {
       mode,
+      ruleVersion: FINANCE_RULE_VERSION,
       hasProduction: !!hasProduction,
       days: safe(days),
       avgPerDay: safe(avgPerDay),
@@ -223,6 +225,7 @@
   }
 
   return {
+    FINANCE_RULE_VERSION,
     DEFAULT_FINANCE_SETTINGS,
     resolveFinanceSettings,
     financeFloorTier,

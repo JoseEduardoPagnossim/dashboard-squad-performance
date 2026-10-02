@@ -12,7 +12,12 @@ A ordem de carregamento dos scripts é importante:
 4. `js/demo-users.js` — usuários fictícios do modo de demonstração;
 5. `js/default-data.js` — dados fictícios do modo de demonstração;
 6. `js/finance-rules.js` — regras financeiras puras, compartilhadas pela aplicação e pelos testes automatizados;
-7. `js/app.js` — estado, renderização, orquestração das regras e integrações.
+7. `js/finance-advanced.js` — versão/assinatura, memória, explicações e comparação de simulações;
+8. `js/chart-engine.js` — primitivas e preferências visuais dos gráficos;
+9. `js/import-engine.js` — prévia, validação e segurança de importação;
+10. `js/predictive-engine.js` — projeção, comparação e alertas;
+11. `js/settings-engine.js` — permissões e layouts personalizáveis;
+12. `js/app.js` — estado, renderização, orquestração das regras e integrações.
 
 A modularização foi iniciada de forma conservadora para não alterar o comportamento existente. As regras financeiras críticas já foram retiradas do arquivo principal para que o código executado em produção seja o mesmo exercitado pela suíte automática. O próximo passo natural é separar gradualmente áreas como autenticação, importação, indicadores e feedbacks.
 
@@ -79,3 +84,11 @@ Os renderizadores de negócio continuam em `app.js` nesta etapa para preservar o
 A camada de configuração passou a ser montada pela função `prepareCentralSettings()`. Os cards continuam declarados no HTML próximo aos módulos de origem para preservar compatibilidade estrutural, mas são realocados para `#centralConfigModules` antes do binding dos eventos. Isso mantém IDs e funções existentes sem duplicar controles.
 
 A Apresentação expõe `syncAdminConfig()` para que a configuração da TV seja inicializada na Central mesmo antes de a tela de Apresentação ser aberta.
+
+## V2.39.0 — Governança financeira
+
+`js/finance-advanced.js` é carregado depois de `finance-rules.js` e antes de `app.js`. Ele não redefine a regra de comissão: sua responsabilidade é registrar a versão lógica, gerar a assinatura determinística dos parâmetros, montar explicações auditáveis, criar snapshots de memória e calcular deltas de simulação.
+
+A tabela `finance_calculation_memory` funciona como trilha imutável da bonificação. Registros podem ser inseridos e lidos por administradores autorizados do Squad, mas não atualizados ou excluídos por usuários autenticados. O fechamento do mês preserva `financeRuleVersion` e `financeRuleFingerprint` também em `closed_snapshot`.
+
+O simulador trabalha exclusivamente sobre uma cópia em memória da competência e executa o mesmo pipeline de cálculo usado pelo valor oficial. Nenhuma simulação chama rotinas de persistência. A memória centralizada depende da migration V2.39.0; na ausência dela, a aplicação preserva um fallback local sem impedir o restante do fluxo financeiro.

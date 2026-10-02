@@ -4,10 +4,18 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.38.1`<br>
+**Versão atual:** `2.39.0`<br>
 
 
 
+
+## V2.39.0 — Financeiro avançado
+
+A V2.39.0 acrescenta governança e rastreabilidade à bonificação sem alterar as regras oficiais já consolidadas. O motor financeiro passa a expor uma **versão de regra** (`FR-2.39.0-1`) e uma **assinatura determinística da configuração**, permitindo identificar com quais parâmetros cada valor foi calculado.
+
+A tela de Bonificação agora inclui **memória de cálculo imutável**, **simulador de cenários sem gravação**, e uma explicação passo a passo do valor de cada técnico. O fechamento congela versão, assinatura, configurações e valores calculados. Excel e PDF também carregam a identificação da regra usada.
+
+> Execute `supabase/migrations/MIGRACAO_V2.39.0.sql` para centralizar a memória de cálculo no Supabase. Sem a migration, o painel continua funcionando e mantém fallback local no navegador para as memórias criadas.
 
 ## V2.38.1 — Centralização das configurações
 
@@ -75,6 +83,11 @@ dashboard-squad-performance/
 │   ├── config.js           # configuração de ambiente/Supabase
 │   ├── core-utils.js       # utilidades compartilhadas
 │   ├── finance-rules.js    # regras financeiras puras e testáveis
+│   ├── finance-advanced.js # memória, versão, simulador e explicações financeiras
+│   ├── chart-engine.js     # motor visual dos gráficos
+│   ├── import-engine.js    # prévia e segurança das importações
+│   ├── predictive-engine.js# projeções e alertas
+│   ├── settings-engine.js  # layouts e permissões
 │   ├── audit-utils.js      # sanitização e proteções da auditoria
 │   ├── default-data.js     # dados demonstrativos anonimizados
 │   └── demo-users.js       # contas exclusivamente demonstrativas

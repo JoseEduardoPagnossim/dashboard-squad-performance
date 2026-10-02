@@ -208,3 +208,16 @@ test('teto zero zera integralmente o modelo individual', () => {
   assert.equal(result.after, 0);
   assert.deepEqual(records.map(r => r.data.final), [0, 0]);
 });
+
+test('financial engine exposes the V2.39 rule version in calculated data', () => {
+  assert.equal(finance.FINANCE_RULE_VERSION, 'FR-2.39.0-1');
+  const result = finance.buildFinanceModelData({
+    mode: 'squad', hasProduction: true, days: 20, avgPerDay: 10, notes5Pct: .5,
+    eligibleAtt: 100, evaluationExcludedAtt: 0, commissionAtt: 400, commissionNotes5: 200,
+    cancelRate: 0, cancelTier: { max: .004 }, rawMult: 1, effectiveMult: 1,
+    financeStatus: 'ACIMA', financialAdjustmentEligible: true, topAttBonus: 0,
+    topNotes5Bonus: 0, manualBonus: 0, sales: 0, discount: 0,
+    redistributed: 0, vacation: false, pool: 0
+  });
+  assert.equal(result.ruleVersion, 'FR-2.39.0-1');
+});

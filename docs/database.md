@@ -1,6 +1,6 @@
 # Banco de dados — Supabase
 
-Este documento representa o fluxo recomendado para a versão `2.29.9`.
+Este documento representa o fluxo recomendado para a versão `2.39.0`.
 
 ## Instalação nova
 
@@ -14,7 +14,7 @@ Em um projeto Supabase novo:
 6. configure URL e chave publishable/anon em `js/config.js`;
 7. valide login, leitura dos Squads e uma importação controlada antes de liberar o ambiente.
 
-`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.29.9, incluindo os `GRANT`s explícitos exigidos pela Data API.
+`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.39.0, incluindo os `GRANT`s explícitos exigidos pela Data API.
 
 ## Atualização de uma base existente
 
@@ -29,6 +29,17 @@ supabase/migrations/MIGRACAO_V2.29.9.sql
 ```
 
 A V2.29.9 torna explícitos os privilégios necessários para a Data API do Supabase. O passo a passo completo está em `docs/SUPABASE_DATA_API_GRANTS_2026.md`.
+
+
+### Atualizações recentes
+
+Para ambientes já atualizados até V2.29.9, verifique também as migrations funcionais posteriores aplicáveis. Para a V2.39.0, a memória centralizada de bonificação exige:
+
+```text
+supabase/migrations/MIGRACAO_V2.39.0.sql
+```
+
+Essa tabela registra snapshots imutáveis dos cálculos financeiros. A aplicação mantém fallback local quando a migration ainda não foi executada, mas a memória compartilhada entre gestores depende do Supabase.
 
 ## Edge Functions
 
