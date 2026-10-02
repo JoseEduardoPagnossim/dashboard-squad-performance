@@ -19,6 +19,7 @@
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
+  const DEFAULT_CHART_PREFERENCES = {labelDensity:'all',labelFontSize:10,axisFontSize:11,legendFontSize:10,chartHeight:340,cardPadding:22,yScaleMode:'auto',yMin:0,yMax:100,lineWidth:3,pointRadius:4};
   const DEMO_USERS = Array.isArray(window.SOFTEN_DEMO_USERS) ? [...window.SOFTEN_DEMO_USERS] : [];
 
   function loadDemoCreatedUsers(){
@@ -41,6 +42,7 @@
     currentId:null,
     techName:null,
     theme:clone(DEFAULT_THEME),
+    chartPreferences:clone(DEFAULT_CHART_PREFERENCES),
     colorMode:loadColorModePreference(),
     currentView:'individual',
     adminSection:'operation',
@@ -90,6 +92,91 @@
     financialImpactLoading:null,
     audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
   };
+
+  function normalizeChartPreferences(prefs){
+    const raw={...(prefs||{})},labelDensity=['all','alternate','every3','extremes','none'].includes(raw.labelDensity)?raw.labelDensity:'all',yScaleMode=raw.yScaleMode==='manual'?'manual':'auto',yMin=clamp(safe(raw.yMin),0,99),yMax=clamp(Math.max(safe(raw.yMax),yMin+1),1,100);
+    return {labelDensity,labelFontSize:clamp(safe(raw.labelFontSize)||DEFAULT_CHART_PREFERENCES.labelFontSize,8,18),axisFontSize:clamp(safe(raw.axisFontSize)||DEFAULT_CHART_PREFERENCES.axisFontSize,9,16),legendFontSize:clamp(safe(raw.legendFontSize)||DEFAULT_CHART_PREFERENCES.legendFontSize,9,16),chartHeight:clamp(safe(raw.chartHeight)||DEFAULT_CHART_PREFERENCES.chartHeight,260,520),cardPadding:clamp(safe(raw.cardPadding)||DEFAULT_CHART_PREFERENCES.cardPadding,16,34),yScaleMode,yMin,yMax,lineWidth:clamp(safe(raw.lineWidth)||DEFAULT_CHART_PREFERENCES.lineWidth,2,6),pointRadius:clamp(safe(raw.pointRadius)||DEFAULT_CHART_PREFERENCES.pointRadius,2,8)};
+  }
+  function currentChartPreferences(){return normalizeChartPreferences(state.theme?.chartPreferences||state.chartPreferences||DEFAULT_CHART_PREFERENCES)}
+  function applyChartPreferences(prefs){
+    const cfg=normalizeChartPreferences(prefs),delta=cfg.chartHeight-340,root=document.documentElement.style;
+    state.chartPreferences=cfg;
+    root.setProperty('--chart-card-padding',`${cfg.cardPadding}px`);
+    root.setProperty('--chart-label-font-size',`${cfg.labelFontSize}px`);
+    root.setProperty('--chart-label-font-size-compact',`${Math.max(8,cfg.labelFontSize-1)}px`);
+    root.setProperty('--chart-axis-font-size',`${cfg.axisFontSize}px`);
+    root.setProperty('--chart-legend-font-size',`${cfg.legendFontSize}px`);
+    root.setProperty('--chart-height-base',`${cfg.chartHeight}px`);
+    root.setProperty('--chart-height-sm',`${Math.max(220,250+delta)}px`);
+    root.setProperty('--chart-height-lg',`${Math.max(240,290+delta)}px`);
+    root.setProperty('--chart-height-history',`${Math.max(260,330+delta)}px`);
+    root.setProperty('--chart-height-business',`${Math.max(280,360+delta)}px`);
+    return cfg;
+  }
+  function syncChartPreferencePreview(){
+    const cfg=currentChartPreferences();
+    if($('#chartLabelFontInput'))$('#chartLabelFontInput').value=cfg.labelFontSize;
+    if($('#chartAxisFontInput'))$('#chartAxisFontInput').value=cfg.axisFontSize;
+    if($('#chartLegendFontInput'))$('#chartLegendFontInput').value=cfg.legendFontSize;
+    if($('#chartHeightInput'))$('#chartHeightInput').value=cfg.chartHeight;
+    if($('#chartCardPaddingInput'))$('#chartCardPaddingInput').value=cfg.cardPadding;
+    if($('#chartScaleMode'))$('#chartScaleMode').value=cfg.yScaleMode;
+    if($('#chartScaleMinInput'))$('#chartScaleMinInput').value=cfg.yMin;
+    if($('#chartScaleMaxInput'))$('#chartScaleMaxInput').value=cfg.yMax;
+    if($('#chartLabelDensity'))$('#chartLabelDensity').value=cfg.labelDensity;
+    if($('#chartLineWidthInput'))$('#chartLineWidthInput').value=cfg.lineWidth;
+    if($('#chartPointRadiusInput'))$('#chartPointRadiusInput').value=cfg.pointRadius;
+    if($('#chartLabelFontValue'))$('#chartLabelFontValue').textContent=`${cfg.labelFontSize} px`;
+    if($('#chartAxisFontValue'))$('#chartAxisFontValue').textContent=`${cfg.axisFontSize} px`;
+    if($('#chartLegendFontValue'))$('#chartLegendFontValue').textContent=`${cfg.legendFontSize} px`;
+    if($('#chartHeightValue'))$('#chartHeightValue').textContent=`${cfg.chartHeight} px`;
+    if($('#chartCardPaddingValue'))$('#chartCardPaddingValue').textContent=`${cfg.cardPadding} px`;
+    if($('#chartLineWidthValue'))$('#chartLineWidthValue').textContent=`${Number(cfg.lineWidth).toLocaleString('pt-BR',{minimumFractionDigits:cfg.lineWidth%1?1:0,maximumFractionDigits:1})} px`;
+    if($('#chartPointRadiusValue'))$('#chartPointRadiusValue').textContent=`${Number(cfg.pointRadius).toLocaleString('pt-BR',{minimumFractionDigits:cfg.pointRadius%1?1:0,maximumFractionDigits:1})} px`;
+    if($('#chartScaleMinInput'))$('#chartScaleMinInput').disabled=cfg.yScaleMode!=='manual';
+    if($('#chartScaleMaxInput'))$('#chartScaleMaxInput').disabled=cfg.yScaleMode!=='manual';
+  }
+  function collectChartPreferencesFromUi(){
+    return normalizeChartPreferences({labelDensity:$('#chartLabelDensity')?.value,labelFontSize:$('#chartLabelFontInput')?.value,axisFontSize:$('#chartAxisFontInput')?.value,legendFontSize:$('#chartLegendFontInput')?.value,chartHeight:$('#chartHeightInput')?.value,cardPadding:$('#chartCardPaddingInput')?.value,yScaleMode:$('#chartScaleMode')?.value,yMin:$('#chartScaleMinInput')?.value,yMax:$('#chartScaleMaxInput')?.value,lineWidth:$('#chartLineWidthInput')?.value,pointRadius:$('#chartPointRadiusInput')?.value});
+  }
+  function previewChartPreferences(){
+    if(!isAdmin()||state.squadCode==='all')return;
+    const cfg=collectChartPreferencesFromUi();
+    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg});
+    applyChartPreferences(cfg);syncChartPreferencePreview();render();
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent='Pré-visualização aplicada. Clique em salvar para persistir no tema do Squad.';
+  }
+  function saveChartPreferences(){
+    if(!isAdmin()||!requireSpecificSquad())return;
+    const cfg=collectChartPreferencesFromUi();
+    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,preset:'custom'});
+    applyChartPreferences(cfg);syncChartPreferencePreview();saveTheme();render();
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent='Configuração visual salva com sucesso no tema atual do Squad.';
+    toast('Configuração visual dos gráficos salva.');
+  }
+  function resetChartPreferences(){
+    if(!isAdmin()||!requireSpecificSquad())return;
+    const cfg=normalizeChartPreferences(DEFAULT_CHART_PREFERENCES);
+    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,preset:'custom'});
+    applyChartPreferences(cfg);syncChartPreferencePreview();saveTheme();render();
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent='Padrão restaurado para a configuração visual.';
+    toast('Configuração visual restaurada para o padrão.');
+  }
+  function chartLabelVisible(index,total){
+    const mode=currentChartPreferences().labelDensity||'all';
+    if(mode==='none')return false;
+    if(total<=2)return true;
+    if(mode==='alternate')return index===0||index===total-1||index%2===0;
+    if(mode==='every3')return index===0||index===total-1||index%3===0;
+    if(mode==='extremes')return index===0||index===total-1;
+    return true;
+  }
+  function configuredChartHeight(baseHeight=340){return Math.max(220,(safe(baseHeight)||340)+(currentChartPreferences().chartHeight-340))}
+  function configuredPercentScale(rawTop,explicitMax=null){
+    const cfg=currentChartPreferences();
+    if(cfg.yScaleMode==='manual')return {min:cfg.yMin,max:Math.max(cfg.yMax,cfg.yMin+1)};
+    return {min:0,max:explicitMax??Math.max(10,Math.ceil(Math.max(1,safe(rawTop))/10)*10)};
+  }
 
   function loadDemoSquads(){
     const base={
@@ -313,6 +400,9 @@
     if($('#feedbackRegenerateBtn'))$('#feedbackRegenerateBtn').addEventListener('click',()=>regenerateSingleFeedback(state.feedbackEditor?.t?.name));
     if($('#feedbackSaveDraftBtn'))$('#feedbackSaveDraftBtn').addEventListener('click',()=>saveFeedbackEditor('draft'));
     if($('#feedbackFinalizeBtn'))$('#feedbackFinalizeBtn').addEventListener('click',()=>saveFeedbackEditor('finalized'));
+    if($('#saveChartPrefsBtn'))$('#saveChartPrefsBtn').addEventListener('click',saveChartPreferences);
+    if($('#resetChartPrefsBtn'))$('#resetChartPrefsBtn').addEventListener('click',resetChartPreferences);
+    ['#chartLabelDensity','#chartScaleMode','#chartScaleMinInput','#chartScaleMaxInput','#chartLabelFontInput','#chartAxisFontInput','#chartLegendFontInput','#chartHeightInput','#chartCardPaddingInput','#chartLineWidthInput','#chartPointRadiusInput'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',previewChartPreferences)});
     let allTechResizeTimer=null;window.addEventListener('resize',()=>{const monthlyOpen=$('#allTechniciansModal')?.classList.contains('open'),dailyOpen=$('#dailyTechniciansModal')?.classList.contains('open');if(!monthlyOpen&&!dailyOpen)return;clearTimeout(allTechResizeTimer);allTechResizeTimer=setTimeout(()=>{if(monthlyOpen)renderAllTechniciansFullscreenChart(state.allTechniciansRangeIds);if(dailyOpen)renderDailyTechniciansFullscreenChart();},120);});
   }
 
@@ -1523,20 +1613,22 @@ function chartDataLabelSvg(x,y,text,{color='var(--text)',anchor='middle',dy=0,co
   return `<text x="${x}" y="${y}" dy="${dy}" text-anchor="${anchor}" class="chart-data-label${compact?' compact':''}" fill="${color}">${escapeHtml(String(text))}</text>`;
 }
 function renderQualityAttendanceEvaluationChart(el,labels,attendance,evalPct){
-  if(!el)return;const has=(attendance||[]).some(v=>safe(v)>0)||(evalPct||[]).some(v=>v!=null);if(!has){el.innerHTML='<div class="chart-empty">Sem dados no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern');const w=Math.max(760,(labels?.length||0)*108),h=320,p={l:58,r:58,t:30,b:58},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(48,slot*.48),attTop=Math.max(1,...(attendance||[]).map(safe))*1.12,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-(safe(v)/100)*plotH;
-  const grid=[0,.25,.5,.75,1].map(f=>{const y=p.t+(1-f)*plotH;return `<line x1="${p.l}" y1="${y}" x2="${w-p.r}" y2="${y}" class="grid-line"/><text x="6" y="${y+4}" class="axis-label">${fmtInt(attTop*f)}</text><text x="${w-6}" y="${y+4}" class="quality-right-axis-label">${Math.round(100*f)}%</text>`}).join('');
-  const bars=(attendance||[]).map((v,i)=>{const yy=yAtt(v);return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="8" fill="var(--accent)" opacity=".55" class="quality-bar chart-series-shape" data-series-index="0"></rect>${chartDataLabelSvg(x(i),Math.max(p.t+11,yy-7),fmtInt(v),{color:'var(--accent)',compact:true})}`}).join('');
-  const pts=(evalPct||[]).map((v,i)=>v==null?null:{x:x(i),y:yPct(v)}),segments=[];let cur=[];pts.forEach(pt=>{if(pt){cur.push(pt)}else if(cur.length){segments.push(cur);cur=[]}});if(cur.length)segments.push(cur);const line=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('')+(evalPct||[]).map((v,i)=>v==null?'':`<circle cx="${x(i)}" cy="${yPct(v)}" r="4" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>${chartDataLabelSvg(x(i),Math.min(base-5,yPct(v)+15),chartInlineLabel(v,{percent:true,decimals:1}),{color:'var(--success)',compact:true})}`).join('');
+  if(!el)return;const has=(attendance||[]).some(v=>safe(v)>0)||(evalPct||[]).some(v=>v!=null);if(!has){el.innerHTML='<div class="chart-empty">Sem dados no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern');const prefs=currentChartPreferences(),scale=configuredPercentScale(100,100),w=Math.max(760,(labels?.length||0)*108),h=configuredChartHeight(320),p={l:58,r:58,t:30,b:58},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(48,slot*.48),attTop=Math.max(1,...(attendance||[]).map(safe))*1.12,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-((safe(v)-safe(scale.min))/Math.max(1,safe(scale.max)-safe(scale.min)))*plotH;
+  const grid=[0,.25,.5,.75,1].map(f=>{const y=p.t+(1-f)*plotH,val=safe(scale.min)+(safe(scale.max)-safe(scale.min))*f;return `<line x1="${p.l}" y1="${y}" x2="${w-p.r}" y2="${y}" class="grid-line"/><text x="6" y="${y+4}" class="axis-label">${fmtInt(attTop*f)}</text><text x="${w-6}" y="${y+4}" class="quality-right-axis-label">${Math.round(val)}%</text>`}).join('');
+  const bars=(attendance||[]).map((v,i)=>{const yy=yAtt(v);return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="8" fill="var(--accent)" opacity=".55" class="quality-bar chart-series-shape" data-series-index="0"></rect>${chartLabelVisible(i,labels.length)?chartDataLabelSvg(x(i),Math.max(p.t+11,yy-7),fmtInt(v),{color:'var(--accent)',compact:true}):''}`}).join('');
+  const pts=(evalPct||[]).map((v,i)=>v==null?null:{x:x(i),y:yPct(v)}),segments=[];let cur=[];pts.forEach(pt=>{if(pt){cur.push(pt)}else if(cur.length){segments.push(cur);cur=[]}});if(cur.length)segments.push(cur);const line=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="${prefs.lineWidth}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('')+(evalPct||[]).map((v,i)=>v==null?'':`<circle cx="${x(i)}" cy="${yPct(v)}" r="${prefs.pointRadius}" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>${chartLabelVisible(i,labels.length)?chartDataLabelSvg(x(i),Math.min(base-5,yPct(v)+15),chartInlineLabel(v,{percent:true,decimals:1}),{color:'var(--success)',compact:true}):''}`).join('');
   const xLabels=(labels||[]).map((l,i)=>`<text x="${x(i)}" y="${h-18}" text-anchor="middle" class="axis-label">${escapeHtml(l)}</text>`).join(''),zones=(labels||[]).map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${plotH}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join('');
   el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${line}${zones}${xLabels}<text x="${p.l}" y="17" class="quality-axis-title">Atendimentos</text><text x="${w-p.r}" y="17" text-anchor="end" class="quality-axis-title">% avaliação</text></svg></div><div class="chart-legend-inline chart-legend-visible"><span><i class="legend-swatch" style="background:var(--accent)"></i>Qtd. Atendimento</span><span><i class="legend-swatch" style="background:var(--success)"></i>% Avaliação</span></div>`;
   bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[{name:'Qtd. Atendimento',value:attendance?.[i],text:fmtInt(attendance?.[i]),color:'var(--accent)'},{name:'% Avaliação',value:evalPct?.[i],text:evalPct?.[i]==null?'—':`${safe(evalPct[i]).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:'var(--success)'}]});
 }
+
 function renderQualityGroupedBarChart(el,labels,rows){
-  if(!el)return;const series=qualityDistributionSeries(rows),has=(rows||[]).some(r=>safe(r.total)>0);if(!has){el.innerHTML='<div class="chart-empty">Sem avaliações para este indicador no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern','quality-grouped-bar-chart');const w=Math.max(860,(labels?.length||0)*112),h=350,p={l:54,r:24,t:28,b:62},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),groupW=Math.min(slot*.78,82),barW=Math.max(5,groupW/5-2),x0=i=>p.l+slot*i+(slot-groupW)/2,y=v=>p.t+plotH-(safe(v)/100)*plotH,base=h-p.b;
-  const grid=[0,25,50,75,100].map(v=>{const yy=y(v);return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${v}%</text>`}).join('');let bars='';series.forEach((ser,si)=>{(ser.values||[]).forEach((v,i)=>{if(v==null)return;const xx=x0(i)+si*(barW+2),yy=y(v);bars+=`<rect x="${xx}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="3" fill="${ser.color}" class="quality-bar chart-series-shape" data-series-index="${si}"></rect>${chartDataLabelSvg(xx+barW/2,Math.max(p.t+10,yy-5),chartInlineLabel(v,{percent:true,decimals:0}),{color:ser.color,compact:true})}`})});
+  if(!el)return;const series=qualityDistributionSeries(rows),has=(rows||[]).some(r=>safe(r.total)>0);if(!has){el.innerHTML='<div class="chart-empty">Sem avaliações para este indicador no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern','quality-grouped-bar-chart');const scale=configuredPercentScale(100,100),w=Math.max(860,(labels?.length||0)*112),h=configuredChartHeight(350),p={l:54,r:24,t:28,b:62},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),groupW=Math.min(slot*.78,82),barW=Math.max(5,groupW/5-2),x0=i=>p.l+slot*i+(slot-groupW)/2,y=v=>p.t+plotH-((safe(v)-safe(scale.min))/Math.max(1,safe(scale.max)-safe(scale.min)))*plotH,base=h-p.b;
+  const grid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*plotH,val=safe(scale.min)+(safe(scale.max)-safe(scale.min))*f;return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${Math.round(val)}%</text>`}).join('');let bars='';series.forEach((ser,si)=>{(ser.values||[]).forEach((v,i)=>{if(v==null)return;const xx=x0(i)+si*(barW+2),yy=y(v);bars+=`<rect x="${xx}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="3" fill="${ser.color}" class="quality-bar chart-series-shape" data-series-index="${si}"></rect>${chartLabelVisible(i,labels.length)?chartDataLabelSvg(xx+barW/2,Math.max(p.t+10,yy-5),chartInlineLabel(v,{percent:true,decimals:0}),{color:ser.color,compact:true}):''}`})});
   const xLabels=(labels||[]).map((l,i)=>`<text x="${p.l+slot*(i+.5)}" y="${h-18}" text-anchor="middle" class="axis-label">${escapeHtml(l)}</text>`).join(''),zones=(labels||[]).map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${plotH}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join(''),legend=`<div class="chart-legend-inline chart-legend-visible chart-legend-interactive">${series.map((ser,si)=>`<button type="button" class="chart-legend-item" data-series-index="${si}" aria-pressed="false"><i class="legend-swatch" style="background:${ser.color}"></i>${ser.name}</button>`).join('')}</div>`;
   el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${zones}${xLabels}</svg></div>${legend}`;bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[{name:'Total avaliações',value:rows?.[i]?.total,text:fmtInt(rows?.[i]?.total),color:'var(--accent)'},...series.map(ser=>ser.values?.[i]==null?null:{name:ser.name,value:ser.values[i],text:`${safe(ser.values[i]).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:ser.color})]});
 }
+
 
 function renderHistoryAttendanceChart(el,labels,totals,series){
   if(!el)return;
@@ -1608,24 +1700,24 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   const validSeries=(series||[]).filter(s=>(s.values||[]).some(v=>v!=null));
   if(!validSeries.length){el.innerHTML='<div class="chart-empty">Sem dados para este recorte.</div>';return;}
   el.classList.add('interactive-chart','chart-modern','premium-line-chart');
-  const chartId=nextChartRenderId('line');
+  const prefs=currentChartPreferences(),chartId=nextChartRenderId('line');
   const containerWidth=fitWidth?Math.max(0,Math.floor(el.clientWidth||el.getBoundingClientRect?.().width||0)-18):0;
-  const w=Math.max(900,(labels?.length||0)*124,containerWidth),h=Math.max(300,safe(height)||340),p=emphasis?{l:70,r:40,t:36,b:72}:{l:56,r:30,t:32,b:60};
+  const resolvedHeight=configuredChartHeight(height),w=Math.max(900,(labels?.length||0)*124,containerWidth),h=Math.max(300,safe(resolvedHeight)||340),p=emphasis?{l:70,r:40,t:36,b:72}:{l:56,r:30,t:32,b:60};
   const vals=validSeries.flatMap(s=>s.values).filter(v=>v!=null).map(v=>safe(v));
-  const rawTop=Math.max(1,...vals),top=maxValue??(percent?Math.max(10,Math.ceil(rawTop/10)*10):rawTop*1.1),baseline=h-p.b;
-  const x=i=>p.l+(labels.length<=1?0:i*(w-p.l-p.r)/(labels.length-1)),y=v=>p.t+(h-p.t-p.b)-(safe(v)/top)*(h-p.t-p.b);
-  const grid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),v=top*f,label=axisFormatter?axisFormatter(v):(percent?`${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}%`:v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:decimals}));return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${label}</text>`}).join('');
+  const rawTop=Math.max(1,...vals),scale=percent?configuredPercentScale(rawTop,maxValue):(maxValue!=null?{min:0,max:maxValue}:{min:0,max:rawTop*1.1}),range=Math.max(1,safe(scale.max)-safe(scale.min)),baseline=h-p.b;
+  const x=i=>p.l+(labels.length<=1?0:i*(w-p.l-p.r)/(labels.length-1)),y=v=>p.t+(h-p.t-p.b)-((safe(v)-safe(scale.min))/range)*(h-p.t-p.b);
+  const grid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),v=safe(scale.min)+range*f,label=axisFormatter?axisFormatter(v):(percent?`${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}%`:v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:decimals}));return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${label}</text>`}).join('');
   const tickStep=labels.length>24?Math.ceil(labels.length/7):labels.length>16?Math.ceil(labels.length/8):labels.length>12?2:1;
   const xLabels=labels.map((label,i)=>{if(i!==0&&i!==labels.length-1&&i%tickStep!==0)return'';const raw=String(label||''),shown=raw.includes('/')?raw:raw.split(' ')[0].slice(0,3);return `<text x="${x(i)}" y="${h-17}" text-anchor="middle" class="axis-label history-x-label">${escapeHtml(shown)}</text>`}).join('');
   const defs=[];
   validSeries.forEach((s,si)=>defs.push(svgSeriesGradient(`${chartId}-area-${si}`,s.color||'var(--accent)',validSeries.length>5?.05:emphasis?.16:.10)));
   const paths=validSeries.map((s,si)=>{
     const color=s.color||'var(--accent)',segments=splitChartPointSegments(s.values,x,y);
-    const dash=s.dashed?' stroke-dasharray="7 7"':'',lineWidth=emphasis?(s.dashed?2.5:3):(s.dashed?2.1:2.65),pointRadius=emphasis?4.6:3.8;
+    const dash=s.dashed?' stroke-dasharray="7 7"':'',lineWidth=Math.max(1.8,prefs.lineWidth+(emphasis?.25:0)-(s.dashed?.3:0)),pointRadius=Math.max(2,prefs.pointRadius+(emphasis?.3:0));
     const showArea=!s.dashed;
     const areas=showArea?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" style="--series-color:${color}" data-series-index="${si}"></path>`).join(''):'';
     const linePaths=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round"${dash} class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
-    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=y(v),offset=(si%3===0?-10:si%3===1?15:-22),label=valueFormatter?valueFormatter(v):chartValueText(v,{percent,decimals});return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?pointRadius+0.8:pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${chartDataLabelSvg(cx,Math.max(p.t+10,Math.min(baseline-5,cy+offset)),label,{color,compact:validSeries.length>3})}`}).join('');
+    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=y(v),offset=(si%3===0?-10:si%3===1?15:-22),label=valueFormatter?valueFormatter(v):chartValueText(v,{percent,decimals}),visible=chartLabelVisible(i,labels.length);return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?pointRadius+0.8:pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${visible?chartDataLabelSvg(cx,Math.max(p.t+10,Math.min(baseline-5,cy+offset)),label,{color,compact:validSeries.length>3}):''}`}).join('');
     return areas+linePaths+dots;
   }).join('');
   const rulers=(labels||[]).map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
@@ -1636,6 +1728,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;--chart-height:${h}px" preserveAspectRatio="none"><defs>${defs.join('')}</defs>${grid}${paths}${rulers}${zones}${xLabels}</svg></div>${legend}`;
   bindSharedChartTooltip(el,{labels,entriesForIndex:i=>validSeries.map(s=>s.values?.[i]==null?null:{name:s.vacations?.[i]?`${s.name} 🏖`:s.name,value:s.values[i],text:`${valueFormatter?valueFormatter(s.values[i]):chartValueText(s.values[i],{percent,decimals})}${s.vacations?.[i]?' • férias':''}`,color:s.color||'var(--accent)'})});
 }
+
 
 
 
@@ -2100,6 +2193,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
 
   function renderAdmin(){
     if(!isAdmin())return;
+    syncChartPreferencePreview();
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=state.squadCode==='all'?'Selecione um Squad específico para salvar a configuração visual no tema.':'As alterações afetam todo o Squad e ficam salvas no tema atual.';
     const specific=state.squadCode!=='all',m=currentMonth(),canImport=specific||isSuperAdmin(),locked=!!m?.isClosed;
     renderAdminReconciliation();
     $('#adminScopeTitle').textContent=specific?`Squad ${state.squadCode}`:'Todos os Squads';
@@ -2841,7 +2936,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       neon:{name:'Neon',campaignTitle:'Squad Neon',campaignTagline:'Acelere. Evolua. Conquiste.',preset:'neon',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#c05cff',secondary:'#21dbc9',bg:'#090514',bg2:'#151029',panel:'rgba(23,15,42,.9)',panel2:'rgba(31,21,54,.94)',text:'#faf5ff'},light:{...DEFAULT_LIGHT_COLORS,accent:'#9333ea',secondary:'#0f9f91'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.18},
       clean:{name:'Claro',campaignTitle:'Performance',campaignTagline:'Clareza para acompanhar cada resultado.',preset:'clean',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#7c8cf8',secondary:'#4f68dd',bg:'#0b1020',bg2:'#121a2c',panel:'rgba(19,27,45,.92)',panel2:'rgba(27,38,61,.94)'},light:{...DEFAULT_LIGHT_COLORS,accent:'#3157d5',secondary:'#6a7be8',bg:'#e9eef5',bg2:'#f7f9fc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#172033'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.06}
     };
-    state.theme=normalizeThemePayload(presets[name]||presets.vermithor);saveTheme();applyTheme(state.theme);toast(`Tema ${state.theme.name} aplicado.`)
+    state.theme=normalizeThemePayload({...presets[name]||presets.vermithor,chartPreferences:currentChartPreferences()});saveTheme();applyTheme(state.theme);toast(`Tema ${state.theme.name} aplicado.`)
   }
   function applyCampaignIdentity(theme,safeBg,fallbackTitle,fallbackTagline){
     const title=theme.campaignTitle||fallbackTitle||theme.name||'Performance';
@@ -2859,7 +2954,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#houseMottoText'))$('#houseMottoText').textContent=tagline;
   }
   function applyTheme(t){
-    state.theme=normalizeThemePayload(t||DEFAULT_THEME);applyThemePalette(state.theme);const r=document.documentElement.style;
+    state.theme=normalizeThemePayload(t||DEFAULT_THEME);applyThemePalette(state.theme);applyChartPreferences(state.theme.chartPreferences||DEFAULT_CHART_PREFERENCES);const r=document.documentElement.style;
     if(state.theme.opacity!=null)r.setProperty('--hero-opacity',state.theme.opacity);const safeBg=sanitizeThemeBackground(state.theme.background),bg=safeBg?`url("${safeBg}")`:state.theme.preset==='vermithor'?"url('assets/vermithor.png')":'none';r.setProperty('--hero-img',bg);
     const fallbackTitle=state.theme.preset==='vermithor'?'Casa do Dragão':(state.theme.name||`Squad ${state.squadCode}`),fallbackTagline=state.theme.preset==='vermithor'?'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.':'Acompanhe, evolua e conquiste.';
     applyCampaignIdentity(state.theme,safeBg,fallbackTitle,fallbackTagline);

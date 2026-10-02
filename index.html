@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.34.5" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.34.5" />
+  <link rel="stylesheet" href="css/styles.css?v=2.34.6" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.34.6" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -48,7 +48,7 @@
           <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
         </form>
       </div>
-      <small class="login-version">V2.34.5 • Compatibilidade Data API</small>
+      <small class="login-version">V2.34.6 • Aparência configurável</small>
     </div>
   </section>
 
@@ -65,9 +65,9 @@
 
   <div id="appShell" class="app-shell hidden">
     <aside class="sidebar" id="appSidebar">
-      <div class="brand">
-        <div class="brand-mark">S</div>
-        <div><strong>SOFTEN</strong><span>Performance Hub</span></div>
+      <div class="brand brand-logo-box">
+        <img class="brand-logo-image" src="assets/soften-logo-sidebar.png" alt="Soften Sistemas">
+        <div class="brand-copy"><strong>Performance Hub</strong><span>Painel de desempenho</span></div>
       </div>
       <nav class="sidebar-nav">
         <div class="nav-group"><span class="nav-group-label">DESEMPENHO</span>
@@ -107,7 +107,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.34.5 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.34.6 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -910,7 +910,7 @@
             <div class="support-cost-footer"><span>Valores confidenciais e visíveis somente ao Admin Geral. Não alteram bonificação, metas ou pontuação.</span><strong id="supportCostStatus">Selecione uma competência.</strong></div>
           </article>
 
-          <article class="card admin-card full admin-section admin-appearance"><span class="eyebrow">APARÊNCIA • SOMENTE ADMIN</span><h2>Tema e ambientação do Squad</h2><p>Cada Squad pode ter paletas próprias para modo claro e escuro, mantendo fundo, identidade visual, favicon e trilha sonora. A escolha Light/Dark é individual e fica salva no navegador de cada usuário.</p><div class="appearance-actions"><button class="btn primary" id="adminThemeBtn">✦ Personalizar tema</button><button class="btn secondary" id="importThemeBtn">Importar tema JSON</button><button class="btn secondary" id="exportThemeBtn">Exportar tema</button></div><div class="theme-preview"><div><small>ATUAL</small><strong id="themeName">Vermithor</strong></div><span class="theme-mode-preview" id="themePaletteModeLabel">Modo escuro</span></div></article>
+          <article class="card admin-card full admin-section admin-appearance"><span class="eyebrow">APARÊNCIA • SOMENTE ADMIN</span><h2>Tema e ambientação do Squad</h2><p>Cada Squad pode ter paletas próprias para modo claro e escuro, mantendo fundo, identidade visual, favicon e trilha sonora. A escolha Light/Dark é individual e fica salva no navegador de cada usuário.</p><div class="appearance-actions"><button class="btn primary" id="adminThemeBtn">✦ Personalizar tema</button><button class="btn secondary" id="importThemeBtn">Importar tema JSON</button><button class="btn secondary" id="exportThemeBtn">Exportar tema</button></div><div class="theme-preview"><div><small>ATUAL</small><strong id="themeName">Vermithor</strong></div><span class="theme-mode-preview" id="themePaletteModeLabel">Modo escuro</span></div><div class="chart-preferences-card"><div class="chart-preferences-head"><div><span class="eyebrow">CONFIGURAÇÃO VISUAL</span><h3>Gráficos e cards configuráveis</h3></div><p>Ajuste fonte, densidade dos rótulos, altura dos gráficos, espaçamento dos cards e escala percentual. Essas preferências são salvas no tema do Squad.</p></div><div class="chart-preferences-grid"><label><span>Densidade dos rótulos</span><select id="chartLabelDensity"><option value="all">Todos os pontos</option><option value="alternate">Intercalado</option><option value="every3">A cada 3 pontos</option><option value="extremes">Somente extremos</option><option value="none">Ocultar rótulos</option></select></label><label><span>Fonte dos rótulos</span><input id="chartLabelFontInput" type="range" min="8" max="18" step="1" value="10"><small id="chartLabelFontValue">10 px</small></label><label><span>Fonte dos eixos</span><input id="chartAxisFontInput" type="range" min="9" max="16" step="1" value="11"><small id="chartAxisFontValue">11 px</small></label><label><span>Fonte da legenda</span><input id="chartLegendFontInput" type="range" min="9" max="16" step="1" value="10"><small id="chartLegendFontValue">10 px</small></label><label><span>Altura base dos gráficos</span><input id="chartHeightInput" type="range" min="260" max="520" step="10" value="340"><small id="chartHeightValue">340 px</small></label><label><span>Padding dos cards</span><input id="chartCardPaddingInput" type="range" min="16" max="34" step="1" value="22"><small id="chartCardPaddingValue">22 px</small></label><label><span>Espessura da linha</span><input id="chartLineWidthInput" type="range" min="2" max="6" step="0.2" value="3"><small id="chartLineWidthValue">3 px</small></label><label><span>Tamanho do ponto</span><input id="chartPointRadiusInput" type="range" min="2" max="8" step="0.2" value="4"><small id="chartPointRadiusValue">4 px</small></label><label><span>Escala percentual</span><select id="chartScaleMode"><option value="auto">Automática</option><option value="manual">Manual</option></select><small>Aplica-se aos gráficos percentuais.</small></label><label><span>Mínimo %</span><input id="chartScaleMinInput" type="number" min="0" max="99" step="1" value="0"><small>Use com escala manual.</small></label><label><span>Máximo %</span><input id="chartScaleMaxInput" type="number" min="1" max="100" step="1" value="100"><small>Use com escala manual.</small></label></div><div class="appearance-actions chart-pref-actions"><button class="btn primary" id="saveChartPrefsBtn" type="button">Salvar configuração visual</button><button class="btn secondary" id="resetChartPrefsBtn" type="button">Restaurar padrão</button></div><small class="chart-preferences-note" id="chartPrefsStatus">As alterações afetam todo o Squad e ficam salvas no tema atual.</small></div></article>
         </div>
       </section>
     </main>
@@ -1026,7 +1026,7 @@
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
   <script src="js/finance-rules.js?v=2.29.9"></script>
-  <script src="js/presentation.js?v=2.34.5"></script>
-  <script src="js/app.js?v=2.34.5"></script>
+  <script src="js/presentation.js?v=2.34.6"></script>
+  <script src="js/app.js?v=2.34.6"></script>
 </body>
 </html>
