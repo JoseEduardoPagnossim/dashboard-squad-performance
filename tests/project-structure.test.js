@@ -96,3 +96,24 @@ test('central de configuracoes possui layout e permissoes granulares', () => {
   assert.match(app, /hasPermission/);
   for (const marker of ['effectivePermissions','normalizeLayout','moveBlock','toggleBlock']) assert.ok(settingsEngine.includes(marker), `settings-engine.js deve conter ${marker}`);
 });
+
+test('V2.38.1 centraliza configurações por módulo sem duplicar telas operacionais', () => {
+  for (const id of ['settingsSearchInput','settingsMonthSelect','settingsModuleNav','centralConfigModules','configOperationGoalsCard','configOperationScoreCard','configFinanceModelCard','configFinanceRulesCard','configAppearanceCard','presentationAdminPanel']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  for (const module of ['operation','finance','appearance','presentation']) {
+    assert.ok(index.includes(`data-central-config="${module}"`), `deve haver configuração centralizada do módulo ${module}`);
+  }
+  assert.match(app, /prepareCentralSettings/);
+  assert.match(app, /openSettingsModule/);
+  assert.match(app, /applySettingsModuleFilter/);
+  assert.ok(index.includes('data-open-settings-module="finance"'), 'Bonificação deve apontar para Configurações > Bonificação');
+  assert.ok(index.includes('data-open-settings-module="operation"'), 'Operação deve apontar para Configurações > Operação e metas');
+});
+
+test('configuração da apresentação pode ser sincronizada fora da tela de TV', () => {
+  const presentation = readFileSync(join(root, 'js', 'presentation.js'), 'utf8');
+  assert.match(presentation, /function syncAdminConfig\(/);
+  assert.match(presentation, /syncAdminConfig,/);
+  assert.match(app, /SoftenPresentation\?\.syncAdminConfig/);
+});

@@ -1,3 +1,16 @@
+## V2.38.1 — Centralização das configurações
+
+- transforma **Configurações** no ponto único para regras e comportamento dos módulos;
+- move **Metas do Squad** e referências de pontuação para `Configurações > Operação e metas`;
+- move modelo financeiro, faixas, cancelamento, prêmios, descontos e teto para `Configurações > Bonificação`;
+- move tema, aplicação por Squad/todos os Squads e preferências dos gráficos para `Configurações > Aparência e gráficos`;
+- move toda a configuração da TV/carrossel para `Configurações > Apresentação / TV`;
+- mantém telas de Operação, Bonificação e Apresentação focadas em dados, conferência e execução;
+- adiciona busca de configurações, filtros por módulo e seletor de competência dentro da Central;
+- inclui identificação visual **MÓDULO:** em cada card centralizado e atalhos contextuais a partir das telas operacionais;
+- preserva Usuários/Permissões como gestão de entidade, mantendo o resumo de governança dentro da Central;
+- amplia a suíte para **66 testes automatizados**.
+
 ## V2.38.0 — Configurações e personalização
 
 - nova Central de Configurações acessível a todos os perfis;

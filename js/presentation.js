@@ -65,6 +65,7 @@
     lastSuccessfulRefresh:0,
     lastRefreshError:null,
     bound:false,
+    adminBound:false,
     rankings:null,
     wakeLock:null,
     fitRaf:0,
@@ -352,13 +353,15 @@
     if($('#presentationConfigCarousel'))$('#presentationConfigCarousel').checked=cfg.carousel;if($('#presentationConfigKpis'))$('#presentationConfigKpis').checked=cfg.kpis;if($('#presentationConfigSpotlights'))$('#presentationConfigSpotlights').checked=cfg.spotlights;if($('#presentationConfigFilters'))$('#presentationConfigFilters').checked=cfg.filters;updateConfigUrl();
   }
   function bindAdminConfig(){
+    if(state.adminBound)return;state.adminBound=true;
     $('#presentationAdminPanel')?.addEventListener('change',e=>{if(e.target.matches('input,select'))updateConfigUrl()});
     $('#presentationConfigModeList')?.addEventListener('click',e=>{const up=e.target.closest('[data-mode-up]'),down=e.target.closest('[data-mode-down]');if(up)moveConfigMode(up.dataset.modeUp,-1);if(down)moveConfigMode(down.dataset.modeDown,1)});
     $('#presentationApplyConfigBtn')?.addEventListener('click',()=>{const cfg=applyRuntimeConfig(configFromForm(),true);window.dispatchEvent(new CustomEvent('soften:presentation-config-applied',{detail:cfg}));renderAll()});
-    $('#presentationResetConfigBtn')?.addEventListener('click',()=>{state.config=saveConfig(DEFAULT_CONFIG);const list=$('#presentationConfigModeList');if(list){list.dataset.ready='';list.innerHTML=''}renderAll()});
+    $('#presentationResetConfigBtn')?.addEventListener('click',()=>{state.config=saveConfig(DEFAULT_CONFIG);const list=$('#presentationConfigModeList');if(list){list.dataset.ready='';list.innerHTML=''}renderAdminConfig();if(state.payload)renderAll()});
     $('#presentationConfigCopyBtn')?.addEventListener('click',async()=>{const url=directUrl(configFromForm().squad,configFromForm());try{await navigator.clipboard.writeText(url)}catch(e){window.prompt('Copie a URL:',url)}});
     $('#presentationConfigOpenBtn')?.addEventListener('click',()=>{const cfg=configFromForm();window.open(directUrl(cfg.squad,cfg),'_blank','noopener')});
   }
+  function syncAdminConfig(){bindAdminConfig();renderAdminConfig();}
 
   function setMode(mode,manual=true){
     if(!activeModes().includes(mode))return;state.activeMode=mode;state.cycleStartedAt=Date.now();
@@ -367,7 +370,7 @@
   }
   function toggleCarousel(){state.carouselEnabled=!state.carouselEnabled;state.config.carousel=state.carouselEnabled;if(!route.direct)saveConfig(state.config);state.cycleStartedAt=Date.now();if(state.carouselEnabled){state.autoSwitch=true;state.manualPauseUntil=0}renderTabs();}
   function bind(){
-    if(state.bound)return;state.bound=true;bindAdminConfig();
+    if(state.bound)return;state.bound=true;syncAdminConfig();
     $$('[data-presentation-mode]').forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.presentationMode,true)));
     $('#presentationCarouselBtn')?.addEventListener('click',toggleCarousel);
     $('#presentationRefreshBtn')?.addEventListener('click',()=>triggerRefresh('manual'));
@@ -408,5 +411,5 @@
     bind();renderAll();
   }
 
-  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,getConfig:()=>normalizeConfig(state.config),applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);renderAll()},fit:()=>{scheduleDisplayFit()},__test:{calculate,normalizeRows,normalizeConfig}};
+  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,getConfig:()=>normalizeConfig(state.config),applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);if(state.payload)renderAll();else renderAdminConfig()},syncAdminConfig,fit:()=>{scheduleDisplayFit()},__test:{calculate,normalizeRows,normalizeConfig}};
 })();

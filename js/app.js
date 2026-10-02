@@ -60,6 +60,7 @@
     colorMode:loadColorModePreference(),
     currentView:'individual',
     adminSection:'operation',
+    settingsModule:'all',
     userDirectory:[],
     userDirectoryLoaded:false,
     auditLogs:[],
@@ -112,6 +113,64 @@
   };
 
 
+  const SETTINGS_MODULES={
+    personalization:{label:'Meu painel',icon:'▦'},
+    operation:{label:'Operação e metas',icon:'◎'},
+    finance:{label:'Bonificação',icon:'R$'},
+    appearance:{label:'Aparência e gráficos',icon:'✦'},
+    presentation:{label:'Apresentação / TV',icon:'▣'},
+    access:{label:'Usuários e permissões',icon:'♟'}
+  };
+  function prepareCentralSettings(){
+    const target=$('#centralConfigModules');if(!target)return;
+    $$('[data-central-config]').forEach(card=>{
+      const module=card.dataset.centralConfig||'operation',meta=SETTINGS_MODULES[module]||{label:card.dataset.centralLabel||module,icon:card.dataset.centralIcon||'⚙'};
+      card.classList.remove('admin-section','admin-operation','admin-finance','admin-appearance');
+      card.classList.add('settings-module-card','settings-centralized-card');
+      card.dataset.configModule=module;
+      card.dataset.configSearch=`${meta.label} ${card.dataset.centralLabel||''}`;
+      if(!card.querySelector(':scope > .settings-module-badge')){
+        const badge=document.createElement('div');badge.className='settings-module-badge';badge.innerHTML=`<span>${escapeHtml(card.dataset.centralIcon||meta.icon)}</span><strong>MÓDULO: ${escapeHtml(card.dataset.centralLabel||meta.label).toUpperCase()}</strong>`;card.prepend(badge);
+      }
+      target.appendChild(card);
+    });
+  }
+  function settingsModuleAllowed(module){
+    if(module==='personalization')return hasPermission('dashboard.customize');
+    if(module==='operation')return isAdmin()&&hasPermission('goals.manage');
+    if(module==='finance')return isAdmin()&&hasPermission('finance.view');
+    if(module==='appearance')return isAdmin()&&hasPermission('appearance.manage');
+    if(module==='presentation')return isAdmin()&&hasPermission('presentation.manage');
+    if(module==='access')return isSuperAdmin()&&hasPermission('permissions.manage');
+    return true;
+  }
+  function syncSettingsContext(){
+    const select=$('#settingsMonthSelect'),label=$('#settingsScopeLabel'),hint=$('#settingsScopeHint');
+    if(!select)return;
+    const specific=state.squadCode!=='all',ids=specific?Object.keys(currentMonths()).sort().reverse():[];
+    select.disabled=!specific||!ids.length;
+    select.innerHTML=!specific?'<option value="">Selecione um Squad</option>':ids.length?ids.map(id=>{const m=currentMonths()[id];return `<option value="${id}" ${id===state.currentId?'selected':''}>${escapeHtml(m.monthName)} ${m.year}${m.isClosed?' • Fechado':''}</option>`}).join(''):'<option value="">Sem competências</option>';
+    if(specific&&ids.length&&!ids.includes(state.currentId)){state.currentId=ids[0];chooseDefaultTech();select.value=state.currentId;}
+    if(label)label.textContent=specific?`Squad ${state.squadCode} • ${currentMonth()?`${currentMonth().monthName} ${currentMonth().year}`:'sem competência'}`:'Todos os Squads';
+    if(hint)hint.textContent=specific?'Regras mensais abaixo usam esta competência. Aparência pode ser aplicada a um ou a todos os Squads.':'Selecione um Squad para metas e bonificação. Aparência continua permitindo aplicação global.';
+  }
+  function applySettingsModuleFilter({scroll=false}={}){
+    const active=state.settingsModule||'all',term=String($('#settingsSearchInput')?.value||'').trim().toLocaleLowerCase('pt-BR');let visible=0,first=null;
+    $$('#settingsModuleNav [data-settings-module-filter]').forEach(btn=>btn.classList.toggle('active',btn.dataset.settingsModuleFilter===active));
+    $$('#view-settings .settings-module-card').forEach(card=>{
+      const module=card.dataset.configModule||'personalization',allowed=settingsModuleAllowed(module),moduleMatch=active==='all'||module===active,hay=`${card.dataset.configSearch||''} ${card.textContent||''}`.toLocaleLowerCase('pt-BR'),searchMatch=!term||hay.includes(term),show=allowed&&moduleMatch&&searchMatch&&!card.classList.contains('permission-hidden');
+      card.classList.toggle('settings-filter-hidden',!show);if(show){visible++;if(!first)first=card;}
+    });
+    if($('#settingsNoResults'))$('#settingsNoResults').classList.toggle('hidden',visible>0);
+    if(scroll&&first)setTimeout(()=>first.scrollIntoView({behavior:'smooth',block:'start'}),20);
+  }
+  function openSettingsModule(module='all',{scroll=true}={}){
+    const requested=SETTINGS_MODULES[module]?module:'all';state.settingsModule=requested;
+    if(state.currentView!=='settings')showView('settings');else renderSettings();
+    applySettingsModuleFilter({scroll});
+  }
+
+
   function userPreferenceStorageKey(user=state.user){return `softenPerformanceUiPreferencesV1:${user?.userId||user?.email||'anonymous'}`}
   function loadLocalUiPreferences(user=state.user){try{return normalizeUiPreferences(JSON.parse(localStorage.getItem(userPreferenceStorageKey(user))||'{}'))}catch(e){return defaultUiPreferences()}}
   function saveLocalUiPreferences(prefs=state.uiPreferences,user=state.user){try{localStorage.setItem(userPreferenceStorageKey(user),JSON.stringify(normalizeUiPreferences(prefs)))}catch(e){console.warn('Não foi possível salvar o layout local.',e)}}
@@ -149,13 +208,21 @@
     $('#layoutBlockList').innerHTML=layout.order.map((key,index)=>{const block=def.blocks.find(b=>b.key===key);if(!block)return'';const visible=!layout.hidden.includes(key);return `<div class="layout-block-row" data-layout-key="${escapeHtml(key)}"><label><input type="checkbox" data-layout-visible="${escapeHtml(key)}" ${visible?'checked':''}><span><strong>${escapeHtml(block.label)}</strong><small>${visible?'Visível no painel':'Oculto no painel'}</small></span></label><div class="layout-order-actions"><button type="button" class="table-action" data-layout-move="up" ${index===0?'disabled':''}>↑</button><button type="button" class="table-action" data-layout-move="down" ${index===layout.order.length-1?'disabled':''}>↓</button></div></div>`}).join('');
   }
   function renderSettings(){
-    if(!$('#view-settings'))return;const perms=effectivePermissionsFor(),enabled=Object.values(perms).filter(Boolean).length;
+    if(!$('#view-settings'))return;prepareCentralSettings();
+    const perms=effectivePermissionsFor(),enabled=Object.values(perms).filter(Boolean).length;
     $('#settingsRoleLabel').textContent=roleLabel(state.user?.role||'');$('#settingsPermissionSummary').textContent=`${enabled} permissões ativas no perfil`;
     $('#layoutSaveStatus').textContent=hasPermission('dashboard.customize')?'Personalizável':'Bloqueado';
     $('#layoutViewSelect').disabled=!hasPermission('dashboard.customize');$('#layoutDensitySelect').disabled=!hasPermission('dashboard.customize');$('#saveLayoutBtn').disabled=!hasPermission('dashboard.customize');$('#resetLayoutBtn').disabled=!hasPermission('dashboard.customize');
-    renderLayoutEditor();
+    renderLayoutEditor();syncSettingsContext();
+    if(isAdmin()){
+      const previousSection=state.adminSection;state.adminSection='operation';
+      try{renderAdmin();}finally{state.adminSection=previousSection;}
+      window.SoftenPresentation?.syncAdminConfig?.();
+    }
     const groups=settingsPermissionGroups(state.user?.role||'technician');if($('#settingsPermissionOverview'))$('#settingsPermissionOverview').innerHTML=Object.entries(groups).map(([section,items])=>`<div><strong>${escapeHtml(section)}</strong><span>${items.filter(p=>perms[p.key]).length}/${items.length} ativas</span></div>`).join('');
+    applySettingsModuleFilter();
   }
+
   async function persistMyUiPreferences(){
     saveLocalUiPreferences(state.uiPreferences);
     if(!state.supabase)return true;
@@ -308,6 +375,7 @@
     applyTheme(loadLastTheme());
     bindSystemColorMode();
     showBoot();
+    prepareCentralSettings();
     bindStaticEvents();
     if((window.APP_CONFIG?.mode||'demo')==='supabase'){
       try{
@@ -331,15 +399,19 @@
     $('#forgotPasswordBtn').addEventListener('click',handleForgotPassword);
     $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
     $('#logoutBtn').addEventListener('click',logout);
-    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view,btn.dataset.adminSection||null)));
+    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{showView(btn.dataset.view,btn.dataset.adminSection||null);if(btn.dataset.settingsModule)openSettingsModule(btn.dataset.settingsModule,{scroll:true});}));
     if($('#layoutViewSelect'))$('#layoutViewSelect').addEventListener('change',()=>{state.layoutDraft=null;renderLayoutEditor();});
     if($('#layoutDensitySelect'))$('#layoutDensitySelect').addEventListener('change',()=>{const draft=currentLayoutDraft();draft.layout.density=$('#layoutDensitySelect').value==='compact'?'compact':'comfortable';});
     if($('#layoutBlockList'))$('#layoutBlockList').addEventListener('click',e=>{const move=e.target.closest('[data-layout-move]');if(move){const row=move.closest('[data-layout-key]');if(row)changeLayoutDraftMove(row.dataset.layoutKey,move.dataset.layoutMove);}});
     if($('#layoutBlockList'))$('#layoutBlockList').addEventListener('change',e=>{const input=e.target.closest('[data-layout-visible]');if(input)changeLayoutDraftVisibility(input.dataset.layoutVisible,!!input.checked);});
     if($('#saveLayoutBtn'))$('#saveLayoutBtn').addEventListener('click',saveCurrentLayout);
     if($('#resetLayoutBtn'))$('#resetLayoutBtn').addEventListener('click',resetCurrentLayout);
-    $$('[data-settings-route]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.permission&&!hasPermission(btn.dataset.permission))return toast('Você não possui permissão para esta configuração.');showView('admin',btn.dataset.settingsRoute)}));
+    $$('[data-settings-route]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.settingsRoute)));
     $$('[data-settings-view]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.permission&&!hasPermission(btn.dataset.permission))return toast('Você não possui permissão para esta tela.');showView(btn.dataset.settingsView)}));
+    $$('[data-open-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.openSettingsModule)));
+    $$('#settingsModuleNav [data-settings-module-filter]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.settingsModuleFilter,{scroll:false})));
+    if($('#settingsSearchInput'))$('#settingsSearchInput').addEventListener('input',()=>{state.settingsModule='all';applySettingsModuleFilter();});
+    if($('#settingsMonthSelect'))$('#settingsMonthSelect').addEventListener('change',e=>{if(!e.target.value)return;state.currentId=e.target.value;chooseDefaultTech();refreshSelectors();renderSettings();});
     if($('#openUsersPermissionsBtn'))$('#openUsersPermissionsBtn').addEventListener('click',()=>showView('users'));
     if($('#resetUserPermissionsBtn'))$('#resetUserPermissionsBtn').addEventListener('click',()=>{state.editPermissionDraft={};renderPermissionEditor($('#editUserRole').value);});
     ['#topUserProfileBtn'].forEach(sel=>{const el=$(sel);if(!el)return;el.addEventListener('click',()=>showView('profile'));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('profile')}})});
@@ -582,7 +654,8 @@
       'finance.manage':['#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn','#saveSuperAdminCommissionBtn'],
       'costs.view':['#saveSupportCostsBtn','#copyPreviousSupportCostsBtn'],
       'feedback.manage':['#generateSquadFeedbacksBtn','#regenerateSquadFeedbacksBtn','#feedbackSaveDraftBtn','#feedbackFinalizeBtn','#feedbackRegenerateBtn'],
-      'appearance.manage':['#adminThemeBtn','#importThemeBtn','#exportThemeBtn','#saveChartPrefsBtn','#resetChartPrefsBtn','#removeBg']
+      'appearance.manage':['#adminThemeBtn','#importThemeBtn','#exportThemeBtn','#saveChartPrefsBtn','#resetChartPrefsBtn','#removeBg'],
+      'presentation.manage':['#presentationApplyConfigBtn','#presentationResetConfigBtn']
     };
     for(const [permission,selectors] of Object.entries(permissionButtons))for(const selector of selectors){const el=$(selector);if(el)el.disabled=!hasPermission(permission);}
     const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
@@ -829,7 +902,7 @@
     if(name==='admin'&&adminSection)state.adminSection=adminSection;
     state.currentView=name;
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
-    $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;b.classList.toggle('active',sameView&&sameSection)});
+    $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;const sameSettings=name!=='settings'||(b.dataset.settingsModule?b.dataset.settingsModule===state.settingsModule:!b.dataset.settingsModule);b.classList.toggle('active',sameView&&sameSection&&sameSettings)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
     const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';
@@ -2240,14 +2313,21 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderAdminReconciliation();
     $('#adminScopeTitle').textContent=specific?`Squad ${state.squadCode}`:'Todos os Squads';
     $('#adminScopeText').textContent=specific
-      ? (locked?`${m.monthName} ${m.year} está FECHADO. Dados, metas e pontuação histórica estão protegidos. Reabra o mês para alterar.`:'Importação, métricas, metas e tema abaixo afetam somente este Squad.')
-      :'Admin geral pode importar o CSV para todos os Squads de uma vez. Para métricas, metas, fechamento/exclusão de mês ou tema, selecione um Squad específico.';
+      ? (locked?`${m.monthName} ${m.year} está FECHADO. Dados, metas e pontuação histórica estão protegidos. Reabra o mês para alterar.`:'Importação, métricas e fechamento abaixo afetam somente este Squad. Metas e regras ficam na Central de Configurações.')
+      :'Admin geral pode importar o CSV para todos os Squads de uma vez. Para métricas e fechamento/exclusão de mês, selecione um Squad específico; regras ficam em Configurações.';
     $('#adminImportBtn').disabled=!canImport;if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').disabled=!canImport;
     const disableForScope=['#adminThemeBtn','#importThemeBtn','#exportThemeBtn'];
     const appearanceAllowed=canEditAppearance();
     disableForScope.forEach(sel=>{if($(sel))$(sel).disabled=!appearanceAllowed});
-    ['#saveGoalsBtn','#autoGoalBtn','#saveMonthlyMetricsBtn','#saveScoreSettingsBtn','#copyPreviousGoalsBtn','#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn','#exportFinanceExcelBtn','#exportFinancePdfBtn'].forEach(sel=>{if($(sel))$(sel).disabled=!specific||!m||(locked&&['#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn'].includes(sel))});
+    const adminControlPermissions={
+      '#saveGoalsBtn':'goals.manage','#autoGoalBtn':'goals.manage','#saveMonthlyMetricsBtn':'goals.manage','#saveScoreSettingsBtn':'goals.manage','#copyPreviousGoalsBtn':'goals.manage',
+      '#saveFinanceBtn':'finance.manage','#saveFinanceTechniciansBtn':'finance.manage','#copyFinanceRulesBtn':'finance.manage','#exportFinanceExcelBtn':'finance.view','#exportFinancePdfBtn':'finance.view'
+    };
+    Object.entries(adminControlPermissions).forEach(([sel,permission])=>{const el=$(sel);if(!el)return;const lockSensitive=['#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn'].includes(sel);el.disabled=!hasPermission(permission)||!specific||!m||(locked&&lockSensitive)});
     renderFinanceAdmin(m,specific,locked);
+    const financeEditable=hasPermission('finance.manage')&&specific&&!!m&&!locked;
+    ['#financeModelSquad','#financeModelIndividual','#financeCompareToggle','#financeTechnicianCompareToggle','#financeCustomersStart','#financeCanceledCount','#financeTopAttPrize','#financeTopNotesPrize','#financeBelowDiscount','#financeIndividualCap'].forEach(sel=>{const el=$(sel);if(el)el.disabled=!financeEditable});
+    $$('[data-finance-tier]').forEach(el=>el.disabled=!financeEditable);
     if(state.adminSection==='costs'){
       $('#adminScopeTitle').textContent='Custos do Suporte';
       $('#adminScopeText').textContent='Base confidencial do custo geral do Suporte técnico. Informe pagamentos, outros custos, quantidade total de técnicos e horas úteis por dia; o sistema calcula o custo médio por dia, hora e minuto técnico sem separar por Squad.';
@@ -2269,7 +2349,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     $$('[data-close-month]').forEach(b=>b.addEventListener('click',()=>closeMonth(b.dataset.closeMonth)));
     $$('[data-reopen-month]').forEach(b=>b.addEventListener('click',()=>reopenMonth(b.dataset.reopenMonth)));
     $('#teamGoalAttInput').value=Math.round(cfg.teamGoalAtt);$('#teamGoalPctInput').value=(cfg.teamGoalEvalPct*100).toFixed(1);
-    $('#teamGoalAttInput').disabled=locked;$('#teamGoalPctInput').disabled=locked;
+    $('#teamGoalAttInput').disabled=locked||!hasPermission('goals.manage');$('#teamGoalPctInput').disabled=locked||!hasPermission('goals.manage');
     const useful=businessDaysMonFri(m.year,m.month),suggested=autoTeamAttGoal(m);$('#autoGoalHint').textContent=locked?'🔒 Mês fechado: metas preservadas como histórico.':`Sugestão: ${useful} dias úteis × 10 atendimentos × ${m.technicians.length} técnicos = ${fmtInt(suggested)} atendimentos.`;
     renderScoreSettings(m);renderMonthlyMetrics(m);updateThemeName();
   }

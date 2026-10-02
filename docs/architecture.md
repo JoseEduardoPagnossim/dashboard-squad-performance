@@ -72,3 +72,10 @@ Os renderizadores de negócio continuam em `app.js` nesta etapa para preservar o
 - A aplicação mantém fallback em `localStorage`, preservando o funcionamento caso a migration ainda não tenha sido aplicada.
 - A Central de Configurações funciona como ponto de entrada para preferências pessoais e atalhos administrativos.
 
+
+
+## V2.38.1 — Configurações centralizadas
+
+A camada de configuração passou a ser montada pela função `prepareCentralSettings()`. Os cards continuam declarados no HTML próximo aos módulos de origem para preservar compatibilidade estrutural, mas são realocados para `#centralConfigModules` antes do binding dos eventos. Isso mantém IDs e funções existentes sem duplicar controles.
+
+A Apresentação expõe `syncAdminConfig()` para que a configuração da TV seja inicializada na Central mesmo antes de a tela de Apresentação ser aberta.

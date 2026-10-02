@@ -4,9 +4,18 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.38.0`<br>
+**Versão atual:** `2.38.1`<br>
 
 
+
+
+## V2.38.1 — Centralização das configurações
+
+A Central de Configurações agora é o único local para alterar regras e comportamento dos módulos. Metas/referências, regras da bonificação, aparência/gráficos e configuração da Apresentação/TV foram retiradas das telas operacionais e agrupadas por módulo, com busca, filtros e indicação visual do módulo em cada card.
+
+As telas de **Operação**, **Bonificação** e **Apresentação** permanecem focadas em dados, conferência, fechamento e exibição. Elas mantêm atalhos contextuais para abrir diretamente o módulo correto dentro de Configurações.
+
+A competência usada por metas e regras financeiras pode ser trocada dentro da própria Central de Configurações. Aparência continua permitindo aplicação somente no Squad atual ou em todos os Squads.
 
 ## V2.38.0 — Configurações e personalização
 
