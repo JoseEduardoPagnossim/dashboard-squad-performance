@@ -1,3 +1,9 @@
+## V2.34.7 — Logo na apresentação
+
+- Adiciona a marca Soften no hero do módulo Apresentação e no modo TV direto.
+- Logo se adapta às densidades compacta, normal e ampla.
+- Mantém compatibilidade com o ajuste automático de resolução da TV.
+
 ## V2.34.5 — Rótulos de dados permanentes nos gráficos
 
 - Exibe os valores diretamente sobre pontos, linhas e barras, sem depender de hover.
