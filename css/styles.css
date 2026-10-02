@@ -1614,3 +1614,23 @@ th{font-size:10.5px!important;line-height:1.35}td{font-size:12px!important;line-
   #view-indicators .indicator-filters{grid-template-columns:1fr!important}
   #view-indicators .indicator-date-quick,#view-indicators .indicator-action-group{grid-column:1!important}
 }
+
+/* V2.34.5 - rótulos de dados permanentes nos gráficos */
+.chart-data-label{
+  font-size:10px;
+  font-weight:800;
+  pointer-events:none;
+  paint-order:stroke fill;
+  stroke:var(--panel,#0b1220);
+  stroke-width:3px;
+  stroke-linejoin:round;
+  letter-spacing:-.1px;
+}
+.chart-data-label.compact{font-size:9px;stroke-width:2.6px}
+.daily-premium-chart .chart-data-label{font-size:9px}
+.quality-grouped-bar-chart .chart-data-label{font-size:8.5px}
+.fullscreen-chart-canvas .chart-data-label{font-size:11px}
+@media(max-width:720px){
+  .chart-data-label{font-size:8.5px;stroke-width:2.4px}
+  .chart-data-label.compact{font-size:8px}
+}

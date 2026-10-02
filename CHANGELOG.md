@@ -1,4 +1,12 @@
-# V2.34.4
+## V2.34.5 — Rótulos de dados permanentes nos gráficos
+
+- Exibe os valores diretamente sobre pontos, linhas e barras, sem depender de hover.
+- Mantém tooltip interativo como complemento.
+- Adiciona posicionamento alternado e tamanho compacto para reduzir sobreposição em gráficos com várias séries.
+- Aplica rótulos ao gráfico diário, históricos, indicadores, qualidade e gráficos em tela cheia.
+- Preserva formatação de percentual, moeda e números conforme cada métrica.
+
+# V2.34.5
 
 - Apresentação em TV passa a usar encaixe automático baseado na área útil da tela, com referência 16:9 de 1920x1080.
 - Modo direto bloqueia barras de rolagem e recalcula a escala ao redimensionar, entrar/sair do fullscreen ou alterar o conteúdo.
