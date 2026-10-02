@@ -122,10 +122,16 @@
   function buildFinanceModelData({ mode, hasProduction, days, avgPerDay, notes5Pct, eligibleAtt, evaluationExcludedAtt, commissionAtt, commissionNotes5, cancelRate, cancelTier, rawMult, effectiveMult, financeStatus, financialAdjustmentEligible, topAttBonus, topNotes5Bonus, manualBonus, sales, discount, redistributed, vacation, pool }) {
     const base = hasProduction ? safe(commissionAtt) + safe(commissionNotes5) : 0;
     const afterCancel = hasProduction ? base * safe(effectiveMult) : 0;
-    const rawBeforeVacation = hasProduction ? afterCancel + safe(manualBonus) + safe(topAttBonus) + safe(topNotes5Bonus) + safe(sales) - safe(discount) + safe(redistributed) : 0;
+    const extras = hasProduction ? safe(manualBonus) + safe(topAttBonus) + safe(topNotes5Bonus) + safe(sales) - safe(discount) + safe(redistributed) : 0;
+    const rawBeforeVacation = hasProduction ? afterCancel + extras : 0;
+    // Férias reduzem somente a comissão-base já ajustada pelo cancelamento.
+    // Bônus, prêmios, comissão de vendas, desconto e redistribuição permanecem integrais.
+    const afterVacationBase = vacation ? afterCancel * .5 : afterCancel;
+    const vacationBaseAdjustment = vacation ? afterVacationBase - afterCancel : 0;
+    const rawAfterVacationBase = hasProduction ? afterVacationBase + extras : 0;
     const beforeVacation = mode === 'individual' ? Math.max(0, rawBeforeVacation) : rawBeforeVacation;
-    const zeroFloorAdjustment = mode === 'individual' && rawBeforeVacation < 0 ? -rawBeforeVacation : 0;
-    const preCapFinal = vacation ? beforeVacation * .5 : beforeVacation;
+    const zeroFloorAdjustment = mode === 'individual' && rawAfterVacationBase < 0 ? -rawAfterVacationBase : 0;
+    const preCapFinal = mode === 'individual' ? Math.max(0, rawAfterVacationBase) : rawAfterVacationBase;
     return {
       mode,
       hasProduction: !!hasProduction,
@@ -154,9 +160,13 @@
       redistribution: safe(redistributed),
       rawBeforeVacation,
       beforeVacation,
+      afterVacationBase: Number(afterVacationBase.toFixed(2)),
+      vacationBaseAdjustment: Number(vacationBaseAdjustment.toFixed(2)),
+      rawAfterVacationBase: Number(rawAfterVacationBase.toFixed(2)),
       zeroFloorAdjustment,
       vacation: !!vacation,
       vacationFactor: vacation ? .5 : 1,
+      vacationScope: 'base_after_cancel',
       preCapFinal: Number(preCapFinal.toFixed(2)),
       capAdjustment: 0,
       capFactor: 1,

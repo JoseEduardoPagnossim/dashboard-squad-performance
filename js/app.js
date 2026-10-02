@@ -43,6 +43,7 @@
     techName:null,
     theme:clone(DEFAULT_THEME),
     chartPreferences:clone(DEFAULT_CHART_PREFERENCES),
+    appearanceScope:'squad',
     colorMode:loadColorModePreference(),
     currentView:'individual',
     adminSection:'operation',
@@ -139,28 +140,34 @@
   function collectChartPreferencesFromUi(){
     return normalizeChartPreferences({labelDensity:$('#chartLabelDensity')?.value,labelFontSize:$('#chartLabelFontInput')?.value,axisFontSize:$('#chartAxisFontInput')?.value,legendFontSize:$('#chartLegendFontInput')?.value,chartHeight:$('#chartHeightInput')?.value,cardPadding:$('#chartCardPaddingInput')?.value,yScaleMode:$('#chartScaleMode')?.value,yMin:$('#chartScaleMinInput')?.value,yMax:$('#chartScaleMaxInput')?.value,lineWidth:$('#chartLineWidthInput')?.value,pointRadius:$('#chartPointRadiusInput')?.value});
   }
+  function appearanceScopeCodes(){
+    if(state.appearanceScope==='all'&&isSuperAdmin())return Object.keys(state.squads||{}).filter(code=>code!=='all');
+    return state.squadCode&&state.squadCode!=='all'?[state.squadCode]:[];
+  }
+  function canEditAppearance(){return isAdmin()&&appearanceScopeCodes().length>0}
+  function appearanceScopeLabel(){const codes=appearanceScopeCodes();return state.appearanceScope==='all'&&isSuperAdmin()?`todos os Squads (${codes.join(', ')})`:(codes[0]?`Squad ${codes[0]}`:'nenhum Squad')}
   function previewChartPreferences(){
-    if(!isAdmin()||state.squadCode==='all')return;
+    if(!canEditAppearance())return;
     const cfg=collectChartPreferencesFromUi();
     state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg});
     applyChartPreferences(cfg);syncChartPreferencePreview();render();
-    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent='Pré-visualização aplicada. Clique em salvar para persistir no tema do Squad.';
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Pré-visualização aplicada. Clique em salvar para persistir em ${appearanceScopeLabel()}.`;
   }
   function saveChartPreferences(){
-    if(!isAdmin()||!requireSpecificSquad())return;
+    if(!canEditAppearance())return toast('Selecione um Squad específico ou use o escopo Todos os Squads como Admin Geral.');
     const cfg=collectChartPreferencesFromUi();
     state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,preset:'custom'});
     applyChartPreferences(cfg);syncChartPreferencePreview();saveTheme();render();
-    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent='Configuração visual salva com sucesso no tema atual do Squad.';
-    toast('Configuração visual dos gráficos salva.');
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Configuração visual salva em ${appearanceScopeLabel()}.`;
+    toast(`Configuração visual salva em ${appearanceScopeLabel()}.`);
   }
   function resetChartPreferences(){
-    if(!isAdmin()||!requireSpecificSquad())return;
+    if(!canEditAppearance())return toast('Selecione um Squad específico ou use o escopo Todos os Squads como Admin Geral.');
     const cfg=normalizeChartPreferences(DEFAULT_CHART_PREFERENCES);
     state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,preset:'custom'});
     applyChartPreferences(cfg);syncChartPreferencePreview();saveTheme();render();
-    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent='Padrão restaurado para a configuração visual.';
-    toast('Configuração visual restaurada para o padrão.');
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Padrão restaurado em ${appearanceScopeLabel()}.`;
+    toast(`Configuração visual restaurada em ${appearanceScopeLabel()}.`);
   }
   function chartLabelVisible(index,total){
     const mode=currentChartPreferences().labelDensity||'all';
@@ -223,12 +230,15 @@
   }
   function rememberLastTheme(theme){try{const normalized=normalizeThemePayload(theme||DEFAULT_THEME);if(isLegacyVermithorTheme(normalized))return;localStorage.setItem(LAST_THEME_KEY,JSON.stringify(normalized))}catch(err){console.warn('Não foi possível guardar o último tema para as telas públicas.',err)}}
   function rememberLastSquad(code){if(!code||code==='all')return;try{localStorage.setItem(LAST_SQUAD_KEY,String(code))}catch(e){}}
+  let themePersistTimer=null;
   function saveTheme(){
-    if(!state.squadCode||state.squadCode==='all')return;
-    rememberLastSquad(state.squadCode);
-    const themes=allThemes(); themes[state.squadCode]=state.theme; try{localStorage.setItem('squadDashboardThemesV2',JSON.stringify(themes));}catch(err){console.warn('Tema grande demais para o cache local; mantendo persistência no Supabase.',err);}
-    rememberLastTheme(state.theme);
-    if(state.supabase) persistThemeToSupabase().catch(console.error);
+    const codes=appearanceScopeCodes();if(!codes.length)return;
+    if(state.squadCode&&state.squadCode!=='all')rememberLastSquad(state.squadCode);
+    const normalized=normalizeThemePayload(state.theme),themes=allThemes();
+    codes.forEach(code=>{themes[code]=clone(normalized);if(state.squads?.[code])state.squads[code].theme=clone(normalized)});
+    try{localStorage.setItem('squadDashboardThemesV2',JSON.stringify(themes));}catch(err){console.warn('Tema grande demais para o cache local; mantendo persistência no Supabase.',err);}
+    rememberLastTheme(normalized);
+    if(state.supabase){clearTimeout(themePersistTimer);themePersistTimer=setTimeout(()=>persistThemeToSupabase(codes,normalized).catch(console.error),350)}
   }
 
   function showBoot(message='Validando sua sessão e carregando os dados...'){
@@ -287,7 +297,7 @@
     $('#adminImportBtn').addEventListener('click',()=>openImport('service'));
     if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>openImport('quality'));
     if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>openImport('quality'));
-    $('#adminThemeBtn').addEventListener('click',()=>{if(requireSpecificSquad())openModal('themeModal')});
+    $('#adminThemeBtn').addEventListener('click',()=>{if(canEditAppearance())openModal('themeModal');else toast('Selecione um Squad específico ou use Todos os Squads como Admin Geral.')});
     if($('#openUsersBtn'))$('#openUsersBtn').addEventListener('click',()=>showView('users'));
     $('#newUserBtn').addEventListener('click',openCreateUser);
     if($('#auditSearchInput'))$('#auditSearchInput').addEventListener('input',renderAuditRows);
@@ -372,7 +382,7 @@
     $('#campaignTaglineInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTagline=e.target.value;state.theme.preset='custom';saveTheme();applyTheme(state.theme);});
     $('#saveGoalsBtn').addEventListener('click',saveTeamGoals);
     $('#autoGoalBtn').addEventListener('click',useAutomaticTeamGoal);
-    $('#importThemeBtn').addEventListener('click',()=>{if(requireSpecificSquad())$('#themeJsonInput').click()});
+    $('#importThemeBtn').addEventListener('click',()=>{if(canEditAppearance())$('#themeJsonInput').click();else toast('Selecione um Squad específico ou use Todos os Squads como Admin Geral.')});
     $('#themeJsonInput').addEventListener('change',handleThemeJson);
     $('#exportThemeBtn').addEventListener('click',exportTheme);
     $('#removeBg').addEventListener('click',()=>{if(!isAdmin())return;state.theme.background=null;state.theme.preset='custom';document.documentElement.style.setProperty('--hero-img','none');saveTheme();toast('Fundo removido.');});
@@ -402,6 +412,7 @@
     if($('#feedbackFinalizeBtn'))$('#feedbackFinalizeBtn').addEventListener('click',()=>saveFeedbackEditor('finalized'));
     if($('#saveChartPrefsBtn'))$('#saveChartPrefsBtn').addEventListener('click',saveChartPreferences);
     if($('#resetChartPrefsBtn'))$('#resetChartPrefsBtn').addEventListener('click',resetChartPreferences);
+    if($('#appearanceScopeSelect'))$('#appearanceScopeSelect').addEventListener('change',e=>{state.appearanceScope=e.target.value==='all'&&isSuperAdmin()?'all':'squad';renderAdmin();});
     ['#chartLabelDensity','#chartScaleMode','#chartScaleMinInput','#chartScaleMaxInput','#chartLabelFontInput','#chartAxisFontInput','#chartLegendFontInput','#chartHeightInput','#chartCardPaddingInput','#chartLineWidthInput','#chartPointRadiusInput'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',previewChartPreferences)});
     let allTechResizeTimer=null;window.addEventListener('resize',()=>{const monthlyOpen=$('#allTechniciansModal')?.classList.contains('open'),dailyOpen=$('#dailyTechniciansModal')?.classList.contains('open');if(!monthlyOpen&&!dailyOpen)return;clearTimeout(allTechResizeTimer);allTechResizeTimer=setTimeout(()=>{if(monthlyOpen)renderAllTechniciansFullscreenChart(state.allTechniciansRangeIds);if(dailyOpen)renderDailyTechniciansFullscreenChart();},120);});
   }
@@ -885,7 +896,7 @@
     const data=(periodMode?(t.daily||[]):(t.daily||[]).filter(d=>d.day<=Math.max(m.latestDay||31,1)&&!d.off)).filter(d=>!d.off);
     if(!data.length){el.innerHTML='<div class="muted">Sem lançamentos diários disponíveis no período.</div>';return;}
     el.classList.add('interactive-chart','chart-modern','daily-premium-chart');
-    const chartId=nextChartRenderId('daily'),w=720,h=230,p={l:34,r:16,t:15,b:30};
+    const prefs=currentChartPreferences(),chartId=nextChartRenderId('daily'),w=720,h=configuredChartHeight(230),p={l:34,r:16,t:15,b:30};
     const maxVal=Math.max(5,...data.flatMap(d=>[safe(d.att),safe(d.notes5)]));
     const x=i=>p.l+(data.length<=1?(w-p.l-p.r)/2:i*(w-p.l-p.r)/(data.length-1));
     const y=v=>p.t+(h-p.t-p.b)-(safe(v)/maxVal)*(h-p.t-p.b),baseline=h-p.b;
@@ -897,10 +908,10 @@
     const xLabels=labels.map((label,i)=>i%step===0?`<text x="${x(i)-10}" y="${h-7}" class="axis-label">${escapeHtml(label)}</text>`:'').join('');
     const zones=data.map((_,i)=>{const span=data.length<=1?(w-p.l-p.r):(w-p.l-p.r)/(data.length-1),zx=data.length<=1?p.l:Math.max(p.l,x(i)-span/2),zw=data.length<=1?w-p.l-p.r:(i===0||i===data.length-1?span/2:span);return `<rect x="${zx}" y="${p.t}" width="${zw}" height="${h-p.t-p.b}" class="chart-hover-zone" data-chart-index="${i}"></rect>`}).join('');
     const rulers=data.map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
-    const dots=(points,color,seriesIndex)=>points.map(pt=>`<circle cx="${pt.x}" cy="${pt.y}" r="4" fill="${color}" class="chart-point chart-series-shape" style="--series-color:${color}" data-series-index="${seriesIndex}" data-point-index="${pt.index}"></circle>`).join('');
-    const pointLabels=(points,color,offset)=>points.map(pt=>chartDataLabelSvg(pt.x,Math.max(p.t+11,pt.y+offset),fmtInt(pt.value),{color,compact:true})).join('');
+    const dots=(points,color,seriesIndex)=>points.map(pt=>`<circle cx="${pt.x}" cy="${pt.y}" r="${prefs.pointRadius}" fill="${color}" class="chart-point chart-series-shape" style="--series-color:${color}" data-series-index="${seriesIndex}" data-point-index="${pt.index}"></circle>`).join('');
+    const pointLabels=(points,color,offset)=>points.map((pt,i)=>chartLabelVisible(i,points.length)?chartDataLabelSvg(pt.x,Math.max(p.t+11,pt.y+offset),fmtInt(pt.value),{color,compact:true}):'').join('');
     const defs=`<defs>${svgSeriesGradient(`${chartId}-att`,'var(--accent)',.24)}${svgSeriesGradient(`${chartId}-note`,'var(--success)',.12)}</defs>`;
-    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${defs}${yTicks}<path d="${smoothAreaPath(attPoints,baseline)}" fill="url(#${chartId}-att)" class="chart-series-area"></path><path d="${smoothAreaPath(notePoints,baseline)}" fill="url(#${chartId}-note)" class="chart-series-area secondary-area"></path><path d="${smoothSvgPath(attPoints)}" class="att-line chart-series-line chart-series-shape" style="--series-color:var(--accent)" data-series-index="0"></path><path d="${smoothSvgPath(notePoints)}" class="note-line chart-series-line chart-series-shape" style="--series-color:var(--success)" data-series-index="1"></path>${dots(attPoints,'var(--accent)',0)}${dots(notePoints,'var(--success)',1)}${pointLabels(attPoints,'var(--accent)',-9)}${pointLabels(notePoints,'var(--success)',14)}${rulers}${zones}${xLabels}</svg>`;
+    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${defs}${yTicks}<path d="${smoothAreaPath(attPoints,baseline)}" fill="url(#${chartId}-att)" class="chart-series-area"></path><path d="${smoothAreaPath(notePoints,baseline)}" fill="url(#${chartId}-note)" class="chart-series-area secondary-area"></path><path d="${smoothSvgPath(attPoints)}" class="att-line chart-series-line chart-series-shape" style="--series-color:var(--accent);stroke-width:${prefs.lineWidth}" data-series-index="0"></path><path d="${smoothSvgPath(notePoints)}" class="note-line chart-series-line chart-series-shape" style="--series-color:var(--success);stroke-width:${prefs.lineWidth}" data-series-index="1"></path>${dots(attPoints,'var(--accent)',0)}${dots(notePoints,'var(--success)',1)}${pointLabels(attPoints,'var(--accent)',-9)}${pointLabels(notePoints,'var(--success)',14)}${rulers}${zones}${xLabels}</svg>`;
     bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[
       {name:'Atendimentos',value:safe(data[i]?.att),text:fmtInt(data[i]?.att),color:'var(--accent)'},
       {name:'Notas 5',value:safe(data[i]?.notes5),text:fmtInt(data[i]?.notes5),color:'var(--success)'}
@@ -1635,7 +1646,7 @@ function renderHistoryAttendanceChart(el,labels,totals,series){
   const validSeries=(series||[]).filter(s=>(s.values||[]).some(v=>v!=null));
   if(!labels?.length||!validSeries.length){el.innerHTML='<div class="chart-empty">Importe pelo menos um mês com técnicos vinculados para visualizar o histórico.</div>';return;}
   el.classList.add('interactive-chart','history-interactive-chart','chart-modern','premium-mixed-chart');
-  const chartId=nextChartRenderId('history'),w=Math.max(940,labels.length*136),h=360,p={l:58,r:68,t:34,b:60};
+  const prefs=currentChartPreferences(),chartId=nextChartRenderId('history'),w=Math.max(940,labels.length*136),h=configuredChartHeight(360),p={l:58,r:68,t:34,b:60};
   const lineVals=validSeries.flatMap(s=>s.values).filter(v=>v!=null).map(v=>safe(v));
   const lineTop=Math.max(1,...lineVals)*1.12,totalTop=Math.max(1,...(totals||[]).map(safe))*1.12;
   const slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(58,slot*.48),baseline=h-p.b;
@@ -1643,13 +1654,13 @@ function renderHistoryAttendanceChart(el,labels,totals,series){
   const leftGrid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),lv=lineTop*f,rv=totalTop*f;return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="6" y="${yy+4}" class="axis-label">${fmtInt(lv)}</text><text x="${w-6}" y="${yy+4}" class="axis-label-right">${fmtInt(rv)}</text>`}).join('');
   const defs=[`<linearGradient id="${chartId}-bars" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".92"/><stop offset="100%" stop-color="var(--accent2)" stop-opacity=".28"/></linearGradient>`];
   validSeries.forEach((s,si)=>defs.push(svgSeriesGradient(`${chartId}-area-${si}`,s.color||'var(--accent)',validSeries.length>4?.055:.10)));
-  const bars=(totals||[]).map((v,i)=>{const yy=yTotal(v),barHeight=Math.max(0,baseline-yy);return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${barHeight}" rx="12" fill="url(#${chartId}-bars)" class="history-total-bar chart-series-shape premium-bar"></rect><text x="${x(i)}" y="${Math.max(p.t+10,yy-8)}" text-anchor="middle" class="history-total-label">${fmtInt(v)}</text>`}).join('');
+  const bars=(totals||[]).map((v,i)=>{const yy=yTotal(v),barHeight=Math.max(0,baseline-yy),label=chartLabelVisible(i,totals.length)?chartDataLabelSvg(x(i),Math.max(p.t+10,yy-8),fmtInt(v),{color:'var(--accent)',compact:true}):'';return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${barHeight}" rx="12" fill="url(#${chartId}-bars)" class="history-total-bar chart-series-shape premium-bar"></rect>${label}`}).join('');
   const paths=validSeries.map((s,si)=>{
     const segments=splitChartPointSegments(s.values,x,yLine),color=s.color||'var(--accent)';
     const areaOpacity=validSeries.length>6?0:(validSeries.length>4?.55:1);
     const areas=areaOpacity?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" data-series-index="${si}" style="opacity:${areaOpacity};--series-color:${color}"></path>`).join(''):'';
-    const lines=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="2.65" stroke-linecap="round" stroke-linejoin="round" class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
-    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=yLine(v),offset=si%2===0?-9:15;return `${vacation?`<circle cx="${cx}" cy="${cy}" r="8.2" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?4.7:3.9}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${chartDataLabelSvg(cx,Math.max(p.t+11,Math.min(baseline-4,cy+offset)),chartInlineLabel(v,{decimals:1}),{color,compact:true})}`}).join('');
+    const lines=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${prefs.lineWidth}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
+    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=yLine(v),offset=si%2===0?-9:15,label=chartLabelVisible(i,labels.length)?chartDataLabelSvg(cx,Math.max(p.t+11,Math.min(baseline-4,cy+offset)),chartInlineLabel(v,{decimals:1}),{color,compact:true}):'';return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${prefs.pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?prefs.pointRadius+0.8:prefs.pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${label}`}).join('');
     return areas+lines+dots;
   }).join('');
   const rulers=labels.map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
@@ -2193,9 +2204,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
 
   function renderAdmin(){
     if(!isAdmin())return;
+    const specific=state.squadCode!=='all';
+    if(!isSuperAdmin())state.appearanceScope='squad';else if(!specific)state.appearanceScope='all';
+    if($('#appearanceScopeSelect')){$('#appearanceScopeSelect').value=state.appearanceScope;const allOpt=$('#appearanceScopeSelect').querySelector('option[value="all"]');if(allOpt)allOpt.disabled=!isSuperAdmin();const squadOpt=$('#appearanceScopeSelect').querySelector('option[value="squad"]');if(squadOpt){squadOpt.disabled=!specific;squadOpt.textContent=specific?`Somente Squad ${state.squadCode}`:'Somente Squad (selecione um Squad)'}}
+    if($('#appearanceScopeHint'))$('#appearanceScopeHint').textContent=state.appearanceScope==='all'&&isSuperAdmin()?'As alterações de tema e gráficos serão replicadas para A, B, D e E.':'As alterações serão salvas somente no Squad selecionado.';
     syncChartPreferencePreview();
-    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=state.squadCode==='all'?'Selecione um Squad específico para salvar a configuração visual no tema.':'As alterações afetam todo o Squad e ficam salvas no tema atual.';
-    const specific=state.squadCode!=='all',m=currentMonth(),canImport=specific||isSuperAdmin(),locked=!!m?.isClosed;
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=canEditAppearance()?`As alterações serão salvas em ${appearanceScopeLabel()}.`:'Selecione um Squad específico para editar a aparência.';
+    const m=currentMonth(),canImport=specific||isSuperAdmin(),locked=!!m?.isClosed;
     renderAdminReconciliation();
     $('#adminScopeTitle').textContent=specific?`Squad ${state.squadCode}`:'Todos os Squads';
     $('#adminScopeText').textContent=specific
@@ -2203,7 +2218,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       :'Admin geral pode importar o CSV para todos os Squads de uma vez. Para métricas, metas, fechamento/exclusão de mês ou tema, selecione um Squad específico.';
     $('#adminImportBtn').disabled=!canImport;if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').disabled=!canImport;
     const disableForScope=['#adminThemeBtn','#importThemeBtn','#exportThemeBtn'];
-    disableForScope.forEach(sel=>{if($(sel))$(sel).disabled=!specific});
+    const appearanceAllowed=canEditAppearance();
+    disableForScope.forEach(sel=>{if($(sel))$(sel).disabled=!appearanceAllowed});
     ['#saveGoalsBtn','#autoGoalBtn','#saveMonthlyMetricsBtn','#saveScoreSettingsBtn','#copyPreviousGoalsBtn','#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn','#exportFinanceExcelBtn','#exportFinancePdfBtn'].forEach(sel=>{if($(sel))$(sel).disabled=!specific||!m||(locked&&['#saveFinanceBtn','#saveFinanceTechniciansBtn','#copyFinanceRulesBtn'].includes(sel))});
     renderFinanceAdmin(m,specific,locked);
     if(state.adminSection==='costs'){
@@ -2413,19 +2429,19 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       squadTotal+=squad.final;individualRecords.push({t,data:individual,squad});
     }
     const capInfo=applyIndividualTotalCap(individualRecords,Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000);let individualTotal=0;
-    individualRecords.forEach(({t,data:individual,squad})=>{individualTotal+=individual.final;const official=m.financeModel==='individual'?individual:squad;t.financeData={...official,version:5,officialModel:m.financeModel,models:{squad,individual},comparisonDiff:Number((individual.final-squad.final).toFixed(2)),groupBase:{avgPerDay:groupAvgPerDay,notes5Pct:groupNotes5Pct,eligibleAtt:groupEligibleAtt,evaluationExcludedAtt:groupExcludedAtt,commissionAtt:groupCommissionAtt,commissionNotes5:groupCommissionNotes5,afterCancel:groupBase}}});
-    const diff=individualTotal-squadTotal;m.financeComparison={version:4,squadTotal:Number(squadTotal.toFixed(2)),individualBeforeCapTotal:capInfo.before,individualTotal:Number(individualTotal.toFixed(2)),individualCap:capInfo.cap,individualCapApplied:capInfo.applied,individualCapFactor:capInfo.factor,individualCapAdjustment:capInfo.adjustment,difference:Number(diff.toFixed(2)),differencePct:squadTotal?diff/squadTotal:0,groupAvgPerDay,groupNotes5Pct,groupEligibleAtt,groupExcludedAtt,groupCommissionAtt,groupCommissionNotes5,groupAfterCancel:groupBase,cancelRate,cancelMultiplier:effectiveMult,activeTechnicians:active.length,countedTechnicians:counted.length,excludedFromGroupCount:Math.max(0,active.length-counted.length),financialAdjustmentEligible:financialEligible.length,belowCount:adjustmentSummary.belowCount,aboveCount:adjustmentSummary.aboveCount,redistributionPool:Number(pool.toFixed(2)),redistributionEach:Number(redistribution.toFixed(2))};m.financeComparisonSnapshot=clone(m.financeComparison);
+    individualRecords.forEach(({t,data:individual,squad})=>{individualTotal+=individual.final;const official=m.financeModel==='individual'?individual:squad;t.financeData={...official,version:6,officialModel:m.financeModel,models:{squad,individual},comparisonDiff:Number((individual.final-squad.final).toFixed(2)),groupBase:{avgPerDay:groupAvgPerDay,notes5Pct:groupNotes5Pct,eligibleAtt:groupEligibleAtt,evaluationExcludedAtt:groupExcludedAtt,commissionAtt:groupCommissionAtt,commissionNotes5:groupCommissionNotes5,afterCancel:groupBase}}});
+    const diff=individualTotal-squadTotal;m.financeComparison={version:5,squadTotal:Number(squadTotal.toFixed(2)),individualBeforeCapTotal:capInfo.before,individualTotal:Number(individualTotal.toFixed(2)),individualCap:capInfo.cap,individualCapApplied:capInfo.applied,individualCapFactor:capInfo.factor,individualCapAdjustment:capInfo.adjustment,difference:Number(diff.toFixed(2)),differencePct:squadTotal?diff/squadTotal:0,groupAvgPerDay,groupNotes5Pct,groupEligibleAtt,groupExcludedAtt,groupCommissionAtt,groupCommissionNotes5,groupAfterCancel:groupBase,cancelRate,cancelMultiplier:effectiveMult,activeTechnicians:active.length,countedTechnicians:counted.length,excludedFromGroupCount:Math.max(0,active.length-counted.length),financialAdjustmentEligible:financialEligible.length,belowCount:adjustmentSummary.belowCount,aboveCount:adjustmentSummary.aboveCount,redistributionPool:Number(pool.toFixed(2)),redistributionEach:Number(redistribution.toFixed(2))};m.financeComparisonSnapshot=clone(m.financeComparison);
   }
   function renderFinanceSummary(t,m){
     if(!$('#financeSummaryCard'))return;const d=t.financeData||{},model=d.officialModel||financeModelForMonth(m),other=model==='squad'?'individual':'squad',otherData=d.models?.[other];$('#financeSummaryTitle').textContent=m.isClosed?'Bonificação final':'Bonificação estimada';$('#financeSummaryState').textContent=`${m.isClosed?'FECHADO':'EM ANDAMENTO'} • ${financeModelLabel(model).toUpperCase()}`;$('#financeSummaryTotal').textContent=fmtMoney(d.final);$('#financeVacationBadge').classList.toggle('hidden',!t.vacation);
     const financeEligibilityNote=d.financialAdjustmentEligible===false?'Competência parcial • isento':'Elegível ao ajuste financeiro';
     const items=[['Produção',fmtMoney(d.commissionAtt),`${safe(d.avgPerDay).toLocaleString('pt-BR',{maximumFractionDigits:2})} atend./dia`,''],['Qualidade',fmtMoney(d.commissionNotes5),`${fmtPct(d.notes5Pct)} de Notas 5 • base ${fmtInt(d.eligibleAtt)} atend.`,''],['Cancelamento',`× ${safe(d.cancelMultiplier||1).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3})}`,`${fmtPct(d.cancelRate)} no mês`,''],['Bônus manual',fmtMoney(d.manualBonus),'Informado pelo admin','positive'],['Prêmios',fmtMoney(safe(d.topAttBonus)+safe(d.topNotes5Bonus)),'Maior atendimento / Notas 5','positive'],['Comissão vendas',fmtMoney(d.salesCommission),'Informada pelo admin','positive'],['Desconto',`- ${fmtMoney(d.discount)}`,d.financialAdjustmentEligible===false?financeEligibilityNote:(d.financeStatus||'Sem status'),d.discount?'negative':''],['Redistribuição',fmtMoney(d.redistribution),d.financialAdjustmentEligible===false?'Competência parcial • não participa':'Somente entre técnicos ACIMA elegíveis','positive']];
     $('#financeBreakdown').innerHTML=items.map(([label,value,note,cls])=>`<div class="finance-break-item ${cls}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note)}</small></div>`).join('');
-    const adminCompare=!isTechnician()&&m.financeCompare&&otherData?` • Simulação ${financeModelLabel(other)}: ${fmtMoney(otherData.final)}.`:'';$('#financeSummarySubtitle').textContent=(t.vacation?`Subtotal antes das férias: ${fmtMoney(d.beforeVacation)} • redutor final de 50%.`:`Modelo aplicado: ${financeModelLabel(model)}.`)+adminCompare;
+    const adminCompare=!isTechnician()&&m.financeCompare&&otherData?` • Simulação ${financeModelLabel(other)}: ${fmtMoney(otherData.final)}.`:'';$('#financeSummarySubtitle').textContent=(t.vacation?`Férias: 50% aplicado somente à comissão-base após cancelamento (${fmtMoney(d.afterCancel)} → ${fmtMoney(d.afterVacationBase)}). Demais ajustes permanecem integrais.`:`Modelo aplicado: ${financeModelLabel(model)}.`)+adminCompare;
     const transition=$('#financeTransitionCompare');if(transition){const show=isTechnician()&&m.financeTechCompare===true&&otherData;transition.classList.toggle('hidden',!show);transition.innerHTML=show?`<div><span>SIMULAÇÃO DE TRANSIÇÃO</span><strong>${escapeHtml(financeModelLabel(other))}</strong><small>Comparação informativa; não altera o valor oficial do mês.</small></div><div class="transition-values"><span>Oficial <b>${fmtMoney(d.final)}</b></span><span>Simulação <b>${fmtMoney(otherData.final)}</b></span><span class="${safe(otherData.final)-safe(d.final)>=0?'positive-text':'negative-text'}">Diferença <b>${safe(otherData.final)-safe(d.final)>=0?'+ ':''}${fmtMoney(safe(otherData.final)-safe(d.final))}</b></span></div>`:'';}
   }
   function renderFinanceTierEditor(id,tiers,type){const el=$('#'+id);if(!el)return;const isCancel=type==='cancel';el.innerHTML=`<div class="finance-tier-table"><div class="finance-tier-row finance-tier-head"><span>${isCancel?'Até %':'Faixa'}</span><span>${isCancel?'Multiplicador':'Comissão R$'}</span></div>${(tiers||[]).map((t,i)=>`<div class="finance-tier-row"><input type="number" step="0.01" data-finance-tier="${type}" data-tier-index="${i}" data-tier-field="${isCancel?'max':'min'}" value="${isCancel?(safe(t.max)*100).toFixed(2):type==='notes'?(safe(t.min)*100).toFixed(2):safe(t.min)}"><input type="number" step="0.001" data-finance-tier="${type}" data-tier-index="${i}" data-tier-field="${isCancel?'mult':'amount'}" value="${safe(t[isCancel?'mult':'amount'])}"></div>`).join('')}</div>`}
-  function financeDetailGrid(d){const individual=d.mode==='individual';return `<div class="finance-detail-grid"><div><span>Base elegível avaliação</span><strong>${fmtInt(d.eligibleAtt)}</strong><small>${fmtInt(d.evaluationExcludedAtt)} descontado(s)</small></div><div><span>Comissão atendimento</span><strong>${fmtMoney(d.commissionAtt)}</strong></div><div><span>Comissão Notas 5</span><strong>${fmtMoney(d.commissionNotes5)}</strong></div><div><span>Após cancelamento</span><strong>${fmtMoney(d.afterCancel)}</strong></div><div><span>Bônus + prêmios</span><strong>${fmtMoney(safe(d.manualBonus)+safe(d.topAttBonus)+safe(d.topNotes5Bonus))}</strong></div><div><span>Vendas</span><strong>${fmtMoney(d.salesCommission)}</strong></div><div><span>Ajuste financeiro</span><strong>${d.financialAdjustmentEligible===false?'ISENTO':'ELEGÍVEL'}</strong></div><div><span>Desconto</span><strong>${d.discount?'- ':''}${fmtMoney(d.discount)}</strong></div><div><span>Redistribuição</span><strong>${fmtMoney(d.redistribution)}</strong></div><div><span>Antes das férias</span><strong>${fmtMoney(d.beforeVacation)}</strong></div>${individual?`<div><span>Piso zero aplicado</span><strong>${fmtMoney(d.zeroFloorAdjustment)}</strong></div><div><span>Antes do teto global</span><strong>${fmtMoney(d.preCapFinal)}</strong></div><div><span>Ajuste do teto</span><strong>${fmtMoney(d.capAdjustment)}</strong></div><div><span>Final Individual</span><strong>${fmtMoney(d.final)}</strong></div>`:''}</div>`}
+  function financeDetailGrid(d){const individual=d.mode==='individual';return `<div class="finance-detail-grid"><div><span>Base elegível avaliação</span><strong>${fmtInt(d.eligibleAtt)}</strong><small>${fmtInt(d.evaluationExcludedAtt)} descontado(s)</small></div><div><span>Comissão atendimento</span><strong>${fmtMoney(d.commissionAtt)}</strong></div><div><span>Comissão Notas 5</span><strong>${fmtMoney(d.commissionNotes5)}</strong></div><div><span>Base após cancelamento</span><strong>${fmtMoney(d.afterCancel)}</strong></div>${d.vacation?`<div><span>Base após férias (50%)</span><strong>${fmtMoney(d.afterVacationBase)}</strong><small>Redutor aplicado somente na comissão-base</small></div>`:''}<div><span>Bônus + prêmios</span><strong>${fmtMoney(safe(d.manualBonus)+safe(d.topAttBonus)+safe(d.topNotes5Bonus))}</strong></div><div><span>Vendas</span><strong>${fmtMoney(d.salesCommission)}</strong></div><div><span>Ajuste financeiro</span><strong>${d.financialAdjustmentEligible===false?'ISENTO':'ELEGÍVEL'}</strong></div><div><span>Desconto</span><strong>${d.discount?'- ':''}${fmtMoney(d.discount)}</strong></div><div><span>Redistribuição</span><strong>${fmtMoney(d.redistribution)}</strong></div><div><span>Subtotal antes do teto</span><strong>${fmtMoney(d.preCapFinal)}</strong></div>${individual?`<div><span>Piso zero aplicado</span><strong>${fmtMoney(d.zeroFloorAdjustment)}</strong></div><div><span>Ajuste do teto</span><strong>${fmtMoney(d.capAdjustment)}</strong></div><div><span>Final Individual</span><strong>${fmtMoney(d.final)}</strong></div>`:''}</div>`}
   function renderFinanceAdmin(m,specific,locked){
     if(!$('#financeTechnicianRows'))return;const disabled=locked?' disabled':'';
     $$('.admin-section').forEach(el=>el.classList.toggle('section-hidden',!el.classList.contains(`admin-${state.adminSection}`)));
@@ -2464,7 +2480,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     await persistCalculatedScores(m);
   }
   async function copyFinanceRulesFromPreviousMonth(){if(!isAdmin()||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return;const prev=previousMonthForCurrent(m);if(!prev)return toast('Não existe mês anterior neste Squad.');if(!await confirmDialog(`Copiar as faixas e parâmetros financeiros de ${prev.monthName} ${prev.year}? O modelo oficial, cancelamento e valores individuais não serão copiados.`,{title:'Copiar regras financeiras',confirmText:'Copiar',tone:'warning'}))return;const before=financeConfigAuditSnapshot(m);m.financeSettings=clone(financeSettingsForMonth(prev));m.financeIndividualCap=Number.isFinite(Number(prev.financeIndividualCap))?safe(prev.financeIndividualCap):7000;recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);await logAuditEvent('finance.rules_copy',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Regras financeiras copiadas de ${prev.monthName} ${prev.year} para ${m.monthName} ${m.year}.`,beforeData:before,afterData:financeConfigAuditSnapshot(m),metadata:{period:m.id,sourcePeriod:prev.id,squad:state.squadCode}});render();toast('Regras financeiras copiadas do mês anterior.')}
-  function financeReportRows(m){return (m?.technicians||[]).map(t=>{const d=t.financeData||{},sq=d.models?.squad||d,ind=d.models?.individual||d,official=financeModelForMonth(m);return{'Técnico':titleWords(t.name),'Status financeiro':d.financeStatus||'','Atendimentos':safe(t.att),'Atend. sem avaliação':normalizedEvaluationExcludedAtt(t),'Base elegível avaliação':eligibleEvaluationAttendance(t),'Atend./dia individual':safe(ind.avgPerDay),'Notas 5':safe(t.notes5),'% Notas 5 individual':safe(ind.notes5Pct),'Base Squad - comissão atend.':safe(sq.commissionAtt),'Base Squad - comissão N5':safe(sq.commissionNotes5),'Base Squad - final':safe(sq.final),'Individual - comissão atend.':safe(ind.commissionAtt),'Individual - comissão N5':safe(ind.commissionNotes5),'Individual - antes do teto':safe(ind.preCapFinal),'Individual - ajuste teto':safe(ind.capAdjustment),'Individual - final':safe(ind.final),'Diferença Individual x Squad':safe(ind.final)-safe(sq.final),'Modelo oficial':financeModelLabel(official),'Valor oficial':safe(d.final),'Multiplicador cancelamento':safe(d.cancelMultiplier||1),'Bônus manual':safe(d.manualBonus),'Prêmio atendimento':safe(d.topAttBonus),'Prêmio Notas 5':safe(d.topNotes5Bonus),'Comissão vendas':safe(d.salesCommission),'Desconto':safe(d.discount),'Redistribuição':safe(d.redistribution),'Férias':t.vacation?'SIM':'NÃO','Conta na Base do Squad':t.excludeFromGroupCount?'NÃO':'SIM','Participa desconto/redistribuição':d.financialAdjustmentEligible===false?'NÃO':'SIM'}})}
+  function financeReportRows(m){return (m?.technicians||[]).map(t=>{const d=t.financeData||{},sq=d.models?.squad||d,ind=d.models?.individual||d,official=financeModelForMonth(m);return{'Técnico':titleWords(t.name),'Status financeiro':d.financeStatus||'','Atendimentos':safe(t.att),'Atend. sem avaliação':normalizedEvaluationExcludedAtt(t),'Base elegível avaliação':eligibleEvaluationAttendance(t),'Atend./dia individual':safe(ind.avgPerDay),'Notas 5':safe(t.notes5),'% Notas 5 individual':safe(ind.notes5Pct),'Base Squad - comissão atend.':safe(sq.commissionAtt),'Base Squad - comissão N5':safe(sq.commissionNotes5),'Base Squad - final':safe(sq.final),'Individual - comissão atend.':safe(ind.commissionAtt),'Individual - comissão N5':safe(ind.commissionNotes5),'Individual - antes do teto':safe(ind.preCapFinal),'Individual - ajuste teto':safe(ind.capAdjustment),'Individual - final':safe(ind.final),'Diferença Individual x Squad':safe(ind.final)-safe(sq.final),'Modelo oficial':financeModelLabel(official),'Valor oficial':safe(d.final),'Multiplicador cancelamento':safe(d.cancelMultiplier||1),'Base após cancelamento':safe(d.afterCancel),'Base após férias':safe(d.afterVacationBase??d.afterCancel),'Ajuste férias sobre a base':safe(d.vacationBaseAdjustment),'Bônus manual':safe(d.manualBonus),'Prêmio atendimento':safe(d.topAttBonus),'Prêmio Notas 5':safe(d.topNotes5Bonus),'Comissão vendas':safe(d.salesCommission),'Desconto':safe(d.discount),'Redistribuição':safe(d.redistribution),'Férias':t.vacation?'SIM':'NÃO','Conta na Base do Squad':t.excludeFromGroupCount?'NÃO':'SIM','Participa desconto/redistribuição':d.financialAdjustmentEligible===false?'NÃO':'SIM'}})}
   function reportAdminRows(m){if(!m)return[];return (state.superAdminCommissions||[]).filter(c=>safe(c.year)===safe(m.year)&&safe(c.month)===safe(m.month)).map(c=>({'Admin Geral':c.name||'Admin geral','Comissão final':safe(c.amount),'Observação':c.notes||''}))}
   function loadExternalScriptOnce(src,test){return new Promise((resolve,reject)=>{if(test?.())return resolve();const existing=[...document.scripts].find(x=>x.src===src);if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return}const sc=document.createElement('script');sc.src=src;sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca de exportação.'));document.head.appendChild(sc)})}
   async function exportFinanceExcel(){
@@ -2978,9 +2994,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const reader=new FileReader();reader.onload=()=>{state.theme.favicon=reader.result;state.theme.preset='custom';saveTheme();applyFavicon(state.theme.favicon);toast('Favicon do tema atualizado.')};reader.readAsDataURL(f);
   }
   function resetFavicon(){if(!isAdmin())return;state.theme.favicon=DEFAULT_FAVICON;state.theme.preset='custom';if($('#faviconFile'))$('#faviconFile').value='';saveTheme();applyFavicon(DEFAULT_FAVICON);toast('Favicon padrão restaurado.')}
-  function themePayload(){const t=normalizeThemePayload(state.theme);const d=t.colors.dark;return{schema:'squad-theme-v2',name:t.name||'Personalizado',campaignTitle:t.campaignTitle||t.name||`Squad ${state.squadCode}`,campaignTagline:t.campaignTagline||'',colors:clone(t.colors),accent:d.accent,secondary:d.secondary,bg:d.bg,bg2:d.bg2,panel:d.panel,panel2:d.panel2,text:d.text,muted:d.muted,border:d.border,background:t.background||null,favicon:t.favicon||DEFAULT_FAVICON,soundtrack:Object.prototype.hasOwnProperty.call(t,'soundtrack')?t.soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:t.soundtrackName||'',soundtrackVolume:clamp(Number(t.soundtrackVolume??.24),0,1),opacity:t.opacity??.28}}
+  function themePayload(theme=state.theme,code=state.squadCode){const t=normalizeThemePayload(theme);const d=t.colors.dark;return{schema:'squad-theme-v2',name:t.name||'Personalizado',campaignTitle:t.campaignTitle||t.name||(code&&code!=='all'?`Squad ${code}`:'Performance Hub'),campaignTagline:t.campaignTagline||'',colors:clone(t.colors),accent:d.accent,secondary:d.secondary,bg:d.bg,bg2:d.bg2,panel:d.panel,panel2:d.panel2,text:d.text,muted:d.muted,border:d.border,background:t.background||null,favicon:t.favicon||DEFAULT_FAVICON,soundtrack:Object.prototype.hasOwnProperty.call(t,'soundtrack')?t.soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:t.soundtrackName||'',soundtrackVolume:clamp(Number(t.soundtrackVolume??.24),0,1),opacity:t.opacity??.28,chartPreferences:clone(normalizeChartPreferences(t.chartPreferences||DEFAULT_CHART_PREFERENCES))}}
   function downloadJson(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-  function exportTheme(){if(!isAdmin()||!requireSpecificSquad())return;downloadJson(themePayload(),`tema-squad-${state.squadCode.toLowerCase()}.json`);toast('Tema exportado em JSON com paletas clara e escura.')}
+  function exportTheme(){if(!canEditAppearance())return;const suffix=state.appearanceScope==='all'&&isSuperAdmin()?'todos-squads':`squad-${state.squadCode.toLowerCase()}`;downloadJson(themePayload(),`tema-${suffix}.json`);toast('Tema exportado em JSON com paletas clara/escura e preferências de gráficos.')}
   async function handleThemeJson(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());if(!['squad-theme-v1','squad-theme-v2'].includes(raw.schema))throw new Error('Arquivo de tema incompatível.');const theme={...raw,preset:'custom'};delete theme.schema;delete theme._instrucoes;if(theme.background&&!sanitizeThemeBackground(theme.background))throw new Error('Fundo inválido.');if(theme.favicon&&!sanitizeThemeBackground(theme.favicon))throw new Error('Favicon inválido.');if(theme.soundtrack&&!sanitizeThemeAudio(theme.soundtrack))throw new Error('Trilha sonora inválida.');state.theme=normalizeThemePayload(theme);saveTheme();applyTheme(state.theme);toast(raw.schema==='squad-theme-v1'?'Tema antigo convertido para Light/Dark e aplicado.':'Tema importado e aplicado.')}catch(err){toast(err.message||'Não foi possível importar o tema.')}finally{e.target.value=''}}
 
   /* ===== Supabase: login + dados multi-squad ===== */
@@ -3059,7 +3075,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
     for(const old of existing||[]){if(!keepNames.has(nameLinkKey(old.technician_name))){const {error:se}=await state.supabase.from('technician_monthly').delete().eq('id',old.id);if(se)throw se}}
   }
-  async function persistThemeToSupabase(){const squad=currentSquad();if(!state.supabase||!squad?.dbId)return;const {error}=await state.supabase.from('squad_themes').upsert({squad_id:squad.dbId,theme:themePayload(),updated_by:state.user.userId,updated_at:new Date().toISOString()},{onConflict:'squad_id'});if(error)throw error;squad.theme=clone(state.theme)}
+  async function persistThemeToSupabase(codes=appearanceScopeCodes(),theme=state.theme){if(!state.supabase||!codes?.length)return;const normalized=normalizeThemePayload(theme),now=new Date().toISOString(),rows=codes.map(code=>state.squads?.[code]).filter(s=>s?.dbId).map(s=>({squad_id:s.dbId,theme:themePayload(normalized,s.code),updated_by:state.user.userId,updated_at:now}));if(!rows.length)return;const {error}=await state.supabase.from('squad_themes').upsert(rows,{onConflict:'squad_id'});if(error)throw error;codes.forEach(code=>{if(state.squads?.[code])state.squads[code].theme=clone(normalized)})}
 
   function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   boot();

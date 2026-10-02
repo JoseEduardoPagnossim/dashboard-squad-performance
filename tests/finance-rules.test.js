@@ -143,7 +143,7 @@ test('modelo Base do Squad preserva valor negativo antes das férias conforme re
   assert.equal(result.final, -200);
 });
 
-test('férias aplicam redutor final de 50%', () => {
+test('férias reduzem 50% somente da comissão-base após cancelamento', () => {
   const result = finance.buildFinanceModelData({
     mode: 'individual', hasProduction: true, days: 20, avgPerDay: 10, notes5Pct: .5,
     eligibleAtt: 200, evaluationExcludedAtt: 0, commissionAtt: 750, commissionNotes5: 600,
@@ -153,8 +153,26 @@ test('férias aplicam redutor final de 50%', () => {
     redistributed: 200, vacation: true, pool: 400
   });
   assert.equal(result.afterCancel, 2376);
-  assert.equal(result.beforeVacation, 2926);
-  assert.equal(result.final, 1463);
+  assert.equal(result.afterVacationBase, 1188);
+  assert.equal(result.vacationBaseAdjustment, -1188);
+  assert.equal(result.rawBeforeVacation, 2926);
+  assert.equal(result.rawAfterVacationBase, 1738);
+  assert.equal(result.final, 1738);
+  assert.equal(result.vacationScope, 'base_after_cancel');
+});
+
+test('férias não reduzem bônus, prêmios, vendas nem redistribuição', () => {
+  const result = finance.buildFinanceModelData({
+    mode: 'squad', hasProduction: true, days: 20, avgPerDay: 10, notes5Pct: .5,
+    eligibleAtt: 200, evaluationExcludedAtt: 0, commissionAtt: 400, commissionNotes5: 200,
+    cancelRate: 0, cancelTier: { max: .004 }, rawMult: 1, effectiveMult: 1,
+    financeStatus: 'ACIMA', financialAdjustmentEligible: true, topAttBonus: 100,
+    topNotes5Bonus: 80, manualBonus: 120, sales: 50, discount: 30,
+    redistributed: 200, vacation: true, pool: 200
+  });
+  assert.equal(result.afterCancel, 600);
+  assert.equal(result.afterVacationBase, 300);
+  assert.equal(result.final, 820);
 });
 
 test('teto individual não altera valores quando total está abaixo do limite', () => {

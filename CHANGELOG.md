@@ -1,3 +1,12 @@
+## V2.34.8 — Gráficos padronizados, aparência multi-Squad e férias na comissão-base
+
+- Padroniza os gráficos legados (diário e histórico) para respeitar densidade de rótulos, fonte, altura, espessura de linha e tamanho dos pontos.
+- Remove conflitos de altura fixa dos gráficos de qualidade em telas menores, preservando apenas limites responsivos de segurança.
+- Persiste `chartPreferences` no JSON do tema e no Supabase.
+- Admin Geral pode escolher aplicar a aparência somente ao Squad atual ou replicar para todos os Squads A/B/D/E.
+- Corrige férias na bonificação: o redutor de 50% passa a incidir somente sobre a comissão-base após o multiplicador de cancelamento; bônus, prêmios, vendas, desconto e redistribuição ficam integrais.
+- Relatórios e detalhamento financeiro passam a exibir a base após férias e o ajuste correspondente.
+
 ## V2.34.7 — Logo na apresentação
 
 - Adiciona a marca Soften no hero do módulo Apresentação e no modo TV direto.
