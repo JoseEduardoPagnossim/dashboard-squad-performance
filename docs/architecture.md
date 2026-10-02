@@ -52,3 +52,10 @@ A aplicação carrega bibliotecas externas somente quando necessário, como XLSX
 Não há roteamento SPA dependente do nome do repositório. Os arquivos usam caminhos relativos, mantendo compatibilidade com:
 
 `https://joseeduardopagnossim.github.io/dashboard-squad-performance/`
+
+
+## Núcleo de gráficos — V2.35.0
+
+`js/chart-engine.js` é carregado antes de `js/app.js` e concentra a infraestrutura compartilhada de gráficos: normalização das preferências, escala percentual, altura, estilo de linhas/pontos, densidade de rótulos, geração de caminhos/áreas SVG, gradientes e interação de tooltip/legenda.
+
+Os renderizadores de negócio continuam em `app.js` nesta etapa para preservar o comportamento das telas, mas consomem o mesmo motor. Novos gráficos devem usar `window.SoftenChartEngine` e não recriar primitivas equivalentes localmente. O script `scripts/validate-project.mjs` verifica essa dependência e bloqueia regressões de duplicação.

@@ -21,11 +21,14 @@ for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) assertLocalRef(ro
 
 const financeScriptPosition = index.indexOf('js/finance-rules.js');
 const auditScriptPosition = index.indexOf('js/audit-utils.js');
+const chartEngineScriptPosition = index.indexOf('js/chart-engine.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
 if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils.js.');
+if (chartEngineScriptPosition < 0) errors.push('index.html não carrega js/chart-engine.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && auditScriptPosition > appScriptPosition) errors.push('js/audit-utils.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && chartEngineScriptPosition > appScriptPosition) errors.push('js/chart-engine.js deve ser carregado antes de js/app.js.');
 for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
@@ -35,6 +38,9 @@ for (const required of [
   'package.json',
   'tests/finance-rules.test.js',
   'tests/audit-utils.test.js',
+  'tests/chart-engine.test.js',
+  'tests/project-structure.test.js',
+  'js/chart-engine.js',
   'js/finance-rules.js',
   'js/audit-utils.js',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
@@ -66,6 +72,10 @@ for (const file of walk(join(root, 'js')).filter(f => f.endsWith('.js'))) {
 
 const appText = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 if (appText.includes('squad-dashboard-v2.1.0')) errors.push('Referência ao nome antigo do repositório encontrada em js/app.js.');
+if (!appText.includes('window.SoftenChartEngine')) errors.push('js/app.js não depende explicitamente do motor central de gráficos.');
+for (const duplicatedChartPrimitive of ['smoothSvgPath','smoothAreaPath','splitChartPointSegments','chartDataLabelSvg','chartValueText']) {
+  if (appText.includes(`function ${duplicatedChartPrimitive}(`)) errors.push(`Primitiva de gráfico duplicada em js/app.js: ${duplicatedChartPrimitive}.`);
+}
 
 for (const financeCall of [
   'financeRules.resolveFinanceSettings',

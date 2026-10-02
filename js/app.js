@@ -8,6 +8,9 @@
   const auditUtils = window.SoftenAuditUtils;
   if(!auditUtils) throw new Error('SoftenAuditUtils não carregado. Verifique js/audit-utils.js.');
   const {sanitizeAuditValue,confirmationMatches,actionCategory,actionLabel}=auditUtils;
+  const chartEngine = window.SoftenChartEngine;
+  if(!chartEngine) throw new Error('SoftenChartEngine não carregado. Verifique js/chart-engine.js.');
+  const {DEFAULT_PREFERENCES:DEFAULT_CHART_PREFERENCES,normalizePreferences:normalizeChartPreferences,labelVisible:chartEngineLabelVisible,configuredHeight:chartEngineConfiguredHeight,percentScale:chartEnginePercentScale,lineVisual:chartEngineLineVisual,applyCssVariables:applyChartCssVariables,nextRenderId:nextChartRenderId,splitPointSegments:splitChartPointSegments,smoothSvgPath,smoothAreaPath,seriesGradient:svgSeriesGradient,inlineLabel:chartInlineLabel,valueText:chartValueText,dataLabelSvg:chartDataLabelSvg,bindSharedTooltip:bindSharedChartTooltip,bindTooltips:bindChartTooltips}=chartEngine;
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -19,7 +22,6 @@
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
-  const DEFAULT_CHART_PREFERENCES = {labelDensity:'all',labelFontSize:10,axisFontSize:11,legendFontSize:10,chartHeight:340,cardPadding:22,yScaleMode:'auto',yMin:0,yMax:100,lineWidth:3,pointRadius:4};
   const DEMO_USERS = Array.isArray(window.SOFTEN_DEMO_USERS) ? [...window.SOFTEN_DEMO_USERS] : [];
 
   function loadDemoCreatedUsers(){
@@ -94,24 +96,10 @@
     audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
   };
 
-  function normalizeChartPreferences(prefs){
-    const raw={...(prefs||{})},labelDensity=['all','alternate','every3','extremes','none'].includes(raw.labelDensity)?raw.labelDensity:'all',yScaleMode=raw.yScaleMode==='manual'?'manual':'auto',yMin=clamp(safe(raw.yMin),0,99),yMax=clamp(Math.max(safe(raw.yMax),yMin+1),1,100);
-    return {labelDensity,labelFontSize:clamp(safe(raw.labelFontSize)||DEFAULT_CHART_PREFERENCES.labelFontSize,8,18),axisFontSize:clamp(safe(raw.axisFontSize)||DEFAULT_CHART_PREFERENCES.axisFontSize,9,16),legendFontSize:clamp(safe(raw.legendFontSize)||DEFAULT_CHART_PREFERENCES.legendFontSize,9,16),chartHeight:clamp(safe(raw.chartHeight)||DEFAULT_CHART_PREFERENCES.chartHeight,260,520),cardPadding:clamp(safe(raw.cardPadding)||DEFAULT_CHART_PREFERENCES.cardPadding,16,34),yScaleMode,yMin,yMax,lineWidth:clamp(safe(raw.lineWidth)||DEFAULT_CHART_PREFERENCES.lineWidth,2,6),pointRadius:clamp(safe(raw.pointRadius)||DEFAULT_CHART_PREFERENCES.pointRadius,2,8)};
-  }
   function currentChartPreferences(){return normalizeChartPreferences(state.theme?.chartPreferences||state.chartPreferences||DEFAULT_CHART_PREFERENCES)}
   function applyChartPreferences(prefs){
-    const cfg=normalizeChartPreferences(prefs),delta=cfg.chartHeight-340,root=document.documentElement.style;
+    const cfg=applyChartCssVariables(document.documentElement.style,prefs);
     state.chartPreferences=cfg;
-    root.setProperty('--chart-card-padding',`${cfg.cardPadding}px`);
-    root.setProperty('--chart-label-font-size',`${cfg.labelFontSize}px`);
-    root.setProperty('--chart-label-font-size-compact',`${Math.max(8,cfg.labelFontSize-1)}px`);
-    root.setProperty('--chart-axis-font-size',`${cfg.axisFontSize}px`);
-    root.setProperty('--chart-legend-font-size',`${cfg.legendFontSize}px`);
-    root.setProperty('--chart-height-base',`${cfg.chartHeight}px`);
-    root.setProperty('--chart-height-sm',`${Math.max(220,250+delta)}px`);
-    root.setProperty('--chart-height-lg',`${Math.max(240,290+delta)}px`);
-    root.setProperty('--chart-height-history',`${Math.max(260,330+delta)}px`);
-    root.setProperty('--chart-height-business',`${Math.max(280,360+delta)}px`);
     return cfg;
   }
   function syncChartPreferencePreview(){
@@ -169,21 +157,10 @@
     if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Padrão restaurado em ${appearanceScopeLabel()}.`;
     toast(`Configuração visual restaurada em ${appearanceScopeLabel()}.`);
   }
-  function chartLabelVisible(index,total){
-    const mode=currentChartPreferences().labelDensity||'all';
-    if(mode==='none')return false;
-    if(total<=2)return true;
-    if(mode==='alternate')return index===0||index===total-1||index%2===0;
-    if(mode==='every3')return index===0||index===total-1||index%3===0;
-    if(mode==='extremes')return index===0||index===total-1;
-    return true;
-  }
-  function configuredChartHeight(baseHeight=340){return Math.max(220,(safe(baseHeight)||340)+(currentChartPreferences().chartHeight-340))}
-  function configuredPercentScale(rawTop,explicitMax=null){
-    const cfg=currentChartPreferences();
-    if(cfg.yScaleMode==='manual')return {min:cfg.yMin,max:Math.max(cfg.yMax,cfg.yMin+1)};
-    return {min:0,max:explicitMax??Math.max(10,Math.ceil(Math.max(1,safe(rawTop))/10)*10)};
-  }
+  function chartLabelVisible(index,total){return chartEngineLabelVisible(index,total,currentChartPreferences())}
+  function configuredChartHeight(baseHeight=340){return chartEngineConfiguredHeight(baseHeight,currentChartPreferences())}
+  function configuredPercentScale(rawTop,explicitMax=null){return chartEnginePercentScale(rawTop,explicitMax,currentChartPreferences())}
+
 
   function loadDemoSquads(){
     const base={
@@ -908,10 +885,10 @@
     const xLabels=labels.map((label,i)=>i%step===0?`<text x="${x(i)-10}" y="${h-7}" class="axis-label">${escapeHtml(label)}</text>`:'').join('');
     const zones=data.map((_,i)=>{const span=data.length<=1?(w-p.l-p.r):(w-p.l-p.r)/(data.length-1),zx=data.length<=1?p.l:Math.max(p.l,x(i)-span/2),zw=data.length<=1?w-p.l-p.r:(i===0||i===data.length-1?span/2:span);return `<rect x="${zx}" y="${p.t}" width="${zw}" height="${h-p.t-p.b}" class="chart-hover-zone" data-chart-index="${i}"></rect>`}).join('');
     const rulers=data.map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
-    const dots=(points,color,seriesIndex)=>points.map(pt=>`<circle cx="${pt.x}" cy="${pt.y}" r="${prefs.pointRadius}" fill="${color}" class="chart-point chart-series-shape" style="--series-color:${color}" data-series-index="${seriesIndex}" data-point-index="${pt.index}"></circle>`).join('');
+    const dots=(points,color,seriesIndex)=>points.map(pt=>`<circle cx="${pt.x}" cy="${pt.y}" r="${visual.pointRadius}" fill="${color}" class="chart-point chart-series-shape" style="--series-color:${color}" data-series-index="${seriesIndex}" data-point-index="${pt.index}"></circle>`).join('');
     const pointLabels=(points,color,offset)=>points.map((pt,i)=>chartLabelVisible(i,points.length)?chartDataLabelSvg(pt.x,Math.max(p.t+11,pt.y+offset),fmtInt(pt.value),{color,compact:true}):'').join('');
     const defs=`<defs>${svgSeriesGradient(`${chartId}-att`,'var(--accent)',.24)}${svgSeriesGradient(`${chartId}-note`,'var(--success)',.12)}</defs>`;
-    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${defs}${yTicks}<path d="${smoothAreaPath(attPoints,baseline)}" fill="url(#${chartId}-att)" class="chart-series-area"></path><path d="${smoothAreaPath(notePoints,baseline)}" fill="url(#${chartId}-note)" class="chart-series-area secondary-area"></path><path d="${smoothSvgPath(attPoints)}" class="att-line chart-series-line chart-series-shape" style="--series-color:var(--accent);stroke-width:${prefs.lineWidth}" data-series-index="0"></path><path d="${smoothSvgPath(notePoints)}" class="note-line chart-series-line chart-series-shape" style="--series-color:var(--success);stroke-width:${prefs.lineWidth}" data-series-index="1"></path>${dots(attPoints,'var(--accent)',0)}${dots(notePoints,'var(--success)',1)}${pointLabels(attPoints,'var(--accent)',-9)}${pointLabels(notePoints,'var(--success)',14)}${rulers}${zones}${xLabels}</svg>`;
+    el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${defs}${yTicks}<path d="${smoothAreaPath(attPoints,baseline)}" fill="url(#${chartId}-att)" class="chart-series-area"></path><path d="${smoothAreaPath(notePoints,baseline)}" fill="url(#${chartId}-note)" class="chart-series-area secondary-area"></path><path d="${smoothSvgPath(attPoints)}" class="att-line chart-series-line chart-series-shape" style="--series-color:var(--accent);stroke-width:${visual.lineWidth}" data-series-index="0"></path><path d="${smoothSvgPath(notePoints)}" class="note-line chart-series-line chart-series-shape" style="--series-color:var(--success);stroke-width:${visual.lineWidth}" data-series-index="1"></path>${dots(attPoints,'var(--accent)',0)}${dots(notePoints,'var(--success)',1)}${pointLabels(attPoints,'var(--accent)',-9)}${pointLabels(notePoints,'var(--success)',14)}${rulers}${zones}${xLabels}</svg>`;
     bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[
       {name:'Atendimentos',value:safe(data[i]?.att),text:fmtInt(data[i]?.att),color:'var(--accent)'},
       {name:'Notas 5',value:safe(data[i]?.notes5),text:fmtInt(data[i]?.notes5),color:'var(--success)'}
@@ -1296,117 +1273,6 @@ function renderIndicatorHistoricalAnalytics(squads,rangeIds){
   renderIndicatorLineChart($('#indicatorHistoryDailyAvgChart'),data.labels,data.daily,{maxValue:null,percent:false,decimals:1});
   renderIndicatorLineChart($('#indicatorHistoryEvalChart'),data.labels,data.evaluation,{maxValue:null,percent:true});
 }
-let chartRenderSequence=0;
-function nextChartRenderId(prefix='chart'){
-  chartRenderSequence+=1;
-  return `${prefix}-${chartRenderSequence}`;
-}
-function splitChartPointSegments(values,xFn,yFn){
-  const segments=[];let current=[];
-  (values||[]).forEach((value,index)=>{
-    if(value==null||Number.isNaN(Number(value))){if(current.length){segments.push(current);current=[]}return;}
-    current.push({x:xFn(index),y:yFn(value),index,value:safe(value)});
-  });
-  if(current.length)segments.push(current);
-  return segments;
-}
-function smoothSvgPath(points){
-  if(!points?.length)return'';
-  if(points.length===1)return `M ${points[0].x} ${points[0].y}`;
-  let d=`M ${points[0].x} ${points[0].y}`;
-  for(let i=0;i<points.length-1;i++){
-    const p0=points[i-1]||points[i],p1=points[i],p2=points[i+1],p3=points[i+2]||p2;
-    const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
-    const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
-    d+=` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
-  }
-  return d;
-}
-function smoothAreaPath(points,baseline){
-  if(!points?.length)return'';
-  if(points.length===1)return `M ${points[0].x} ${baseline} L ${points[0].x} ${points[0].y} L ${points[0].x} ${baseline} Z`;
-  return `${smoothSvgPath(points)} L ${points[points.length-1].x} ${baseline} L ${points[0].x} ${baseline} Z`;
-}
-function svgSeriesGradient(id,color,startOpacity=.2){
-  return `<linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="${startOpacity}"/><stop offset="58%" stop-color="${color}" stop-opacity="${startOpacity*.28}"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient>`;
-}
-function ensureChartTooltip(el){
-  if(!el)return null;
-  let tip=el.querySelector('.chart-hover-tooltip');
-  if(!tip){tip=document.createElement('div');tip.className='chart-hover-tooltip';tip.setAttribute('role','tooltip');tip.setAttribute('aria-hidden','true');el.appendChild(tip);}
-  return tip;
-}
-function positionChartTooltip(el,tip,e){
-  const r=el.getBoundingClientRect();
-  const gap=18,px=e.clientX-r.left,py=e.clientY-r.top;
-  const tw=tip.offsetWidth||300,th=tip.offsetHeight||120;
-  let x=px+gap,y=py+gap;
-  if(x+tw>r.width-10)x=px-tw-gap;
-  if(y+th>r.height-10)y=py-th-gap;
-  tip.style.left=Math.max(10,Math.min(x,Math.max(10,r.width-tw-10)))+'px';
-  tip.style.top=Math.max(10,Math.min(y,Math.max(10,r.height-th-10)))+'px';
-}
-function chartValueText(value,{percent=false,decimals=0,suffix=''}={}){
-  const n=safe(value);
-  if(percent)return `${n.toLocaleString('pt-BR',{minimumFractionDigits:decimals?1:0,maximumFractionDigits:Math.max(1,decimals||1)})}%`;
-  return `${n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:decimals})}${suffix||''}`;
-}
-function sharedTooltipHtml(label,entries){
-  const valid=(entries||[]).filter(x=>x&&x.value!=null&&!Number.isNaN(Number(x.value))).sort((a,b)=>safe(b.value)-safe(a.value)||String(a.name).localeCompare(String(b.name),'pt-BR'));
-  const dense=valid.length>10?' dense':'';
-  return `<div class="chart-tooltip-head"><strong>${escapeHtml(label||'')}</strong><span>${valid.length} ${valid.length===1?'série':'séries'}</span></div><div class="chart-tooltip-list${dense}">${valid.map((x,i)=>`<div class="chart-tooltip-row${i===0&&valid.length>1?' leader':''}"><i style="background:${x.color||'var(--accent)'}"></i><span>${escapeHtml(x.name)}</span><strong>${escapeHtml(x.text)}</strong></div>`).join('')}</div>`;
-}
-function setChartRulerState(el,index,show=true){
-  el.querySelectorAll('[data-ruler-index]').forEach(n=>n.classList.toggle('is-active',show&&Number(n.dataset.rulerIndex)===Number(index)));
-  el.querySelectorAll('[data-point-index]').forEach(n=>n.classList.toggle('is-active',show&&Number(n.dataset.pointIndex)===Number(index)));
-}
-function focusChartSeries(el,index=null,locked=false){
-  const has=index!=null&&index!=='';
-  el.classList.toggle('has-series-focus',has);
-  el.dataset.lockedSeries=locked&&has?String(index):'';
-  el.querySelectorAll('[data-series-index]').forEach(n=>{
-    const same=has&&String(n.dataset.seriesIndex)===String(index);
-    n.classList.toggle('is-focused',same);
-    n.classList.toggle('is-muted',has&&!same);
-    if(n.classList.contains('chart-legend-item'))n.setAttribute('aria-pressed',same&&locked?'true':'false');
-  });
-}
-function bindInteractiveLegend(el){
-  if(!el)return;
-  const items=[...el.querySelectorAll('.chart-legend-item[data-series-index]')];
-  items.forEach(item=>{
-    const idx=item.dataset.seriesIndex;
-    item.addEventListener('pointerenter',()=>{if(!el.dataset.lockedSeries)focusChartSeries(el,idx,false)});
-    item.addEventListener('pointerleave',()=>{if(!el.dataset.lockedSeries)focusChartSeries(el,null,false)});
-    item.addEventListener('click',()=>{const locked=el.dataset.lockedSeries===String(idx);focusChartSeries(el,locked?null:idx,!locked)});
-    item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click()}});
-  });
-}
-function bindSharedChartTooltip(el,model){
-  if(!el)return;
-  const tip=ensureChartTooltip(el),zones=[...el.querySelectorAll('[data-chart-index]')];
-  const show=(node,e)=>{
-    const index=Number(node.dataset.chartIndex),label=model.labels?.[index]||'';
-    const entries=(model.entriesForIndex?.(index)||[]).filter(Boolean);
-    tip.innerHTML=sharedTooltipHtml(label,entries);tip.classList.add('show','shared');tip.setAttribute('aria-hidden','false');
-    setChartRulerState(el,index,true);positionChartTooltip(el,tip,e);
-  };
-  zones.forEach(node=>{
-    node.addEventListener('pointerenter',e=>show(node,e));
-    node.addEventListener('pointermove',e=>show(node,e));
-    node.addEventListener('pointerleave',()=>{tip.classList.remove('show','shared');tip.setAttribute('aria-hidden','true');setChartRulerState(el,-1,false)});
-  });
-  bindInteractiveLegend(el);
-}
-function bindChartTooltips(el){
-  if(!el)return;
-  const tip=ensureChartTooltip(el),targets=[...el.querySelectorAll('[data-chart-tip]')];
-  targets.forEach(node=>{
-    node.addEventListener('pointerenter',e=>{tip.textContent=node.dataset.chartTip||'';tip.classList.add('show');tip.setAttribute('aria-hidden','false');positionChartTooltip(el,tip,e)});
-    node.addEventListener('pointermove',e=>positionChartTooltip(el,tip,e));
-    node.addEventListener('pointerleave',()=>{tip.classList.remove('show');tip.setAttribute('aria-hidden','true')});
-  });
-}
 function qualityNoteTotal(row){return safe(row?.notes5)+safe(row?.notes4)+safe(row?.notes3)+safe(row?.notes2)+safe(row?.notes1)}
 function qualityWeightedSum(row){return safe(row?.notes5)*5+safe(row?.notes4)*4+safe(row?.notes3)*3+safe(row?.notes2)*2+safe(row?.notes1)}
 function qualitySummaryFinalize(row){const total=qualityNoteTotal(row),weighted=qualityWeightedSum(row);return{...row,total,avg:total?weighted/total:0,lowPct:total?(safe(row.notes1)+safe(row.notes2)+safe(row.notes3))/total:0}}
@@ -1612,22 +1478,11 @@ function detailRankingRows(type,squads){
 function renderDetailRanking(el,rows){if(!el)return;el.innerHTML=rows.length?rows.map((r,i)=>`<div class="detail-rank-row"><span class="detail-rank-pos">${i+1}</span><div class="detail-rank-main"><strong>${escapeHtml(titleWords(r.name))}</strong><small>Squad ${escapeHtml(r.squad)} • N1 ${fmtInt(r.notes1)} • N2 ${fmtInt(r.notes2)} • N3 ${fmtInt(r.notes3)} • ${fmtInt(r.total)} avaliações</small></div><div class="detail-rank-score"><b>${fmtInt(r.low)}</b><small>${fmtPct(r.lowPct)} baixas</small></div></div>`).join(''):'<div class="chart-empty">Nenhuma nota 1 a 3 encontrada no período.</div>'}
 function renderDetailIndicators(squads){if($('#detailPeriodChip'))$('#detailPeriodChip').textContent=analysisRangeLabel();renderDetailRanking($('#detailServiceRanking'),detailRankingRows('service',squads));renderDetailRanking($('#detailProductRanking'),detailRankingRows('product',squads));renderDetailRanking($('#detailCompanyRanking'),detailRankingRows('company',squads));}
 
-function chartInlineLabel(value,{percent=false,decimals=0,formatter=null}={}){
-  if(value==null||Number.isNaN(Number(value)))return '—';
-  if(formatter)return formatter(value);
-  const n=safe(value);
-  if(percent)return `${n.toLocaleString('pt-BR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals})}%`;
-  return n.toLocaleString('pt-BR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
-}
-function chartDataLabelSvg(x,y,text,{color='var(--text)',anchor='middle',dy=0,compact=false}={}){
-  if(text==null||text==='')return '';
-  return `<text x="${x}" y="${y}" dy="${dy}" text-anchor="${anchor}" class="chart-data-label${compact?' compact':''}" fill="${color}">${escapeHtml(String(text))}</text>`;
-}
 function renderQualityAttendanceEvaluationChart(el,labels,attendance,evalPct){
-  if(!el)return;const has=(attendance||[]).some(v=>safe(v)>0)||(evalPct||[]).some(v=>v!=null);if(!has){el.innerHTML='<div class="chart-empty">Sem dados no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern');const prefs=currentChartPreferences(),scale=configuredPercentScale(100,100),w=Math.max(760,(labels?.length||0)*108),h=configuredChartHeight(320),p={l:58,r:58,t:30,b:58},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(48,slot*.48),attTop=Math.max(1,...(attendance||[]).map(safe))*1.12,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-((safe(v)-safe(scale.min))/Math.max(1,safe(scale.max)-safe(scale.min)))*plotH;
+  if(!el)return;const has=(attendance||[]).some(v=>safe(v)>0)||(evalPct||[]).some(v=>v!=null);if(!has){el.innerHTML='<div class="chart-empty">Sem dados no período selecionado.</div>';return;}el.classList.add('interactive-chart','chart-modern');const prefs=currentChartPreferences(),visual=chartEngineLineVisual(prefs),scale=configuredPercentScale(100,100),w=Math.max(760,(labels?.length||0)*108),h=configuredChartHeight(320),p={l:58,r:58,t:30,b:58},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(48,slot*.48),attTop=Math.max(1,...(attendance||[]).map(safe))*1.12,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-((safe(v)-safe(scale.min))/Math.max(1,safe(scale.max)-safe(scale.min)))*plotH;
   const grid=[0,.25,.5,.75,1].map(f=>{const y=p.t+(1-f)*plotH,val=safe(scale.min)+(safe(scale.max)-safe(scale.min))*f;return `<line x1="${p.l}" y1="${y}" x2="${w-p.r}" y2="${y}" class="grid-line"/><text x="6" y="${y+4}" class="axis-label">${fmtInt(attTop*f)}</text><text x="${w-6}" y="${y+4}" class="quality-right-axis-label">${Math.round(val)}%</text>`}).join('');
   const bars=(attendance||[]).map((v,i)=>{const yy=yAtt(v);return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="8" fill="var(--accent)" opacity=".55" class="quality-bar chart-series-shape" data-series-index="0"></rect>${chartLabelVisible(i,labels.length)?chartDataLabelSvg(x(i),Math.max(p.t+11,yy-7),fmtInt(v),{color:'var(--accent)',compact:true}):''}`}).join('');
-  const pts=(evalPct||[]).map((v,i)=>v==null?null:{x:x(i),y:yPct(v)}),segments=[];let cur=[];pts.forEach(pt=>{if(pt){cur.push(pt)}else if(cur.length){segments.push(cur);cur=[]}});if(cur.length)segments.push(cur);const line=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="${prefs.lineWidth}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('')+(evalPct||[]).map((v,i)=>v==null?'':`<circle cx="${x(i)}" cy="${yPct(v)}" r="${prefs.pointRadius}" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>${chartLabelVisible(i,labels.length)?chartDataLabelSvg(x(i),Math.min(base-5,yPct(v)+15),chartInlineLabel(v,{percent:true,decimals:1}),{color:'var(--success)',compact:true}):''}`).join('');
+  const pts=(evalPct||[]).map((v,i)=>v==null?null:{x:x(i),y:yPct(v)}),segments=[];let cur=[];pts.forEach(pt=>{if(pt){cur.push(pt)}else if(cur.length){segments.push(cur);cur=[]}});if(cur.length)segments.push(cur);const line=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="${visual.lineWidth}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('')+(evalPct||[]).map((v,i)=>v==null?'':`<circle cx="${x(i)}" cy="${yPct(v)}" r="${visual.pointRadius}" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>${chartLabelVisible(i,labels.length)?chartDataLabelSvg(x(i),Math.min(base-5,yPct(v)+15),chartInlineLabel(v,{percent:true,decimals:1}),{color:'var(--success)',compact:true}):''}`).join('');
   const xLabels=(labels||[]).map((l,i)=>`<text x="${x(i)}" y="${h-18}" text-anchor="middle" class="axis-label">${escapeHtml(l)}</text>`).join(''),zones=(labels||[]).map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${plotH}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join('');
   el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${line}${zones}${xLabels}<text x="${p.l}" y="17" class="quality-axis-title">Atendimentos</text><text x="${w-p.r}" y="17" text-anchor="end" class="quality-axis-title">% avaliação</text></svg></div><div class="chart-legend-inline chart-legend-visible"><span><i class="legend-swatch" style="background:var(--accent)"></i>Qtd. Atendimento</span><span><i class="legend-swatch" style="background:var(--success)"></i>% Avaliação</span></div>`;
   bindSharedChartTooltip(el,{labels,entriesForIndex:i=>[{name:'Qtd. Atendimento',value:attendance?.[i],text:fmtInt(attendance?.[i]),color:'var(--accent)'},{name:'% Avaliação',value:evalPct?.[i],text:evalPct?.[i]==null?'—':`${safe(evalPct[i]).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:'var(--success)'}]});
@@ -1646,7 +1501,7 @@ function renderHistoryAttendanceChart(el,labels,totals,series){
   const validSeries=(series||[]).filter(s=>(s.values||[]).some(v=>v!=null));
   if(!labels?.length||!validSeries.length){el.innerHTML='<div class="chart-empty">Importe pelo menos um mês com técnicos vinculados para visualizar o histórico.</div>';return;}
   el.classList.add('interactive-chart','history-interactive-chart','chart-modern','premium-mixed-chart');
-  const prefs=currentChartPreferences(),chartId=nextChartRenderId('history'),w=Math.max(940,labels.length*136),h=configuredChartHeight(360),p={l:58,r:68,t:34,b:60};
+  const prefs=currentChartPreferences(),visual=chartEngineLineVisual(prefs),chartId=nextChartRenderId('history'),w=Math.max(940,labels.length*136),h=configuredChartHeight(360),p={l:58,r:68,t:34,b:60};
   const lineVals=validSeries.flatMap(s=>s.values).filter(v=>v!=null).map(v=>safe(v));
   const lineTop=Math.max(1,...lineVals)*1.12,totalTop=Math.max(1,...(totals||[]).map(safe))*1.12;
   const slot=(w-p.l-p.r)/Math.max(1,labels.length),barW=Math.min(58,slot*.48),baseline=h-p.b;
@@ -1659,8 +1514,8 @@ function renderHistoryAttendanceChart(el,labels,totals,series){
     const segments=splitChartPointSegments(s.values,x,yLine),color=s.color||'var(--accent)';
     const areaOpacity=validSeries.length>6?0:(validSeries.length>4?.55:1);
     const areas=areaOpacity?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" data-series-index="${si}" style="opacity:${areaOpacity};--series-color:${color}"></path>`).join(''):'';
-    const lines=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${prefs.lineWidth}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
-    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=yLine(v),offset=si%2===0?-9:15,label=chartLabelVisible(i,labels.length)?chartDataLabelSvg(cx,Math.max(p.t+11,Math.min(baseline-4,cy+offset)),chartInlineLabel(v,{decimals:1}),{color,compact:true}):'';return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${prefs.pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?prefs.pointRadius+0.8:prefs.pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${label}`}).join('');
+    const lines=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${visual.lineWidth}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
+    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=yLine(v),offset=si%2===0?-9:15,label=chartLabelVisible(i,labels.length)?chartDataLabelSvg(cx,Math.max(p.t+11,Math.min(baseline-4,cy+offset)),chartInlineLabel(v,{decimals:1}),{color,compact:true}):'';return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${visual.pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?visual.pointRadius+0.8:visual.pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${label}`}).join('');
     return areas+lines+dots;
   }).join('');
   const rulers=labels.map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');
@@ -1723,8 +1578,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   const defs=[];
   validSeries.forEach((s,si)=>defs.push(svgSeriesGradient(`${chartId}-area-${si}`,s.color||'var(--accent)',validSeries.length>5?.05:emphasis?.16:.10)));
   const paths=validSeries.map((s,si)=>{
-    const color=s.color||'var(--accent)',segments=splitChartPointSegments(s.values,x,y);
-    const dash=s.dashed?' stroke-dasharray="7 7"':'',lineWidth=Math.max(1.8,prefs.lineWidth+(emphasis?.25:0)-(s.dashed?.3:0)),pointRadius=Math.max(2,prefs.pointRadius+(emphasis?.3:0));
+    const color=s.color||'var(--accent)',segments=splitChartPointSegments(s.values,x,y),visual=chartEngineLineVisual(prefs,{emphasis,dashed:!!s.dashed});
+    const dash=s.dashed?' stroke-dasharray="7 7"':'',lineWidth=visual.lineWidth,pointRadius=visual.pointRadius;
     const showArea=!s.dashed;
     const areas=showArea?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" style="--series-color:${color}" data-series-index="${si}"></path>`).join(''):'';
     const linePaths=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round"${dash} class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');

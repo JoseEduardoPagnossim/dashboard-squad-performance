@@ -1,3 +1,13 @@
+## V2.35.0 — Estrutura e estabilidade
+
+- criado `js/chart-engine.js` como núcleo único das regras visuais e geométricas dos gráficos;
+- preferências de gráficos, escala percentual, altura, espessura, pontos e densidade de rótulos agora passam pelo mesmo motor;
+- primitivas SVG e interações de tooltip/legenda foram removidas do `app.js` e centralizadas no motor;
+- `app.js` reduzido de 3.082 para 2.937 linhas sem remover funcionalidades;
+- adicionados testes de `chart-engine` e testes de arquitetura/ordem de carregamento;
+- validador do projeto passou a exigir o motor central e impedir duplicação das primitivas principais no `app.js`;
+- suíte automatizada ampliada para 40 testes.
+
 ## V2.34.8 — Gráficos padronizados, aparência multi-Squad e férias na comissão-base
 
 - Padroniza os gráficos legados (diário e histórico) para respeitar densidade de rótulos, fonte, altura, espessura de linha e tamanho dos pontos.
