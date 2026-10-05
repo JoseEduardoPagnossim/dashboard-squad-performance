@@ -9,10 +9,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const fail = (error: string, status: number, code: string, extra:Record<string,unknown>={}) => json({ error, code, ...extra }, status)
 const normalizeTech = (value: unknown) => String(value ?? '').normalize('NFKC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/\s+/g, ' ').trim().toUpperCase()
 const linkKey = (value: unknown) => normalizeTech(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '')
-const roleUsersManage = (profile:any) => {
-  if(!profile||!['super_admin','squad_admin'].includes(profile.role))return false
-  return profile.permissions?.['users.manage']!==false
-}
+const canonicalRole = (role:unknown) => String(role||'') === 'squad_admin' ? 'super_admin' : String(role||'')
+const roleUsersManage = (profile:any) => canonicalRole(profile?.role) === 'super_admin'
 const writeAudit = async (admin:any, requester:any, event:{action:string;entityType:string;entityId?:string|null;squadId?:string|null;description?:string;beforeData?:unknown;afterData?:unknown;metadata?:unknown}) => {
   try {
     const { error } = await admin.from('audit_logs').insert({organization_id:requester.organization_id,squad_id:event.squadId||null,actor_user_id:requester.user_id,actor_name:requester.full_name||'Administrador',actor_email:requester.email||null,actor_role:requester.role,action:event.action,entity_type:event.entityType,entity_id:event.entityId||null,description:event.description||null,before_data:event.beforeData||{},after_data:event.afterData||{},metadata:event.metadata||{}})
@@ -39,8 +37,7 @@ Deno.serve(async (req) => {
     if (!fullName) return fail('Informe o nome completo.', 400, 'invalid_name')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Informe um e-mail válido.', 400, 'invalid_email')
     if (password.length < 8) return fail('A senha temporária deve ter pelo menos 8 caracteres.', 400, 'weak_password')
-    if (!['super_admin','squad_admin','technician'].includes(role)) return fail('Perfil inválido.', 400, 'invalid_role')
-    if (requester.role === 'squad_admin' && role !== 'technician') return fail('Admin do Squad pode criar somente técnicos.', 403, 'forbidden_role')
+    if (!['super_admin','technician'].includes(role)) return fail('Perfil inválido. Use Administrador ou Técnico.', 400, 'invalid_role')
     if (role === 'technician' && !technicianName) return fail('Informe o nome do técnico como aparece no CSV.', 400, 'missing_technician_name')
 
     // Antes do Auth, procura um perfil já existente e devolve o Squad real para facilitar correção pela interface.
@@ -51,12 +48,11 @@ Deno.serve(async (req) => {
     }
 
     let targetSquad: { id: string; code: string } | null = null
-    if (role !== 'super_admin') {
+    if (role === 'technician') {
       if (!squadCode) return fail('Selecione um Squad.', 400, 'missing_squad')
       const { data: squad } = await admin.from('squads').select('id,code').eq('organization_id', requester.organization_id).eq('code', squadCode).eq('active', true).single()
       if (!squad) return fail('Squad inválido ou fora da organização.', 400, 'invalid_squad')
       targetSquad = squad
-      if (requester.role === 'squad_admin' && requester.squad_id !== squad.id) return fail('Você só pode cadastrar técnicos no seu próprio Squad.', 403, 'wrong_squad')
     }
 
     const { data: created, error: createError } = await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{full_name:fullName}})
@@ -66,7 +62,7 @@ Deno.serve(async (req) => {
       return fail(code==='email_exists'?'Este e-mail já existe no Authentication, mas não há perfil visível na organização. Verifique Authentication > Users antes de recriar o acesso.':msg, 400, code)
     }
 
-    const profile = {user_id:created.user.id,organization_id:requester.organization_id,squad_id:role==='super_admin'?null:targetSquad!.id,full_name:fullName,email,role,technician_name:technicianName,active:true,updated_at:new Date().toISOString()}
+    const profile = {user_id:created.user.id,organization_id:requester.organization_id,squad_id:role==='super_admin'?null:targetSquad!.id,full_name:fullName,email,role,technician_name:technicianName,permissions:{},active:true,updated_at:new Date().toISOString()}
     const { error: profileError } = await admin.from('profiles').insert(profile)
     if (profileError) {
       const { error: rollbackError } = await admin.auth.admin.deleteUser(created.user.id)

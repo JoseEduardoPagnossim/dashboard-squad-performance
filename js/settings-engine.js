@@ -4,20 +4,20 @@
   if(root)root.SoftenSettingsEngine=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   const PERMISSIONS=[
-    {key:'dashboard.customize',section:'Experiência',label:'Personalizar o próprio painel',roles:['super_admin','squad_admin','technician']},
-    {key:'presentation.view',section:'Experiência',label:'Visualizar Apresentação / TV',roles:['super_admin','squad_admin','technician']},
-    {key:'presentation.manage',section:'Gestão',label:'Configurar Apresentação / TV',roles:['super_admin','squad_admin']},
+    {key:'dashboard.customize',section:'Experiência',label:'Personalizar o próprio painel',roles:['super_admin','technician']},
+    {key:'presentation.view',section:'Experiência',label:'Visualizar Apresentação / TV',roles:['super_admin','technician']},
+    {key:'presentation.manage',section:'Gestão',label:'Configurar Apresentação / TV',roles:['super_admin']},
     {key:'indicators.view',section:'Gestão',label:'Visualizar Indicadores executivos',roles:['super_admin']},
-    {key:'data.import',section:'Operação',label:'Importar dados e qualidade',roles:['super_admin','squad_admin']},
-    {key:'goals.manage',section:'Operação',label:'Alterar metas e referências',roles:['super_admin','squad_admin']},
-    {key:'month.manage',section:'Operação',label:'Fechar, reabrir e excluir competências',roles:['super_admin','squad_admin']},
-    {key:'finance.view',section:'Financeiro',label:'Visualizar bonificação administrativa',roles:['super_admin','squad_admin']},
-    {key:'finance.manage',section:'Financeiro',label:'Alterar regras e valores de bonificação',roles:['super_admin','squad_admin']},
+    {key:'data.import',section:'Operação',label:'Importar dados e qualidade',roles:['super_admin']},
+    {key:'goals.manage',section:'Operação',label:'Alterar metas e referências',roles:['super_admin']},
+    {key:'month.manage',section:'Operação',label:'Fechar, reabrir e excluir competências',roles:['super_admin']},
+    {key:'finance.view',section:'Financeiro',label:'Visualizar bonificação administrativa',roles:['super_admin']},
+    {key:'finance.manage',section:'Financeiro',label:'Alterar regras e valores de bonificação',roles:['super_admin']},
     {key:'costs.view',section:'Financeiro',label:'Visualizar e alterar Custos do Suporte',roles:['super_admin']},
-    {key:'feedback.manage',section:'Pessoas',label:'Gerar e finalizar feedbacks',roles:['super_admin','squad_admin']},
-    {key:'users.manage',section:'Pessoas',label:'Gerenciar usuários do escopo',roles:['super_admin','squad_admin']},
-    {key:'audit.view',section:'Governança',label:'Visualizar auditoria',roles:['super_admin','squad_admin']},
-    {key:'appearance.manage',section:'Governança',label:'Alterar aparência e gráficos',roles:['super_admin','squad_admin']},
+    {key:'feedback.manage',section:'Pessoas',label:'Gerar e finalizar feedbacks',roles:['super_admin']},
+    {key:'users.manage',section:'Pessoas',label:'Gerenciar usuários do escopo',roles:['super_admin']},
+    {key:'audit.view',section:'Governança',label:'Visualizar auditoria',roles:['super_admin']},
+    {key:'appearance.manage',section:'Governança',label:'Alterar aparência e gráficos',roles:['super_admin']},
     {key:'permissions.manage',section:'Governança',label:'Definir permissões específicas',roles:['super_admin']}
   ];
 
@@ -56,10 +56,15 @@
     ]}
   };
 
+  function normalizeRole(role){
+    const value=String(role||'').trim();
+    if(value==='super_admin'||value==='squad_admin')return 'super_admin';
+    return 'technician';
+  }
   function permissionDefinition(key){return PERMISSIONS.find(p=>p.key===key)||null}
   function defaultPermissions(role){
-    const out={};
-    for(const p of PERMISSIONS)out[p.key]=p.roles.includes(role);
+    const normalized=normalizeRole(role),out={};
+    for(const p of PERMISSIONS)out[p.key]=p.roles.includes(normalized);
     return out;
   }
   function normalizePermissionOverrides(overrides){
@@ -69,16 +74,17 @@
     return out;
   }
   function effectivePermissions(role,overrides){
-    const base=defaultPermissions(role),raw=normalizePermissionOverrides(overrides),out={};
+    const normalized=normalizeRole(role),base=defaultPermissions(normalized),raw=normalizePermissionOverrides(overrides),out={};
     for(const p of PERMISSIONS){
-      // Overrides only restrict the baseline role. They never elevate beyond the role boundary.
-      out[p.key]=base[p.key]&&raw[p.key]!==false;
+      // Administradores sempre possuem acesso administrativo completo.
+      // Overrides continuam existindo somente para restringir recursos do Técnico.
+      out[p.key]=normalized==='super_admin'?base[p.key]:(base[p.key]&&raw[p.key]!==false);
     }
     return out;
   }
   function can(role,overrides,key){return effectivePermissions(role,overrides)[key]===true}
   function permissionGroups(role){
-    const base=defaultPermissions(role),groups={};
+    const base=defaultPermissions(normalizeRole(role)),groups={};
     for(const p of PERMISSIONS){
       if(!base[p.key])continue;
       (groups[p.section]||(groups[p.section]=[])).push({...p});
@@ -119,5 +125,5 @@
     const next=normalizeLayout(view,layout),set=new Set(next.hidden);
     if(visible)set.delete(key);else set.add(key);next.hidden=[...set];return next;
   }
-  return{PERMISSIONS,LAYOUTS,NAVIGATION_DEFAULTS,permissionDefinition,defaultPermissions,normalizePermissionOverrides,effectivePermissions,can,permissionGroups,normalizeLayout,normalizeNavigation,normalizePreferences,defaultPreferences,layoutDefinition,moveBlock,toggleBlock};
+  return{PERMISSIONS,LAYOUTS,NAVIGATION_DEFAULTS,normalizeRole,permissionDefinition,defaultPermissions,normalizePermissionOverrides,effectivePermissions,can,permissionGroups,normalizeLayout,normalizeNavigation,normalizePreferences,defaultPreferences,layoutDefinition,moveBlock,toggleBlock};
 });

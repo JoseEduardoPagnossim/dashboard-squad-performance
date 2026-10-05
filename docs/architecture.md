@@ -124,3 +124,12 @@ O novo login modifica somente apresentação e hierarquia visual. O caminho de a
 ## V2.43.1 — Observabilidade
 
 `js/performance-engine.js` passa a manter métricas locais de cache, eventos e long tasks. O `app.js` envia somente eventos técnicos sanitizados em lote pela RPC `record_performance_events`, fora do caminho crítico do login. A leitura histórica fica em `Configurações → Performance` e usa `get_performance_summary`, disponível apenas ao Admin Geral.
+
+
+## V2.43.2 — Modelo de acesso simplificado
+
+A aplicação passa a considerar apenas dois papéis ativos: `super_admin` (Administrador) e `technician` (Técnico). `settings-engine.js` normaliza `squad_admin` legado para `super_admin` somente para compatibilidade de leitura, mas a UI e as Edge Functions não criam mais esse papel.
+
+Administradores não possuem Squad fixo e sempre recebem o conjunto completo de permissões administrativas. `permissions` continua existindo para restrições do Técnico e compatibilidade com preferências já persistidas. A Home possui apenas dois caminhos por perfil: técnico ou administrador global.
+
+O nome SQL `can_admin_squad(uuid)` foi preservado para evitar reescrever policies históricas; semanticamente, na V2.43.2 ele significa “pode administrar este Squad” e retorna verdadeiro somente para `super_admin` da mesma organização.

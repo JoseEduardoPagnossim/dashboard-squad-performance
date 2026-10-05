@@ -430,3 +430,10 @@ O heartbeat não concede permissão para alterar playlist, Squad ou regras de ap
 ## V2.43.1 — observabilidade de performance
 
 Execute `supabase/migrations/MIGRACAO_V2.43.1.sql` após a V2.43.0 para habilitar histórico centralizado de tempos de login, lazy loading, cache e erros técnicos. A tabela `app_performance_events` não é exposta diretamente ao frontend; escrita e leitura agregada passam pelas RPCs dedicadas.
+
+
+## V2.43.2 — simplificação de perfis e permissões
+
+Execute `supabase/migrations/MIGRACAO_V2.43.2.sql` após a V2.43.1.
+
+A migration converte perfis legados `squad_admin` para `super_admin`, remove vínculo fixo de Squad e overrides individuais desses administradores e atualiza `can_admin_squad(uuid)` para conceder administração somente ao Administrador global da organização. O valor legado pode continuar aceito pelo schema por compatibilidade histórica, mas não é mais exposto ou criado pela aplicação.

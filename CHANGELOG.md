@@ -1,3 +1,14 @@
+## V2.43.2 — Simplificação de perfis e permissões
+- Remove Admin de Squad dos fluxos ativos da interface, mantendo apenas Administrador e Técnico.
+- Administradores passam a ter acesso integral a todos os Squads e módulos, sem restrições individuais por `permissions`.
+- Restrições específicas continuam disponíveis somente para Técnicos e nunca elevam privilégios.
+- Cadastro, edição, filtros, Home, ajuda e matriz de permissões foram atualizados para o modelo de dois perfis.
+- Edge Functions `create-user` e `manage-user` deixam de criar `squad_admin` e passam a gerenciar Administradores globalmente.
+- Inclui `MIGRACAO_V2.43.2.sql`, que converte registros legados `squad_admin` para `super_admin` e reforça `can_admin_squad()` para Administradores globais.
+- Mantém o valor legado no schema histórico apenas para compatibilidade com migrations antigas.
+- Atualiza documentação, demo e testes estruturais para o modelo atual.
+- Suíte automatizada da versão: **122/122 testes aprovados**.
+
 ## V2.43.1 — Métricas de performance e ajustes finos
 - Mede o login completo, incluindo autenticação, até a interface utilizável.
 - Registra tempos de carregamento por módulo e por competência.

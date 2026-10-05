@@ -1,4 +1,4 @@
--- SOFTEN PERFORMANCE HUB V2.43.1
+-- SOFTEN PERFORMANCE HUB V2.43.2
 -- Instalador cumulativo para um projeto Supabase NOVO.
 -- Para uma base existente, utilize somente as migrações pendentes em supabase/migrations/.
 -- Gerado a partir do schema base e das migrações oficiais do projeto.
@@ -197,10 +197,7 @@ as $$
     where p.user_id = (select auth.uid())
       and p.active = true
       and p.organization_id = s.organization_id
-      and (
-        p.role = 'super_admin'
-        or (p.role = 'squad_admin' and p.squad_id = target_squad)
-      )
+      and p.role = 'super_admin'
   );
 $$;
 
@@ -229,13 +226,13 @@ create policy org_select on public.organizations
 for select to authenticated
 using (id = (select (public.current_profile()).organization_id));
 
--- Squads: tecnico/admin do squad ve apenas o seu; super_admin ve todos da organizacao.
+-- Squads: tecnico ve o proprio Squad; Administrador ve todos da organizacao.
 drop policy if exists squads_select on public.squads;
 create policy squads_select on public.squads
 for select to authenticated
 using (public.can_read_squad(id));
 
--- Profiles: usuario ve o proprio perfil; admins podem ver perfis dentro do escopo que administram.
+-- Profiles: usuario ve o proprio perfil; Administradores veem toda a organizacao.
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
 for select to authenticated
@@ -3586,4 +3583,63 @@ grant execute on function public.get_performance_summary(integer) to authenticat
 comment on table public.app_performance_events is 'V2.43.1: telemetria leve do Performance Hub. Sem conteudo operacional, senhas ou dados de clientes.';
 comment on function public.record_performance_events(jsonb) is 'V2.43.1: grava lote pequeno de metricas de performance do usuario autenticado.';
 comment on function public.get_performance_summary(integer) is 'V2.43.1: resumo agregado de performance da organizacao para Admin Geral.';
+
+
+
+-- ===== V2.43.2 • Simplificacao de perfis e permissoes =====
+-- SOFTEN PERFORMANCE HUB V2.43.2
+-- Simplificacao de perfis: Administrador (super_admin) + Tecnico.
+-- O valor squad_admin permanece aceito pelo schema apenas como legado historico,
+-- mas deixa de possuir privilegios administrativos e nao e criado pela aplicacao.
+
+begin;
+
+-- Garante a coluna de permissoes usada desde a V2.38 em bases atualizadas fora de ordem.
+alter table public.profiles
+  add column if not exists permissions jsonb not null default '{}'::jsonb;
+
+-- Converte qualquer Admin de Squad legado para Administrador global.
+-- O administrador nao possui vinculo fixo de Squad nem restricoes individuais.
+update public.profiles
+   set role = 'super_admin',
+       squad_id = null,
+       technician_name = null,
+       permissions = '{}'::jsonb,
+       updated_at = now()
+ where role = 'squad_admin';
+
+-- A partir desta versao, Administradores sempre possuem acesso integral.
+update public.profiles
+   set permissions = '{}'::jsonb,
+       updated_at = now()
+ where role = 'super_admin'
+   and coalesce(permissions, '{}'::jsonb) <> '{}'::jsonb;
+
+-- Mantemos o nome da funcao por compatibilidade com as policies existentes,
+-- mas somente super_admin pode administrar qualquer Squad.
+create or replace function public.can_admin_squad(target_squad uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+      from public.profiles p
+      join public.squads s on s.id = target_squad
+     where p.user_id = (select auth.uid())
+       and p.active = true
+       and p.organization_id = s.organization_id
+       and p.role = 'super_admin'
+  );
+$$;
+
+revoke all on function public.can_admin_squad(uuid) from public;
+grant execute on function public.can_admin_squad(uuid) to authenticated;
+
+comment on function public.can_admin_squad(uuid) is
+'V2.43.2: nome mantido por compatibilidade; somente Administradores (super_admin) possuem privilegios administrativos sobre Squads.';
+
+commit;
 

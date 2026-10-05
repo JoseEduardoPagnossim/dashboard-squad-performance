@@ -39,7 +39,7 @@
     const labels={
       'user.create':'Usuário criado','user.update':'Usuário alterado','user.activate':'Usuário reativado','user.deactivate':'Usuário inativado','user.delete':'Usuário excluído',
       'month.import_service':'Importação operacional','month.import_quality':'Importação de qualidade','month.close':'Competência fechada','month.reopen':'Competência reaberta','month.delete':'Competência excluída',
-      'finance.config_update':'Regras financeiras alteradas','finance.technicians_update':'Valores financeiros alterados','finance.rules_copy':'Regras financeiras copiadas','finance.admin_commission':'Comissão do Admin Geral alterada','finance.memory_snapshot':'Memória financeira registrada',
+      'finance.config_update':'Regras financeiras alteradas','finance.technicians_update':'Valores financeiros alterados','finance.rules_copy':'Regras financeiras copiadas','finance.admin_commission':'Comissão do Administrador alterada','finance.memory_snapshot':'Memória financeira registrada',
       'goals.team_update':'Metas do Squad alteradas','goals.monthly_metrics_update':'Metas e métricas individuais alteradas',
       'costs.support_update':'Custos do Suporte alterados',
       'quality.financial_import':'CSV de impacto financeiro importado','quality.financial_params_update':'Parâmetros de impacto financeiro alterados',

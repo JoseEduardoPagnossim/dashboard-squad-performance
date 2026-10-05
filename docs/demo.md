@@ -12,11 +12,13 @@ mode: 'demo'
 
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
-| Admin Geral | `admin.demo@example.local` | `DemoAdmin123!` |
-| Admin de Squad | `squad.demo@example.local` | `DemoSquad123!` |
+| Administrador Demo 01 | `admin.demo@example.local` | `DemoAdmin123!` |
+| Administrador Demo 02 | `gestor.demo@example.local` | `DemoAdmin123!` |
 | Técnico Demo 01 | `tecnico01.demo@example.local` | `DemoTech123!` |
 
 Os Técnicos Demo 02 a 08 usam o mesmo padrão de e-mail (`tecnico02...` até `tecnico08...`) e a mesma senha demonstrativa.
+
+A partir da V2.43.2 não existe conta demo de Admin de Squad. Os dois administradores possuem acesso global, igual ao modelo real da aplicação.
 
 Essas contas não correspondem a usuários reais e não devem ser utilizadas em produção.
 

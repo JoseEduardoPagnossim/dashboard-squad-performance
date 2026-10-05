@@ -36,11 +36,12 @@ test('Home existe, aparece primeiro na navegacao e e a rota inicial apos login',
 });
 
 test('Home possui renderizacao especifica por perfil', () => {
-  for (const marker of ['renderHome()', 'renderTechnicianHome(', 'renderSquadAdminHome(', 'renderSuperAdminHome(']) {
+  for (const marker of ['renderHome()', 'renderTechnicianHome(', 'renderSuperAdminHome(']) {
     assert.ok(app.includes(marker), `app.js deve conter ${marker}`);
   }
   assert.match(app, /isTechnician\(\).*renderTechnicianHome/);
-  assert.match(app, /isSuperAdmin\(\).*renderSuperAdminHome/);
+  assert.match(app, /if\(isTechnician\(\)\)renderTechnicianHome\(id,months\[0\]\);else renderSuperAdminHome\(id,months\);/);
+  assert.equal(app.includes('renderSquadAdminHome'), false, 'Home nao deve manter perfil Admin de Squad');
 });
 
 test('Home possui KPIs, alertas, atalhos e visao de Squads', () => {

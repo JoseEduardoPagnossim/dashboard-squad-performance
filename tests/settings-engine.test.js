@@ -2,23 +2,26 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const engine = require('../js/settings-engine.js');
 
-test('perfis base respeitam limites de acesso', () => {
-  const superPerms = engine.defaultPermissions('super_admin');
-  const squadPerms = engine.defaultPermissions('squad_admin');
+test('V2.43.2 trabalha com Administrador e Tecnico como perfis ativos', () => {
+  const adminPerms = engine.defaultPermissions('super_admin');
   const techPerms = engine.defaultPermissions('technician');
-  assert.equal(superPerms['permissions.manage'], true);
-  assert.equal(squadPerms['permissions.manage'], false);
-  assert.equal(squadPerms['finance.manage'], true);
+  assert.equal(adminPerms['permissions.manage'], true);
+  assert.equal(adminPerms['finance.manage'], true);
+  assert.equal(adminPerms['indicators.view'], true);
   assert.equal(techPerms['finance.manage'], false);
   assert.equal(techPerms['dashboard.customize'], true);
+  assert.equal(engine.normalizeRole('squad_admin'), 'super_admin', 'papel legado deve ser normalizado como Administrador');
 });
 
-test('override granular apenas restringe e nunca eleva o perfil', () => {
-  const squad = engine.effectivePermissions('squad_admin', {'finance.manage': false, 'indicators.view': true});
-  assert.equal(squad['finance.manage'], false);
-  assert.equal(squad['indicators.view'], false, 'squad_admin não pode ganhar indicadores executivos por override');
-  const tech = engine.effectivePermissions('technician', {'users.manage': true});
-  assert.equal(tech['users.manage'], false, 'técnico não pode receber gestão de usuários acima do papel base');
+test('Administrador sempre tem acesso completo e overrides so restringem Tecnicos', () => {
+  const admin = engine.effectivePermissions('super_admin', {'finance.manage': false, 'users.manage': false});
+  assert.equal(admin['finance.manage'], true, 'Administrador nao pode ser restringido por override');
+  assert.equal(admin['users.manage'], true, 'Administrador deve manter acesso completo');
+  const legacy = engine.effectivePermissions('squad_admin', {'indicators.view': false});
+  assert.equal(legacy['indicators.view'], true, 'papel legado deve receber o mesmo acesso do Administrador');
+  const tech = engine.effectivePermissions('technician', {'users.manage': true, 'presentation.view': false});
+  assert.equal(tech['users.manage'], false, 'Tecnico nao pode receber gestao de usuarios acima do papel base');
+  assert.equal(tech['presentation.view'], false, 'Tecnico pode ter um recurso originalmente permitido restringido');
 });
 
 test('layout normaliza ordem, ocultos e densidade', () => {

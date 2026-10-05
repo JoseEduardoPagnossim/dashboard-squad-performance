@@ -83,6 +83,8 @@ for (const required of [
   'docs/PERFORMANCE_V2.43.0.md',
   'docs/PERFORMANCE_OBSERVABILITY_V2.43.1.md',
   'docs/COMO_USAR_V2.43.1.md',
+  'docs/PERFIS_PERMISSOES_V2.43.2.md',
+  'docs/COMO_USAR_V2.43.2.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -91,7 +93,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.40.0.sql',
   'supabase/migrations/MIGRACAO_V2.42.0.sql',
   'supabase/migrations/MIGRACAO_V2.43.0.sql',
-  'supabase/migrations/MIGRACAO_V2.43.1.sql'
+  'supabase/migrations/MIGRACAO_V2.43.1.sql',
+  'supabase/migrations/MIGRACAO_V2.43.2.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -258,6 +261,28 @@ for (const sqlMarker of [
 if (!appText.includes('record_performance_events')) errors.push('js/app.js não envia telemetria V2.43.1 em lote.');
 if (!appText.includes('get_performance_summary')) errors.push('js/app.js não consulta o resumo V2.43.1.');
 if (!index.includes('id="performanceSystemCard"')) errors.push('index.html não contém a central de performance V2.43.1.');
+
+
+const profileMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.43.2.sql'), 'utf8').toLowerCase();
+for (const sqlMarker of [
+  "update public.profiles",
+  "where role = 'squad_admin'",
+  "set role = 'super_admin'",
+  'create or replace function public.can_admin_squad',
+  "p.role = 'super_admin'"
+]) {
+  if (!profileMigrationText.includes(sqlMarker)) errors.push(`Migração V2.43.2 incompleta: ${sqlMarker}`);
+}
+if (index.includes('value="squad_admin"')) errors.push('index.html ainda expõe Admin de Squad como opção ativa.');
+if (/Admin de Squad|Admin Squad/.test(index)) errors.push('index.html ainda contém rótulo ativo de Admin de Squad.');
+if (appText.includes('renderSquadAdminHome')) errors.push('js/app.js ainda contém Home exclusiva de Admin de Squad.');
+const settingsText = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf8');
+if (/roles:\[[^\]]*['"]squad_admin['"]/.test(settingsText)) errors.push('settings-engine.js ainda concede permissões-base ao papel squad_admin.');
+const createUserText = readFileSync(join(root, 'supabase', 'functions', 'create-user', 'index.ts'), 'utf8');
+const manageUserText = readFileSync(join(root, 'supabase', 'functions', 'manage-user', 'index.ts'), 'utf8');
+if (createUserText.includes("['super_admin','squad_admin','technician']") || manageUserText.includes("['super_admin','squad_admin','technician']")) errors.push('Edge Functions ainda aceitam squad_admin como perfil de destino.');
+if (!createUserText.includes("['super_admin','technician'].includes(role)")) errors.push('create-user não restringe os perfis ativos a Administrador/Técnico.');
+if (!manageUserText.includes("['super_admin','technician'].includes(role)")) errors.push('manage-user não restringe os perfis ativos a Administrador/Técnico.');
 
 if (errors.length) {
   console.error('Falha na validação do projeto:\n- ' + errors.join('\n- '));

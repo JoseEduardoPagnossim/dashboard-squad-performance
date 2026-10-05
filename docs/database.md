@@ -1,6 +1,6 @@
 # Banco de dados — Supabase
 
-Este documento representa o fluxo recomendado para a versão `2.42.0`.
+Este documento representa o fluxo recomendado para a versão `2.43.2`.
 
 ## Instalação nova
 
@@ -14,7 +14,7 @@ Em um projeto Supabase novo:
 6. configure URL e chave publishable/anon em `js/config.js`;
 7. valide login, leitura dos Squads e uma importação controlada antes de liberar o ambiente.
 
-`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.42.0, incluindo os `GRANT`s explícitos exigidos pela Data API.
+`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.43.2, incluindo os `GRANT`s explícitos exigidos pela Data API e a simplificação de perfis.
 
 ## Atualização de uma base existente
 
@@ -39,6 +39,9 @@ Para ambientes já atualizados até V2.29.9, verifique também as migrations fun
 supabase/migrations/MIGRACAO_V2.39.0.sql  # memória financeira
 supabase/migrations/MIGRACAO_V2.40.0.sql  # playlists e TVs
 supabase/migrations/MIGRACAO_V2.42.0.sql  # avatar privado
+supabase/migrations/MIGRACAO_V2.43.0.sql  # contexto inicial e performance
+supabase/migrations/MIGRACAO_V2.43.1.sql  # observabilidade
+supabase/migrations/MIGRACAO_V2.43.2.sql  # perfis Administrador/Técnico
 ```
 
 A V2.42 cria o bucket privado `user-avatars`, adiciona `profiles.avatar_path` e políticas para que cada usuário grave apenas a própria imagem otimizada.
@@ -56,7 +59,7 @@ Elas concentram operações administrativas que não devem depender de privilég
 
 ## RLS e GRANT
 
-As tabelas sensíveis utilizam Row Level Security. A aplicação diferencia Admin Geral, Admin de Squad e Técnico. Ao criar novas tabelas, mantenha o padrão:
+As tabelas sensíveis utilizam Row Level Security. A aplicação possui dois perfis ativos: Administrador (`super_admin`) e Técnico (`technician`). O valor legado `squad_admin` pode permanecer no schema histórico, mas a migration V2.43.2 converte registros existentes e ele não é criado pela aplicação. Ao criar novas tabelas, mantenha o padrão:
 
 - habilitar RLS;
 - criar policies por organização/Squad/usuário;
@@ -90,4 +93,17 @@ Sem a migration, a aplicação mantém fallback em `localStorage`, adequado apen
 
 ## V2.43.1 — Performance
 
-A observabilidade centralizada usa `app_performance_events`. O papel `authenticated` não possui acesso direto à tabela. `record_performance_events(jsonb)` recebe lotes pequenos e `get_performance_summary(integer)` entrega apenas agregados para Admin Geral.
+A observabilidade centralizada usa `app_performance_events`. O papel `authenticated` não possui acesso direto à tabela. `record_performance_events(jsonb)` recebe lotes pequenos e `get_performance_summary(integer)` entrega apenas agregados para Administrador.
+
+
+## V2.43.2 — Perfis e permissões
+
+Execute:
+
+```text
+supabase/migrations/MIGRACAO_V2.43.2.sql
+```
+
+A migration converte qualquer perfil legado `squad_admin` para `super_admin`, remove vínculo fixo de Squad do Administrador e limpa overrides individuais de administradores. A função histórica `can_admin_squad(uuid)` é mantida para compatibilidade com policies existentes, mas passa a conceder administração somente a `super_admin` da mesma organização.
+
+Após a migration, republique `create-user` e `manage-user`, pois as versões V2.43.2 deixam de aceitar `squad_admin` como perfil de destino.

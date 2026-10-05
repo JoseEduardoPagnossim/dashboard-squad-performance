@@ -304,3 +304,35 @@ test('V2.43.1 mede carregamento sob demanda e cache', () => {
   assert.match(app, /recordRuntimePerformance\('module',metricName/);
   assert.match(app, /queueCachePerformanceSample/);
 });
+
+
+test('V2.43.2 expõe somente Administrador e Técnico na interface', () => {
+  assert.equal(index.includes('value="squad_admin"'), false, 'Admin de Squad não deve aparecer como opção ativa');
+  assert.equal(/Admin de Squad|Admin Squad/.test(index), false, 'UI atual não deve exibir rótulo Admin de Squad');
+  assert.ok(index.includes('<option value="super_admin">Administrador</option>'));
+  assert.ok(index.includes('<option value="technician">Técnico</option>'));
+  assert.equal(app.includes('renderSquadAdminHome'), false, 'Home exclusiva de Admin de Squad deve ser removida');
+});
+
+test('V2.43.2 mantém Administrador com acesso integral e legado normalizado', () => {
+  assert.match(settingsEngine, /if\(value==='super_admin'\|\|value==='squad_admin'\)return 'super_admin'/);
+  assert.match(settingsEngine, /normalized==='super_admin'\?base\[p\.key\]/);
+  assert.equal(/roles:\[[^\]]*['"]squad_admin['"]/.test(settingsEngine), false, 'squad_admin não deve ter permissões-base próprias');
+});
+
+test('V2.43.2 migration converte Admin de Squad legado e restringe administração a super_admin', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.43.2.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /set role = 'super_admin'/);
+  assert.match(migration, /where role = 'squad_admin'/);
+  assert.match(migration, /create or replace function public\.can_admin_squad/);
+  assert.match(migration, /p\.role = 'super_admin'/);
+});
+
+test('V2.43.2 Edge Functions criam e editam apenas Administrador ou Técnico', () => {
+  const createUser = readFileSync(join(root, 'supabase', 'functions', 'create-user', 'index.ts'), 'utf8');
+  const manageUser = readFileSync(join(root, 'supabase', 'functions', 'manage-user', 'index.ts'), 'utf8');
+  assert.match(createUser, /\['super_admin','technician'\]\.includes\(role\)/);
+  assert.match(manageUser, /\['super_admin','technician'\]\.includes\(role\)/);
+  assert.equal(createUser.includes("['super_admin','squad_admin','technician']"), false);
+  assert.equal(manageUser.includes("['super_admin','squad_admin','technician']"), false);
+});

@@ -10,6 +10,7 @@ const normalizeTech = (value: unknown) => String(value ?? '').normalize('NFKC').
 const linkKey = (value: unknown) => normalizeTech(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'')
 const periodKey = (year:number,month:number)=>year*100+month
 const previousPeriod = (year:number,month:number)=>month===1?{year:year-1,month:12}:{year,month:month-1}
+const canonicalRole = (role:unknown) => String(role||'') === 'squad_admin' ? 'super_admin' : String(role||'')
 const permissionKeys = new Set(['dashboard.customize','presentation.view','presentation.manage','indicators.view','data.import','goals.manage','month.manage','finance.view','finance.manage','costs.view','feedback.manage','users.manage','audit.view','appearance.manage','permissions.manage'])
 const normalizePermissions = (value:unknown) => {
   const raw=(value&&typeof value==='object'&&!Array.isArray(value)?value:{}) as Record<string,unknown>
@@ -19,10 +20,9 @@ const normalizePermissions = (value:unknown) => {
 }
 const roleDefaults:Record<string,Set<string>>={
   super_admin:new Set([...permissionKeys]),
-  squad_admin:new Set(['dashboard.customize','presentation.view','presentation.manage','data.import','goals.manage','month.manage','finance.view','finance.manage','feedback.manage','users.manage','audit.view','appearance.manage']),
   technician:new Set(['dashboard.customize','presentation.view'])
 }
-const hasPermission=(profile:any,key:string)=>roleDefaults[profile?.role]?.has(key)===true&&profile?.permissions?.[key]!==false
+const hasPermission=(profile:any,key:string)=>{const role=canonicalRole(profile?.role);if(role==='super_admin')return roleDefaults.super_admin.has(key);return roleDefaults[role]?.has(key)===true&&profile?.permissions?.[key]!==false}
 const writeAudit = async (admin:any, requester:any, event:{action:string;entityType:string;entityId?:string|null;squadId?:string|null;description?:string;beforeData?:unknown;afterData?:unknown;metadata?:unknown}) => {
   try {
     const { error } = await admin.from('audit_logs').insert({organization_id:requester.organization_id,squad_id:event.squadId||null,actor_user_id:requester.user_id,actor_name:requester.full_name||'Administrador',actor_email:requester.email||null,actor_role:requester.role,action:event.action,entity_type:event.entityType,entity_id:event.entityId||null,description:event.description||null,before_data:event.beforeData||{},after_data:event.afterData||{},metadata:event.metadata||{}})
@@ -42,17 +42,16 @@ Deno.serve(async (req) => {
     const {data:authData,error:authError}=await admin.auth.getUser(token)
     if(authError||!authData.user)return json({error:'Sessão inválida.'},401)
     const {data:requester}=await admin.from('profiles').select('user_id,organization_id,squad_id,role,active,full_name,email,permissions').eq('user_id',authData.user.id).eq('active',true).single()
-    if(!requester||!['super_admin','squad_admin'].includes(requester.role)||!hasPermission(requester,'users.manage'))return json({error:'Sem permissão para gerenciar usuários.'},403)
+    if(!requester||canonicalRole(requester.role)!=='super_admin'||!hasPermission(requester,'users.manage'))return json({error:'Sem permissão para gerenciar usuários.'},403)
 
     const body=await req.json(),action=String(body.action||''),targetId=String(body.user_id||'')
     if(!targetId)return json({error:'Usuário não informado.'},400)
     if(targetId===requester.user_id)return json({error:'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.'},403)
     const {data:target,error:targetError}=await admin.from('profiles').select('user_id,organization_id,squad_id,full_name,email,role,technician_name,active,created_at,permissions').eq('user_id',targetId).single()
     if(targetError||!target||target.organization_id!==requester.organization_id)return json({error:'Usuário não encontrado no seu escopo.'},404)
-    if(requester.role==='squad_admin'&&(target.role!=='technician'||target.squad_id!==requester.squad_id))return json({error:'Admin do Squad pode gerenciar somente técnicos do próprio Squad.'},403)
 
     if(action==='delete'){
-      if(target.role==='super_admin')return json({error:'Administradores gerais não podem ser excluídos por esta tela.'},403)
+      if(canonicalRole(target.role)==='super_admin')return json({error:'Administradores não podem ser excluídos por esta tela.'},403)
       const {error}=await admin.auth.admin.deleteUser(targetId)
       if(error)return json({error:error.message||'Não foi possível excluir o usuário.'},400)
       await writeAudit(admin,requester,{action:'user.delete',entityType:'profile',entityId:targetId,squadId:target.squad_id||null,description:`Usuário ${target.full_name} excluído.`,beforeData:{full_name:target.full_name,email:target.email,role:target.role,squad_id:target.squad_id,technician_name:target.technician_name,active:target.active},afterData:{deleted:true}})
@@ -60,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     if(action==='set_active'){
-      if(target.role==='super_admin')return json({error:'Administradores gerais não podem ser inativados por esta tela.'},403)
+      if(canonicalRole(target.role)==='super_admin')return json({error:'Administradores não podem ser inativados por esta tela.'},403)
       const active=body.active===true
       const {error:authUpdateError}=await admin.auth.admin.updateUserById(targetId,{ban_duration:active?'none':'876000h'})
       if(authUpdateError)return json({error:authUpdateError.message||'Não foi possível alterar o acesso no Authentication.'},400)
@@ -77,26 +76,19 @@ Deno.serve(async (req) => {
 
     const fullName=String(body.full_name||'').replace(/\s+/g,' ').trim()
     if(!fullName)return json({error:'Informe o nome completo.'},400)
-    let role=target.role, squadId=target.squad_id, technicianName=target.technician_name, permissions=normalizePermissions(target.permissions)
+    let role=canonicalRole(target.role), squadId=target.squad_id, technicianName=target.technician_name, permissions=normalizePermissions(target.permissions)
     let targetSquadCode:string|null=null
-    if(requester.role==='super_admin'){
-      role=String(body.role||target.role)
-      if(Object.prototype.hasOwnProperty.call(body,'permissions')){
-        if(!hasPermission(requester,'permissions.manage'))return json({error:'Sem permissão para definir permissões específicas.'},403)
-        permissions=normalizePermissions(body.permissions)
-      }
-      if(!['super_admin','squad_admin','technician'].includes(role))return json({error:'Perfil inválido.'},400)
-      if(role==='super_admin'){squadId=null;technicianName=null}
-      else{
-        const squadCode=String(body.squad_code||'').trim().toUpperCase()
-        if(!squadCode)return json({error:'Selecione um Squad.'},400)
-        const {data:squad}=await admin.from('squads').select('id,code').eq('organization_id',requester.organization_id).eq('code',squadCode).eq('active',true).single()
-        if(!squad)return json({error:'Squad inválido.'},400)
-        squadId=squad.id;targetSquadCode=squad.code
-        technicianName=role==='technician'?normalizeTech(body.technician_name):null
-      }
+    role=String(body.role||canonicalRole(target.role))
+    if(!['super_admin','technician'].includes(role))return json({error:'Perfil inválido. Use Administrador ou Técnico.'},400)
+    if(role==='super_admin'){
+      squadId=null;technicianName=null;permissions={}
     }else{
-      role='technician';squadId=requester.squad_id;technicianName=normalizeTech(body.technician_name)
+      const squadCode=String(body.squad_code||'').trim().toUpperCase()
+      if(!squadCode)return json({error:'Selecione um Squad.'},400)
+      const {data:squad}=await admin.from('squads').select('id,code').eq('organization_id',requester.organization_id).eq('code',squadCode).eq('active',true).single()
+      if(!squad)return json({error:'Squad inválido.'},400)
+      squadId=squad.id;targetSquadCode=squad.code;technicianName=normalizeTech(body.technician_name)
+      if(Object.prototype.hasOwnProperty.call(body,'permissions'))permissions=normalizePermissions(body.permissions)
     }
     if(role==='technician'&&!technicianName)return json({error:'Informe o nome do técnico como aparece no CSV.'},400)
 
@@ -104,8 +96,7 @@ Deno.serve(async (req) => {
     const now=new Date(),defaultYear=now.getUTCFullYear(),defaultMonth=now.getUTCMonth()+1
     const effectiveYear=Number(body.effective_year||defaultYear),effectiveMonth=Number(body.effective_month||defaultMonth)
     if(squadChanged){
-      if(requester.role!=='super_admin')return json({error:'Somente Admin Geral pode mover técnicos entre Squads.'},403)
-      if(!Number.isInteger(effectiveYear)||effectiveYear<2020||effectiveYear>2100||!Number.isInteger(effectiveMonth)||effectiveMonth<1||effectiveMonth>12)return json({error:'Competência de movimentação inválida.'},400)
+            if(!Number.isInteger(effectiveYear)||effectiveYear<2020||effectiveYear>2100||!Number.isInteger(effectiveMonth)||effectiveMonth<1||effectiveMonth>12)return json({error:'Competência de movimentação inválida.'},400)
       if(periodKey(effectiveYear,effectiveMonth)>periodKey(defaultYear,defaultMonth))return json({error:'A movimentação deve valer no mês atual ou em uma competência anterior. Movimentações futuras ainda não são aplicadas automaticamente.'},400)
       const {error:historyPreflight}=await admin.from('profile_squad_history').select('id').limit(1)
       if(historyPreflight)return json({error:'Histórico de movimentação indisponível. Execute a migração V2.19.0 antes de mover técnicos entre Squads.'},409)

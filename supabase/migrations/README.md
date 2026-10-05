@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.43.1.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.43.2.
 
 Depois:
 
@@ -49,6 +49,7 @@ V2.40.0
 V2.42.0
 V2.43.0
 V2.43.1
+V2.43.2
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -85,6 +86,13 @@ Para qualquer tabela nova criada em `public`, inclua o `GRANT` necessário na me
 
 ## V2.43.1 — Observabilidade de performance
 
-`MIGRACAO_V2.43.1.sql` cria `app_performance_events` e as RPCs `record_performance_events(jsonb)` e `get_performance_summary(integer)`. O frontend não recebe acesso direto à tabela; a gravação associa automaticamente organização/usuário pela sessão e a consulta agregada exige Admin Geral.
+`MIGRACAO_V2.43.1.sql` cria `app_performance_events` e as RPCs `record_performance_events(jsonb)` e `get_performance_summary(integer)`. O frontend não recebe acesso direto à tabela; a gravação associa automaticamente organização/usuário pela sessão e a consulta agregada exige Administrador.
 
 A telemetria contém apenas tempos, nome técnico do evento, origem resumida, versão do app e metadados pequenos de cache/erro. Não armazena senha, CSV, conteúdo de atendimento ou dados de clientes.
+
+
+## V2.43.2 — Simplificação de perfis
+
+`MIGRACAO_V2.43.2.sql` converte qualquer `squad_admin` legado para `super_admin`, remove vínculo fixo de Squad e restrições individuais dos Administradores e atualiza `can_admin_squad(uuid)` para conceder administração somente ao Administrador global da organização.
+
+Depois da migration, republique as Edge Functions `create-user` e `manage-user`, pois elas passam a aceitar somente `super_admin` e `technician` como perfis ativos.

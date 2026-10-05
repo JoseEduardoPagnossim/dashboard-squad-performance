@@ -43,5 +43,6 @@ test('Guia documenta regras criticas atuais', () => {
   assert.match(help,/Online<\/b> até 90 s/);
   assert.match(help,/Atenção<\/b> 90 s a 5 min/);
   assert.match(help,/Offline<\/b> acima de 5 min/);
-  assert.match(help,/Overrides só podem <b>restringir<\/b>/);
+  assert.match(help,/Administradores possuem acesso completo/);
+  assert.match(help,/restrições específicas só podem reduzir recursos/);
 });

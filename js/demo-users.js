@@ -4,7 +4,7 @@
  */
 window.SOFTEN_DEMO_USERS = Object.freeze([
   {email:'admin.demo@example.local',password:'DemoAdmin123!',fullName:'Administrador Demo',role:'super_admin',squadCode:null,techName:null},
-  {email:'squad.demo@example.local',password:'DemoSquad123!',fullName:'Administrador Squad Demo',role:'squad_admin',squadCode:'D',techName:null},
+  {email:'gestor.demo@example.local',password:'DemoGestor123!',fullName:'Administrador Demo 02',role:'super_admin',squadCode:null,techName:null},
   {email:'tecnico01.demo@example.local',password:'DemoTech123!',fullName:'Técnico Demo 01',role:'technician',squadCode:'D',techName:'TECNICO DEMO 01'},
   {email:'tecnico02.demo@example.local',password:'DemoTech123!',fullName:'Técnico Demo 02',role:'technician',squadCode:'D',techName:'TECNICO DEMO 02'},
   {email:'tecnico03.demo@example.local',password:'DemoTech123!',fullName:'Técnico Demo 03',role:'technician',squadCode:'D',techName:'TECNICO DEMO 03'},

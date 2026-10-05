@@ -4,11 +4,31 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.43.1`<br>
+**Versão atual:** `2.43.2`<br>
 
 
 
 
+
+
+## V2.43.2 — Simplificação de perfis e permissões
+
+A V2.43.2 alinha o controle de acesso ao uso real da operação. A aplicação passa a trabalhar com apenas dois perfis ativos: **Administrador** (`super_admin`) e **Técnico** (`technician`). O antigo **Admin de Squad** deixa de aparecer na interface e não pode mais ser criado pelas Edge Functions.
+
+Principais mudanças:
+
+- Administradores possuem acesso completo a todos os Squads e módulos;
+- overrides individuais não reduzem permissões de Administradores;
+- restrições específicas permanecem apenas para Técnicos e nunca elevam privilégios;
+- registros legados `squad_admin` são convertidos para `super_admin` pela migration;
+- cadastro, edição de usuários, Home, ajuda e matriz de permissões exibem somente Administrador e Técnico;
+- `create-user` e `manage-user` aceitam somente os dois perfis ativos;
+- `can_admin_squad()` mantém o nome por compatibilidade, mas concede administração somente a `super_admin`.
+- suíte automatizada validada com **122/122 testes aprovados**.
+
+> Execute `supabase/migrations/MIGRACAO_V2.43.2.sql`, republique as Edge Functions `create-user` e `manage-user` e depois publique o frontend.
+
+Detalhes: `docs/PERFIS_PERMISSOES_V2.43.2.md`.
 
 ## V2.43.1 — Métricas de performance e ajustes finos
 
@@ -23,7 +43,7 @@ Principais mudanças:
 - monitora **long tasks** do navegador quando a API está disponível;
 - captura erros JavaScript e promises rejeitadas sem enviar stack, senha ou conteúdo operacional;
 - envia telemetria em lote e somente em segundo plano, depois da interface utilizável;
-- adiciona `Configurações → Performance` para Admin Geral com média, P95, erros e módulos mais lentos;
+- adiciona `Configurações → Performance` para Administrador com média, P95, erros e módulos mais lentos;
 - adiciona exportação JSON do diagnóstico local + histórico agregado;
 - mantém fallback local caso a migration V2.43.1 ainda não esteja instalada.
 
@@ -68,7 +88,7 @@ Detalhes: `docs/NAVEGACAO_PERFIL_V2.42.0.md`.
 
 A V2.41.0 redesenha o primeiro contato com o sistema. O login passa a usar a **logo oficial da Soften**, uma composição em duas colunas no desktop e proporções mais consistentes de campos, botões e cards. Em telas menores, a estrutura se reorganiza para uma única coluna.
 
-Após autenticar, o usuário entra na nova tela **Início**, em vez de cair diretamente em Meu desempenho. A Home é contextual: Técnicos recebem um resumo individual; Admins de Squad recebem KPIs, projeções, alertas e ações do próprio Squad; Admin Geral recebe um panorama consolidado e cartões dos Squads.
+Após autenticar, o usuário entra na nova tela **Início**, em vez de cair diretamente em Meu desempenho. A Home é contextual: Técnicos recebem um resumo individual e Administradores recebem um panorama consolidado de todos os Squads. A partir da V2.43.2, Admin de Squad deixou de ser um perfil ativo.
 
 Também foram adicionados **empty states acionáveis** em pontos críticos. Quando não há competência, vínculo ou dados suficientes, o painel explica o motivo e oferece o próximo passo possível, evitando a sensação de uma tela vazia.
 
@@ -78,7 +98,7 @@ Esta versão não muda regras de bonificação, importação, TV, permissões ou
 
 A área **Como usar** foi reescrita para refletir o painel atual. O guia passou a possuir busca por assunto, atalhos para as principais telas, mapa completo dos módulos, passo a passo de importação, gestão preditiva, bonificação, configurações, usuários, feedbacks e TV/Comunicação.
 
-O conteúdo respeita o perfil conectado: tópicos administrativos e recursos exclusivos do Admin Geral continuam ocultos quando não fazem parte do escopo do usuário. Também foram incluídos glossário prático de acesso, rotina mensal recomendada, regras de fechamento e aviso sobre recursos que dependem das migrations V2.36, V2.38, V2.39 e V2.40.
+O conteúdo respeita o perfil conectado: tópicos administrativos e recursos exclusivos do Administrador continuam ocultos quando não fazem parte do escopo do usuário. Também foram incluídos glossário prático de acesso, rotina mensal recomendada, regras de fechamento e aviso sobre recursos que dependem das migrations V2.36, V2.38, V2.39 e V2.40.
 
 A V2.40.1 não exige nova migration. A suíte passou a **90 testes automatizados**.
 
@@ -114,13 +134,13 @@ A competência usada por metas e regras financeiras pode ser trocada dentro da p
 
 A V2.38.0 cria uma **Central de Configurações** disponível para todos os perfis. Cada usuário pode organizar os blocos principais das telas permitidas, escolher densidade compacta ou confortável e ocultar informações que não utiliza no dia a dia. A preferência é individual e pode ser sincronizada pelo Supabase com a migração da versão.
 
-Também entra o novo `js/settings-engine.js`, responsável pelos layouts e pelas permissões granulares. O Admin Geral pode retirar permissões específicas de um usuário sem criar novos perfis, sempre respeitando o limite do papel base — overrides nunca elevam privilégios de `technician` ou `squad_admin`.
+Também entra o novo `js/settings-engine.js`, responsável pelos layouts e pelas permissões granulares. Na versão atual, Administradores sempre possuem acesso completo. A estrutura de permissões específicas é mantida para restringir somente recursos já permitidos ao Técnico; overrides nunca elevam privilégios.
 
 > Execute `supabase/migrations/MIGRACAO_V2.38.0.sql` para sincronizar layouts entre dispositivos e persistir as permissões específicas.
 
 ## V2.37.0 — Gestão preditiva
 
-A V2.37.0 adiciona uma camada preditiva aos Indicadores do Admin Geral. A competência de referência passa a exibir **Realizado × Meta × Projeção**, confiança da projeção por maturidade dos dias úteis, comparação com o mesmo corte da competência anterior, alertas automáticos e técnicos com maior risco de não fechamento das metas.
+A V2.37.0 adiciona uma camada preditiva aos Indicadores do Administrador. A competência de referência passa a exibir **Realizado × Meta × Projeção**, confiança da projeção por maturidade dos dias úteis, comparação com o mesmo corte da competência anterior, alertas automáticos e técnicos com maior risco de não fechamento das metas.
 
 O novo módulo `js/predictive-engine.js` concentra as regras puras de projeção, comparação, classificação de risco e geração de alertas, com testes próprios. A projeção de volume usa o ritmo médio por dia útil; a taxa de avaliação permanece como tendência da taxa observada, sem inventar crescimento futuro.
 
@@ -255,7 +275,7 @@ Se a validação ou qualquer teste falhar, o workflow fica vermelho e informa qu
 
 ## Auditoria e operações críticas
 
-A V2.29.8 adiciona uma área **Gestão > Auditoria** para administradores. Os registros incluem ator, data/hora, escopo, ação e visão de antes/depois para mudanças administrativas relevantes. Admin Geral visualiza a organização; Admin de Squad visualiza apenas seu próprio Squad por RLS.
+A V2.29.8 adiciona uma área **Gestão > Auditoria** para administradores. Os registros incluem ator, data/hora, escopo, ação e visão de antes/depois para mudanças administrativas relevantes. Na versão atual, Administradores visualizam a organização completa; Técnicos permanecem limitados ao próprio escopo. O antigo Admin de Squad foi descontinuado na V2.43.2.
 
 São auditadas, entre outras, criação/alteração/inativação/exclusão de usuários, importações, fechamento/reabertura/exclusão de competência, metas, configurações financeiras, custos e parâmetros de impacto financeiro. Campos com nomes sensíveis como senha, token, secret e `service_role` são removidos do payload de auditoria do frontend.
 
@@ -333,7 +353,7 @@ URL direta:
 ?view=presentation
 ```
 
-Admin Geral pode escolher um Squad específico ou todos:
+Administrador pode escolher um Squad específico ou todos:
 
 ```text
 ?view=presentation&squad=D
