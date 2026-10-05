@@ -70,3 +70,26 @@ test('V2.41 padroniza proporcoes de controles sem remover responsividade', () =>
   assert.match(css, /@media\(max-width:820px\)/);
   assert.match(css, /login-card-v241/);
 });
+
+
+test('V2.45 transforma a Home em grade modular personalizavel', () => {
+  for (const id of ['homeLayoutToolbar','homeWidgetGrid','homeWidgetKpis','homeWidgetAlerts','homeWidgetActions','homeWidgetSquads','homeWidgetContext']) {
+    assert.ok(index.includes(`id="${id}"`), `Home modular deve conter ${id}`);
+  }
+  assert.match(app, /Organizar Home/);
+  assert.match(app, /beginHomeLayoutEdit/);
+  assert.match(app, /saveHomeLayoutEdit/);
+  assert.match(app, /reorderHomeWidgets/);
+  assert.match(css, /\.home-widget-size-small/);
+  assert.match(css, /\.home-widget-size-medium/);
+  assert.match(css, /\.home-widget-size-wide/);
+  assert.match(css, /\.home-widget-size-full/);
+});
+
+test('V2.45 oferece drag-and-drop e fallback de ordenacao nas Configuracoes', () => {
+  assert.match(app, /data-layout-size/);
+  assert.match(app, /dragstart/);
+  assert.match(app, /reorderLayoutDraft/);
+  assert.match(app, /data-layout-move="up"/);
+  assert.match(app, /data-layout-move="down"/);
+});

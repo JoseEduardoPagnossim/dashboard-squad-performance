@@ -229,3 +229,54 @@ body{line-height:1.45;text-rendering:optimizeLegibility}
   #appShell .modal-actions{display:grid;grid-template-columns:1fr}
   #appShell .modal-actions .btn{width:100%}
 }
+
+/* ========================================================================== 
+   V2.45.0 — Rhythm fix: cards que não possuíam padding próprio
+   O mapeamento cobre cards de configuração, preditivo, auditoria, perfil,
+   ajuda, gamificação e distribuição por dias úteis. Componentes que já
+   possuem padding especializado continuam preservados.
+   ========================================================================== */
+:root{--ds-card-gap:16px}
+#appShell .settings-hero,
+#appShell .settings-card,
+#appShell .predictive-management-head,
+#appShell .predictive-alert-card,
+#appShell .predictive-table-card,
+#appShell .predictive-risk-card,
+#appShell .audit-hero,
+#appShell .profile-avatar-card,
+#appShell .help-navigation-v242,
+#appShell .game-card,
+#appShell .business-days-distribution-card,
+#appShell .home-layout-toolbar{
+  padding:var(--ds-card-padding)!important;
+}
+#appShell .settings-central-grid,
+#appShell .predictive-management-section,
+#appShell .profile-grid,
+#appShell .business-days-distribution-grid{
+  gap:var(--ds-card-gap)!important;
+}
+#appShell .settings-card>.settings-module-badge:first-child{margin-top:0}
+#appShell .performance-system-card .performance-kpi-grid{margin-top:18px}
+#appShell .layout-density-compact .settings-hero,
+#appShell .layout-density-compact .settings-card,
+#appShell .layout-density-compact .predictive-management-head,
+#appShell .layout-density-compact .predictive-alert-card,
+#appShell .layout-density-compact .predictive-table-card,
+#appShell .layout-density-compact .predictive-risk-card,
+#appShell .layout-density-compact .audit-hero,
+#appShell .layout-density-compact .profile-avatar-card,
+#appShell .layout-density-compact .help-navigation-v242,
+#appShell .layout-density-compact .game-card,
+#appShell .layout-density-compact .business-days-distribution-card{
+  padding:var(--ds-card-padding-compact)!important;
+}
+@media(max-width:760px){
+  #appShell .settings-hero,#appShell .settings-card,#appShell .predictive-management-head,
+  #appShell .predictive-alert-card,#appShell .predictive-table-card,#appShell .predictive-risk-card,
+  #appShell .audit-hero,#appShell .profile-avatar-card,#appShell .help-navigation-v242,
+  #appShell .game-card,#appShell .business-days-distribution-card,#appShell .home-layout-toolbar{
+    padding:17px!important;
+  }
+}

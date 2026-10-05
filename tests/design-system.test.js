@@ -58,3 +58,12 @@ test('V2.44 esta documentada e nao exige migration nova', () => {
   assert.match(doc, /não altera Supabase/);
   assert.match(doc, /não altera cálculos/);
 });
+
+
+test('V2.45 corrige ritmo interno dos cards sem padding proprio', () => {
+  for (const selector of ['.settings-card','.predictive-management-head','.predictive-alert-card','.predictive-table-card','.predictive-risk-card','.audit-hero','.profile-avatar-card','.help-navigation-v242','.game-card','.business-days-distribution-card','.home-layout-toolbar']) {
+    assert.ok(css.includes(selector), `Design System deve mapear ${selector}`);
+  }
+  assert.match(css, /padding:var\(--ds-card-padding\)!important/);
+  assert.match(css, /--ds-card-gap:16px/);
+});

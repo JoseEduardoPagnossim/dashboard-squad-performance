@@ -140,3 +140,14 @@ O nome SQL `can_admin_squad(uuid)` foi preservado para evitar reescrever policie
 A aplicação passa a possuir uma camada visual explícita entre os estilos históricos do produto e os estilos específicos da Apresentação/TV. A ordem de carregamento é `styles.css` → `design-system.css` → `presentation.css`. O arquivo `design-system.css` concentra tokens e padrões de componentes, enquanto `design-system.js` aplica somente metadados/classes leves às tabelas e cards existentes.
 
 A camada não acessa Supabase, não executa regras de negócio e não participa do caminho crítico de autenticação. O observador de DOM reage apenas à inserção de novas tabelas e agenda a classificação com `requestAnimationFrame`.
+
+
+## V2.45.0 — Home modular e preferências de widget
+
+A definição `LAYOUTS.home` em `js/settings-engine.js` descreve os widgets disponíveis, sua ordem padrão e os tamanhos permitidos. A versão de `ui_preferences` passa para 3 e permanece compatível com preferências antigas: layouts salvos sem `sizes` recebem automaticamente os tamanhos padrão.
+
+A Home usa uma grade CSS de 12 colunas. `app.js` aplica ordem, visibilidade e tamanho sem modificar os dados renderizados pelos widgets. O modo de edição mantém um rascunho local e somente persiste quando o usuário confirma **Salvar Home**. A gravação reutiliza `save_my_ui_preferences`, portanto não há schema ou migration adicional.
+
+O drag-and-drop é progressivo: a mesma ordenação também pode ser feita pelas setas em `Configurações → Meu painel`. Em telas menores, as classes de tamanho convergem para 6 ou 12 colunas para preservar legibilidade. Widgets indisponíveis ao perfil, como a visão consolidada de Squads para Técnicos, permanecem fora do fluxo de personalização.
+
+A correção de ritmo visual fica em `css/design-system.css` e é intencionalmente seletiva. Ela adiciona padding apenas aos cards herdados identificados sem espaçamento próprio, evitando sobrescrever componentes que já controlavam seu padding internamente.

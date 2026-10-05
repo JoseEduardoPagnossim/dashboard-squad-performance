@@ -46,7 +46,7 @@ test('mover e ocultar blocos preserva um layout válido', () => {
 
 test('navegacao normaliza sidebar, grupos e submodulos sem perder compatibilidade', () => {
   const prefs = engine.normalizePreferences({version:1,layouts:{},navigation:{sidebarCollapsed:true,groups:{management:true},subgroups:{people:true}}});
-  assert.equal(prefs.version, 2);
+  assert.equal(prefs.version, 3);
   assert.equal(prefs.navigation.sidebarCollapsed, true);
   assert.equal(prefs.navigation.groups.management, true);
   assert.equal(prefs.navigation.groups.performance, false);
@@ -58,4 +58,28 @@ test('preferencias padrao deixam navegacao expandida', () => {
   const prefs = engine.defaultPreferences();
   assert.equal(prefs.navigation.sidebarCollapsed, false);
   assert.deepEqual(prefs.navigation.groups, {performance:false,management:false,account:false});
+});
+
+
+test('V2.45 Home possui layout modular com tamanhos normalizados', () => {
+  const layout = engine.normalizeLayout('home', {
+    order:['actions','kpis','alerts'],
+    hidden:['context'],
+    density:'comfortable',
+    sizes:{alerts:'small',actions:'wide',kpis:'small',context:'medium'}
+  });
+  assert.equal(layout.order[0], 'actions');
+  assert.equal(layout.sizes.alerts, 'small');
+  assert.equal(layout.sizes.actions, 'wide');
+  assert.equal(layout.sizes.kpis, 'full', 'KPIs aceitam apenas wide/full');
+  assert.equal(layout.sizes.context, 'full', 'Contexto aceita apenas wide/full');
+  assert.ok(layout.hidden.includes('context'));
+});
+
+test('V2.45 permite alterar tamanho apenas dentro das opções do widget', () => {
+  let layout = engine.normalizeLayout('home', {});
+  layout = engine.setBlockSize('home', layout, 'alerts', 'wide');
+  assert.equal(layout.sizes.alerts, 'wide');
+  layout = engine.setBlockSize('home', layout, 'kpis', 'small');
+  assert.equal(layout.sizes.kpis, 'full', 'tamanho inválido não deve substituir o atual');
 });

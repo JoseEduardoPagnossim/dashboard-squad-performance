@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.44.0" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.44.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.44.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.45.0" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.45.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.45.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -71,7 +71,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.44.0 • Design System</small>
+        <small class="login-version">V2.45.0 • Home modular</small>
       </section>
     </div>
   </section>
@@ -160,7 +160,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.44.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.45.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -243,27 +243,49 @@
         </div>
 
         <div id="homeContent" class="home-content">
-          <div class="home-kpi-grid" id="homeKpis"></div>
-          <div class="home-main-grid">
-            <article class="card home-alert-card">
-              <div class="section-title"><div><span class="eyebrow">LEITURA RÁPIDA</span><h3>O que merece atenção agora</h3></div><span class="home-section-chip" id="homeAlertCount">0 alertas</span></div>
-              <div class="home-alert-list" id="homeAlerts"></div>
-            </article>
-            <article class="card home-actions-card">
-              <div class="section-title"><div><span class="eyebrow">ATALHOS</span><h3>Continue de onde precisa</h3></div></div>
-              <div class="home-quick-actions" id="homeQuickActions"></div>
-            </article>
+          <div id="homeLayoutToolbar" class="home-layout-toolbar card hidden" aria-live="polite">
+            <div><span class="eyebrow">PERSONALIZAR HOME</span><strong>Arraste os widgets, escolha o tamanho e oculte o que não precisa.</strong><small>As alterações são individuais e só são gravadas quando você clicar em Salvar.</small></div>
+            <div class="home-layout-toolbar-actions"><button class="btn secondary compact" id="resetHomeLayoutBtn" type="button">Restaurar padrão</button><button class="btn secondary compact" id="cancelHomeLayoutBtn" type="button">Cancelar</button><button class="btn primary compact" id="saveHomeLayoutBtn" type="button">Salvar Home</button></div>
           </div>
 
-          <article class="card home-squads-card hidden" id="homeSquadsCard">
-            <div class="section-title"><div><span class="eyebrow">VISÃO GERAL</span><h3>Squads na competência</h3></div><span class="muted" id="homeSquadsNote">Resumo A, B, D e E</span></div>
-            <div class="home-squad-grid" id="homeSquadOverview"></div>
-          </article>
+          <div class="home-widget-grid" id="homeWidgetGrid">
+            <section class="home-widget" id="homeWidgetKpis" data-home-widget="kpis">
+              <div class="home-widget-editbar" aria-hidden="true"></div>
+              <div class="home-kpi-grid" id="homeKpis"></div>
+            </section>
 
-          <article class="card home-context-card">
-            <div class="section-title"><div><span class="eyebrow">CONTEXTO DO PAINEL</span><h3>Origem e situação dos dados</h3></div></div>
-            <div class="home-context-grid" id="homeContext"></div>
-          </article>
+            <section class="home-widget" id="homeWidgetAlerts" data-home-widget="alerts">
+              <div class="home-widget-editbar" aria-hidden="true"></div>
+              <article class="card home-alert-card">
+                <div class="section-title"><div><span class="eyebrow">LEITURA RÁPIDA</span><h3>O que merece atenção agora</h3></div><span class="home-section-chip" id="homeAlertCount">0 alertas</span></div>
+                <div class="home-alert-list" id="homeAlerts"></div>
+              </article>
+            </section>
+
+            <section class="home-widget" id="homeWidgetActions" data-home-widget="actions">
+              <div class="home-widget-editbar" aria-hidden="true"></div>
+              <article class="card home-actions-card">
+                <div class="section-title"><div><span class="eyebrow">ATALHOS</span><h3>Continue de onde precisa</h3></div></div>
+                <div class="home-quick-actions" id="homeQuickActions"></div>
+              </article>
+            </section>
+
+            <section class="home-widget" id="homeWidgetSquads" data-home-widget="squads">
+              <div class="home-widget-editbar" aria-hidden="true"></div>
+              <article class="card home-squads-card hidden" id="homeSquadsCard">
+                <div class="section-title"><div><span class="eyebrow">VISÃO GERAL</span><h3>Squads na competência</h3></div><span class="muted" id="homeSquadsNote">Resumo A, B, D e E</span></div>
+                <div class="home-squad-grid" id="homeSquadOverview"></div>
+              </article>
+            </section>
+
+            <section class="home-widget" id="homeWidgetContext" data-home-widget="context">
+              <div class="home-widget-editbar" aria-hidden="true"></div>
+              <article class="card home-context-card">
+                <div class="section-title"><div><span class="eyebrow">CONTEXTO DO PAINEL</span><h3>Origem e situação dos dados</h3></div></div>
+                <div class="home-context-grid" id="homeContext"></div>
+              </article>
+            </section>
+          </div>
         </div>
       </section>
 
@@ -956,7 +978,7 @@
           <article class="card settings-card settings-layout-card settings-module-card" data-config-module="personalization" data-config-search="meu painel layout blocos densidade personalização">
             <div class="settings-module-badge"><span>▦</span><strong>MÓDULO: MEU PAINEL</strong></div>
             <div class="section-title"><div><span class="eyebrow">PERSONALIZAÇÃO INDIVIDUAL</span><h3>Layout personalizável</h3></div><span class="period-chip" id="layoutSaveStatus">Padrão</span></div>
-            <p>Escolha a tela, ordene os blocos e oculte o que não precisa aparecer no seu dia a dia. A configuração é individual.</p>
+            <p>Escolha a tela, arraste os blocos para ordenar, defina tamanhos na Home e oculte o que não precisa aparecer no seu dia a dia. A configuração é individual.</p>
             <div class="settings-form-row">
               <label><span>Tela</span><select id="layoutViewSelect"><option value="individual">Meu desempenho</option><option value="team">Visão do Squad</option><option value="indicators">Indicadores</option></select></label>
               <label><span>Densidade</span><select id="layoutDensitySelect"><option value="comfortable">Confortável</option><option value="compact">Compacta</option></select></label>
@@ -1068,7 +1090,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.44.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.45.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1093,6 +1115,11 @@
         <article class="card help-navigation-v242 help-searchable" data-help-search="menu sidebar retrátil recolher expandir grupos submódulos avatar foto perfil storage">
           <div><span class="eyebrow">NAVEGAÇÃO E PERFIL • V2.42</span><h3>Deixe o painel do seu jeito</h3><p>No desktop, use a seta no topo da lateral para recolher ou expandir o menu. As seções Desempenho, Gestão e Conta também podem ser abertas ou fechadas, assim como Financeiro, Pessoas e Governança. O estado fica salvo nas suas preferências.</p></div>
           <div class="help-navigation-points"><span><b>Menu retrátil</b><small>Recolhido mostra somente ícones com identificação ao passar o mouse.</small></span><span><b>Grupos e submódulos</b><small>Organize a lateral sem esconder funções do seu perfil.</small></span><span><b>Avatar</b><small>Em Meu perfil, envie JPG/PNG/WebP. A foto é reduzida antes do Storage e as iniciais continuam como fallback.</small></span></div>
+        </article>
+
+        <article class="card help-navigation-v242 help-searchable" data-help-search="home modular widget arrastar drag drop tamanho pequeno médio largo total ocultar organizar personalizar">
+          <div><span class="eyebrow">HOME MODULAR • V2.45</span><h3>Organize sua tela inicial</h3><p>Na Home, clique em <b>Organizar Home</b> para reordenar widgets, escolher tamanhos compatíveis e ocultar blocos. A edição trabalha como rascunho e só é gravada ao clicar em <b>Salvar Home</b>.</p></div>
+          <div class="help-navigation-points"><span><b>Arrastar e soltar</b><small>Mova os widgets para definir sua ordem preferida.</small></span><span><b>Tamanhos seguros</b><small>Pequeno, Médio, Largo ou Total aparecem apenas quando o conteúdo suporta aquele tamanho.</small></span><span><b>Preferência individual</b><small>Ordem, visibilidade e tamanho ficam salvos no seu próprio painel.</small></span></div>
         </article>
 
         <div class="how-primary-grid how-primary-grid-four">
@@ -1387,16 +1414,16 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.44.0"></script>
-  <script src="js/finance-advanced.js?v=2.44.0"></script>
-  <script src="js/tv-engine.js?v=2.44.0"></script>
-  <script src="js/presentation.js?v=2.44.0"></script>
-  <script src="js/chart-engine.js?v=2.44.0"></script>
-  <script src="js/import-engine.js?v=2.44.0"></script>
-  <script src="js/predictive-engine.js?v=2.44.0"></script>
-  <script src="js/settings-engine.js?v=2.44.0"></script>
-  <script src="js/performance-engine.js?v=2.44.0"></script>
-  <script src="js/design-system.js?v=2.44.0"></script>
-  <script src="js/app.js?v=2.44.0"></script>
+  <script src="js/finance-rules.js?v=2.45.0"></script>
+  <script src="js/finance-advanced.js?v=2.45.0"></script>
+  <script src="js/tv-engine.js?v=2.45.0"></script>
+  <script src="js/presentation.js?v=2.45.0"></script>
+  <script src="js/chart-engine.js?v=2.45.0"></script>
+  <script src="js/import-engine.js?v=2.45.0"></script>
+  <script src="js/predictive-engine.js?v=2.45.0"></script>
+  <script src="js/settings-engine.js?v=2.45.0"></script>
+  <script src="js/performance-engine.js?v=2.45.0"></script>
+  <script src="js/design-system.js?v=2.45.0"></script>
+  <script src="js/app.js?v=2.45.0"></script>
 </body>
 </html>

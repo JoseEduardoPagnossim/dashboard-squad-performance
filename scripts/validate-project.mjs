@@ -93,6 +93,8 @@ for (const required of [
   'docs/COMO_USAR_V2.43.2.md',
   'docs/COMO_USAR_V2.44.0.md',
   'docs/DESIGN_SYSTEM_V2.44.0.md',
+  'docs/COMO_USAR_V2.45.0.md',
+  'docs/HOME_MODULAR_V2.45.0.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',

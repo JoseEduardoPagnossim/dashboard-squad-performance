@@ -29,6 +29,13 @@
   };
 
   const LAYOUTS={
+    home:{label:'Início',blocks:[
+      {key:'kpis',label:'Indicadores principais',selector:'#homeWidgetKpis',defaultSize:'full',sizes:['wide','full']},
+      {key:'alerts',label:'Alertas e prioridades',selector:'#homeWidgetAlerts',defaultSize:'medium',sizes:['small','medium','wide','full']},
+      {key:'actions',label:'Atalhos rápidos',selector:'#homeWidgetActions',defaultSize:'medium',sizes:['small','medium','wide','full']},
+      {key:'squads',label:'Visão dos Squads',selector:'#homeWidgetSquads',defaultSize:'full',sizes:['wide','full']},
+      {key:'context',label:'Contexto dos dados',selector:'#homeWidgetContext',defaultSize:'full',sizes:['wide','full']}
+    ]},
     individual:{label:'Meu desempenho',blocks:[
       {key:'hero',label:'Resumo e ranking',selector:'#individualContent > .hero'},
       {key:'kpis',label:'Indicadores principais',selector:'#individualContent > .kpi-grid'},
@@ -92,14 +99,20 @@
     return groups;
   }
   function normalizeLayout(view,layout){
-    const def=LAYOUTS[view];if(!def)return{order:[],hidden:[],density:'comfortable'};
+    const def=LAYOUTS[view];if(!def)return{order:[],hidden:[],density:'comfortable',sizes:{}};
     const keys=def.blocks.map(b=>b.key),raw=layout&&typeof layout==='object'?layout:{};
     const order=[];
     for(const key of Array.isArray(raw.order)?raw.order:[])if(keys.includes(key)&&!order.includes(key))order.push(key);
     for(const key of keys)if(!order.includes(key))order.push(key);
     const hidden=(Array.isArray(raw.hidden)?raw.hidden:[]).filter(k=>keys.includes(k));
     const density=['compact','comfortable'].includes(raw.density)?raw.density:'comfortable';
-    return{order,hidden,density};
+    const sizes={};
+    for(const block of def.blocks){
+      const allowed=Array.isArray(block.sizes)&&block.sizes.length?block.sizes:['full'];
+      const fallback=allowed.includes(block.defaultSize)?block.defaultSize:allowed[0];
+      sizes[block.key]=allowed.includes(raw.sizes?.[block.key])?raw.sizes[block.key]:fallback;
+    }
+    return{order,hidden,density,sizes};
   }
   function normalizeNavigation(navigation){
     const raw=navigation&&typeof navigation==='object'?navigation:{};
@@ -112,7 +125,7 @@
     const raw=preferences&&typeof preferences==='object'?preferences:{};
     const layouts={};
     for(const view of Object.keys(LAYOUTS))layouts[view]=normalizeLayout(view,raw.layouts?.[view]);
-    return{version:2,layouts,navigation:normalizeNavigation(raw.navigation)};
+    return{version:3,layouts,navigation:normalizeNavigation(raw.navigation)};
   }
   function defaultPreferences(){return normalizePreferences({})}
   function layoutDefinition(view){return LAYOUTS[view]||null}
@@ -125,5 +138,12 @@
     const next=normalizeLayout(view,layout),set=new Set(next.hidden);
     if(visible)set.delete(key);else set.add(key);next.hidden=[...set];return next;
   }
-  return{PERMISSIONS,LAYOUTS,NAVIGATION_DEFAULTS,normalizeRole,permissionDefinition,defaultPermissions,normalizePermissionOverrides,effectivePermissions,can,permissionGroups,normalizeLayout,normalizeNavigation,normalizePreferences,defaultPreferences,layoutDefinition,moveBlock,toggleBlock};
+  function setBlockSize(view,layout,key,size){
+    const next=normalizeLayout(view,layout),def=LAYOUTS[view],block=def?.blocks?.find(b=>b.key===key);
+    if(!block)return next;
+    const allowed=Array.isArray(block.sizes)&&block.sizes.length?block.sizes:['full'];
+    if(allowed.includes(size))next.sizes[key]=size;
+    return next;
+  }
+  return{PERMISSIONS,LAYOUTS,NAVIGATION_DEFAULTS,normalizeRole,permissionDefinition,defaultPermissions,normalizePermissionOverrides,effectivePermissions,can,permissionGroups,normalizeLayout,normalizeNavigation,normalizePreferences,defaultPreferences,layoutDefinition,moveBlock,toggleBlock,setBlockSize};
 });

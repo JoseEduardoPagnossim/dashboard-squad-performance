@@ -1,3 +1,15 @@
+## V2.45.0 — Home modular e ritmo visual
+- Corrige padding interno ausente em cards herdados que não possuíam espaçamento próprio.
+- Padroniza gaps dos grids afetados sem alterar cards que já tinham padding específico.
+- Adiciona Home modular em grade de 12 colunas.
+- Permite reorganizar widgets por drag-and-drop.
+- Permite ocultar/exibir widgets e escolher tamanhos compatíveis por bloco.
+- Mantém controles de subir/descer em Configurações como alternativa ao arraste.
+- Salva ordem, visibilidade e tamanhos dentro de `ui_preferences` por usuário.
+- Mantém comportamento responsivo e oculta widgets não aplicáveis ao perfil Técnico.
+- Não exige migration de banco.
+- Suíte automatizada da versão: **134/134 testes aprovados**.
+
 ## V2.44.0 — Design System e padronização visual
 - Cria `css/design-system.css` como camada visual central e temática.
 - Cria `js/design-system.js` para classificação semântica de cards e tabelas.

@@ -4,13 +4,33 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.44.0`<br>
+**Versão atual:** `2.45.0`<br>
 
 
 
 
 
 
+
+
+## V2.45.0 — Home modular e correção de espaçamento
+
+A V2.45.0 corrige pontos do Design System em que alguns cards herdados não possuíam padding interno próprio e transforma a Home em um painel modular por usuário.
+
+Principais mudanças:
+
+- corrige o respiro interno de cards em Configurações, Performance, Gestão Preditiva, Auditoria, Perfil, Como usar e blocos históricos;
+- mantém os gaps entre cards consistentes nos grids afetados;
+- Home passa a usar uma grade de 12 colunas com widgets reordenáveis;
+- botão **Organizar Home** ativa edição visual sem alterar os dados do painel;
+- widgets podem ser arrastados e soltos, ocultados/exibidos e receber tamanhos compatíveis (Pequeno, Médio, Largo ou Total);
+- a edição também fica disponível em **Configurações → Meu painel**, com setas como fallback de acessibilidade;
+- preferências continuam salvas em `profiles.ui_preferences`, portanto não há migration nova;
+- layout é responsivo: tamanhos convergem automaticamente para colunas seguras em tablets e celulares;
+- Técnicos não recebem o widget administrativo de visão dos Squads.
+- suíte automatizada validada com **134/134 testes aprovados**.
+
+Detalhes: `docs/HOME_MODULAR_V2.45.0.md`.
 
 ## V2.44.0 — Design System e padronização visual
 
