@@ -15,6 +15,26 @@
     return (h>>>0).toString(16).padStart(8,'0');
   };
   const uniqueNames=rows=>new Set((rows||[]).map(r=>String(r.name||r.technicianName||'').trim()).filter(Boolean)).size;
+  const normalizeCsvHeader=v=>String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  function parseCsvRows(text){
+    const source=String(text||'').replace(/^\uFEFF/,''),physicalLines=source.split(/\r?\n/),firstNonEmpty=(physicalLines.find(line=>String(line).trim())||''),sepDirective=firstNonEmpty.trim().match(/^sep\s*=\s*([;,])\s*$/i),comma=(firstNonEmpty.match(/,/g)||[]).length,semi=(firstNonEmpty.match(/;/g)||[]).length,delimiter=sepDirective?sepDirective[1]:(semi>comma?';':','),rows=[];let row=[],field='',quoted=false;
+    for(let i=0;i<source.length;i++){const c=source[i];if(quoted){if(c==='"'&&source[i+1]==='"'){field+='"';i++}else if(c==='"')quoted=false;else field+=c}else if(c==='"')quoted=true;else if(c===delimiter){row.push(field);field=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&source[i+1]==='\n')i++;row.push(field);field='';if(row.some(v=>String(v).trim()!==''))rows.push(row);row=[]}else field+=c}row.push(field);if(row.some(v=>String(v).trim()!==''))rows.push(row);if(sepDirective&&rows.length)rows.shift();return rows;
+  }
+  const FINANCIAL_IMPACT_HEADER_ALIASES={
+    date:{label:'Data da avaliação',accepted:['DataAvaliacao','Data Avaliação','Data da Avaliação','Time','Data'],aliases:['dataavaliacao','datadaavaliacao','time','data']},
+    service:{label:'Nota Serviço',accepted:['NotaServico','Nota Serviço','Nota Atendimento'],aliases:['notaservico','notaatendimento']},
+    product:{label:'Nota Produto',accepted:['NotaProduto','Nota Produto'],aliases:['notaproduto']},
+    company:{label:'Nota Empresa',accepted:['NotaEmpresa','Nota Empresa'],aliases:['notaempresa']}
+  };
+  function resolveFinancialImpactColumns(headers=[]){
+    const original=(headers||[]).map(v=>String(v||'').trim()),normalized=original.map(normalizeCsvHeader),indexes={},missing=[];
+    for(const [key,definition] of Object.entries(FINANCIAL_IMPACT_HEADER_ALIASES)){
+      const index=normalized.findIndex(header=>definition.aliases.includes(header));
+      indexes[key]=index>=0?index:null;
+      if(index<0)missing.push({key,label:definition.label,accepted:[...definition.accepted]});
+    }
+    return{indexes,missing,headers:original,normalizedHeaders:normalized};
+  }
   function summarizeService(rows,period,codes,currentByCode={}){
     const squads=[];
     for(const code of codes||[]){
@@ -66,5 +86,5 @@
     };
   }
   function canRollback(record){return Boolean(record&&record.status==='success'&&record.beforeSnapshot&&Object.keys(record.beforeSnapshot||{}).length>0)}
-  return {safe,pctDelta,checksumText,summarizeService,summarizeQuality,validatePreview,historySummary,canRollback};
+  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,summarizeService,summarizeQuality,validatePreview,historySummary,canRollback};
 });

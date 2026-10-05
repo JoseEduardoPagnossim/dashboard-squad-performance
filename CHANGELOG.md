@@ -1,3 +1,14 @@
+## V2.45.2 — Filtros superiores e CSV deduplicado
+
+- Centraliza a visibilidade dos filtros superiores para evitar divergência entre `showView()` e `applyPermissions()`.
+- Exibe o filtro de período na Apresentação e remove controles sem efeito em módulos que não consomem Squad/Mês/período.
+- Oculta Squad em **Indicadores > Impacto financeiro**, que é corporativo para o Suporte técnico completo.
+- Corrige importação do CSV deduplicado com aliases de cabeçalho (`Time`, `Data Avaliação`, `Nota Atendimento`, entre outros).
+- Reconhece e ignora a diretiva `sep=;` adicionada por algumas exportações do Excel.
+- Mantém as quatro dimensões obrigatórias e melhora a mensagem de erro com aliases aceitos e cabeçalhos encontrados.
+- Sem migration de banco.
+- Suíte automatizada: **144/144 testes aprovados**.
+
 ## V2.45.1 — Correção da grade da Home e espaçamento
 
 - Corrige conflito entre `.personal-layout-root` e `.home-widget-grid` que forçava `display:flex` e ignorava os tamanhos dos widgets.

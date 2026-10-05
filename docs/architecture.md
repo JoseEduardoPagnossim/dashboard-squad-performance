@@ -156,3 +156,10 @@ A correção de ritmo visual fica em `css/design-system.css` e é intencionalmen
 ## V2.45.1 — Correção da grade da Home
 
 A Home modular mantém `#homeWidgetGrid` como CSS Grid de 12 colunas mesmo com preferências pessoais ativas. A classe genérica `personal-layout-root` continua usando flex apenas nas telas legadas. Visibilidade em modo de edição e fora dele é tratada separadamente para preservar widgets ocultos.
+
+
+## V2.45.2 — Contexto de filtros e compatibilidade de importação
+
+A visibilidade do cabeçalho passa a ser derivada por uma única matriz de contexto em `app.js`. `showView()`, `applyPermissions()`, mudanças de seção dos Indicadores e atualização dos seletores reutilizam a mesma decisão, evitando que uma rotina reexiba controles que outra acabou de ocultar.
+
+O importador financeiro mantém validação semântica das quatro dimensões obrigatórias, mas o mapeamento de cabeçalhos fica no `import-engine.js`, com aliases explícitos. O parser comum de CSV também reconhece a diretiva `sep=;`, beneficiando os demais fluxos de importação sem alterar a estrutura de dados persistida.

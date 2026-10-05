@@ -108,3 +108,21 @@ test('V2.45.1 diferencia widget oculto em edicao e fora da edicao', () => {
   assert.match(app, /classList\.toggle\('home-widget-edit-hidden',state\.homeLayoutEditMode&&hidden\)/);
   assert.match(app, /state\.homeLayoutEditMode\?homeLayoutDraft\(\):savedHomeLayout\(\)/);
 });
+
+test('V2.45.2 mapeia os filtros superiores conforme o modulo que realmente os consome', () => {
+  const filterBlock = blockBetween(app, 'function topFilterVisibility(', 'function syncTopFiltersForView(');
+  assert.match(filterBlock, /\['individual','team','presentation','feedbacks','settings'\]\.includes\(name\)/);
+  assert.match(filterBlock, /state\.indicatorSection!=='financial-impact'/);
+  assert.match(filterBlock, /\['operation','finance','appearance'\]/);
+  assert.match(filterBlock, /month:name==='feedbacks'/);
+  assert.match(filterBlock, /\['individual','team','presentation'\]\.includes\(name\)/);
+  assert.match(app, /syncTopFiltersForView\('indicators',state\.adminSection\)/);
+  assert.match(app, /SUPORTE TÉCNICO COMPLETO/);
+});
+
+test('V2.45.2 centraliza parser CSV e mapeamento financeiro no import-engine', () => {
+  assert.match(app, /const parseCsvRows=importEngine\.parseCsvRows/);
+  assert.match(app, /resolveFinancialImpactColumns\(rawHeaders\)/);
+  assert.match(index, /Nota Atendimento/);
+  assert.match(index, /sep=;/);
+});

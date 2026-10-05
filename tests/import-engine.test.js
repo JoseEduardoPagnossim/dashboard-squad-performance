@@ -42,3 +42,39 @@ test('historico normaliza e rollback exige snapshot',()=>{
   assert.equal(a.kind,'quality');assert.equal(engine.canRollback(a),true);
   const b=engine.historySummary({batchKey:'2',status:'success'});assert.equal(engine.canRollback(b),false);
 });
+
+test('V2.45.2 reconhece cabecalhos do CSV financeiro original',()=>{
+  const r=engine.resolveFinancialImpactColumns(['DataAvaliacao','NotaServico','NotaProduto','NotaEmpresa']);
+  assert.deepEqual(r.missing,[]);
+  assert.deepEqual(r.indexes,{date:0,service:1,product:2,company:3});
+});
+
+test('V2.45.2 aceita aliases reais de data e nota de atendimento',()=>{
+  const r=engine.resolveFinancialImpactColumns(['Data Avaliação','Nota Atendimento','Nota Produto','Nota Empresa']);
+  assert.deepEqual(r.missing,[]);
+  assert.deepEqual(r.indexes,{date:0,service:1,product:2,company:3});
+  const q=engine.resolveFinancialImpactColumns(['Time','NotaServico','NotaProduto','NotaEmpresa']);
+  assert.deepEqual(q.missing,[]);
+  assert.equal(q.indexes.date,0);
+});
+
+test('V2.45.2 mantem validacao sem aceitar CSV financeiro incompleto',()=>{
+  const r=engine.resolveFinancialImpactColumns(['Time','NotaProduto','NotaEmpresa']);
+  assert.equal(r.indexes.service,null);
+  assert.equal(r.missing.length,1);
+  assert.equal(r.missing[0].key,'service');
+  assert.ok(r.missing[0].accepted.includes('Nota Atendimento'));
+});
+
+
+test('V2.45.2 ignora diretiva sep do Excel e preserva o cabecalho real',()=>{
+  const csv='sep=;\nData Avaliação;Nota Atendimento;Nota Produto;Nota Empresa\n01/10/2026 08:00;5;4;5';
+  const rows=engine.parseCsvRows(csv);
+  assert.deepEqual(rows[0],['Data Avaliação','Nota Atendimento','Nota Produto','Nota Empresa']);
+  assert.deepEqual(rows[1],['01/10/2026 08:00','5','4','5']);
+});
+
+test('V2.45.2 parser CSV continua respeitando campos delimitados entre aspas',()=>{
+  const rows=engine.parseCsvRows('Data,Texto\n01/10/2026,"A, B"');
+  assert.deepEqual(rows[1],['01/10/2026','A, B']);
+});

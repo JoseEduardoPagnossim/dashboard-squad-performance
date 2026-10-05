@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.45.1`<br>
+**Versão atual:** `2.45.2`<br>
 
 
 
@@ -13,6 +13,25 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.45.2 — Filtros superiores e importação deduplicada
+
+Patch corretivo que centraliza a regra dos filtros superiores por módulo e torna a importação de **Indicadores > Impacto financeiro** compatível com os cabeçalhos reais já usados nas bases da operação.
+
+Principais mudanças:
+
+- elimina regras concorrentes de visibilidade entre navegação e permissões;
+- exibe **De / Até** na Apresentação, que já utiliza o período selecionado;
+- oculta filtros sem efeito em Usuários, Auditoria, Perfil, Ajuda, Custos e no escopo corporativo de Impacto financeiro;
+- mantém Squad em Aparência, mas remove Mês, que não participa dessa configuração;
+- aceita `DataAvaliacao`, `Data Avaliação`, `Data da Avaliação`, `Time` ou `Data`;
+- aceita `NotaServico`, `Nota Serviço` ou `Nota Atendimento`;
+- reconhece CSVs do Excel que começam com `sep=;`;
+- mantém Produto e Empresa obrigatórios e melhora a mensagem quando uma coluna realmente estiver ausente;
+- não exige migration de banco;
+- suíte automatizada validada com **144/144 testes aprovados**.
+
+Detalhes: `docs/FILTROS_IMPORTACAO_V2.45.2.md`.
 
 ## V2.45.1 — Correção da Home modular e espaçamento
 
