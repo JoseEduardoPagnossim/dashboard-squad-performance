@@ -9,15 +9,15 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.40.1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.40.1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.41.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.41.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
 
   <section id="bootScreen" class="boot-screen" aria-live="polite">
     <div class="boot-card">
-      <div class="boot-brand"><div class="brand-mark large">S</div><div><strong>SOFTEN</strong><span>Performance Hub</span></div></div>
+      <div class="boot-brand boot-brand-logo"><img src="assets/soften-logo-sidebar.png" alt="Soften Sistemas"><div><strong>Performance Hub</strong><span>Gestão de desempenho</span></div></div>
       <div class="boot-dragon"><img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha"></div>
       <div class="boot-spinner" aria-hidden="true"></div>
       <h1>Preparando seu painel</h1>
@@ -27,28 +27,48 @@
   </section>
 
   <section id="loginScreen" class="login-screen hidden">
-    <div class="login-shell">
-      <div class="login-brand">
-        <div class="brand-mark large">S</div>
-        <div><strong>SOFTEN</strong><span>Performance Hub</span></div>
-      </div>
-      <button class="color-mode-toggle login-mode-toggle" type="button" data-color-mode-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">
-        <span class="mode-icon mode-icon-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path></svg></span>
-        <span class="mode-icon mode-icon-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
-      </button>
-      <div class="login-card">
-        <span class="eyebrow">ACESSO SEGURO</span>
-        <h1>Entre no seu Squad</h1>
-        <p>Técnicos visualizam somente o próprio Squad. Administradores gerenciam dados, metas e campanha.</p>
-        <form id="loginForm">
-          <label><span>E-mail</span><input id="loginEmail" type="email" autocomplete="username" required placeholder="seu.email@empresa.com"></label>
-          <label><span>Senha</span><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="••••••••"></label>
-          <div id="loginError" class="login-error"></div>
-          <button class="btn primary wide login-submit" type="submit">Entrar</button>
-          <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
-        </form>
-      </div>
-      <small class="login-version">V2.40.1 • Guia atualizado</small>
+    <div class="login-shell login-shell-v241">
+      <section class="login-identity-panel" aria-label="Soften Performance Hub">
+        <div class="login-product-brand">
+          <img class="login-brand-logo" src="assets/soften-logo-sidebar.png" alt="Soften Sistemas">
+          <span>Performance Hub</span>
+        </div>
+        <div class="login-identity-copy">
+          <span class="eyebrow">GESTÃO DE PERFORMANCE</span>
+          <h1>Desempenho claro.<br>Gestão em movimento.</h1>
+          <p>Indicadores, metas, qualidade, bonificação e comunicação dos Squads reunidos em um único painel.</p>
+        </div>
+        <div class="login-feature-grid" aria-label="Recursos do painel">
+          <div><span>◈</span><strong>Desempenho</strong><small>Acompanhamento individual e por Squad</small></div>
+          <div><span>◔</span><strong>Indicadores</strong><small>Realizado, meta, projeção e alertas</small></div>
+          <div><span>R$</span><strong>Bonificação</strong><small>Cálculo auditável e memória financeira</small></div>
+          <div><span>▣</span><strong>TV / Comunicação</strong><small>Playlists e apresentações monitoradas</small></div>
+        </div>
+        <div class="login-security-note"><i></i><span>Acesso protegido por perfil, Squad e permissões.</span></div>
+      </section>
+
+      <section class="login-access-panel">
+        <button class="color-mode-toggle login-mode-toggle" type="button" data-color-mode-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">
+          <span class="mode-icon mode-icon-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path></svg></span>
+          <span class="mode-icon mode-icon-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+        </button>
+        <div class="login-card login-card-v241">
+          <div class="login-card-heading">
+            <span class="eyebrow">ACESSO SEGURO</span>
+            <h2>Bem-vindo de volta</h2>
+            <p>Entre com sua conta para abrir o painel correspondente ao seu perfil.</p>
+          </div>
+          <form id="loginForm">
+            <label><span>E-mail</span><input id="loginEmail" type="email" autocomplete="username" required placeholder="seu.email@empresa.com"></label>
+            <label><span>Senha</span><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="••••••••"></label>
+            <div id="loginError" class="login-error" aria-live="polite"></div>
+            <button class="btn primary wide login-submit" type="submit">Entrar no Performance Hub</button>
+            <button class="login-recovery-link" id="forgotPasswordBtn" type="button">Esqueci minha senha</button>
+          </form>
+          <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
+        </div>
+        <small class="login-version">V2.41.0 • Experiência inicial renovada</small>
+      </section>
     </div>
   </section>
 
@@ -71,7 +91,8 @@
       </div>
       <nav class="sidebar-nav">
         <div class="nav-group"><span class="nav-group-label">DESEMPENHO</span>
-          <button class="nav-btn active" data-view="individual"><span>◈</span> Meu desempenho</button>
+          <button class="nav-btn active" data-view="home"><span>⌂</span> Início</button>
+          <button class="nav-btn" data-view="individual"><span>◈</span> Meu desempenho</button>
           <button class="nav-btn" data-view="team"><span>♛</span> Visão do Squad</button>
           <button class="nav-btn super-only" data-permission="indicators.view" data-view="indicators"><span>◔</span> Indicadores</button>
           <button class="nav-btn" data-permission="presentation.view" data-view="presentation"><span>▣</span> Apresentação</button>
@@ -108,7 +129,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.40.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.41.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -117,7 +138,7 @@
         <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir menu lateral" aria-expanded="false" aria-controls="appSidebar">☰</button>
         <div class="top-title">
           <span class="eyebrow" id="squadEyebrow">SQUAD D</span>
-          <h1 id="pageTitle">Meu desempenho</h1>
+          <h1 id="pageTitle">Início</h1>
         </div>
         <div class="top-actions">
           <label class="control select-wrap super-only" id="squadControl">
@@ -168,8 +189,54 @@
         </div>
       </header>
 
-      <section id="view-individual" class="view active">
-        <div id="individualEmpty" class="empty-state hidden"><div>◈</div><h2>Sem dados para este Squad</h2><p>Um administrador precisa importar o CSV do mês.</p></div>
+      <section id="view-home" class="view active">
+        <div class="home-hero card glass">
+          <div class="home-hero-main">
+            <div class="home-avatar" id="homeAvatar">U</div>
+            <div>
+              <span class="eyebrow" id="homeRoleLabel">PERFORMANCE HUB</span>
+              <h2 id="homeGreeting">Bem-vindo.</h2>
+              <p id="homeSubtitle">Aqui está o resumo mais importante para começar.</p>
+              <div class="home-period-line"><span id="homePeriodChip">Competência atual</span><span id="homeUpdateChip">Dados atualizados</span></div>
+            </div>
+          </div>
+          <div class="home-hero-actions" id="homeHeroActions"></div>
+        </div>
+
+        <div id="homeEmpty" class="empty-state empty-state-v241 hidden">
+          <div id="homeEmptyIcon">◇</div>
+          <h2 id="homeEmptyTitle">Ainda não há dados para exibir</h2>
+          <p id="homeEmptyText">Quando a primeira competência for importada, o resumo aparecerá aqui.</p>
+          <div class="empty-state-actions" id="homeEmptyActions"></div>
+        </div>
+
+        <div id="homeContent" class="home-content">
+          <div class="home-kpi-grid" id="homeKpis"></div>
+          <div class="home-main-grid">
+            <article class="card home-alert-card">
+              <div class="section-title"><div><span class="eyebrow">LEITURA RÁPIDA</span><h3>O que merece atenção agora</h3></div><span class="home-section-chip" id="homeAlertCount">0 alertas</span></div>
+              <div class="home-alert-list" id="homeAlerts"></div>
+            </article>
+            <article class="card home-actions-card">
+              <div class="section-title"><div><span class="eyebrow">ATALHOS</span><h3>Continue de onde precisa</h3></div></div>
+              <div class="home-quick-actions" id="homeQuickActions"></div>
+            </article>
+          </div>
+
+          <article class="card home-squads-card hidden" id="homeSquadsCard">
+            <div class="section-title"><div><span class="eyebrow">VISÃO GERAL</span><h3>Squads na competência</h3></div><span class="muted" id="homeSquadsNote">Resumo A, B, D e E</span></div>
+            <div class="home-squad-grid" id="homeSquadOverview"></div>
+          </article>
+
+          <article class="card home-context-card">
+            <div class="section-title"><div><span class="eyebrow">CONTEXTO DO PAINEL</span><h3>Origem e situação dos dados</h3></div></div>
+            <div class="home-context-grid" id="homeContext"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-individual" class="view">
+        <div id="individualEmpty" class="empty-state empty-state-v241 hidden"><div>◈</div><h2>Sem dados para este Squad</h2><p>Não existe uma competência importada para exibir o desempenho individual.</p><div class="empty-state-actions"><button class="btn primary admin-only" data-permission="data.import" type="button" data-empty-admin-section="operation">Ir para Operação</button><button class="btn secondary" type="button" data-empty-view="help">Ver como usar</button></div></div>
         <div id="individualContent">
           <div class="hero card glass">
             <div class="hero-copy">
@@ -239,7 +306,7 @@
           <div id="squadPortfolio" class="portfolio-grid"></div>
         </div>
         <div id="singleSquadPanel">
-          <div id="teamEmpty" class="empty-state hidden"><div>♛</div><h2>Este Squad ainda não possui dados</h2><p>Use a Gestão para importar o primeiro mês.</p></div>
+          <div id="teamEmpty" class="empty-state empty-state-v241 hidden"><div>♛</div><h2>Este Squad ainda não possui dados</h2><p>Importe a primeira competência para liberar a visão consolidada da equipe.</p><div class="empty-state-actions"><button class="btn primary admin-only" data-permission="data.import" type="button" data-empty-admin-section="operation">Ir para Operação</button><button class="btn secondary" type="button" data-empty-view="help">Ver como usar</button></div></div>
           <div id="teamContent">
             <div class="team-hero card glass"><div><span class="eyebrow">VISÃO GERAL</span><h2 id="teamHeroTitle">Squad em Agosto</h2><p>Compare resultados, acompanhe o ranking e veja quem está acelerando.</p></div><div class="team-result"><span>RESULTADO DA EQUIPE</span><strong id="teamResult">ACIMA</strong><small id="teamStatusAudit">Status calculado pela pontuação do grupo</small></div></div>
             <div class="team-kpis">
@@ -923,7 +990,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.40</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.41</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -934,6 +1001,7 @@
         </article>
 
         <div class="help-quick-actions">
+          <button class="help-route" type="button" data-help-view="home"><span>⌂</span><b>Início</b><small>Resumo, alertas e atalhos</small></button>
           <button class="help-route" type="button" data-help-view="individual"><span>◈</span><b>Meu desempenho</b><small>Meu resultado, ranking e bonificação</small></button>
           <button class="help-route" type="button" data-help-view="team"><span>♛</span><b>Visão do Squad</b><small>Equipe, histórico e comparativos</small></button>
           <button class="help-route super-help" type="button" data-help-view="indicators" data-permission="indicators.view"><span>◔</span><b>Indicadores</b><small>Projeção, alertas e qualidade</small></button>
@@ -952,7 +1020,7 @@
           </article>
           <article class="card how-primary blue help-searchable" data-help-search="acompanhar desempenho squad indicadores ranking projeção alerta gestão preditiva">
             <div class="how-primary-title"><b>02</b><div><h3>Acompanhe e aja</h3><p>Use as telas analíticas conforme a pergunta que deseja responder.</p></div></div>
-            <ol class="how-steps"><li><b>Meu desempenho</b>: resultado individual, status, metas, ranking e valor financeiro.</li><li><b>Visão do Squad</b>: evolução da equipe, ranking completo e comparação entre Squads.</li><li><b>Indicadores</b>: gestão executiva, qualidade, dias úteis, impacto financeiro e gestão preditiva.</li><li>Na gestão preditiva, leia <b>Realizado × Meta × Projeção</b>, confiança, comparação equivalente e alertas antes de tomar ação.</li></ol>
+            <ol class="how-steps"><li><b>Início</b>: é a primeira tela após o login e resume a situação mais importante do seu perfil, com alertas e atalhos.</li><li><b>Meu desempenho</b>: resultado individual, status, metas, ranking e valor financeiro.</li><li><b>Visão do Squad</b>: evolução da equipe, ranking completo e comparação entre Squads.</li><li><b>Indicadores</b>: gestão executiva, qualidade, dias úteis, impacto financeiro e gestão preditiva.</li><li>Na gestão preditiva, leia <b>Realizado × Meta × Projeção</b>, confiança, comparação equivalente e alertas antes de tomar ação.</li></ol>
             <div class="how-tip">💡 Em gráficos históricos, use filtros de período, tooltip compartilhado, destaque de séries e tela cheia para aprofundar a análise sem alterar os dados.</div>
           </article>
           <article class="card how-primary purple admin-help help-searchable" data-help-search="configurar configurações central metas regras bonificação aparência gráficos apresentação tv permissões layout">
@@ -969,6 +1037,7 @@
 
         <div class="help-section-heading help-searchable" data-help-search="mapa módulos navegação onde fica"><span class="eyebrow">MAPA DO PAINEL</span><h2>Onde fazer cada coisa</h2><p>Use este mapa quando souber o que quer fazer, mas não lembrar em qual tela está a função.</p></div>
         <div class="help-module-grid">
+          <article class="card help-module-card help-searchable" data-help-search="início home resumo alertas atalhos primeira tela login"><div class="help-module-top"><span class="how-icon blue">⌂</span><div><b>Início</b><small>Todos os perfis</small></div></div><p>É a primeira tela após o login. Resume os números mais relevantes para o perfil conectado, aponta alertas automáticos, mostra origem/competência e oferece atalhos para a próxima ação.</p><div class="help-do"><b>Use quando:</b><span>quiser entender rapidamente como está o mês antes de entrar em uma análise detalhada.</span></div><button class="btn secondary compact" type="button" data-help-view="home">Abrir Início</button></article>
           <article class="card help-module-card help-searchable" data-help-search="meu desempenho técnico individual ranking meta status bonificação feedback"><div class="help-module-top"><span class="how-icon orange">◈</span><div><b>Meu desempenho</b><small>Todos os perfis</small></div></div><p>Mostra o resultado do técnico selecionado: atendimentos, avaliações, Nota 5, status auditável, metas, pontuação, ranking do período, ranking financeiro, histórico e bonificação estimada/oficial.</p><div class="help-do"><b>Use quando:</b><span>quiser entender o desempenho de uma pessoa e o motivo do status ou do valor recebido.</span></div><button class="btn secondary compact" type="button" data-help-view="individual">Abrir Meu desempenho</button></article>
           <article class="card help-module-card help-searchable" data-help-search="visão squad equipe ranking histórico consolidado comparativo setor"><div class="help-module-top"><span class="how-icon blue">♛</span><div><b>Visão do Squad</b><small>Visão consolidada</small></div></div><p>Reúne KPIs do grupo, ranking completo, histórico mensal por técnico, comparação consolidada dos Squads e evolução diária do setor.</p><div class="help-do"><b>Use quando:</b><span>precisar conduzir alinhamentos de equipe ou comparar comportamento entre grupos.</span></div><button class="btn secondary compact" type="button" data-help-view="team">Abrir Visão do Squad</button></article>
           <article class="card help-module-card super-help help-searchable" data-help-search="indicadores gestão preditiva projeção meta alertas qualidade serviço produto empresa dias úteis impacto financeiro"><div class="help-module-top"><span class="how-icon red">◔</span><div><b>Indicadores</b><small>Admin Geral</small></div></div><p>Central executiva com Realizado × Meta × Projeção, alertas automáticos, risco por técnico, comparativos, qualidade de Serviço/Produto/Empresa, dias úteis e impacto financeiro estimado.</p><div class="help-do"><b>Use quando:</b><span>quiser priorizar ações, antecipar risco de fechamento ou investigar tendência de qualidade.</span></div><button class="btn secondary compact" type="button" data-help-view="indicators" data-permission="indicators.view">Abrir Indicadores</button></article>
@@ -1234,14 +1303,14 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.40.1"></script>
-  <script src="js/finance-advanced.js?v=2.40.1"></script>
-  <script src="js/tv-engine.js?v=2.40.1"></script>
-  <script src="js/presentation.js?v=2.40.1"></script>
-  <script src="js/chart-engine.js?v=2.40.1"></script>
-  <script src="js/import-engine.js?v=2.40.1"></script>
-  <script src="js/predictive-engine.js?v=2.40.1"></script>
-  <script src="js/settings-engine.js?v=2.40.1"></script>
-  <script src="js/app.js?v=2.40.1"></script>
+  <script src="js/finance-rules.js?v=2.41.0"></script>
+  <script src="js/finance-advanced.js?v=2.41.0"></script>
+  <script src="js/tv-engine.js?v=2.41.0"></script>
+  <script src="js/presentation.js?v=2.41.0"></script>
+  <script src="js/chart-engine.js?v=2.41.0"></script>
+  <script src="js/import-engine.js?v=2.41.0"></script>
+  <script src="js/predictive-engine.js?v=2.41.0"></script>
+  <script src="js/settings-engine.js?v=2.41.0"></script>
+  <script src="js/app.js?v=2.41.0"></script>
 </body>
 </html>

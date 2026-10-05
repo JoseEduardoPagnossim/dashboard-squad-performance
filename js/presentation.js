@@ -180,7 +180,7 @@
 
 
   function runtimeStatus(){
-    return {deviceKey:route.tv||'',playlistId:route.playlist||'',mode:state.activeMode,lastRefreshAt:state.lastSuccessfulRefresh?new Date(state.lastSuccessfulRefresh).toISOString():null,connectionState:state.connectionKind||'online',viewport:{width:window.innerWidth||0,height:window.innerHeight||0,devicePixelRatio:window.devicePixelRatio||1,fullscreen:!!document.fullscreenElement},appVersion:'2.40.1'};
+    return {deviceKey:route.tv||'',playlistId:route.playlist||'',mode:state.activeMode,lastRefreshAt:state.lastSuccessfulRefresh?new Date(state.lastSuccessfulRefresh).toISOString():null,connectionState:state.connectionKind||'online',viewport:{width:window.innerWidth||0,height:window.innerHeight||0,devicePixelRatio:window.devicePixelRatio||1,fullscreen:!!document.fullscreenElement},appVersion:'2.41.0'};
   }
   function emitHeartbeat(reason='interval'){
     if(!route.direct||!route.tv)return;

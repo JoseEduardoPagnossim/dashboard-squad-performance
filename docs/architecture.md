@@ -100,3 +100,12 @@ O simulador trabalha exclusivamente sobre uma cópia em memória da competência
 TVs cadastradas usam uma URL estável e carregam sua playlist por `get_presentation_device_config`. Durante cada sincronização de dados, a rota verifica se a playlist foi alterada e reaplica a configuração sem exigir troca da URL física. As URLs legadas com configuração inteira na query string permanecem suportadas.
 
 O `app.js` gerencia playlists, dispositivos, monitor e persistência. Na ausência da migration V2.40.0, existe fallback local; em produção, a fonte compartilhada é o Supabase com RLS e RPCs restritas.
+
+
+## V2.41.0 — Experiência inicial e Home
+
+`home` passa a ser a rota inicial do painel após a autenticação. A renderização permanece em `app.js` nesta etapa porque consome estado já carregado de múltiplos módulos, mas foi isolada em funções `renderHome*` por papel para facilitar a futura separação.
+
+A Home não cria uma nova fonte de dados: reutiliza competências, metas, dados financeiros e o motor preditivo que já estão em memória. Isso evita alterar cálculos ou persistência durante a mudança de experiência. Os estados vazios também usam a matriz de permissões existente para decidir quais próximos passos podem ser oferecidos.
+
+O novo login modifica somente apresentação e hierarquia visual. O caminho de autenticação e o carregamento inicial de dados permanecem os mesmos; a redução do tempo de login será tratada em uma etapa estrutural específica de performance.

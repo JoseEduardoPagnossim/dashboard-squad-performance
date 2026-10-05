@@ -63,7 +63,7 @@
     layoutDraft:null,
     editPermissionDraft:{},
     colorMode:loadColorModePreference(),
-    currentView:'individual',
+    currentView:'home',
     adminSection:'operation',
     settingsModule:'all',
     userDirectory:[],
@@ -421,6 +421,8 @@
     $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
     $('#logoutBtn').addEventListener('click',logout);
     $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{showView(btn.dataset.view,btn.dataset.adminSection||null);if(btn.dataset.settingsModule)openSettingsModule(btn.dataset.settingsModule,{scroll:true});}));
+    if($('#view-home'))$('#view-home').addEventListener('click',handleHomeClick);
+    $$('[data-empty-view],[data-empty-admin-section]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.emptyAdminSection)showView('admin',btn.dataset.emptyAdminSection);else if(btn.dataset.emptyView)showView(btn.dataset.emptyView);}));
     if($('#layoutViewSelect'))$('#layoutViewSelect').addEventListener('change',()=>{state.layoutDraft=null;renderLayoutEditor();});
     if($('#layoutDensitySelect'))$('#layoutDensitySelect').addEventListener('change',()=>{const draft=currentLayoutDraft();draft.layout.density=$('#layoutDensitySelect').value==='compact'?'compact':'comfortable';});
     if($('#layoutBlockList'))$('#layoutBlockList').addEventListener('click',e=>{const move=e.target.closest('[data-layout-move]');if(move){const row=move.closest('[data-layout-key]');if(row)changeLayoutDraftMove(row.dataset.layoutKey,move.dataset.layoutMove);}});
@@ -662,7 +664,7 @@
       state.currentView='presentation';
     }else{
       state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
-      state.currentView='individual';
+      state.currentView='home';
     }
     if(state.squadCode==='all'){
       state.currentId=null;state.techName='';state.theme=loadLastTheme();applyTheme(state.theme);
@@ -700,8 +702,8 @@
     for(const [permission,selectors] of Object.entries(permissionButtons))for(const selector of selectors){const el=$(selector);if(el)el.disabled=!hasPermission(permission);}
     const costAdminView=state.currentView==='admin'&&state.adminSection==='costs';
     $('.technician-control').classList.toggle('hidden',isTechnician()||state.currentView!=='individual'||state.squadCode==='all'||costAdminView);
-    const analyticalView=['individual','team','indicators','presentation'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['users','audit','settings','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
-    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
+    const analyticalView=['individual','team','indicators','presentation'].includes(state.currentView);if($('.month-control'))$('.month-control').classList.toggle('hidden',analyticalView||costAdminView||['home','users','audit','settings','profile','help','my-feedbacks'].includes(state.currentView));if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!['individual','team'].includes(state.currentView));
+    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',state.currentView==='home'||costAdminView||!isSuperAdmin());
     syncAnalysisDateControls();
     if($('#topUserName'))$('#topUserName').textContent=state.user.fullName;
     if($('#topUserScope'))$('#topUserScope').textContent=state.user.role==='super_admin'?'Acesso geral':`Squad ${state.user.squadCode}`;
@@ -944,14 +946,15 @@
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;const sameSettings=name!=='settings'||(b.dataset.settingsModule?b.dataset.settingsModule===state.settingsModule:!b.dataset.settingsModule);b.classList.toggle('active',sameView&&sameSection&&sameSettings)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
-    const titles={individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const titles={home:'Início',individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';
+    if($('#squadEyebrow'))$('#squadEyebrow').textContent=name==='home'?(isSuperAdmin()?'PERFORMANCE HUB':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`):(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`);
     const costAdminView=name==='admin'&&state.adminSection==='costs';
     $('.technician-control').classList.toggle('hidden',name!=='individual'||isTechnician()||state.squadCode==='all'||costAdminView);
     const analytical=name==='individual'||name==='team'||name==='indicators'||name==='presentation';
-    $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='users'||name==='audit'||name==='settings'||name==='profile'||name==='my-feedbacks'||name==='help');
+    $('.month-control').classList.toggle('hidden',analytical||costAdminView||name==='home'||name==='users'||name==='audit'||name==='settings'||name==='profile'||name==='my-feedbacks'||name==='help');
     if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!(name==='individual'||name==='team'));
-    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',costAdminView||!isSuperAdmin());
+    if($('#squadControl'))$('#squadControl').classList.toggle('hidden',name==='home'||costAdminView||!isSuperAdmin());
     syncAnalysisDateControls();
     $('.sidebar').classList.remove('open');
     document.body.classList.remove('sidebar-open');
@@ -972,6 +975,7 @@
 
   function render(){
     applyPermissions();
+    if(state.currentView==='home'){renderHome();return;}
     if(state.currentView==='feedbacks'){renderFeedbacks();return;}
     if(state.currentView==='my-feedbacks'){renderMyFeedbacks();return;}
     if(state.currentView==='users')renderUsers().catch(err=>{console.error(err);toast('Não foi possível carregar os usuários.')});
@@ -988,6 +992,97 @@
     if(m){renderIndividual();renderTeam();applyPersonalLayout('individual');applyPersonalLayout('team');}
     if(state.currentView==='indicators')applyPersonalLayout('indicators');
     renderAdmin();
+  }
+
+
+  function homeLatestPeriodId(){
+    const ids=[...new Set(Object.values(state.squads||{}).flatMap(s=>Object.keys(s?.months||{})))].sort().reverse();
+    if(isSuperAdmin())return ids[0]||null;
+    const own=state.currentId;
+    if(own&&Object.values(state.squads||{}).some(s=>s?.months?.[own]))return own;
+    return ids[0]||null;
+  }
+  function homePeriodMonths(id=homeLatestPeriodId()){
+    if(!id)return[];
+    const squads=isSuperAdmin()?Object.values(state.squads||{}):(state.squadCode!=='all'&&state.squads?.[state.squadCode]?[state.squads[state.squadCode]]:[]);
+    return squads.map(s=>({squad:s,month:s?.months?.[id]||null})).filter(x=>x.month);
+  }
+  function homeGreetingText(){const h=new Date().getHours();return h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
+  function homePeriodLabel(id){return id?monthLabelFromId(id):'Sem competência'}
+  function homeLatestImport(months){return(months||[]).map(x=>x.month?.importedAt).filter(Boolean).sort().reverse()[0]||null}
+  function homeStatusClass(status=''){const v=String(status||'').toLowerCase();return/critical|abaixo|risk|atenção|atencao/.test(v)?'critical':/warning|evolu|watch/.test(v)?'warning':/acima|ok|achieved|on_track|forte/.test(v)?'positive':'info'}
+  function homeKpiHtml({label,value,detail='',icon='◆',progress=null,tone='info'}={}){
+    const pct=progress==null?null:clamp(safe(progress),0,1)*100;
+    return `<article class="card home-kpi-card ${escapeHtml(tone)}"><div class="home-kpi-head"><span>${escapeHtml(label)}</span><i>${escapeHtml(icon)}</i></div><strong>${escapeHtml(value)}</strong><small>${escapeHtml(detail||'')}</small>${pct==null?'':`<div class="home-kpi-progress"><b style="width:${pct.toFixed(1)}%"></b></div>`}</article>`;
+  }
+  function homeAlertHtml({severity='info',title='',text=''}={}){return `<div class="home-alert-item ${escapeHtml(severity)}"><span></span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(text)}</small></div></div>`}
+  function homeQuickButton({icon='→',title='',text='',view='',section='',settings='',permission=''}={}){
+    if(permission&&!hasPermission(permission))return'';
+    return `<button class="home-quick-btn" type="button" ${view?`data-home-view="${escapeHtml(view)}"`:''} ${section?`data-home-admin-section="${escapeHtml(section)}"`:''} ${settings?`data-home-settings-module="${escapeHtml(settings)}"`:''}><span>${escapeHtml(icon)}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(text)}</small></div><b>›</b></button>`;
+  }
+  function homeRiskForTechnician(t,m,squadCode){
+    const days=Math.max(1,businessDaysMonFri(m.year,m.month)),elapsed=Math.max(0,businessDaysElapsed(m.year,m.month,m.latestDay)),evalGoal=teamSettings(m).teamGoalEvalPct;
+    return predictiveEngine.technicianRisk({name:t.name,squad:squadCode,att:t.att,notes5:t.notes5,evalPct:t.evalPct,goalAtt:t.goalAtt,goalNotes5:t.goalEval,goalEvalPct:evalGoal,elapsedDays:elapsed,totalDays:days});
+  }
+  function homeSquadMetric(squad,m){
+    const totals=deriveTotals(m?.technicians||[]),notes5=(m?.technicians||[]).reduce((sum,t)=>sum+safe(t.notes5),0),notesGoal=(m?.technicians||[]).reduce((sum,t)=>sum+safe(t.goalEval),0),goals=teamSettings(m),totalDays=Math.max(1,businessDaysMonFri(m.year,m.month)),elapsedDays=Math.max(0,businessDaysElapsed(m.year,m.month,m.latestDay)),attendance=predictiveEngine.countMetric({realized:totals.att,goal:goals.teamGoalAtt,elapsedDays,totalDays}),notes=predictiveEngine.countMetric({realized:notes5,goal:notesGoal,elapsedDays,totalDays}),evaluation=predictiveEngine.rateMetric({realized:totals.evalPct,goal:goals.teamGoalEvalPct}),risks=(m?.technicians||[]).map(t=>homeRiskForTechnician(t,m,squad.code)),atRisk=risks.filter(r=>['critical','warning'].includes(r.level)).length;
+    return{squad,m,totals,notes5,notesGoal,goals,totalDays,elapsedDays,attendance,notes,evaluation,risks,atRisk};
+  }
+  function homeEmptyState(role,id){
+    const actions=[];
+    if(isAdmin()&&hasPermission('data.import'))actions.push('<button class="btn primary" type="button" data-home-view="admin" data-home-admin-section="operation">Ir para Operação</button>');
+    actions.push('<button class="btn secondary" type="button" data-home-view="help">Ver como usar</button>');
+    return{icon:isTechnician()?'◈':'↻',title:id?'Sem dados nesta competência':'O painel ainda não possui competências',text:isTechnician()?'Ainda não há dados vinculados ao seu perfil nesta competência. Se isso não era esperado, confirme seu vínculo com o gestor.':'Importe os dados da primeira competência para liberar a Home, indicadores, rankings e bonificação.',actions:actions.join('')};
+  }
+  function renderHome(){
+    const id=homeLatestPeriodId(),months=homePeriodMonths(id),empty=!id||!months.length,first=String(state.user?.fullName||state.user?.email||'Usuário').trim().split(/\s+/)[0]||'Usuário',initial=String(first||'U').charAt(0).toUpperCase();
+    if($('#homeAvatar'))$('#homeAvatar').textContent=initial;
+    if($('#homeGreeting'))$('#homeGreeting').textContent=`${homeGreetingText()}, ${first}.`;
+    if($('#homeRoleLabel'))$('#homeRoleLabel').textContent=`${roleLabel(state.user?.role||'').toUpperCase()} • ${isSuperAdmin()?'VISÃO GERAL':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`}`;
+    if($('#homePeriodChip'))$('#homePeriodChip').textContent=homePeriodLabel(id);
+    if($('#squadEyebrow'))$('#squadEyebrow').textContent=isSuperAdmin()?'PERFORMANCE HUB':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`;
+    const latest=homeLatestImport(months);if($('#homeUpdateChip'))$('#homeUpdateChip').textContent=latest?`Atualizado ${formatDateTime(latest)}`:'Sem importação registrada';
+    const emptyEl=$('#homeEmpty'),content=$('#homeContent');emptyEl?.classList.toggle('hidden',!empty);content?.classList.toggle('hidden',empty);
+    if(empty){const e=homeEmptyState(state.user?.role,id);if($('#homeEmptyIcon'))$('#homeEmptyIcon').textContent=e.icon;if($('#homeEmptyTitle'))$('#homeEmptyTitle').textContent=e.title;if($('#homeEmptyText'))$('#homeEmptyText').textContent=e.text;if($('#homeEmptyActions'))$('#homeEmptyActions').innerHTML=e.actions;if($('#homeSubtitle'))$('#homeSubtitle').textContent='Assim que houver dados, o resumo da sua operação aparecerá aqui.';if($('#homeHeroActions'))$('#homeHeroActions').innerHTML=homeQuickButton({icon:'?',title:'Abrir guia',text:'Entenda o fluxo do painel',view:'help'});$('#homeSquadsCard')?.classList.add('hidden');return;}
+    if(isTechnician())renderTechnicianHome(id,months[0]);else if(isSuperAdmin())renderSuperAdminHome(id,months);else renderSquadAdminHome(id,months[0]);
+  }
+  function renderTechnicianHome(id,entry){
+    const m=entry.month,t=(m.technicians||[]).find(x=>samePersonName(x.name,state.user?.techName))||currentTech(),days=Math.max(1,businessDaysMonFri(m.year,m.month)),elapsed=Math.max(0,businessDaysElapsed(m.year,m.month,m.latestDay));
+    if(!t){const e=homeEmptyState('technician',id);$('#homeEmpty')?.classList.remove('hidden');$('#homeContent')?.classList.add('hidden');$('#homeEmptyTitle').textContent='Seu usuário ainda não está vinculado aos dados';$('#homeEmptyText').textContent='O login está correto, mas não encontrei seu nome entre os técnicos importados desta competência. Confirme o vínculo do cadastro com o nome usado no CSV.';$('#homeEmptyActions').innerHTML='<button class="btn secondary" type="button" data-home-view="help">Ver como funciona o vínculo</button>';return;}
+    const att=predictiveEngine.countMetric({realized:t.att,goal:t.goalAtt,elapsedDays:elapsed,totalDays:days}),notes=predictiveEngine.countMetric({realized:t.notes5,goal:t.goalEval,elapsedDays:elapsed,totalDays:days}),evalGoal=teamSettings(m).teamGoalEvalPct,risk=homeRiskForTechnician(t,m,entry.squad.code),money=safe(t.financeData?.final);
+    $('#homeSubtitle').textContent='Seu resumo do mês, com ritmo, qualidade e próximos passos em uma única tela.';
+    $('#homeHeroActions').innerHTML='<button class="btn primary" type="button" data-home-view="individual">Ver meu desempenho</button><button class="btn secondary" type="button" data-home-view="my-feedbacks">Meus feedbacks</button>';
+    $('#homeKpis').innerHTML=[homeKpiHtml({label:'Atendimentos',value:fmtInt(t.att),detail:`Meta ${fmtInt(t.goalAtt)} • projeção ${fmtInt(Math.round(att.projection))}`,icon:'☎',progress:att.completion,tone:homeStatusClass(att.status)}),homeKpiHtml({label:'Notas 5',value:fmtInt(t.notes5),detail:`Meta ${fmtInt(t.goalEval)} • projeção ${fmtInt(Math.round(notes.projection))}`,icon:'★',progress:notes.completion,tone:homeStatusClass(notes.status)}),homeKpiHtml({label:'% avaliado',value:fmtPct(t.evalPct),detail:`Meta ${fmtPct(evalGoal)} • ${fmtInt(t.totalEval)} avaliações`,icon:'%',progress:evalGoal?t.evalPct/evalGoal:null,tone:t.evalPct>=evalGoal?'positive':'warning'}),homeKpiHtml({label:'Bonificação',value:fmtMoney(money),detail:m.isClosed?'Valor oficial da competência':'Estimativa enquanto o mês está aberto',icon:'R$',tone:m.isClosed?'positive':'info'})].join('');
+    const alerts=[];if(risk.reasons.length)risk.reasons.slice(0,3).forEach((reason,i)=>alerts.push({severity:risk.level==='critical'?'critical':'warning',title:i===0?'Atenção ao ritmo':'Ponto para acompanhar',text:reason}));if(!risk.reasons.length)alerts.push({severity:'positive',title:'Ritmo saudável',text:'Seus principais indicadores estão no patamar esperado para a competência.'});if(t.vacation)alerts.push({severity:'info',title:'Férias registradas',text:'O redutor de 50% está sendo aplicado somente sobre a comissão-base, conforme a regra vigente.'});renderHomeAlerts(alerts);
+    $('#homeQuickActions').innerHTML=[homeQuickButton({icon:'◈',title:'Meu desempenho',text:'Ranking, metas e histórico',view:'individual'}),homeQuickButton({icon:'✎',title:'Meus feedbacks',text:'Acompanhe devolutivas finalizadas',view:'my-feedbacks'}),homeQuickButton({icon:'◉',title:'Meu perfil',text:'Conta e segurança',view:'profile'}),homeQuickButton({icon:'?',title:'Como usar',text:'Guia completo do painel',view:'help'})].join('');
+    $('#homeSquadsCard')?.classList.add('hidden');renderHomeContext([{label:'Competência',value:homePeriodLabel(id),note:`${elapsed}/${days} dias úteis`},{label:'Status',value:t.status||'Em acompanhamento',note:`${fmtNum(t.points)} pontos`},{label:'Origem',value:m.sourceFile||'Supabase',note:m.importedAt?formatDateTime(m.importedAt):'Sem data de importação'},{label:'Fechamento',value:m.isClosed?'Fechado':'Em andamento',note:m.isClosed&&m.closedAt?formatDateTime(m.closedAt):'Valores ainda podem mudar'}]);
+  }
+  function renderSquadAdminHome(id,entry){
+    const d=homeSquadMetric(entry.squad,entry.month),m=d.m,alerts=predictiveEngine.buildAlerts({attendance:d.attendance,notes5:d.notes,evaluation:d.evaluation,atRiskTechnicians:d.atRisk,totalTechnicians:(m.technicians||[]).length,confidenceLevel:predictiveEngine.confidence(d.elapsedDays,d.totalDays).level});
+    $('#homeSubtitle').textContent=`Resumo operacional do Squad ${entry.squad.code}, com projeção e pontos que pedem ação.`;
+    $('#homeHeroActions').innerHTML='<button class="btn primary" type="button" data-home-view="team">Abrir visão do Squad</button><button class="btn secondary" type="button" data-home-view="admin" data-home-admin-section="operation">Atualizar operação</button>';
+    $('#homeKpis').innerHTML=[homeKpiHtml({label:'Atendimentos',value:fmtInt(d.totals.att),detail:`Meta ${fmtInt(d.goals.teamGoalAtt)} • projeção ${fmtInt(Math.round(d.attendance.projection))}`,icon:'☎',progress:d.attendance.completion,tone:homeStatusClass(d.attendance.status)}),homeKpiHtml({label:'Notas 5',value:fmtInt(d.notes5),detail:`Meta ${fmtInt(d.notesGoal)} • projeção ${fmtInt(Math.round(d.notes.projection))}`,icon:'★',progress:d.notes.completion,tone:homeStatusClass(d.notes.status)}),homeKpiHtml({label:'% avaliado',value:fmtPct(d.totals.evalPct),detail:`Meta ${fmtPct(d.goals.teamGoalEvalPct)} • ${fmtInt(d.totals.eval)} avaliações`,icon:'%',progress:d.goals.teamGoalEvalPct?d.totals.evalPct/d.goals.teamGoalEvalPct:null,tone:d.totals.evalPct>=d.goals.teamGoalEvalPct?'positive':'warning'}),homeKpiHtml({label:'Técnicos em atenção',value:fmtInt(d.atRisk),detail:`${fmtInt((m.technicians||[]).length)} técnico(s) na competência`,icon:'!',tone:d.atRisk?'warning':'positive'})].join('');
+    renderHomeAlerts(alerts.length?alerts:[{severity:'positive',title:'Operação sem alertas críticos',text:'Os principais indicadores estão estáveis no recorte atual.'}]);
+    $('#homeQuickActions').innerHTML=[homeQuickButton({icon:'↻',title:'Operação',text:'Importação, metas e fechamento',view:'admin',section:'operation',permission:'data.import'}),homeQuickButton({icon:'R$',title:'Bonificação',text:'Valores e memória de cálculo',view:'admin',section:'finance',permission:'finance.view'}),homeQuickButton({icon:'▣',title:'Apresentação',text:'Painel para TV e comunicação',view:'presentation',permission:'presentation.view'}),homeQuickButton({icon:'⚙',title:'Configurações',text:'Regras e personalização',view:'settings'})].join('');
+    $('#homeSquadsCard')?.classList.add('hidden');renderHomeContext([{label:'Competência',value:homePeriodLabel(id),note:`${d.elapsedDays}/${d.totalDays} dias úteis`},{label:'Equipe',value:`${fmtInt((m.technicians||[]).length)} técnicos`,note:`${fmtInt(d.atRisk)} em atenção`},{label:'Origem',value:m.sourceFile||'Supabase',note:m.importedAt?formatDateTime(m.importedAt):'Sem data de importação'},{label:'Fechamento',value:m.isClosed?'Fechado':'Em andamento',note:m.isClosed&&m.closedAt?formatDateTime(m.closedAt):'A competência ainda recebe atualizações'}]);
+  }
+  function renderSuperAdminHome(id,entries){
+    const data=entries.map(x=>homeSquadMetric(x.squad,x.month)),att=data.reduce((s,d)=>s+d.totals.att,0),eligible=data.reduce((s,d)=>s+d.totals.eligibleAtt,0),evals=data.reduce((s,d)=>s+d.totals.eval,0),notes=data.reduce((s,d)=>s+d.notes5,0),goalAtt=data.reduce((s,d)=>s+d.goals.teamGoalAtt,0),goalNotes=data.reduce((s,d)=>s+d.notesGoal,0),projAtt=data.reduce((s,d)=>s+d.attendance.projection,0),projNotes=data.reduce((s,d)=>s+d.notes.projection,0),evalPct=eligible?evals/eligible:0,evalGoal=data.length?data.reduce((s,d)=>s+d.goals.teamGoalEvalPct,0)/data.length:0,atRisk=data.reduce((s,d)=>s+d.atRisk,0),totalTech=data.reduce((s,d)=>s+(d.m.technicians||[]).length,0),behind=data.filter(d=>d.attendance.projectedCompletion<1).length;
+    $('#homeSubtitle').textContent='Visão executiva dos Squads com o que está acontecendo agora e onde agir primeiro.';
+    $('#homeHeroActions').innerHTML='<button class="btn primary" type="button" data-home-view="indicators">Abrir Indicadores</button><button class="btn secondary" type="button" data-home-squad="all">Comparar Squads</button>';
+    $('#homeKpis').innerHTML=[homeKpiHtml({label:'Atendimentos',value:fmtInt(att),detail:`Meta ${fmtInt(goalAtt)} • projeção ${fmtInt(Math.round(projAtt))}`,icon:'☎',progress:goalAtt?att/goalAtt:null,tone:projAtt>=goalAtt?'positive':'warning'}),homeKpiHtml({label:'Notas 5',value:fmtInt(notes),detail:`Meta ${fmtInt(goalNotes)} • projeção ${fmtInt(Math.round(projNotes))}`,icon:'★',progress:goalNotes?notes/goalNotes:null,tone:projNotes>=goalNotes?'positive':'warning'}),homeKpiHtml({label:'% avaliado',value:fmtPct(evalPct),detail:`Referência média ${fmtPct(evalGoal)}`,icon:'%',progress:evalGoal?evalPct/evalGoal:null,tone:evalPct>=evalGoal?'positive':'warning'}),homeKpiHtml({label:'Técnicos em atenção',value:fmtInt(atRisk),detail:`${fmtInt(totalTech)} técnicos • ${fmtInt(behind)} Squad(s) abaixo da projeção`,icon:'!',tone:atRisk||behind?'warning':'positive'})].join('');
+    const alerts=[];if(behind)alerts.push({severity:behind>=2?'critical':'warning',title:'Squads abaixo da projeção',text:`${behind} Squad(s) projetam fechamento abaixo da meta de atendimentos.`});if(atRisk)alerts.push({severity:atRisk/Math.max(1,totalTech)>=.3?'critical':'warning',title:'Técnicos que pedem acompanhamento',text:`${atRisk} de ${totalTech} técnico(s) concentram sinais de risco no ritmo atual.`});if(evalGoal&&evalPct<evalGoal)alerts.push({severity:'warning',title:'Avaliação abaixo da referência',text:`Taxa consolidada em ${fmtPct(evalPct)} para referência média de ${fmtPct(evalGoal)}.`});if(!alerts.length)alerts.push({severity:'positive',title:'Operação consolidada estável',text:'Nenhum dos principais indicadores globais está em faixa crítica nesta competência.'});renderHomeAlerts(alerts);
+    $('#homeQuickActions').innerHTML=[homeQuickButton({icon:'◔',title:'Indicadores',text:'Gestão preditiva e comparações',view:'indicators',permission:'indicators.view'}),homeQuickButton({icon:'↻',title:'Operação',text:'Importações e fechamento',view:'admin',section:'operation',permission:'data.import'}),homeQuickButton({icon:'♟',title:'Usuários',text:'Acessos e permissões',view:'users',permission:'users.manage'}),homeQuickButton({icon:'⌁',title:'Auditoria',text:'Histórico de alterações',view:'audit',permission:'audit.view'}),homeQuickButton({icon:'▣',title:'TV / Comunicação',text:'Playlists e monitoramento',view:'presentation',permission:'presentation.view'}),homeQuickButton({icon:'⚙',title:'Configurações',text:'Central administrativa',view:'settings'})].join('');
+    const squadCard=$('#homeSquadsCard');squadCard?.classList.remove('hidden');if($('#homeSquadsNote'))$('#homeSquadsNote').textContent=`${homePeriodLabel(id)} • ${data.length} Squad(s) com dados`;if($('#homeSquadOverview'))$('#homeSquadOverview').innerHTML=data.sort((a,b)=>a.squad.code.localeCompare(b.squad.code)).map(d=>`<button class="home-squad-card" type="button" data-home-squad="${escapeHtml(d.squad.code)}"><div class="home-squad-head"><span>${escapeHtml(d.squad.code)}</span><b class="${homeStatusClass(d.attendance.status)}">${d.attendance.projectedCompletion>=1?'NO RITMO':'ATENÇÃO'}</b></div><strong>Squad ${escapeHtml(d.squad.code)}</strong><small>${fmtInt(d.totals.att)} atend. • ${fmtPct(d.totals.evalPct)} avaliado</small><div class="home-squad-foot"><span>Projeção ${fmtInt(Math.round(d.attendance.projection))}/${fmtInt(d.goals.teamGoalAtt)}</span><span>${fmtInt(d.atRisk)} técnico(s) atenção</span></div></button>`).join('');
+    const latest=homeLatestImport(entries);renderHomeContext([{label:'Competência',value:homePeriodLabel(id),note:`${data.length} Squad(s) com dados`},{label:'Equipe',value:`${fmtInt(totalTech)} técnicos`,note:`${fmtInt(atRisk)} em atenção`},{label:'Última atualização',value:latest?formatDateTime(latest):'Sem registro',note:'Mais recente entre os Squads'},{label:'Cobertura',value:`${data.length}/${Object.keys(state.squads||{}).length} Squads`,note:data.length===Object.keys(state.squads||{}).length?'Todos com dados':'Há Squad sem dados nesta competência'}]);
+  }
+  function renderHomeAlerts(alerts){const rows=(alerts||[]).slice(0,5);if($('#homeAlertCount'))$('#homeAlertCount').textContent=`${rows.filter(x=>x.severity!=='positive').length} alerta(s)`;if($('#homeAlerts'))$('#homeAlerts').innerHTML=rows.map(homeAlertHtml).join('')||homeAlertHtml({severity:'info',title:'Sem alertas',text:'Nenhum ponto automático foi identificado agora.'})}
+  function renderHomeContext(items){if($('#homeContext'))$('#homeContext').innerHTML=(items||[]).map(x=>`<div><span>${escapeHtml(x.label)}</span><strong>${escapeHtml(x.value)}</strong><small>${escapeHtml(x.note||'')}</small></div>`).join('')}
+  async function handleHomeClick(e){
+    const squadBtn=e.target.closest('[data-home-squad]');if(squadBtn){await selectSquad(squadBtn.dataset.homeSquad);showView('team');return;}
+    const btn=e.target.closest('[data-home-view],[data-home-admin-section],[data-home-settings-module]');if(!btn)return;
+    if(btn.dataset.homeSettingsModule){openSettingsModule(btn.dataset.homeSettingsModule);return;}
+    const view=btn.dataset.homeView||'admin',section=btn.dataset.homeAdminSection||null;showView(view,section);
   }
 
 
@@ -1061,7 +1156,7 @@
   function applyPresentationRouteBundle(bundle){if(!bundle)return null;const device=normalizeTvDevice(bundle.device||{}),playlist=bundle.playlist?normalizeTvPlaylist(bundle.playlist):null;state.presentationRouteDevice=device;state.presentationRoutePlaylist=playlist;const config=playlist?.config?allowedPresentationConfig(playlist.config):allowedPresentationConfig({...window.SoftenPresentation?.getConfig?.(),squad:device.squad});window.SoftenPresentation?.applyConfig?.(config);PRESENTATION_ROUTE.squad=config.squad||device.squad||PRESENTATION_ROUTE.squad;PRESENTATION_ROUTE.playlist=playlist?.id||device.playlistId||'';state.presentationRouteConfigSignature=routeBundleSignature(bundle);return config;}
   async function preparePresentationRouteContext(){if(!PRESENTATION_ROUTE.tv)return;try{const bundle=await fetchPresentationRouteBundle();if(bundle)applyPresentationRouteBundle(bundle);else console.warn('TV cadastrada não encontrada ou inativa; mantendo parâmetros da URL.');}catch(err){console.warn('Não foi possível carregar a configuração dinâmica da TV. Mantendo a configuração disponível na URL/local.',err);}}
   async function refreshPresentationRouteConfig(){if(!PRESENTATION_ROUTE.tv)return false;try{const bundle=await fetchPresentationRouteBundle();if(!bundle)return false;const sig=routeBundleSignature(bundle);if(sig===state.presentationRouteConfigSignature)return false;const config=applyPresentationRouteBundle(bundle),target=String(config?.squad||'all');if(isSuperAdmin()&&target!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(target)))await selectSquad(target);return true;}catch(err){console.warn('Falha ao verificar atualização da playlist da TV.',err);return false}}
-  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.40.1',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
+  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.41.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
 
   function presentationDailyRows(){
     const source=buildOrgTechnicianDailyOverviewFromState();

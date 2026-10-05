@@ -4,18 +4,28 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.40.1`<br>
+**Versão atual:** `2.41.0`<br>
 
 
 
+
+## V2.41.0 — Experiência inicial e Home
+
+A V2.41.0 redesenha o primeiro contato com o sistema. O login passa a usar a **logo oficial da Soften**, uma composição em duas colunas no desktop e proporções mais consistentes de campos, botões e cards. Em telas menores, a estrutura se reorganiza para uma única coluna.
+
+Após autenticar, o usuário entra na nova tela **Início**, em vez de cair diretamente em Meu desempenho. A Home é contextual: Técnicos recebem um resumo individual; Admins de Squad recebem KPIs, projeções, alertas e ações do próprio Squad; Admin Geral recebe um panorama consolidado e cartões dos Squads.
+
+Também foram adicionados **empty states acionáveis** em pontos críticos. Quando não há competência, vínculo ou dados suficientes, o painel explica o motivo e oferece o próximo passo possível, evitando a sensação de uma tela vazia.
+
+Esta versão não muda regras de bonificação, importação, TV, permissões ou banco de dados e **não exige migration nova**. A suíte passa a **96 testes automatizados**.
 
 ## V2.40.1 — Como usar atualizado
 
-A área **Como usar** foi reescrita para refletir o painel atual. O guia agora possui busca por assunto, atalhos para as principais telas, mapa completo dos módulos, passo a passo de importação, gestão preditiva, bonificação, configurações, usuários, feedbacks e TV/Comunicação.
+A área **Como usar** foi reescrita para refletir o painel atual. O guia passou a possuir busca por assunto, atalhos para as principais telas, mapa completo dos módulos, passo a passo de importação, gestão preditiva, bonificação, configurações, usuários, feedbacks e TV/Comunicação.
 
 O conteúdo respeita o perfil conectado: tópicos administrativos e recursos exclusivos do Admin Geral continuam ocultos quando não fazem parte do escopo do usuário. Também foram incluídos glossário prático de acesso, rotina mensal recomendada, regras de fechamento e aviso sobre recursos que dependem das migrations V2.36, V2.38, V2.39 e V2.40.
 
-A V2.40.1 não exige nova migration. A suíte passa a **90 testes automatizados**.
+A V2.40.1 não exige nova migration. A suíte passou a **90 testes automatizados**.
 
 ## V2.40.0 — TV / Comunicação
 

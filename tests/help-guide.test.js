@@ -16,7 +16,7 @@ function helpBlock(){
 
 test('Como usar referencia o painel atual e remove a versao antiga do guia', () => {
   const help=helpBlock();
-  assert.match(help,/GUIA COMPLETO • V2\.40/);
+  assert.match(help,/GUIA COMPLETO • V2\.41/);
   assert.equal(help.includes('GUIA COMPLETO • V2.20'),false);
   for(const marker of ['Central de Importação','Gestão preditiva','Bonificação e Financeiro avançado','Central de Configurações','TV / Comunicação']){
     assert.ok(help.includes(marker),`guia deve documentar ${marker}`);
@@ -32,7 +32,7 @@ test('Como usar possui busca interna e estado sem resultados', () => {
 
 test('Como usar oferece atalhos contextuais para as principais areas', () => {
   const help=helpBlock();
-  for(const view of ['individual','team','presentation','settings','profile']) assert.ok(help.includes(`data-help-view="${view}"`),`atalho deve apontar para ${view}`);
+  for(const view of ['home','individual','team','presentation','settings','profile']) assert.ok(help.includes(`data-help-view="${view}"`),`atalho deve apontar para ${view}`);
   for(const section of ['operation','finance','costs']) assert.ok(help.includes(`data-help-admin-section="${section}"`),`atalho deve apontar para admin/${section}`);
   assert.match(app,/function openHelpTarget\(/);
 });

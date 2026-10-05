@@ -1,3 +1,14 @@
+## V2.41.0 — Experiência inicial e Home
+- Redesenha a tela de login com a logo oficial da Soften, hierarquia visual mais clara e comportamento responsivo.
+- Padroniza proporções de cards, campos e botões para reduzir diferenças visuais entre módulos.
+- Cria o módulo **Início** e o define como primeira tela após o login.
+- A Home se adapta ao perfil: Técnico, Admin de Squad e Admin Geral recebem KPIs, alertas e atalhos adequados ao próprio contexto.
+- Admin Geral recebe visão resumida dos Squads e acesso rápido ao comparativo consolidado.
+- Substitui estados vazios silenciosos por mensagens orientativas e ações para importar dados, consultar ajuda ou navegar para o próximo passo.
+- Atualiza o guia **Como usar** com o novo fluxo de entrada pelo módulo Início.
+- Não altera regras de negócio, autenticação, persistência financeira ou estrutura do banco e não exige migration nova.
+- Amplia a suíte para **96 testes automatizados**.
+
 ## V2.40.1 — Como usar atualizado
 - Reescreve o guia interno para refletir todas as áreas do painel atual.
 - Adiciona busca textual dentro do Como usar e contador de tópicos encontrados.

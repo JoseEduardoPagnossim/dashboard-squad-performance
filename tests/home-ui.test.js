@@ -1,0 +1,71 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
+
+const root = join(__dirname, '..');
+const index = readFileSync(join(root, 'index.html'), 'utf8');
+const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
+
+function blockBetween(text, startMarker, endMarker){
+  const start = text.indexOf(startMarker);
+  const end = text.indexOf(endMarker, start + startMarker.length);
+  assert.ok(start >= 0, `marcador inicial ausente: ${startMarker}`);
+  assert.ok(end > start, `marcador final ausente: ${endMarker}`);
+  return text.slice(start, end);
+}
+
+test('V2.41 usa a logo oficial no login e no boot', () => {
+  const login = blockBetween(index, 'id="loginScreen"', 'id="soundWelcome"');
+  const boot = blockBetween(index, 'id="bootScreen"', 'id="loginScreen"');
+  assert.match(login, /assets\/soften-logo-sidebar\.png/);
+  assert.match(login, /login-shell-v241/);
+  assert.match(boot, /boot-brand-logo/);
+  assert.match(boot, /assets\/soften-logo-sidebar\.png/);
+});
+
+test('Home existe, aparece primeiro na navegacao e e a rota inicial apos login', () => {
+  assert.ok(index.includes('id="view-home"'), 'view-home deve existir');
+  const navHome = index.indexOf('data-view="home"');
+  const navIndividual = index.indexOf('data-view="individual"');
+  assert.ok(navHome >= 0 && navHome < navIndividual, 'Inicio deve aparecer antes de Meu desempenho');
+  assert.match(app, /currentView:'home'/);
+  const enterApp = blockBetween(app, 'async function enterApp(user)', 'function applyPermissions()');
+  assert.match(enterApp, /state\.currentView='home'/);
+});
+
+test('Home possui renderizacao especifica por perfil', () => {
+  for (const marker of ['renderHome()', 'renderTechnicianHome(', 'renderSquadAdminHome(', 'renderSuperAdminHome(']) {
+    assert.ok(app.includes(marker), `app.js deve conter ${marker}`);
+  }
+  assert.match(app, /isTechnician\(\).*renderTechnicianHome/);
+  assert.match(app, /isSuperAdmin\(\).*renderSuperAdminHome/);
+});
+
+test('Home possui KPIs, alertas, atalhos e visao de Squads', () => {
+  for (const id of ['homeKpis','homeAlerts','homeQuickActions','homeSquadOverview','homeContext','homeEmpty']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(css, /\.home-kpi-grid/);
+  assert.match(css, /\.home-alert-list/);
+  assert.match(css, /\.home-squad-grid/);
+});
+
+test('empty states principais oferecem proximo passo explicito', () => {
+  for (const id of ['individualEmpty','teamEmpty']) {
+    const pos = index.indexOf(`id="${id}"`);
+    assert.ok(pos >= 0, `${id} deve existir`);
+    const excerpt = index.slice(pos, pos + 900);
+    assert.match(excerpt, /empty-state-actions/);
+    assert.ok(/data-empty-view|data-empty-admin-section/.test(excerpt), `${id} deve oferecer uma acao`);
+  }
+  assert.match(app, /data-empty-view/);
+});
+
+test('V2.41 padroniza proporcoes de controles sem remover responsividade', () => {
+  assert.match(css, /--ui-control-height:40px/);
+  assert.match(css, /\.btn\{min-height:var\(--ui-control-height\)/);
+  assert.match(css, /@media\(max-width:820px\)/);
+  assert.match(css, /login-card-v241/);
+});
