@@ -40,3 +40,19 @@ test('mover e ocultar blocos preserva um layout válido', () => {
   layout = engine.toggleBlock('team', layout, first, true);
   assert.equal(layout.hidden.includes(first), false);
 });
+
+test('navegacao normaliza sidebar, grupos e submodulos sem perder compatibilidade', () => {
+  const prefs = engine.normalizePreferences({version:1,layouts:{},navigation:{sidebarCollapsed:true,groups:{management:true},subgroups:{people:true}}});
+  assert.equal(prefs.version, 2);
+  assert.equal(prefs.navigation.sidebarCollapsed, true);
+  assert.equal(prefs.navigation.groups.management, true);
+  assert.equal(prefs.navigation.groups.performance, false);
+  assert.equal(prefs.navigation.subgroups.people, true);
+  assert.equal(prefs.navigation.subgroups.finance, false);
+});
+
+test('preferencias padrao deixam navegacao expandida', () => {
+  const prefs = engine.defaultPreferences();
+  assert.equal(prefs.navigation.sidebarCollapsed, false);
+  assert.deepEqual(prefs.navigation.groups, {performance:false,management:false,account:false});
+});

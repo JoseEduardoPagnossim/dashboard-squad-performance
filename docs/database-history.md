@@ -420,3 +420,8 @@ Execute `supabase/migrations/MIGRACAO_V2.40.0.sql` antes de utilizar monitoramen
 Foram adicionadas as tabelas `presentation_playlists` e `presentation_devices`, com RLS por organização/Squad. TVs cadastradas recebem uma chave estável, consultam a playlist atual pela RPC `get_presentation_device_config` e registram presença/telemetria pela RPC `touch_presentation_device`.
 
 O heartbeat não concede permissão para alterar playlist, Squad ou regras de apresentação. A classificação Online/Atenção/Offline é calculada pelo frontend a partir de `last_seen_at`.
+
+
+## V2.42.0 — Avatar
+
+`profiles.avatar_path` referencia o arquivo WebP privado em `user-avatars`. A migration cria bucket com limite de 128 KB, políticas de leitura por organização, escrita somente no próprio caminho e a RPC `save_my_avatar_path(text)`.

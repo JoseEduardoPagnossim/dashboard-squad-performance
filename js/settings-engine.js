@@ -21,6 +21,13 @@
     {key:'permissions.manage',section:'Governança',label:'Definir permissões específicas',roles:['super_admin']}
   ];
 
+
+  const NAVIGATION_DEFAULTS={
+    sidebarCollapsed:false,
+    groups:{performance:false,management:false,account:false},
+    subgroups:{finance:false,people:false,governance:false}
+  };
+
   const LAYOUTS={
     individual:{label:'Meu desempenho',blocks:[
       {key:'hero',label:'Resumo e ranking',selector:'#individualContent > .hero'},
@@ -88,11 +95,18 @@
     const density=['compact','comfortable'].includes(raw.density)?raw.density:'comfortable';
     return{order,hidden,density};
   }
+  function normalizeNavigation(navigation){
+    const raw=navigation&&typeof navigation==='object'?navigation:{};
+    const groups={},subgroups={};
+    for(const key of Object.keys(NAVIGATION_DEFAULTS.groups))groups[key]=typeof raw.groups?.[key]==='boolean'?raw.groups[key]:NAVIGATION_DEFAULTS.groups[key];
+    for(const key of Object.keys(NAVIGATION_DEFAULTS.subgroups))subgroups[key]=typeof raw.subgroups?.[key]==='boolean'?raw.subgroups[key]:NAVIGATION_DEFAULTS.subgroups[key];
+    return{sidebarCollapsed:raw.sidebarCollapsed===true,groups,subgroups};
+  }
   function normalizePreferences(preferences){
     const raw=preferences&&typeof preferences==='object'?preferences:{};
     const layouts={};
     for(const view of Object.keys(LAYOUTS))layouts[view]=normalizeLayout(view,raw.layouts?.[view]);
-    return{version:1,layouts};
+    return{version:2,layouts,navigation:normalizeNavigation(raw.navigation)};
   }
   function defaultPreferences(){return normalizePreferences({})}
   function layoutDefinition(view){return LAYOUTS[view]||null}
@@ -105,5 +119,5 @@
     const next=normalizeLayout(view,layout),set=new Set(next.hidden);
     if(visible)set.delete(key);else set.add(key);next.hidden=[...set];return next;
   }
-  return{PERMISSIONS,LAYOUTS,permissionDefinition,defaultPermissions,normalizePermissionOverrides,effectivePermissions,can,permissionGroups,normalizeLayout,normalizePreferences,defaultPreferences,layoutDefinition,moveBlock,toggleBlock};
+  return{PERMISSIONS,LAYOUTS,NAVIGATION_DEFAULTS,permissionDefinition,defaultPermissions,normalizePermissionOverrides,effectivePermissions,can,permissionGroups,normalizeLayout,normalizeNavigation,normalizePreferences,defaultPreferences,layoutDefinition,moveBlock,toggleBlock};
 });

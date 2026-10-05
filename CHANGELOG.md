@@ -1,3 +1,13 @@
+## V2.42.0 — Navegação retrátil e avatar
+- Adiciona sidebar retrátil no desktop, com modo compacto de ícones e tooltips.
+- Torna Desempenho, Gestão e Conta recolhíveis e cria submódulos Financeiro, Pessoas e Governança.
+- Salva o estado da navegação por usuário dentro de `ui_preferences`, com fallback local.
+- Adiciona avatar em Meu perfil com recorte quadrado, conversão WebP e limite seguro antes do upload.
+- Usa bucket privado `user-avatars` e grava somente `avatar_path` em `profiles`.
+- Exibe avatar no topo, Home e Meu perfil, mantendo iniciais como fallback e sem carregar fotos na listagem administrativa.
+- Inclui `MIGRACAO_V2.42.0.sql` com bucket, RLS e RPC de atualização do próprio avatar.
+- Atualiza Como usar e documentação da arquitetura.
+
 ## V2.41.0 — Experiência inicial e Home
 - Redesenha a tela de login com a logo oficial da Soften, hierarquia visual mais clara e comportamento responsivo.
 - Padroniza proporções de cards, campos e botões para reduzir diferenças visuais entre módulos.

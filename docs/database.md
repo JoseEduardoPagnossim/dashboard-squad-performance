@@ -1,6 +1,6 @@
 # Banco de dados — Supabase
 
-Este documento representa o fluxo recomendado para a versão `2.39.0`.
+Este documento representa o fluxo recomendado para a versão `2.42.0`.
 
 ## Instalação nova
 
@@ -14,7 +14,7 @@ Em um projeto Supabase novo:
 6. configure URL e chave publishable/anon em `js/config.js`;
 7. valide login, leitura dos Squads e uma importação controlada antes de liberar o ambiente.
 
-`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.39.0, incluindo os `GRANT`s explícitos exigidos pela Data API.
+`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.42.0, incluindo os `GRANT`s explícitos exigidos pela Data API.
 
 ## Atualização de uma base existente
 
@@ -33,13 +33,15 @@ A V2.29.9 torna explícitos os privilégios necessários para a Data API do Supa
 
 ### Atualizações recentes
 
-Para ambientes já atualizados até V2.29.9, verifique também as migrations funcionais posteriores aplicáveis. Para a V2.39.0, a memória centralizada de bonificação exige:
+Para ambientes já atualizados até V2.29.9, verifique também as migrations funcionais posteriores aplicáveis. As evoluções mais recentes com banco são:
 
 ```text
-supabase/migrations/MIGRACAO_V2.39.0.sql
+supabase/migrations/MIGRACAO_V2.39.0.sql  # memória financeira
+supabase/migrations/MIGRACAO_V2.40.0.sql  # playlists e TVs
+supabase/migrations/MIGRACAO_V2.42.0.sql  # avatar privado
 ```
 
-Essa tabela registra snapshots imutáveis dos cálculos financeiros. A aplicação mantém fallback local quando a migration ainda não foi executada, mas a memória compartilhada entre gestores depende do Supabase.
+A V2.42 cria o bucket privado `user-avatars`, adiciona `profiles.avatar_path` e políticas para que cada usuário grave apenas a própria imagem otimizada.
 
 ## Edge Functions
 
@@ -79,3 +81,8 @@ supabase/migrations/MIGRACAO_V2.40.0.sql
 A migration cria `presentation_playlists` e `presentation_devices`. A primeira guarda a programação reutilizável; a segunda registra o dispositivo físico, sua playlist atribuída e a telemetria mais recente. As RPCs `get_presentation_device_config` e `touch_presentation_device` permitem que uma TV autenticada da mesma organização leia somente sua programação e atualize somente heartbeat/telemetria.
 
 Sem a migration, a aplicação mantém fallback em `localStorage`, adequado apenas para demonstração/contingência local.
+
+
+## V2.42.0 — Avatar
+
+`profiles.avatar_path` referencia o arquivo WebP privado em `user-avatars`. A migration cria bucket com limite de 128 KB, políticas de leitura por organização, escrita somente no próprio caminho e a RPC `save_my_avatar_path(text)`.

@@ -73,7 +73,7 @@ Os renderizadores de negócio continuam em `app.js` nesta etapa para preservar o
 
 - `js/settings-engine.js` centraliza matriz de permissões por papel, overrides restritivos e definição dos layouts personalizáveis.
 - `profiles.permissions` guarda somente restrições específicas; o papel base continua sendo o teto de acesso.
-- `profiles.ui_preferences` guarda layout/densidade pessoal e pode ser atualizado pelo próprio usuário via `save_my_ui_preferences`.
+- `profiles.ui_preferences` guarda layout/densidade pessoal e, a partir da V2.42, também o estado da navegação (sidebar, grupos e submódulos). Pode ser atualizado pelo próprio usuário via `save_my_ui_preferences`.
 - A aplicação mantém fallback em `localStorage`, preservando o funcionamento caso a migration ainda não tenha sido aplicada.
 - A Central de Configurações funciona como ponto de entrada para preferências pessoais e atalhos administrativos.
 
@@ -109,3 +109,13 @@ O `app.js` gerencia playlists, dispositivos, monitor e persistência. Na ausênc
 A Home não cria uma nova fonte de dados: reutiliza competências, metas, dados financeiros e o motor preditivo que já estão em memória. Isso evita alterar cálculos ou persistência durante a mudança de experiência. Os estados vazios também usam a matriz de permissões existente para decidir quais próximos passos podem ser oferecidos.
 
 O novo login modifica somente apresentação e hierarquia visual. O caminho de autenticação e o carregamento inicial de dados permanecem os mesmos; a redução do tempo de login será tratada em uma etapa estrutural específica de performance.
+
+
+## V2.42.0 — Navegação e avatar
+
+- A sidebar mantém a mesma árvore de rotas, mas a apresentação foi organizada em grupos e submódulos de no máximo dois níveis.
+- `settings-engine.js` normaliza `ui_preferences.navigation`, garantindo compatibilidade com preferências salvas em versões anteriores.
+- O modo recolhido é exclusivamente visual e não altera permissões ou roteamento.
+- O avatar usa Supabase Storage privado no bucket `user-avatars`. `profiles.avatar_path` mantém apenas a referência do arquivo.
+- O frontend reduz a imagem antes do upload; a interface não carrega avatars da lista de usuários para evitar N chamadas de Storage.
+- A URL assinada do próprio usuário é carregada depois que a aplicação já foi liberada, evitando transformar a foto em dependência do caminho crítico do login.

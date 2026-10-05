@@ -192,3 +192,33 @@ test('apresentacao direta envia heartbeat quando usa uma TV cadastrada', () => {
   assert.match(presentation, /restartHeartbeat/);
   assert.match(presentation, /getRuntimeStatus/);
 });
+
+test('V2.42 possui sidebar retratil, grupos e submodulos persistentes', () => {
+  for (const id of ['sidebarCollapseBtn','appSidebar']) assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  for (const group of ['performance','management','account']) assert.ok(index.includes(`data-nav-group="${group}"`), `sidebar deve conter grupo ${group}`);
+  for (const subgroup of ['finance','people','governance']) assert.ok(index.includes(`data-nav-subgroup="${subgroup}"`), `sidebar deve conter subgrupo ${subgroup}`);
+  assert.match(app, /applyNavigationPreferences/);
+  assert.match(app, /toggleSidebarCollapsed/);
+  assert.match(app, /toggleNavigationGroup/);
+  assert.match(app, /toggleNavigationSubgroup/);
+  assert.match(settingsEngine, /normalizeNavigation/);
+});
+
+test('V2.42 possui avatar otimizado sem carregar fotos da lista de usuarios', () => {
+  for (const id of ['profileAvatarInput','chooseProfileAvatarBtn','removeProfileAvatarBtn','profileAvatarPreview','profileAvatarMessage']) assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  assert.match(app, /optimizeAvatarFile/);
+  assert.match(app, /AVATAR_TARGET_BYTES/);
+  assert.match(app, /createSignedUrl\(state\.user\.avatarPath,86400\)/);
+  assert.match(app, /save_my_avatar_path/);
+  assert.equal(/select\([^)]*avatar_path[^)]*\).*userDirectory/.test(app), false, 'diretorio de usuarios nao deve depender de avatars');
+});
+
+test('V2.42 inclui migration de avatar privado no Supabase Storage', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.42.0.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /add column if not exists avatar_path text/);
+  assert.match(migration, /insert into storage\.buckets/);
+  assert.match(migration, /'user-avatars'/);
+  assert.match(migration, /create or replace function public\.save_my_avatar_path/);
+  assert.match(migration, /create policy user_avatars_select_org/);
+  assert.match(migration, /create policy user_avatars_update_own/);
+});

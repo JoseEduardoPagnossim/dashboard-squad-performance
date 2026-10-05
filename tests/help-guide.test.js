@@ -16,7 +16,7 @@ function helpBlock(){
 
 test('Como usar referencia o painel atual e remove a versao antiga do guia', () => {
   const help=helpBlock();
-  assert.match(help,/GUIA COMPLETO • V2\.41/);
+  assert.match(help,/GUIA COMPLETO • V2\.42/);
   assert.equal(help.includes('GUIA COMPLETO • V2.20'),false);
   for(const marker of ['Central de Importação','Gestão preditiva','Bonificação e Financeiro avançado','Central de Configurações','TV / Comunicação']){
     assert.ok(help.includes(marker),`guia deve documentar ${marker}`);

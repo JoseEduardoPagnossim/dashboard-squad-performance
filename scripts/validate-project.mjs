@@ -72,13 +72,16 @@ for (const required of [
   'js/finance-advanced.js',
   'js/audit-utils.js',
   'docs/COMO_USAR_V2.41.0.md',
+  'docs/COMO_USAR_V2.42.0.md',
   'docs/EXPERIENCIA_INICIAL_V2.41.0.md',
+  'docs/NAVEGACAO_PERFIL_V2.42.0.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
   'supabase/migrations/MIGRACAO_V2.38.0.sql',
   'supabase/migrations/MIGRACAO_V2.39.0.sql',
-  'supabase/migrations/MIGRACAO_V2.40.0.sql'
+  'supabase/migrations/MIGRACAO_V2.40.0.sql',
+  'supabase/migrations/MIGRACAO_V2.42.0.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -186,6 +189,20 @@ for (const sqlMarker of [
   'alter table public.presentation_devices enable row level security'
 ]) {
   if (!tvMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.40.0 incompleta: ${sqlMarker}`);
+}
+
+
+const avatarMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.42.0.sql'), 'utf8').toLowerCase().replace(/\s+/g, ' ');
+for (const sqlMarker of [
+  'add column if not exists avatar_path text',
+  'insert into storage.buckets',
+  'create or replace function public.save_my_avatar_path',
+  'create policy user_avatars_select_org',
+  'create policy user_avatars_insert_own',
+  'create policy user_avatars_update_own',
+  'create policy user_avatars_delete_own'
+]) {
+  if (!avatarMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.42.0 incompleta: ${sqlMarker}`);
 }
 
 // Toda nova migration que cria tabela em public deve declarar um GRANT explícito.

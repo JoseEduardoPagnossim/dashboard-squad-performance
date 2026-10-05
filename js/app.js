@@ -23,7 +23,7 @@
   const tvEngine = window.SoftenTvEngine;
   if(!tvEngine) throw new Error('SoftenTvEngine não carregado. Verifique js/tv-engine.js.');
   const {normalizePlaylist:normalizeTvPlaylist,normalizeDevice:normalizeTvDevice,statusForDevice:tvDeviceStatus,monitorSummary:tvMonitorSummary,humanAge:tvHumanAge,generateDeviceKey:generateTvDeviceKey,deviceUrl:buildTvDeviceUrl,heartbeatPayload:buildTvHeartbeatPayload}=tvEngine;
-  const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups}=settingsEngine;
+  const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups}=settingsEngine;
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -31,6 +31,9 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
+  const AVATAR_BUCKET = 'user-avatars';
+  const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
+  const AVATAR_TARGET_BYTES = 100*1024;
   const PRESENTATION_ROUTE = window.SoftenPresentation?.route || {enabled:false,squad:'',direct:false};
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
@@ -201,6 +204,28 @@
     const local=loadLocalUiPreferences(user),remote=user?.uiPreferences&&typeof user.uiPreferences==='object'?normalizeUiPreferences(user.uiPreferences):null;
     state.uiPreferences=remote||local;saveLocalUiPreferences(state.uiPreferences,user);return state.uiPreferences;
   }
+  let uiPreferencePersistTimer=null;
+  function navigationPreferences(){return normalizeUiNavigation(state.uiPreferences?.navigation)}
+  function applyNavigationPreferences(){
+    const nav=navigationPreferences(),shell=$('#appShell'),sidebar=$('#appSidebar'),desktop=window.innerWidth>980;
+    shell?.classList.toggle('sidebar-collapsed',desktop&&nav.sidebarCollapsed);
+    sidebar?.classList.toggle('sidebar-collapsed',desktop&&nav.sidebarCollapsed);
+    const collapseBtn=$('#sidebarCollapseBtn');
+    if(collapseBtn){const collapsed=desktop&&nav.sidebarCollapsed;collapseBtn.setAttribute('aria-expanded',collapsed?'false':'true');collapseBtn.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');collapseBtn.title=collapsed?'Expandir menu lateral':'Recolher menu lateral';collapseBtn.querySelector('span').textContent=collapsed?'›':'‹';}
+    $$('[data-nav-group]').forEach(group=>{const key=group.dataset.navGroup,collapsed=!!nav.groups?.[key];group.classList.toggle('nav-section-collapsed',collapsed);const toggle=group.querySelector('[data-nav-group-toggle]');if(toggle)toggle.setAttribute('aria-expanded',collapsed?'false':'true')});
+    $$('[data-nav-subgroup]').forEach(group=>{const key=group.dataset.navSubgroup,collapsed=!!nav.subgroups?.[key],available=[...group.querySelectorAll('.nav-btn')].some(btn=>!btn.classList.contains('hidden')&&!btn.classList.contains('permission-hidden'));group.classList.toggle('nav-subsection-collapsed',collapsed);group.classList.toggle('nav-subgroup-unavailable',!available);const toggle=group.querySelector('[data-nav-subgroup-toggle]');if(toggle)toggle.setAttribute('aria-expanded',collapsed?'false':'true')});
+    $$('.nav-btn').forEach(btn=>{const label=btn.querySelector('.nav-text')?.textContent?.trim();if(label){btn.setAttribute('aria-label',label);btn.title=desktop&&nav.sidebarCollapsed?label:'';}});
+  }
+  function scheduleUiPreferencePersist(){
+    saveLocalUiPreferences(state.uiPreferences);clearTimeout(uiPreferencePersistTimer);uiPreferencePersistTimer=setTimeout(()=>persistMyUiPreferences(),450);
+  }
+  function updateNavigationPreferences(mutator){
+    const next=mutator(navigationPreferences())||navigationPreferences();
+    state.uiPreferences=normalizeUiPreferences({...state.uiPreferences,navigation:next});applyNavigationPreferences();scheduleUiPreferencePersist();
+  }
+  function toggleSidebarCollapsed(){if(window.innerWidth<=980)return;updateNavigationPreferences(nav=>({...nav,sidebarCollapsed:!nav.sidebarCollapsed}))}
+  function toggleNavigationGroup(key){updateNavigationPreferences(nav=>({...nav,groups:{...nav.groups,[key]:!nav.groups?.[key]}}))}
+  function toggleNavigationSubgroup(key){updateNavigationPreferences(nav=>({...nav,subgroups:{...nav.subgroups,[key]:!nav.subgroups?.[key]}}))}
   function layoutRootForView(view){return view==='individual'?'#individualContent':view==='team'?'#teamContent':view==='indicators'?'#indicatorPerformancePanel':null}
   function clearPersonalLayout(view){
     const def=settingsLayoutDefinition(view);if(!def)return;
@@ -442,6 +467,12 @@
     if($('#resetUserPermissionsBtn'))$('#resetUserPermissionsBtn').addEventListener('click',()=>{state.editPermissionDraft={};renderPermissionEditor($('#editUserRole').value);});
     ['#topUserProfileBtn'].forEach(sel=>{const el=$(sel);if(!el)return;el.addEventListener('click',()=>showView('profile'));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('profile')}})});
     $('#profilePasswordForm').addEventListener('submit',handleProfilePasswordChange);
+    $('#sidebarCollapseBtn')?.addEventListener('click',toggleSidebarCollapsed);
+    $$('[data-nav-group-toggle]').forEach(btn=>btn.addEventListener('click',()=>toggleNavigationGroup(btn.dataset.navGroupToggle)));
+    $$('[data-nav-subgroup-toggle]').forEach(btn=>btn.addEventListener('click',()=>toggleNavigationSubgroup(btn.dataset.navSubgroupToggle)));
+    $('#chooseProfileAvatarBtn')?.addEventListener('click',()=>$('#profileAvatarInput')?.click());
+    $('#profileAvatarInput')?.addEventListener('change',handleProfileAvatarFile);
+    $('#removeProfileAvatarBtn')?.addEventListener('click',removeProfileAvatar);
     const mobileMenu=$('#mobileMenu');
     const sidebar=$('.sidebar');
     const sidebarBackdrop=$('#sidebarBackdrop');
@@ -455,7 +486,7 @@
     mobileMenu?.addEventListener('click',()=>setSidebarOpen(!sidebar.classList.contains('open')));
     sidebarBackdrop?.addEventListener('click',()=>setSidebarOpen(false));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sidebar?.classList.contains('open'))setSidebarOpen(false)});
-    window.addEventListener('resize',()=>{if(window.innerWidth>980&&sidebar?.classList.contains('open'))setSidebarOpen(false)});
+    window.addEventListener('resize',()=>{if(window.innerWidth>980&&sidebar?.classList.contains('open'))setSidebarOpen(false);applyNavigationPreferences();});
     $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
     $('#monthSelect').addEventListener('change',e=>{state.currentId=e.target.value; chooseDefaultTech(); refreshSelectors(); render();});
     $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
@@ -674,8 +705,9 @@
     }
     if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
     resetAnalysisRange(true);
-    applyPermissions();refreshSelectors();render();
+    applyPermissions();applyNavigationPreferences();refreshSelectors();render();
     hideBoot();$('#loginScreen').classList.add('hidden');$('#appShell').classList.remove('hidden');
+    refreshCurrentUserAvatarUrl().catch(err=>console.warn('Avatar indisponível; usando iniciais.',err));
     if(PRESENTATION_ROUTE.enabled){window.SoftenPresentation?.setDirectMode(true);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.remove('hidden');showView('presentation');}
     else window.SoftenPresentation?.setDirectMode(false);
     initializeThemeAudio();
@@ -707,7 +739,7 @@
     syncAnalysisDateControls();
     if($('#topUserName'))$('#topUserName').textContent=state.user.fullName;
     if($('#topUserScope'))$('#topUserScope').textContent=state.user.role==='super_admin'?'Acesso geral':`Squad ${state.user.squadCode}`;
-    const initial=(state.user.fullName||'U').charAt(0).toUpperCase();if($('#topAvatar'))$('#topAvatar').textContent=initial;
+    renderUserAvatar($('#topAvatar'),state.user);
   }
   function isTechnician(){return state.user?.role==='technician'}
   function isAdmin(){return ['squad_admin','super_admin'].includes(state.user?.role)}
@@ -1035,8 +1067,8 @@
     return{icon:isTechnician()?'◈':'↻',title:id?'Sem dados nesta competência':'O painel ainda não possui competências',text:isTechnician()?'Ainda não há dados vinculados ao seu perfil nesta competência. Se isso não era esperado, confirme seu vínculo com o gestor.':'Importe os dados da primeira competência para liberar a Home, indicadores, rankings e bonificação.',actions:actions.join('')};
   }
   function renderHome(){
-    const id=homeLatestPeriodId(),months=homePeriodMonths(id),empty=!id||!months.length,first=String(state.user?.fullName||state.user?.email||'Usuário').trim().split(/\s+/)[0]||'Usuário',initial=String(first||'U').charAt(0).toUpperCase();
-    if($('#homeAvatar'))$('#homeAvatar').textContent=initial;
+    const id=homeLatestPeriodId(),months=homePeriodMonths(id),empty=!id||!months.length,first=String(state.user?.fullName||state.user?.email||'Usuário').trim().split(/\s+/)[0]||'Usuário';
+    renderUserAvatar($('#homeAvatar'),state.user);
     if($('#homeGreeting'))$('#homeGreeting').textContent=`${homeGreetingText()}, ${first}.`;
     if($('#homeRoleLabel'))$('#homeRoleLabel').textContent=`${roleLabel(state.user?.role||'').toUpperCase()} • ${isSuperAdmin()?'VISÃO GERAL':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`}`;
     if($('#homePeriodChip'))$('#homePeriodChip').textContent=homePeriodLabel(id);
@@ -1156,7 +1188,7 @@
   function applyPresentationRouteBundle(bundle){if(!bundle)return null;const device=normalizeTvDevice(bundle.device||{}),playlist=bundle.playlist?normalizeTvPlaylist(bundle.playlist):null;state.presentationRouteDevice=device;state.presentationRoutePlaylist=playlist;const config=playlist?.config?allowedPresentationConfig(playlist.config):allowedPresentationConfig({...window.SoftenPresentation?.getConfig?.(),squad:device.squad});window.SoftenPresentation?.applyConfig?.(config);PRESENTATION_ROUTE.squad=config.squad||device.squad||PRESENTATION_ROUTE.squad;PRESENTATION_ROUTE.playlist=playlist?.id||device.playlistId||'';state.presentationRouteConfigSignature=routeBundleSignature(bundle);return config;}
   async function preparePresentationRouteContext(){if(!PRESENTATION_ROUTE.tv)return;try{const bundle=await fetchPresentationRouteBundle();if(bundle)applyPresentationRouteBundle(bundle);else console.warn('TV cadastrada não encontrada ou inativa; mantendo parâmetros da URL.');}catch(err){console.warn('Não foi possível carregar a configuração dinâmica da TV. Mantendo a configuração disponível na URL/local.',err);}}
   async function refreshPresentationRouteConfig(){if(!PRESENTATION_ROUTE.tv)return false;try{const bundle=await fetchPresentationRouteBundle();if(!bundle)return false;const sig=routeBundleSignature(bundle);if(sig===state.presentationRouteConfigSignature)return false;const config=applyPresentationRouteBundle(bundle),target=String(config?.squad||'all');if(isSuperAdmin()&&target!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(target)))await selectSquad(target);return true;}catch(err){console.warn('Falha ao verificar atualização da playlist da TV.',err);return false}}
-  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.41.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
+  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.42.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
 
   function presentationDailyRows(){
     const source=buildOrgTechnicianDailyOverviewFromState();
@@ -2141,11 +2173,57 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function renderMyFeedbacks(){if(!isTechnician()||!$('#myFeedbackRows'))return;if(!state.myFeedbacks){$('#myFeedbackRows').innerHTML='<div class="card chart-empty">Carregando feedbacks...</div>';loadMyFeedbacks();return;}const rows=state.myFeedbacks;$('#myFeedbackRows').innerHTML=rows.map(r=>{const snap=r.generated_snapshot||{},period=`${MONTHS_PT[Math.max(0,safe(r.month)-1)]||r.month}/${r.year}`;return `<article class="card my-feedback-card"><div class="my-feedback-head"><div><span class="eyebrow">${escapeHtml(period)} • SQUAD ${escapeHtml(snap.squad||state.user.squadCode||'')}</span><h3>Feedback mensal</h3><p>Finalizado em ${r.finalized_at?formatDateTime(r.finalized_at):'data não informada'}</p></div><span class="feedback-status-badge finalized">FINALIZADO</span></div><div class="my-feedback-sections"><div class="my-feedback-block full"><span>Resumo</span><p>${escapeHtml(r.summary||'—')}</p></div><div class="my-feedback-block"><span>Pontos positivos</span><p>${escapeHtml(r.strengths||'—')}</p></div><div class="my-feedback-block"><span>Pontos de desenvolvimento</span><p>${escapeHtml(r.improvement_points||'—')}</p></div><div class="my-feedback-block"><span>Compromissos</span><p>${escapeHtml(r.next_month_goals||'—')}</p></div><div class="my-feedback-block"><span>Observações do gestor</span><p>${escapeHtml(r.manager_notes||'Sem observações adicionais.')}</p></div></div></article>`}).join('')||'<div class="empty-state"><div>✎</div><h2>Nenhum feedback compartilhado</h2><p>Quando seu gestor finalizar e liberar um feedback mensal, ele aparecerá aqui.</p></div>';}
 
 
+  function avatarInitial(user=state.user){return String(user?.fullName||user?.email||'U').trim().charAt(0).toUpperCase()||'U'}
+  function localAvatarStorageKey(user=state.user){return `softenPerformanceAvatarV1:${user?.userId||user?.email||'anonymous'}`}
+  function renderUserAvatar(el,user=state.user){
+    if(!el||!user)return;const url=user.avatarUrl||(!state.supabase?localStorage.getItem(localAvatarStorageKey(user))||'':'');el.textContent=avatarInitial(user);el.classList.toggle('avatar-has-image',!!url);if(url)el.style.backgroundImage=`url("${String(url).replace(/"/g,'%22')}")`;else el.style.removeProperty('background-image');
+  }
+  function renderCurrentUserAvatars(){for(const el of [$('#topAvatar'),$('#homeAvatar'),$('#profileAvatar'),$('#profileAvatarPreview')])renderUserAvatar(el,state.user)}
+  async function refreshCurrentUserAvatarUrl(){
+    if(!state.user)return null;
+    if(!state.supabase){state.user.avatarUrl=localStorage.getItem(localAvatarStorageKey(state.user))||null;renderCurrentUserAvatars();return state.user.avatarUrl}
+    if(!state.user.avatarPath){state.user.avatarUrl=null;renderCurrentUserAvatars();return null}
+    const {data,error}=await state.supabase.storage.from(AVATAR_BUCKET).createSignedUrl(state.user.avatarPath,86400);if(error)throw error;state.user.avatarUrl=data?.signedUrl||null;renderCurrentUserAvatars();return state.user.avatarUrl;
+  }
+  function loadImageElement(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Não foi possível ler a imagem.'))};img.src=url;})}
+  function canvasToBlob(canvas,quality){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Não foi possível otimizar a imagem.')),'image/webp',quality))}
+  async function optimizeAvatarFile(file){
+    if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Use uma imagem JPG, PNG ou WebP.');
+    if(file.size>AVATAR_MAX_SOURCE_BYTES)throw new Error('A imagem original deve ter no máximo 5 MB.');
+    const img=await loadImageElement(file);const size=Math.min(img.naturalWidth||img.width,img.naturalHeight||img.height);if(!size)throw new Error('Imagem inválida.');
+    let outputSize=256,quality=.84,blob=null;
+    for(let attempt=0;attempt<6;attempt++){
+      const canvas=document.createElement('canvas');canvas.width=outputSize;canvas.height=outputSize;const ctx=canvas.getContext('2d',{alpha:false});ctx.fillStyle='#ffffff';ctx.fillRect(0,0,outputSize,outputSize);const sx=((img.naturalWidth||img.width)-size)/2,sy=((img.naturalHeight||img.height)-size)/2;ctx.drawImage(img,sx,sy,size,size,0,0,outputSize,outputSize);blob=await canvasToBlob(canvas,quality);if(blob.size<=AVATAR_TARGET_BYTES)break;quality=Math.max(.58,quality-.08);if(attempt>=2)outputSize=Math.max(192,outputSize-24);
+    }
+    if(!blob||blob.size>128*1024)throw new Error('Não foi possível reduzir a foto para o limite seguro. Tente outra imagem.');return blob;
+  }
+  async function blobToDataUrl(blob){return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Falha ao preparar a imagem.'));reader.readAsDataURL(blob)})}
+  async function handleProfileAvatarFile(event){
+    const input=event?.target||$('#profileAvatarInput'),file=input?.files?.[0],msg=$('#profileAvatarMessage'),choose=$('#chooseProfileAvatarBtn');if(!file)return;if(msg){msg.className='profile-form-message';msg.textContent='Otimizando foto...'}if(choose)choose.disabled=true;
+    try{
+      const blob=await optimizeAvatarFile(file);
+      if(state.supabase){
+        if(!state.user?.organizationId||!state.user?.userId)throw new Error('Perfil sem organização ou usuário para armazenar a foto.');
+        const path=`${state.user.organizationId}/${state.user.userId}.webp`;const {error:uploadError}=await state.supabase.storage.from(AVATAR_BUCKET).upload(path,blob,{contentType:'image/webp',upsert:true,cacheControl:'3600'});if(uploadError)throw uploadError;
+        const {error:profileError}=await state.supabase.rpc('save_my_avatar_path',{p_avatar_path:path});if(profileError)throw profileError;state.user.avatarPath=path;await refreshCurrentUserAvatarUrl();
+      }else{const dataUrl=await blobToDataUrl(blob);localStorage.setItem(localAvatarStorageKey(state.user),dataUrl);state.user.avatarUrl=dataUrl;renderCurrentUserAvatars();}
+      if(msg){msg.className='profile-form-message success';msg.textContent=`Foto atualizada • ${Math.max(1,Math.round(blob.size/1024))} KB`;}
+    }catch(err){console.error(err);if(msg){msg.className='profile-form-message';msg.textContent=err?.message||'Não foi possível atualizar a foto.';}}
+    finally{if(choose)choose.disabled=false;if(input)input.value=''}
+  }
+  async function removeProfileAvatar(){
+    const msg=$('#profileAvatarMessage'),btn=$('#removeProfileAvatarBtn');if(btn)btn.disabled=true;if(msg){msg.className='profile-form-message';msg.textContent='Removendo foto...'}
+    try{
+      if(state.supabase){if(state.user?.avatarPath){const {error}=await state.supabase.storage.from(AVATAR_BUCKET).remove([state.user.avatarPath]);if(error)throw error;}const {error:profileError}=await state.supabase.rpc('save_my_avatar_path',{p_avatar_path:null});if(profileError)throw profileError;state.user.avatarPath=null;state.user.avatarUrl=null;}else{localStorage.removeItem(localAvatarStorageKey(state.user));state.user.avatarUrl=null;}renderCurrentUserAvatars();if(msg){msg.className='profile-form-message success';msg.textContent='Foto removida. As iniciais voltaram a ser usadas.';}
+    }catch(err){console.error(err);if(msg){msg.className='profile-form-message';msg.textContent=err?.message||'Não foi possível remover a foto.';}}
+    finally{if(btn)btn.disabled=false}
+  }
+
   function renderProfile(){
     if(!state.user||!$('#view-profile'))return;
     const u=state.user,role=roleLabel(u.role),scope=u.role==='super_admin'?'Todos os Squads':(u.squadCode?`Squad ${u.squadCode}`:'Sem Squad');
-    const initial=String(u.fullName||u.email||'U').charAt(0).toUpperCase();
-    $('#profileAvatar').textContent=initial;
+    renderUserAvatar($('#profileAvatar'),u);
+    renderUserAvatar($('#profileAvatarPreview'),u);
     $('#profileName').textContent=u.fullName||'Usuário';
     $('#profileEmail').textContent=u.email||'E-mail não informado';
     $('#profileRole').textContent=role;
@@ -2156,6 +2234,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     $('#profileAccountSquad').textContent=scope;
     $('#profileTechRow').classList.toggle('hidden',u.role!=='technician');
     $('#profileAccountTech').textContent=u.techName?titleWords(u.techName):'—';
+    if($('#removeProfileAvatarBtn'))$('#removeProfileAvatarBtn').disabled=!(u.avatarPath||u.avatarUrl||(!state.supabase&&localStorage.getItem(localAvatarStorageKey(u))));
   }
   async function handleProfilePasswordChange(e){
     e.preventDefault();if(!state.user)return;
@@ -3522,9 +3601,15 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function loadScript(src){return new Promise((resolve,reject)=>{if(window.supabase)return resolve();const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Falha ao carregar biblioteca Supabase.'));document.head.appendChild(s)})}
   async function enterSupabaseSession(authUser){
     const {data:profile,error}=await state.supabase.from('profiles').select('user_id,email,full_name,role,organization_id,squad_id,technician_name,squads(id,code,name)').eq('user_id',authUser.id).single();if(error)throw error;
-    let permissions={},uiPreferences=null;
-    try{const {data:extra,error:extraError}=await state.supabase.from('profiles').select('permissions,ui_preferences').eq('user_id',authUser.id).single();if(extraError)throw extraError;permissions=extra?.permissions||{};uiPreferences=extra?.ui_preferences||null}catch(err){console.warn('Configurações V2.38 ainda não migradas no Supabase; usando padrões locais.',err)}
-    state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null,permissions,uiPreferences};
+    let permissions={},uiPreferences=null,avatarPath=null;
+    try{
+      const {data:extra,error:extraError}=await state.supabase.from('profiles').select('permissions,ui_preferences,avatar_path').eq('user_id',authUser.id).single();
+      if(extraError)throw extraError;permissions=extra?.permissions||{};uiPreferences=extra?.ui_preferences||null;avatarPath=extra?.avatar_path||null;
+    }catch(err){
+      try{const {data:legacy,error:legacyError}=await state.supabase.from('profiles').select('permissions,ui_preferences').eq('user_id',authUser.id).single();if(legacyError)throw legacyError;permissions=legacy?.permissions||{};uiPreferences=legacy?.ui_preferences||null;}catch(legacyErr){console.warn('Configurações V2.38 ainda não migradas no Supabase; usando padrões locais.',legacyErr)}
+      console.warn('Avatar V2.42 ainda não migrado no Supabase; usando iniciais.',err);
+    }
+    state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null,permissions,uiPreferences,avatarPath,avatarUrl:null};
     await loadSupabaseData();state.presentationLastSyncAt=new Date().toISOString();await enterApp(state.user);
   }
   async function loadSupabaseData(){

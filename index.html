@@ -9,8 +9,8 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.41.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.41.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.42.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.42.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -67,7 +67,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.41.0 • Experiência inicial renovada</small>
+        <small class="login-version">V2.42.0 • Experiência inicial renovada</small>
       </section>
     </div>
   </section>
@@ -85,33 +85,60 @@
 
   <div id="appShell" class="app-shell hidden">
     <aside class="sidebar" id="appSidebar">
-      <div class="brand brand-logo-box">
-        <img class="brand-logo-image" src="assets/soften-logo-sidebar.png" alt="Soften Sistemas">
-        <div class="brand-copy"><strong>Performance Hub</strong><span>Painel de desempenho</span></div>
+      <div class="sidebar-head">
+        <div class="brand brand-logo-box">
+          <img class="brand-logo-image" src="assets/soften-logo-sidebar.png" alt="Soften Sistemas">
+          <div class="brand-copy"><strong>Performance Hub</strong><span>Painel de desempenho</span></div>
+        </div>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-label="Recolher menu lateral" aria-expanded="true" title="Recolher menu lateral"><span>‹</span></button>
       </div>
-      <nav class="sidebar-nav">
-        <div class="nav-group"><span class="nav-group-label">DESEMPENHO</span>
-          <button class="nav-btn active" data-view="home"><span>⌂</span> Início</button>
-          <button class="nav-btn" data-view="individual"><span>◈</span> Meu desempenho</button>
-          <button class="nav-btn" data-view="team"><span>♛</span> Visão do Squad</button>
-          <button class="nav-btn super-only" data-permission="indicators.view" data-view="indicators"><span>◔</span> Indicadores</button>
-          <button class="nav-btn" data-permission="presentation.view" data-view="presentation"><span>▣</span> Apresentação</button>
+      <nav class="sidebar-nav" aria-label="Navegação principal">
+        <div class="nav-group" data-nav-group="performance">
+          <button class="nav-group-toggle" type="button" data-nav-group-toggle="performance" aria-expanded="true"><span class="nav-group-label">DESEMPENHO</span><span class="nav-chevron">⌄</span></button>
+          <div class="nav-group-items">
+            <button class="nav-btn active" data-view="home"><span class="nav-icon">⌂</span><span class="nav-text">Início</span></button>
+            <button class="nav-btn" data-view="individual"><span class="nav-icon">◈</span><span class="nav-text">Meu desempenho</span></button>
+            <button class="nav-btn" data-view="team"><span class="nav-icon">♛</span><span class="nav-text">Visão do Squad</span></button>
+            <button class="nav-btn super-only" data-permission="indicators.view" data-view="indicators"><span class="nav-icon">◔</span><span class="nav-text">Indicadores</span></button>
+            <button class="nav-btn" data-permission="presentation.view" data-view="presentation"><span class="nav-icon">▣</span><span class="nav-text">Apresentação</span></button>
+          </div>
         </div>
-        <div class="nav-group admin-only"><span class="nav-group-label">GESTÃO</span>
-          <button class="nav-btn" id="operationNavBtn" data-view="admin" data-admin-section="operation"><span>↻</span> Operação</button>
-          <button class="nav-btn" data-permission="finance.view" data-view="admin" data-admin-section="finance"><span>R$</span> Bonificação</button>
-          <button class="nav-btn super-only" data-permission="costs.view" data-view="admin" data-admin-section="costs"><span>⏱</span> Custos</button>
-          <button class="nav-btn" data-permission="feedback.manage" data-view="feedbacks"><span>✎</span> Feedbacks</button>
-          <button class="nav-btn" data-permission="users.manage" data-view="users"><span>♟</span> Usuários</button>
-          <button class="nav-btn" data-permission="audit.view" data-view="audit"><span>⌁</span> Auditoria</button>
-          <button class="nav-btn" id="appearanceNavBtn" data-permission="appearance.manage" data-view="settings" data-settings-module="appearance"><span>✦</span> Aparência</button>
+        <div class="nav-group admin-only" data-nav-group="management">
+          <button class="nav-group-toggle" type="button" data-nav-group-toggle="management" aria-expanded="true"><span class="nav-group-label">GESTÃO</span><span class="nav-chevron">⌄</span></button>
+          <div class="nav-group-items">
+            <button class="nav-btn" id="operationNavBtn" data-view="admin" data-admin-section="operation"><span class="nav-icon">↻</span><span class="nav-text">Operação</span></button>
+            <div class="nav-subgroup" data-nav-subgroup="finance">
+              <button class="nav-subgroup-toggle" type="button" data-nav-subgroup-toggle="finance" aria-expanded="true"><span class="nav-subgroup-icon">R$</span><span class="nav-subgroup-label">Financeiro</span><span class="nav-chevron">⌄</span></button>
+              <div class="nav-subgroup-items">
+                <button class="nav-btn" data-permission="finance.view" data-view="admin" data-admin-section="finance"><span class="nav-icon">R$</span><span class="nav-text">Bonificação</span></button>
+                <button class="nav-btn super-only" data-permission="costs.view" data-view="admin" data-admin-section="costs"><span class="nav-icon">⏱</span><span class="nav-text">Custos</span></button>
+              </div>
+            </div>
+            <div class="nav-subgroup" data-nav-subgroup="people">
+              <button class="nav-subgroup-toggle" type="button" data-nav-subgroup-toggle="people" aria-expanded="true"><span class="nav-subgroup-icon">♟</span><span class="nav-subgroup-label">Pessoas</span><span class="nav-chevron">⌄</span></button>
+              <div class="nav-subgroup-items">
+                <button class="nav-btn" data-permission="feedback.manage" data-view="feedbacks"><span class="nav-icon">✎</span><span class="nav-text">Feedbacks</span></button>
+                <button class="nav-btn" data-permission="users.manage" data-view="users"><span class="nav-icon">♟</span><span class="nav-text">Usuários</span></button>
+              </div>
+            </div>
+            <div class="nav-subgroup" data-nav-subgroup="governance">
+              <button class="nav-subgroup-toggle" type="button" data-nav-subgroup-toggle="governance" aria-expanded="true"><span class="nav-subgroup-icon">⌁</span><span class="nav-subgroup-label">Governança</span><span class="nav-chevron">⌄</span></button>
+              <div class="nav-subgroup-items">
+                <button class="nav-btn" data-permission="audit.view" data-view="audit"><span class="nav-icon">⌁</span><span class="nav-text">Auditoria</span></button>
+                <button class="nav-btn" id="appearanceNavBtn" data-permission="appearance.manage" data-view="settings" data-settings-module="appearance"><span class="nav-icon">✦</span><span class="nav-text">Aparência</span></button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="nav-group"><span class="nav-group-label">CONTA</span>
-          <button class="nav-btn tech-only" data-view="my-feedbacks"><span>✎</span> Meus feedbacks</button>
-          <button class="nav-btn" data-view="settings"><span>⚙</span> Configurações</button>
-          <button class="nav-btn" data-view="profile"><span>◉</span> Meu perfil</button>
-          <button class="nav-btn" data-view="help"><span>?</span> Como usar</button>
-          <button class="nav-btn logout-nav" id="logoutBtn" type="button"><span>↪</span> Sair</button>
+        <div class="nav-group" data-nav-group="account">
+          <button class="nav-group-toggle" type="button" data-nav-group-toggle="account" aria-expanded="true"><span class="nav-group-label">CONTA</span><span class="nav-chevron">⌄</span></button>
+          <div class="nav-group-items">
+            <button class="nav-btn tech-only" data-view="my-feedbacks"><span class="nav-icon">✎</span><span class="nav-text">Meus feedbacks</span></button>
+            <button class="nav-btn" data-view="settings"><span class="nav-icon">⚙</span><span class="nav-text">Configurações</span></button>
+            <button class="nav-btn" data-view="profile"><span class="nav-icon">◉</span><span class="nav-text">Meu perfil</span></button>
+            <button class="nav-btn" data-view="help"><span class="nav-icon">?</span><span class="nav-text">Como usar</span></button>
+            <button class="nav-btn logout-nav" id="logoutBtn" type="button"><span class="nav-icon">↪</span><span class="nav-text">Sair</span></button>
+          </div>
         </div>
       </nav>
       <div class="campaign-visual" id="campaignVisual" aria-label="Campanha do Squad">
@@ -129,7 +156,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.41.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.42.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -954,7 +981,22 @@
           <div class="profile-scope-card"><small>PERFIL DE ACESSO</small><strong id="profileRole">Técnico</strong><span id="profileScope">Squad D</span></div>
         </div>
 
-        <div class="profile-grid">
+        <div class="profile-grid profile-grid-v242">
+          <article class="card profile-avatar-card">
+            <div class="section-title"><div><span class="eyebrow">FOTO DO PERFIL</span><h3>Seu avatar</h3></div><span class="profile-storage-badge">OTIMIZADO</span></div>
+            <p class="profile-description">A foto é reduzida no navegador antes do envio. O sistema guarda somente um arquivo WebP pequeno no Storage e o caminho no seu perfil.</p>
+            <div class="profile-avatar-editor">
+              <span class="profile-avatar-large profile-avatar-preview" id="profileAvatarPreview">U</span>
+              <div class="profile-avatar-actions">
+                <input id="profileAvatarInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                <button class="btn primary" id="chooseProfileAvatarBtn" type="button">Escolher foto</button>
+                <button class="btn secondary" id="removeProfileAvatarBtn" type="button">Remover foto</button>
+              </div>
+            </div>
+            <div class="profile-avatar-rules"><span>JPG, PNG ou WebP</span><span>Redimensionada para até 256 × 256 px</span><span>Alvo de até 100 KB</span></div>
+            <div id="profileAvatarMessage" class="profile-form-message" aria-live="polite"></div>
+          </article>
+
           <article class="card profile-account-card">
             <div class="section-title"><div><span class="eyebrow">DADOS DA CONTA</span><h3>Seu cadastro</h3></div><span class="profile-lock-icon">🔒</span></div>
             <p class="profile-description">Estas informações identificam seu acesso no Performance Hub. Alterações de cadastro são feitas pelo administrador responsável.</p>
@@ -990,7 +1032,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.41</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.42</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, navegação retrátil, avatar, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1011,6 +1053,11 @@
           <button class="help-route" type="button" data-help-view="settings"><span>⚙</span><b>Configurações</b><small>Regras, aparência e meu layout</small></button>
           <button class="help-route" type="button" data-help-view="profile"><span>◉</span><b>Meu perfil</b><small>Conta e senha</small></button>
         </div>
+
+        <article class="card help-navigation-v242 help-searchable" data-help-search="menu sidebar retrátil recolher expandir grupos submódulos avatar foto perfil storage">
+          <div><span class="eyebrow">NAVEGAÇÃO E PERFIL • V2.42</span><h3>Deixe o painel do seu jeito</h3><p>No desktop, use a seta no topo da lateral para recolher ou expandir o menu. As seções Desempenho, Gestão e Conta também podem ser abertas ou fechadas, assim como Financeiro, Pessoas e Governança. O estado fica salvo nas suas preferências.</p></div>
+          <div class="help-navigation-points"><span><b>Menu retrátil</b><small>Recolhido mostra somente ícones com identificação ao passar o mouse.</small></span><span><b>Grupos e submódulos</b><small>Organize a lateral sem esconder funções do seu perfil.</small></span><span><b>Avatar</b><small>Em Meu perfil, envie JPG/PNG/WebP. A foto é reduzida antes do Storage e as iniciais continuam como fallback.</small></span></div>
+        </article>
 
         <div class="how-primary-grid how-primary-grid-four">
           <article class="card how-primary orange admin-help help-searchable" data-help-search="rotina importar csv preview validação histórico operação competência">
@@ -1303,14 +1350,14 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.41.0"></script>
-  <script src="js/finance-advanced.js?v=2.41.0"></script>
-  <script src="js/tv-engine.js?v=2.41.0"></script>
-  <script src="js/presentation.js?v=2.41.0"></script>
-  <script src="js/chart-engine.js?v=2.41.0"></script>
-  <script src="js/import-engine.js?v=2.41.0"></script>
-  <script src="js/predictive-engine.js?v=2.41.0"></script>
-  <script src="js/settings-engine.js?v=2.41.0"></script>
-  <script src="js/app.js?v=2.41.0"></script>
+  <script src="js/finance-rules.js?v=2.42.0"></script>
+  <script src="js/finance-advanced.js?v=2.42.0"></script>
+  <script src="js/tv-engine.js?v=2.42.0"></script>
+  <script src="js/presentation.js?v=2.42.0"></script>
+  <script src="js/chart-engine.js?v=2.42.0"></script>
+  <script src="js/import-engine.js?v=2.42.0"></script>
+  <script src="js/predictive-engine.js?v=2.42.0"></script>
+  <script src="js/settings-engine.js?v=2.42.0"></script>
+  <script src="js/app.js?v=2.42.0"></script>
 </body>
 </html>

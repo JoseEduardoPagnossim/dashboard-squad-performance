@@ -4,9 +4,20 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.41.0`<br>
+**Versão atual:** `2.42.0`<br>
 
 
+
+
+## V2.42.0 — Navegação retrátil e avatar
+
+A V2.42.0 reorganiza a navegação do Performance Hub sem alterar módulos ou regras de negócio. A sidebar pode ser **recolhida no desktop**, os grupos **Desempenho, Gestão e Conta** podem ser minimizados e a Gestão passa a expor submódulos de até dois níveis: **Financeiro, Pessoas e Governança**. O estado da navegação é salvo dentro de `ui_preferences`, reaproveitando a persistência individual criada na V2.38.
+
+O perfil também passa a aceitar **avatar do próprio usuário**. A imagem é recortada e convertida para WebP no navegador, em até 256 × 256 px, com alvo de até 100 KB. Somente o arquivo otimizado vai para o bucket privado `user-avatars`; em `profiles` fica apenas `avatar_path`. A foto aparece no topo, Home e Meu perfil, mantendo as iniciais como fallback. Para evitar chamadas desnecessárias ao Storage, a listagem administrativa de usuários continua usando iniciais.
+
+> Execute `supabase/migrations/MIGRACAO_V2.42.0.sql` antes de habilitar o envio de fotos em produção. A navegação retrátil funciona mesmo sem esta migration, pois reutiliza `ui_preferences`.
+
+Detalhes: `docs/NAVEGACAO_PERFIL_V2.42.0.md`.
 
 
 ## V2.41.0 — Experiência inicial e Home
