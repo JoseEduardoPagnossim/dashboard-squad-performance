@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.42.0.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.43.0.
 
 Depois:
 
@@ -47,6 +47,7 @@ V2.38.0
 V2.39.0
 V2.40.0
 V2.42.0
+V2.43.0
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -74,3 +75,8 @@ Para qualquer tabela nova criada em `public`, inclua o `GRANT` necessário na me
 ## V2.42.0 — Avatar privado
 
 `MIGRACAO_V2.42.0.sql` adiciona `profiles.avatar_path`, cria o bucket privado `user-avatars`, limita objetos a 128 KB e aplica policies de leitura por organização e escrita somente no próprio caminho. A RPC `save_my_avatar_path(text)` atualiza somente o avatar do usuário autenticado.
+
+
+## V2.43.0 — Contexto inicial e índices de performance
+
+`MIGRACAO_V2.43.0.sql` cria a RPC `get_initial_dashboard_context()` para o caminho crítico do login e adiciona índices de apoio à busca por competência e detalhes diários. A RPC limita o resultado à organização/papel do usuário autenticado e não leva detalhes diários nem regras financeiras pesadas no índice inicial.

@@ -20,6 +20,9 @@
   if(!predictiveEngine) throw new Error('SoftenPredictiveEngine não carregado. Verifique js/predictive-engine.js.');
   const settingsEngine = window.SoftenSettingsEngine;
   if(!settingsEngine) throw new Error('SoftenSettingsEngine não carregado. Verifique js/settings-engine.js.');
+  const performanceEngine = window.SoftenPerformanceEngine;
+  if(!performanceEngine) throw new Error('SoftenPerformanceEngine nao carregado. Verifique js/performance-engine.js.');
+  const {writeCache:writePerformanceCache,readCache:readPerformanceCache,clearScope:clearPerformanceCacheScope,createTracker:createPerformanceTracker,monthCacheId:performanceMonthCacheId,themeCacheId:performanceThemeCacheId,initialCacheId:performanceInitialCacheId,isFullMonth:isPerformanceFullMonth,markMonth:markPerformanceMonth,scheduleIdle:schedulePerformanceIdle}=performanceEngine;
   const tvEngine = window.SoftenTvEngine;
   if(!tvEngine) throw new Error('SoftenTvEngine não carregado. Verifique js/tv-engine.js.');
   const {normalizePlaylist:normalizeTvPlaylist,normalizeDevice:normalizeTvDevice,statusForDevice:tvDeviceStatus,monitorSummary:tvMonitorSummary,humanAge:tvHumanAge,generateDeviceKey:generateTvDeviceKey,deviceUrl:buildTvDeviceUrl,heartbeatPayload:buildTvHeartbeatPayload}=tvEngine;
@@ -132,6 +135,15 @@
     financialImpactCache:{},
     financialImpactLoaded:false,
     financialImpactLoading:null,
+    dataPromises:{},
+    orgOverviewLoaded:false,
+    orgOverviewLoading:null,
+    superAdminCommissionsLoaded:false,
+    superAdminCommissionsLoading:null,
+    performanceDiagnostics:null,
+    performanceTracker:null,
+    initialContextSource:'',
+    backgroundHydrationStarted:false,
     audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
   };
 
@@ -417,6 +429,7 @@
   function hideBoot(){const el=$('#bootScreen');if(el)el.classList.add('hidden')}
 
   async function boot(){
+    state.performanceTracker=createPerformanceTracker('boot');
     applyColorMode(state.colorMode,{persist:false,reapplyTheme:false});
     applyTheme(loadLastTheme());
     bindSystemColorMode();
@@ -426,11 +439,11 @@
     if((window.APP_CONFIG?.mode||'demo')==='supabase'){
       try{
         if($('#bootMessage'))$('#bootMessage').textContent='Conectando com segurança...';
-        await initSupabase();
+        await initSupabase();performanceMark('supabase_library');
         if($('#bootMessage'))$('#bootMessage').textContent='Validando sua sessão...';
-        const {data}=await state.supabase.auth.getSession();
+        const {data}=await state.supabase.auth.getSession();performanceMark('session_checked');
         if(state.recoveryMode){showLogin('Link de recuperação validado. Defina sua nova senha.');openModal('recoveryModal');return;}
-        if(data?.session) return await enterSupabaseSession(data.session.user);
+        if(data?.session) return await enterSupabaseSession(data.session.user,{allowCache:true});
         showLogin();
       }
       catch(err){console.error(err); showLogin('Não foi possível conectar ao Supabase. Confira js/config.js.');}
@@ -488,7 +501,7 @@
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sidebar?.classList.contains('open'))setSidebarOpen(false)});
     window.addEventListener('resize',()=>{if(window.innerWidth>980&&sidebar?.classList.contains('open'))setSidebarOpen(false);applyNavigationPreferences();});
     $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
-    $('#monthSelect').addEventListener('change',e=>{state.currentId=e.target.value; chooseDefaultTech(); refreshSelectors(); render();});
+    $('#monthSelect').addEventListener('change',async e=>{state.currentId=e.target.value;if(state.supabase&&state.squadCode!=='all'){try{await ensureMonthLoaded(state.squadCode,state.currentId);}catch(err){toast('Nao foi possivel carregar esta competencia.');}}chooseDefaultTech();refreshSelectors();render();});
     $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
     $('#adminImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('service')});
     if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
@@ -636,7 +649,7 @@
     const btn=$('.login-submit'); btn.disabled=true; btn.textContent='Entrando...';
     try{
       if((window.APP_CONFIG?.mode||'demo')==='supabase'){
-        const {data,error}=await state.supabase.auth.signInWithPassword({email,password}); if(error)throw error; await enterSupabaseSession(data.user);
+        const {data,error}=await state.supabase.auth.signInWithPassword({email,password}); if(error)throw error; await enterSupabaseSession(data.user,{allowCache:false});
       }else{
         const u=allDemoUsers().find(x=>String(x.email).toLowerCase()===email&&x.password===password); if(!u)throw new Error('E-mail ou senha inválidos.'); sessionStorage.setItem('squadDemoSession',JSON.stringify({email:u.email})); await enterApp({...u});
       }
@@ -675,17 +688,18 @@
       state.recoveryMode=false;closeModal('recoveryModal');
       window.history.replaceState({},document.title,authRedirectUrl());
       $('#loginError').classList.add('success');$('#loginError').textContent='Senha alterada com sucesso. Entrando...';
-      if(data?.user) await enterSupabaseSession(data.user); else {const {data:sess}=await state.supabase.auth.getSession();if(sess?.session?.user)await enterSupabaseSession(sess.session.user);}
+      if(data?.user) await enterSupabaseSession(data.user,{allowCache:false}); else {const {data:sess}=await state.supabase.auth.getSession();if(sess?.session?.user)await enterSupabaseSession(sess.session.user,{allowCache:false});}
     }catch(err){errEl.textContent=humanAuthError(err)}
     finally{btn.disabled=false;btn.textContent='Salvar nova senha';}
   }
   function showLogin(message=''){ hideBoot();$('#loginScreen').classList.remove('hidden');$('#appShell').classList.add('hidden');if(message)$('#loginError').textContent=message; }
   async function logout(){
-    stopThemeAudio();if(state.supabase) await state.supabase.auth.signOut(); sessionStorage.removeItem('squadDemoSession'); state.user=null;showLogin();
+    stopThemeAudio();const cacheScope=performanceScope();clearPerformanceCacheScope(cacheScope);clearPerformanceCacheScope('initial');if(state.supabase) await state.supabase.auth.signOut();sessionStorage.removeItem('squadDemoSession');state.user=null;state.backgroundHydrationStarted=false;showLogin();
   }
 
   async function enterApp(user){
     state.user=user;loadUserUiPreferences(user);
+    state.dataPromises={};state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
     if(PRESENTATION_ROUTE.enabled)await preparePresentationRouteContext();
     const requestedPresentationSquad=PRESENTATION_ROUTE.enabled?String(PRESENTATION_ROUTE.squad||'').toUpperCase():'';
@@ -946,6 +960,7 @@
     }
     else{rememberLastSquad(code);chooseLatestMonth();chooseDefaultTech();state.theme=resolveLegacyTheme(state.squads[code]?.theme||loadThemeForSquad(code));applyTheme(state.theme);}
     resetAnalysisRange(true);refreshSelectors();render();applyPermissions();
+    if(state.supabase&&state.currentView!=='home')hydrateCurrentViewAsync(state.currentView,state.adminSection);
   }
   function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
 
@@ -993,6 +1008,7 @@
     $('#mobileMenu')?.setAttribute('aria-expanded','false');
     $('#mobileMenu')?.setAttribute('aria-label','Abrir menu lateral');
     render();
+    if(state.supabase&&name!=='home')hydrateCurrentViewAsync(name,state.adminSection);
     resetViewScroll();
   }
 
@@ -1188,7 +1204,7 @@
   function applyPresentationRouteBundle(bundle){if(!bundle)return null;const device=normalizeTvDevice(bundle.device||{}),playlist=bundle.playlist?normalizeTvPlaylist(bundle.playlist):null;state.presentationRouteDevice=device;state.presentationRoutePlaylist=playlist;const config=playlist?.config?allowedPresentationConfig(playlist.config):allowedPresentationConfig({...window.SoftenPresentation?.getConfig?.(),squad:device.squad});window.SoftenPresentation?.applyConfig?.(config);PRESENTATION_ROUTE.squad=config.squad||device.squad||PRESENTATION_ROUTE.squad;PRESENTATION_ROUTE.playlist=playlist?.id||device.playlistId||'';state.presentationRouteConfigSignature=routeBundleSignature(bundle);return config;}
   async function preparePresentationRouteContext(){if(!PRESENTATION_ROUTE.tv)return;try{const bundle=await fetchPresentationRouteBundle();if(bundle)applyPresentationRouteBundle(bundle);else console.warn('TV cadastrada não encontrada ou inativa; mantendo parâmetros da URL.');}catch(err){console.warn('Não foi possível carregar a configuração dinâmica da TV. Mantendo a configuração disponível na URL/local.',err);}}
   async function refreshPresentationRouteConfig(){if(!PRESENTATION_ROUTE.tv)return false;try{const bundle=await fetchPresentationRouteBundle();if(!bundle)return false;const sig=routeBundleSignature(bundle);if(sig===state.presentationRouteConfigSignature)return false;const config=applyPresentationRouteBundle(bundle),target=String(config?.squad||'all');if(isSuperAdmin()&&target!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(target)))await selectSquad(target);return true;}catch(err){console.warn('Falha ao verificar atualização da playlist da TV.',err);return false}}
-  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.42.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
+  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.43.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
 
   function presentationDailyRows(){
     const source=buildOrgTechnicianDailyOverviewFromState();
@@ -1518,7 +1534,7 @@ function buildOrgOverviewFromState(){
   return rows.sort((a,b)=>String(a.id).localeCompare(String(b.id))||String(a.squadCode).localeCompare(String(b.squadCode)));
 }
 function orgOverviewRows(){
-  if((window.APP_CONFIG?.mode||'demo')==='demo'||isSuperAdmin())return buildOrgOverviewFromState();
+  if((window.APP_CONFIG?.mode||'demo')==='demo')return buildOrgOverviewFromState();
   return (state.orgOverview||[]).length?state.orgOverview:buildOrgOverviewFromState();
 }
 function buildOrgTechnicianOverviewFromState(){
@@ -1556,8 +1572,8 @@ function buildOrgSquadSeries(ids,rows=orgOverviewRows()){
 function buildOrgDailyOverviewFromState(){
   const rows=[];Object.values(state.squads||{}).filter(Boolean).forEach(squad=>{Object.values(squad.months||{}).forEach(m=>{if(!m)return;const byDay=new Map();(m.technicians||[]).forEach(t=>(t.daily||[]).forEach(d=>{if(safe(d.day)>safe(m.latestDay)||d.off)return;const v=byDay.get(safe(d.day))||{att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};v.att+=safe(d.att);v.notes5+=safe(d.notes5);v.notes4+=safe(d.notes4);v.notes3+=safe(d.notes3);v.notes2+=safe(d.notes2);v.notes1+=safe(d.notes1);byDay.set(safe(d.day),v);}));[...byDay.entries()].forEach(([day,v])=>{const totalEval=v.notes5+v.notes4+v.notes3+v.notes2+v.notes1;rows.push({squadCode:squad.code,id:m.id,year:safe(m.year),month:safe(m.month),day:safe(day),date:isoDateParts(m.year,m.month,day),totalAtt:v.att,notes5:v.notes5,notes4:v.notes4,notes3:v.notes3,notes2:v.notes2,notes1:v.notes1,totalEval,evalPct:v.att?totalEval/v.att:0});});});});return rows.sort((a,b)=>a.date.localeCompare(b.date)||String(a.squadCode).localeCompare(String(b.squadCode)));}
 function buildOrgTechnicianDailyOverviewFromState(){const rows=[];Object.values(state.squads||{}).filter(Boolean).forEach(squad=>Object.values(squad.months||{}).forEach(m=>(m.technicians||[]).forEach(t=>(t.daily||[]).forEach(d=>{if(safe(d.day)>safe(m.latestDay)||d.off)return;const totalEval=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1),avg=totalEval?((safe(d.notes5)*5+safe(d.notes4)*4+safe(d.notes3)*3+safe(d.notes2)*2+safe(d.notes1))/totalEval):0;rows.push({squadCode:squad.code,id:m.id,year:m.year,month:m.month,day:safe(d.day),date:isoDateParts(m.year,m.month,d.day),technicianName:t.name,att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),totalEval,avg,evalPct:safe(d.att)?totalEval/safe(d.att):0});}))));return rows.sort((a,b)=>a.date.localeCompare(b.date)||a.squadCode.localeCompare(b.squadCode)||a.technicianName.localeCompare(b.technicianName,'pt-BR'));}
-function orgDailyRows(){if((window.APP_CONFIG?.mode||'demo')==='demo'||isSuperAdmin())return buildOrgDailyOverviewFromState();return (state.orgDailyOverview||[]).length?state.orgDailyOverview:buildOrgDailyOverviewFromState();}
-function orgTechnicianDailyRows(){if((window.APP_CONFIG?.mode||'demo')==='demo'||isSuperAdmin())return buildOrgTechnicianDailyOverviewFromState();return (state.orgTechnicianDailyOverview||[]).length?state.orgTechnicianDailyOverview:buildOrgTechnicianDailyOverviewFromState();}
+function orgDailyRows(){if((window.APP_CONFIG?.mode||'demo')==='demo')return buildOrgDailyOverviewFromState();return (state.orgDailyOverview||[]).length?state.orgDailyOverview:buildOrgDailyOverviewFromState();}
+function orgTechnicianDailyRows(){if((window.APP_CONFIG?.mode||'demo')==='demo')return buildOrgTechnicianDailyOverviewFromState();return (state.orgTechnicianDailyOverview||[]).length?state.orgTechnicianDailyOverview:buildOrgTechnicianDailyOverviewFromState();}
 function filteredOrgDailyRows(){return orgDailyRows().filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day)));}
 function buildOrgDailyComparison(){const rows=filteredOrgDailyRows(),map=new Map();rows.forEach(r=>{const date=r.date||isoDateParts(r.year,r.month,r.day);map.set(date,(map.get(date)||0)+safe(r.totalAtt));});const days=[...map.entries()].map(([date,value])=>({date,value})).sort((a,b)=>a.date.localeCompare(b.date)),values=days.map(x=>x.value),average=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;return{labels:days.map(x=>{const d=parseIsoAnalysisDate(x.date);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`}),series:[{name:'Atendimentos diários do setor',color:'var(--accent)',values},{name:'Média diária do período',color:'var(--accent2)',dashed:true,values:days.map(()=>average)}],average,days:days.length};}
 function renderTeamOrgDailyComparison(){const el=$('#teamOrgDailyChart');if(!el)return;const data=buildOrgDailyComparison();if($('#teamOrgDailyNote'))$('#teamOrgDailyNote').textContent=`${analysisRangeLabel()} • média ${fmtNum(data.average)} atend./dia • A+B+D+E`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:null,percent:false,decimals:0,height:390});}
@@ -2690,7 +2706,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         const t=m.technicians.find(x=>samePersonName(x.name,row.dataset.metricTech));if(!t)continue;
         for(const input of $$('[data-field]',row))t[input.dataset.field]=safe(input.value);
       }
-      recalculateMonth(m);saveDemoSquads();if(state.supabase){await persistManualMetrics(m);await persistFinanceMonth(m)}await logAuditEvent('goals.monthly_metrics_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Metas e métricas individuais atualizadas em ${m.monthName} ${m.year}.`,beforeData:before,afterData:monthlyMetricsAuditSnapshot(m),metadata:{period:m.id,squad:state.squadCode}});refreshSelectors();render();toast('Metas e atendimentos sem avaliação salvos. Taxas, status, ranking e bonificação recalculados.');
+      recalculateMonth(m);saveDemoSquads();if(state.supabase){await persistManualMetrics(m);await persistFinanceMonth(m)}invalidateDashboardCaches();await logAuditEvent('goals.monthly_metrics_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Metas e métricas individuais atualizadas em ${m.monthName} ${m.year}.`,beforeData:before,afterData:monthlyMetricsAuditSnapshot(m),metadata:{period:m.id,squad:state.squadCode}});refreshSelectors();render();toast('Metas e atendimentos sem avaliação salvos. Taxas, status, ranking e bonificação recalculados.');
     }catch(err){console.error(err);toast('Não foi possível salvar as métricas mensais.')}finally{btn.disabled=false;btn.textContent='Salvar metas e ajustes'}
   }
 
@@ -2710,6 +2726,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         const {error}=await state.supabase.from('squad_months').update({score_settings:m.scoreSettings,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;
         await persistCalculatedScores(m);
       }
+      invalidateDashboardCaches();
       render();toast('Parâmetros salvos. Pontuação, critérios, status e ranking recalculados.');
     }catch(err){console.error(err);toast('Não foi possível salvar os parâmetros de pontuação. Confira se as migrações V2.3.0 e V2.4.0 foram executadas.')}finally{btn.disabled=false;btn.textContent='Salvar parâmetros e recalcular'}
   }
@@ -2971,6 +2988,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!state.supabase||!m?.dbId)return;const payload={finance_settings:financeSettingsForMonth(m),finance_month_data:m.financeMonthData||{},finance_model:financeModelForMonth(m),finance_compare:m.financeCompare!==false,finance_technician_compare:m.financeTechCompare===true,finance_individual_cap:Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000,finance_comparison_snapshot:m.financeComparison||{},team_result:m.teamResult};const {error:me}=await state.supabase.from('squad_months').update(payload).eq('id',m.dbId);if(me)throw me;
     for(const t of m.technicians||[]){if(!t.dbId)continue;const row={technician_month_id:t.dbId,manual_bonus:safe(t.financeManualBonus),sales_commission:safe(t.salesCommission),vacation:!!t.vacation,exclude_from_group_count:!!t.excludeFromGroupCount,calculated:t.financeData||{},updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('technician_finance_monthly').upsert(row,{onConflict:'technician_month_id'}).select('id').single();if(error)throw error;t.financeDbId=data.id}
     await persistCalculatedScores(m);
+    invalidateDashboardCaches();
   }
   async function copyFinanceRulesFromPreviousMonth(){if(!isAdmin()||!hasPermission('finance.manage')||!requireSpecificSquad())return;const m=currentMonth();if(!m||m.isClosed)return;const prev=previousMonthForCurrent(m);if(!prev)return toast('Não existe mês anterior neste Squad.');if(!await confirmDialog(`Copiar as faixas e parâmetros financeiros de ${prev.monthName} ${prev.year}? O modelo oficial, cancelamento e valores individuais não serão copiados.`,{title:'Copiar regras financeiras',confirmText:'Copiar',tone:'warning'}))return;const before=financeConfigAuditSnapshot(m);m.financeSettings=clone(financeSettingsForMonth(prev));m.financeIndividualCap=Number.isFinite(Number(prev.financeIndividualCap))?safe(prev.financeIndividualCap):7000;recalculateMonth(m);saveDemoSquads();if(state.supabase)await persistFinanceMonth(m);await logAuditEvent('finance.rules_copy',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Regras financeiras copiadas de ${prev.monthName} ${prev.year} para ${m.monthName} ${m.year}.`,beforeData:before,afterData:financeConfigAuditSnapshot(m),metadata:{period:m.id,sourcePeriod:prev.id,squad:state.squadCode}});await recordFinanceCalculationMemory(m,'rules_copy');render();toast('Regras financeiras copiadas do mês anterior.')}
   function financeReportRows(m){return (m?.technicians||[]).map(t=>{const d=t.financeData||{},sq=d.models?.squad||d,ind=d.models?.individual||d,official=financeModelForMonth(m);return{'Técnico':titleWords(t.name),'Status financeiro':d.financeStatus||'','Atendimentos':safe(t.att),'Atend. sem avaliação':normalizedEvaluationExcludedAtt(t),'Base elegível avaliação':eligibleEvaluationAttendance(t),'Atend./dia individual':safe(ind.avgPerDay),'Notas 5':safe(t.notes5),'% Notas 5 individual':safe(ind.notes5Pct),'Base Squad - comissão atend.':safe(sq.commissionAtt),'Base Squad - comissão N5':safe(sq.commissionNotes5),'Base Squad - final':safe(sq.final),'Individual - comissão atend.':safe(ind.commissionAtt),'Individual - comissão N5':safe(ind.commissionNotes5),'Individual - antes do teto':safe(ind.preCapFinal),'Individual - ajuste teto':safe(ind.capAdjustment),'Individual - final':safe(ind.final),'Diferença Individual x Squad':safe(ind.final)-safe(sq.final),'Modelo oficial':financeModelLabel(official),'Versão das regras':financeRuleVersionForMonth(m),'Assinatura das regras':financeRuleFingerprintForMonth(m),'Valor oficial':safe(d.final),'Multiplicador cancelamento':safe(d.cancelMultiplier||1),'Base após cancelamento':safe(d.afterCancel),'Base após férias':safe(d.afterVacationBase??d.afterCancel),'Ajuste férias sobre a base':safe(d.vacationBaseAdjustment),'Bônus manual':safe(d.manualBonus),'Prêmio atendimento':safe(d.topAttBonus),'Prêmio Notas 5':safe(d.topNotes5Bonus),'Comissão vendas':safe(d.salesCommission),'Desconto':safe(d.discount),'Redistribuição':safe(d.redistribution),'Férias':t.vacation?'SIM':'NÃO','Conta na Base do Squad':t.excludeFromGroupCount?'NÃO':'SIM','Participa desconto/redistribuição':d.financialAdjustmentEligible===false?'NÃO':'SIM'}})}
@@ -3014,7 +3032,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       m.isClosed=true;m.closedAt=now;m.closedBy=state.user?.userId||state.user?.email||null;saveDemoSquads();
       if(state.supabase&&m.dbId){await persistFinanceMonth(m);const {error}=await state.supabase.from('squad_months').update({is_closed:true,closed_at:now,closed_by:state.user.userId,closed_snapshot:m.closedSnapshot,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;await persistCalculatedScores(m)}
       await logAuditEvent('month.close',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Competência ${m.monthName} ${m.year} fechada e congelada.`,beforeData:before,afterData:{isClosed:true,closedAt:now,teamResult:m.teamResult,financeModel:financeModelForMonth(m),snapshotVersion:m.closedSnapshot.version,financeRuleVersion:financeRuleVersionForMonth(m)},metadata:{period:m.id,squad:state.squadCode}});
-      await recordFinanceCalculationMemory(m,'month_close');refreshSelectors();render();toast(`${m.monthName} ${m.year} fechado e congelado com sucesso.`);
+      await recordFinanceCalculationMemory(m,'month_close');invalidateDashboardCaches();refreshSelectors();render();toast(`${m.monthName} ${m.year} fechado e congelado com sucesso.`);
     }catch(err){console.error(err);toast('Não foi possível fechar o mês. Confira as migrações V2.4.0, V2.18.0, V2.19.0 e V2.20.0.')}
   }
   async function reopenMonth(id){
@@ -3025,7 +3043,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       m.isClosed=false;m.closedAt=null;m.closedBy=null;m.closedSnapshot={};recalculateMonth(m);saveDemoSquads();
       if(state.supabase&&m.dbId){const {error}=await state.supabase.from('squad_months').update({is_closed:false,closed_at:null,closed_by:null,closed_snapshot:{},team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error;await persistCalculatedScores(m);await persistFinanceMonth(m)}
       await logAuditEvent('month.reopen',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Competência ${m.monthName} ${m.year} reaberta para alterações.`,beforeData:before,afterData:{isClosed:false,closedAt:null,teamResult:m.teamResult,financeModel:financeModelForMonth(m)},metadata:{period:m.id,squad:state.squadCode}});
-      refreshSelectors();render();toast(`${m.monthName} ${m.year} reaberto. Faça os ajustes e feche o mês novamente.`);
+      invalidateDashboardCaches();refreshSelectors();render();toast(`${m.monthName} ${m.year} reaberto. Faça os ajustes e feche o mês novamente.`);
     }catch(err){console.error(err);toast('Não foi possível reabrir o mês.')}
   }
 
@@ -3045,13 +3063,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!isAdmin()||!hasPermission('month.manage')||!requireSpecificSquad())return;const m=currentMonths()[id];if(!m)return;if(m.isClosed){toast('Mês fechado não pode ser excluído. Reabra-o primeiro.');return}
     if(!await confirmDialog(`Excluir ${m.monthName} ${m.year} do Squad ${state.squadCode}? Isso remove os dados importados e as métricas manuais deste mês.`,{title:'Excluir competência',confirmText:'Excluir mês',tone:'danger',requireText:'EXCLUIR'}))return;
     const before={period:m.id,monthName:m.monthName,year:m.year,sourceFile:m.sourceFile||'',latestDay:safe(m.latestDay),technicians:(m.technicians||[]).length,isClosed:false};const entityId=m.dbId||m.id,squadId=auditSquadId();
-    try{if(state.supabase&&m.dbId){const {error}=await state.supabase.from('squad_months').delete().eq('id',m.dbId);if(error)throw error;}delete currentSquad().months[id];const ids=Object.keys(currentMonths()).sort().reverse();state.currentId=ids[0]||null;chooseDefaultTech();saveDemoSquads();await logAuditEvent('month.delete',{entityType:'squad_month',entityId,squadId,description:`Competência ${m.monthName} ${m.year} excluída do Squad ${state.squadCode}.`,beforeData:before,afterData:{deleted:true},metadata:{period:id,squad:state.squadCode}});refreshSelectors();render();toast('Mês importado excluído.')}catch(err){console.error(err);toast('Não foi possível excluir este mês.')}
+    try{if(state.supabase&&m.dbId){const {error}=await state.supabase.from('squad_months').delete().eq('id',m.dbId);if(error)throw error;}delete currentSquad().months[id];const ids=Object.keys(currentMonths()).sort().reverse();state.currentId=ids[0]||null;chooseDefaultTech();saveDemoSquads();await logAuditEvent('month.delete',{entityType:'squad_month',entityId,squadId,description:`Competência ${m.monthName} ${m.year} excluída do Squad ${state.squadCode}.`,beforeData:before,afterData:{deleted:true},metadata:{period:id,squad:state.squadCode}});invalidateDashboardCaches();refreshSelectors();render();toast('Mês importado excluído.')}catch(err){console.error(err);toast('Não foi possível excluir este mês.')}
   }
 
   function businessDaysMonFri(y,m){let c=0,days=new Date(y,m,0).getDate();for(let d=1;d<=days;d++){const dow=new Date(y,m-1,d).getDay();if(dow>=1&&dow<=5)c++}return c}
   function autoTeamAttGoal(m){return businessDaysMonFri(m.year,m.month)*10*Math.max(1,m.technicians.length)}
   function teamSettings(m){if(m?.isClosed&&m.closedSnapshot?.teamGoals)return{teamGoalAtt:safe(m.closedSnapshot.teamGoals.teamGoalAtt),teamGoalEvalPct:safe(m.closedSnapshot.teamGoals.teamGoalEvalPct)};const saved=m?.settings||{};return{teamGoalAtt:safe(saved.teamGoalAtt)||autoTeamAttGoal(m),teamGoalEvalPct:Number.isFinite(Number(saved.teamGoalEvalPct))?Number(saved.teamGoalEvalPct):.343}}
-  async function saveTeamGoals(){if(!isAdmin()||!hasPermission('goals.manage')||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}const before=clone(teamSettings(m));try{const att=Math.max(0,safe($('#teamGoalAttInput').value)),pct=Math.max(0,safe($('#teamGoalPctInput').value))/100;m.settings={...(m.settings||{}),teamGoalAtt:att||autoTeamAttGoal(m),teamGoalEvalPct:pct};recalculateMonth(m);saveDemoSquads();if(state.supabase){const {error}=await state.supabase.from('squad_months').update({team_goal_att:m.settings.teamGoalAtt,team_goal_eval_pct:m.settings.teamGoalEvalPct,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error}await logAuditEvent('goals.team_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Metas do Squad ${state.squadCode} atualizadas para ${m.monthName} ${m.year}.`,beforeData:before,afterData:clone(teamSettings(m)),metadata:{period:m.id,squad:state.squadCode}});renderTeam();renderAdmin();toast('Metas salvas para '+m.monthName+'.')}catch(err){console.error(err);toast('Não foi possível salvar as metas.')}}
+  async function saveTeamGoals(){if(!isAdmin()||!hasPermission('goals.manage')||!requireSpecificSquad())return;const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}const before=clone(teamSettings(m));try{const att=Math.max(0,safe($('#teamGoalAttInput').value)),pct=Math.max(0,safe($('#teamGoalPctInput').value))/100;m.settings={...(m.settings||{}),teamGoalAtt:att||autoTeamAttGoal(m),teamGoalEvalPct:pct};recalculateMonth(m);saveDemoSquads();if(state.supabase){const {error}=await state.supabase.from('squad_months').update({team_goal_att:m.settings.teamGoalAtt,team_goal_eval_pct:m.settings.teamGoalEvalPct,team_result:m.teamResult}).eq('id',m.dbId);if(error)throw error}invalidateDashboardCaches();await logAuditEvent('goals.team_update',{entityType:'squad_month',entityId:m.dbId||m.id,description:`Metas do Squad ${state.squadCode} atualizadas para ${m.monthName} ${m.year}.`,beforeData:before,afterData:clone(teamSettings(m)),metadata:{period:m.id,squad:state.squadCode}});renderTeam();renderAdmin();toast('Metas salvas para '+m.monthName+'.')}catch(err){console.error(err);toast('Não foi possível salvar as metas.')}}
   function useAutomaticTeamGoal(){const m=currentMonth();if(!m)return;if(m.isClosed){toast('Este mês está fechado. Reabra-o antes de alterar as metas.');return}$('#teamGoalAttInput').value=autoTeamAttGoal(m);if(!$('#teamGoalPctInput').value)$('#teamGoalPctInput').value='34.3';toast('Meta automática calculada. Clique em Salvar metas.')}
   function deriveTotals(list){const att=(list||[]).reduce((s,t)=>s+safe(t.att),0),evaluationExcludedAtt=(list||[]).reduce((s,t)=>s+normalizedEvaluationExcludedAtt(t),0),eligibleAtt=Math.max(0,att-evaluationExcludedAtt),evals=(list||[]).reduce((s,t)=>s+safe(t.totalEval),0),points=(list||[]).reduce((s,t)=>s+safe(t.points),0);return{att,evaluationExcludedAtt,eligibleAtt,eval:evals,evalPct:eligibleAtt?evals/eligibleAtt:0,points}}
   function goalLine(noun,current,goal){if(!goal)return'Meta não encontrada.';if(current>=goal)return`Meta atingida: ${fmtInt(current-goal)} ${noun} acima do objetivo.`;return`Faltam ${fmtInt(goal-current)} ${noun} para atingir a meta.`}
@@ -3584,6 +3602,125 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function exportTheme(){if(!canEditAppearance())return;const suffix=state.appearanceScope==='all'&&isSuperAdmin()?'todos-squads':`squad-${state.squadCode.toLowerCase()}`;downloadJson(themePayload(),`tema-${suffix}.json`);toast('Tema exportado em JSON com paletas clara/escura e preferências de gráficos.')}
   async function handleThemeJson(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());if(!['squad-theme-v1','squad-theme-v2'].includes(raw.schema))throw new Error('Arquivo de tema incompatível.');const theme={...raw,preset:'custom'};delete theme.schema;delete theme._instrucoes;if(theme.background&&!sanitizeThemeBackground(theme.background))throw new Error('Fundo inválido.');if(theme.favicon&&!sanitizeThemeBackground(theme.favicon))throw new Error('Favicon inválido.');if(theme.soundtrack&&!sanitizeThemeAudio(theme.soundtrack))throw new Error('Trilha sonora inválida.');state.theme=normalizeThemePayload(theme);saveTheme();applyTheme(state.theme);toast(raw.schema==='squad-theme-v1'?'Tema antigo convertido para Light/Dark e aplicado.':'Tema importado e aplicado.')}catch(err){toast(err.message||'Não foi possível importar o tema.')}finally{e.target.value=''}}
 
+  /* ===== V2.43: carregamento progressivo, cache e diagnostico ===== */
+  const FULL_MONTH_SELECT='id,year,month,source_file,latest_day,imported_at,team_result,redistributed,team_goal_att,team_goal_eval_pct,score_settings,finance_settings,finance_month_data,finance_model,finance_compare,finance_technician_compare,finance_individual_cap,finance_comparison_snapshot,is_closed,closed_at,closed_by,closed_snapshot,quality_person_daily_metrics(technician_name,technician_key,day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at),technician_monthly(id,user_id,technician_name,att,notes5,notes4,notes3,notes2,notes1,total_eval,avg_rating,eval_pct,evaluation_excluded_att,status,goals_hit,points,rank,discount,point_bonus,goal_att,goal_eval,technician_finance_monthly(id,manual_bonus,sales_commission,vacation,exclude_from_group_count,calculated),daily_metrics(day,att,notes5,notes4,notes3,notes2,notes1,off),quality_daily_metrics(day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at))';
+  const SUMMARY_MONTH_SELECT='id,squad_id,year,month,source_file,latest_day,imported_at,team_goal_att,team_goal_eval_pct,is_closed,closed_at,closed_by,technician_monthly(id,user_id,technician_name,att,notes5,notes4,notes3,notes2,notes1,total_eval,avg_rating,eval_pct,evaluation_excluded_att,status,goals_hit,points,rank,discount,point_bonus,goal_att,goal_eval,technician_finance_monthly(id,manual_bonus,sales_commission,vacation,exclude_from_group_count,calculated))';
+  const MONTH_INDEX_SELECT='id,squad_id,year,month,source_file,latest_day,imported_at,is_closed,closed_at,closed_by';
+  function performanceScope(){return `${state.user?.organizationId||'org'}:${state.user?.userId||'user'}`}
+  function invalidateDashboardCaches({themes=false}={}){
+    clearPerformanceCacheScope(performanceScope());
+    clearPerformanceCacheScope('initial');
+    if(themes)clearPerformanceCacheScope(`theme:${state.user?.organizationId||'org'}`);
+  }
+  function setDataLoadIndicator(active,label='Carregando dados...'){
+    const el=$('#dataLoadIndicator');if(!el)return;
+    el.classList.toggle('hidden',!active);const text=el.querySelector('span');if(text)text.textContent=label;
+  }
+  function performanceMark(name,data){try{state.performanceTracker?.mark(name,data)}catch(e){}}
+  function finishPerformanceDiagnostics(source=''){
+    try{
+      if(source)state.performanceTracker?.set('initialSource',source);
+      const snap=state.performanceTracker?.snapshot?.();if(!snap)return;
+      state.performanceDiagnostics=snap;window.SoftenPerformanceDiagnostics={latest:snap,get:()=>state.performanceDiagnostics};
+      console.info(`[Performance Hub] ${Math.round(snap.totalMs)} ms ate a interface utilizavel.`,snap);
+    }catch(e){}
+  }
+  function monthIdFromParts(year,month){return `${safe(year)}-${String(safe(month)).padStart(2,'0')}`}
+  function monthIndexPlaceholder(row){
+    const id=monthIdFromParts(row.year,row.month),m={dbId:row.id,id,year:safe(row.year),month:safe(row.month),monthName:MONTHS_PT[safe(row.month)-1],sourceFile:row.source_file||'Supabase',latestDay:safe(row.latest_day)||1,importedAt:row.imported_at||null,teamResult:row.team_result||'',redistributed:safe(row.redistributed),teamTotals:{att:0,eligibleAtt:0,eval:0,evalPct:0},settings:{teamGoalAtt:safe(row.team_goal_att),teamGoalEvalPct:Number(row.team_goal_eval_pct??.343)},scoreSettings:row.score_settings||{},financeSettings:row.finance_settings&&Object.keys(row.finance_settings||{}).length?row.finance_settings:clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:row.finance_month_data||{},financeModel:(row.is_closed&&safe(row.closed_snapshot?.version)<3)?'individual':(row.finance_model||'squad'),financeCompare:row.finance_compare!==false,financeTechCompare:row.finance_technician_compare===true,financeIndividualCap:Number.isFinite(Number(row.finance_individual_cap))?safe(row.finance_individual_cap):7000,financeComparison:row.finance_comparison_snapshot||{},isClosed:!!row.is_closed,closedAt:row.closed_at||null,closedBy:row.closed_by||null,closedSnapshot:row.closed_snapshot||{},qualityExternal:[],technicians:[]};
+    return markPerformanceMonth(m,'index');
+  }
+  function normalizeSupabaseMonthRow(row,level='full'){
+    if(!row)return null;
+    const technicians=(row.technician_monthly||[]).map(t=>({dbId:t.id,userId:t.user_id,name:t.technician_name,att:safe(t.att),notes5:safe(t.notes5),notes4:safe(t.notes4),notes3:safe(t.notes3),notes2:safe(t.notes2),notes1:safe(t.notes1),totalEval:safe(t.total_eval),avg:safe(t.avg_rating),evalPct:safe(t.eval_pct),evaluationExcludedAtt:safe(t.evaluation_excluded_att),eligibleAtt:Math.max(0,safe(t.att)-safe(t.evaluation_excluded_att)),status:t.status||'',goalsHit:safe(t.goals_hit),points:safe(t.points),rank:safe(t.rank)||null,discount:safe(t.discount),pointBonus:safe(t.point_bonus),goalAtt:safe(t.goal_att),goalEval:safe(t.goal_eval),financeDbId:firstRelation(t.technician_finance_monthly).id||null,financeManualBonus:safe(firstRelation(t.technician_finance_monthly).manual_bonus),salesCommission:safe(firstRelation(t.technician_finance_monthly).sales_commission),vacation:!!firstRelation(t.technician_finance_monthly).vacation,excludeFromGroupCount:!!firstRelation(t.technician_finance_monthly).exclude_from_group_count,financeData:firstRelation(t.technician_finance_monthly).calculated||{},daily:(t.daily_metrics||[]).map(d=>({day:safe(d.day),att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off})).sort((a,b)=>a.day-b.day),qualityDaily:(t.quality_daily_metrics||[]).map(q=>({day:safe(q.day),qualityType:q.quality_type,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),sourceFile:q.source_file||'',importedAt:q.imported_at||null})).sort((a,b)=>a.day-b.day||String(a.qualityType).localeCompare(String(b.qualityType)))}));
+    const id=monthIdFromParts(row.year,row.month),m={dbId:row.id,id,year:safe(row.year),month:safe(row.month),monthName:MONTHS_PT[safe(row.month)-1],sourceFile:row.source_file||'Supabase',latestDay:safe(row.latest_day)||1,importedAt:row.imported_at||null,teamResult:row.team_result||'',redistributed:safe(row.redistributed),teamTotals:deriveTotals(technicians),settings:{teamGoalAtt:safe(row.team_goal_att),teamGoalEvalPct:Number(row.team_goal_eval_pct??.343)},scoreSettings:row.score_settings||{},financeSettings:row.finance_settings&&Object.keys(row.finance_settings||{}).length?row.finance_settings:clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:row.finance_month_data||{},financeModel:(row.is_closed&&safe(row.closed_snapshot?.version)<3)?'individual':(row.finance_model||'squad'),financeCompare:row.finance_compare!==false,financeTechCompare:row.finance_technician_compare===true,financeIndividualCap:Number.isFinite(Number(row.finance_individual_cap))?safe(row.finance_individual_cap):7000,financeComparison:row.finance_comparison_snapshot||{},isClosed:!!row.is_closed,closedAt:row.closed_at||null,closedBy:row.closed_by||null,closedSnapshot:row.closed_snapshot||{},qualityExternal:(row.quality_person_daily_metrics||[]).map(q=>({technicianName:q.technician_name||'',technicianKey:nameLinkKey(q.technician_name||''),day:safe(q.day),qualityType:q.quality_type,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),sourceFile:q.source_file||'',importedAt:q.imported_at||null})).sort((a,b)=>String(a.technicianName).localeCompare(String(b.technicianName),'pt-BR')||a.day-b.day||String(a.qualityType).localeCompare(String(b.qualityType))),technicians};
+    markPerformanceMonth(m,level);
+    if(level==='full')recalculateMonth(m);
+    return m;
+  }
+  function buildUserFromInitialProfile(profile,authUser){
+    return{userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name||profile.fullName||authUser.email,role:profile.role,organizationId:profile.organization_id||profile.organizationId||null,squadCode:profile.squad?.code||profile.squads?.code||profile.squadCode||null,techName:profile.technician_name?normalizeName(profile.technician_name):(profile.techName?normalizeName(profile.techName):null),permissions:profile.permissions||{},uiPreferences:profile.ui_preferences||profile.uiPreferences||null,avatarPath:profile.avatar_path||profile.avatarPath||null,avatarUrl:null};
+  }
+  function hydrateInitialContext(context,authUser){
+    const profile=context?.profile||{};state.user=buildUserFromInitialProfile(profile,authUser);state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissions=[];state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;
+    const themeScope=`theme:${state.user.organizationId||'org'}`;
+    for(const row of context?.squads||[]){const code=String(row.code||'').toUpperCase();if(!code)continue;const cachedTheme=readPerformanceCache(themeScope,performanceThemeCacheId(code));state.squads[code]={code,name:row.name||`Squad ${code}`,dbId:row.id,months:{},theme:cachedTheme?.value?normalizeThemePayload(cachedTheme.value):undefined};}
+    const codeById=new Map(Object.values(state.squads).map(s=>[String(s.dbId),s.code]));
+    for(const row of context?.month_index||[]){const code=String(row.squad_code||codeById.get(String(row.squad_id))||'').toUpperCase(),s=state.squads[code];if(!s)continue;const m=monthIndexPlaceholder(row);s.months[m.id]=m;}
+    for(const row of context?.home_months||[]){const code=String(row.squad_code||codeById.get(String(row.squad_id))||'').toUpperCase(),s=state.squads[code];if(!s)continue;const m=normalizeSupabaseMonthRow(row,'summary');if(m)s.months[m.id]=m;}
+    state.initialContextSource=context?.__source||'network';
+  }
+  async function loadInitialContextViaRpc(){
+    const {data,error}=await state.supabase.rpc('get_initial_dashboard_context');if(error)throw error;if(!data?.profile)throw new Error('Contexto inicial vazio.');return{...data,__source:'rpc'};
+  }
+  async function loadInitialContextFallback(authUser){
+    const profileQuery=state.supabase.from('profiles').select('user_id,email,full_name,role,organization_id,squad_id,technician_name,permissions,ui_preferences,avatar_path,squads(id,code,name)').eq('user_id',authUser.id).single();
+    const squadsQuery=state.supabase.from('squads').select('id,code,name').eq('active',true).order('code');
+    const monthsQuery=state.supabase.from('squad_months').select(MONTH_INDEX_SELECT).order('year',{ascending:false}).order('month',{ascending:false});
+    const [{data:profile,error:pe},{data:squads,error:se},{data:monthIndex,error:me}]=await Promise.all([profileQuery,squadsQuery,monthsQuery]);if(pe)throw pe;if(se)throw se;if(me)throw me;
+    const rows=monthIndex||[],latestKey=rows.reduce((mx,r)=>Math.max(mx,safe(r.year)*100+safe(r.month)),0),year=Math.floor(latestKey/100),month=latestKey%100;
+    let home=[];if(latestKey){const {data,error}=await state.supabase.from('squad_months').select(SUMMARY_MONTH_SELECT).eq('year',year).eq('month',month);if(error)throw error;const codeById=new Map((squads||[]).map(s=>[String(s.id),s.code]));home=(data||[]).map(r=>({...r,squad_code:codeById.get(String(r.squad_id))||''}));}
+    const codeById=new Map((squads||[]).map(s=>[String(s.id),s.code]));return{schema:'fallback-v2.43.0',profile,squads:squads||[],month_index:rows.map(r=>({...r,squad_code:codeById.get(String(r.squad_id))||''})),home_months:home,__source:'fallback'};
+  }
+  async function loadInitialSupabaseContext(authUser,{allowCache=true}={}){
+    const cacheScope='initial',cacheKey=performanceInitialCacheId(authUser.id),cached=allowCache?readPerformanceCache(cacheScope,cacheKey):null;
+    if(cached?.value)return{...cached.value,__source:'cache'};
+    let context;try{context=await loadInitialContextViaRpc();}catch(err){console.warn('RPC inicial V2.43 indisponivel; usando fallback otimizado.',err);context=await loadInitialContextFallback(authUser);}
+    writePerformanceCache(cacheScope,cacheKey,context,2*60*1000);return context;
+  }
+  async function refreshInitialContextInBackground(authUser){
+    try{let context;try{context=await loadInitialContextViaRpc();}catch(err){context=await loadInitialContextFallback(authUser);}writePerformanceCache('initial',performanceInitialCacheId(authUser.id),context,2*60*1000);}catch(err){console.warn('Nao foi possivel revalidar o contexto inicial em segundo plano.',err)}
+  }
+  async function ensureSquadTheme(code,{force=false,apply=true}={}){
+    code=String(code||'').toUpperCase();const squad=state.squads?.[code];if(!state.supabase||!squad?.dbId)return squad?.theme||null;
+    const scope=`theme:${state.user?.organizationId||'org'}`,key=performanceThemeCacheId(code);if(!force){const cached=readPerformanceCache(scope,key);if(cached?.value){squad.theme=normalizeThemePayload(cached.value);if(apply&&state.squadCode===code){state.theme=resolveLegacyTheme(squad.theme);applyTheme(state.theme);}return squad.theme;}}
+    const promiseKey=`theme:${code}`;if(state.dataPromises[promiseKey])return state.dataPromises[promiseKey];state.dataPromises[promiseKey]=(async()=>{try{const {data,error}=await state.supabase.from('squad_themes').select('theme').eq('squad_id',squad.dbId).maybeSingle();if(error)throw error;if(data?.theme){squad.theme=normalizeThemePayload(data.theme);writePerformanceCache(scope,key,squad.theme,10*60*1000);if(apply&&state.squadCode===code){state.theme=resolveLegacyTheme(squad.theme);applyTheme(state.theme);}return squad.theme}return null;}finally{delete state.dataPromises[promiseKey]}})();return state.dataPromises[promiseKey];
+  }
+  async function ensureMonthLoaded(code,id,{force=false,silent=false}={}){
+    code=String(code||'').toUpperCase();const squad=state.squads?.[code],existing=squad?.months?.[id];if(!state.supabase||!squad||!id)return existing||null;if(!force&&isPerformanceFullMonth(existing))return existing;
+    const scope=performanceScope(),key=performanceMonthCacheId(code,id,'full');if(!force){const cached=readPerformanceCache(scope,key);if(cached?.value){squad.months[id]=cached.value;return squad.months[id];}}
+    const promiseKey=`month:${code}:${id}`;if(state.dataPromises[promiseKey])return state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(true,`Carregando ${monthLabelFromId(id)}...`);
+    state.dataPromises[promiseKey]=(async()=>{try{let query=state.supabase.from('squad_months').select(FULL_MONTH_SELECT);if(existing?.dbId)query=query.eq('id',existing.dbId);else{const [year,month]=String(id).split('-').map(Number);query=query.eq('squad_id',squad.dbId).eq('year',year).eq('month',month);}const {data,error}=await query.single();if(error)throw error;const m=normalizeSupabaseMonthRow(data,'full');squad.months[id]=m;writePerformanceCache(scope,key,m,5*60*1000);return m;}catch(err){console.error('Falha ao carregar competencia sob demanda.',code,id,err);throw err;}finally{delete state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(false);}})();return state.dataPromises[promiseKey];
+  }
+  async function ensureMonthsLoaded(codes,ids,{silent=false}={}){
+    const jobs=[];for(const code of [...new Set(codes||[])])for(const id of [...new Set(ids||[])])if(state.squads?.[code]?.months?.[id]&&!isPerformanceFullMonth(state.squads[code].months[id]))jobs.push(ensureMonthLoaded(code,id,{silent:true}).catch(err=>null));if(!jobs.length)return[];if(!silent)setDataLoadIndicator(true,`Carregando ${jobs.length} competencia(s)...`);try{return await Promise.all(jobs);}finally{if(!silent)setDataLoadIndicator(false);}
+  }
+  async function ensureOrgOverviewData({daily=false,technicians=false,force=false}={}){
+    if(!state.supabase)return;if(state.orgOverviewLoaded&&!force&&(!daily||state.orgDailyOverview.length)&&(!technicians||state.orgTechnicianOverview.length))return;
+    if(state.orgOverviewLoading)return state.orgOverviewLoading;
+    state.orgOverviewLoading=(async()=>{try{
+      const jobs=[state.supabase.rpc('get_org_squad_monthly_overview')];if(technicians)jobs.push(state.supabase.rpc('get_org_technician_monthly_overview'));if(daily){jobs.push(state.supabase.rpc('get_org_daily_attendance_overview'));jobs.push(state.supabase.rpc('get_org_technician_daily_overview'));}
+      const results=await Promise.all(jobs);let i=0;const overview=results[i++];if(overview.error)throw overview.error;state.orgOverview=(overview.data||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),totalAtt:safe(r.total_att),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct),technicianCount:safe(r.technician_count)}));
+      if(technicians){const x=results[i++];if(x.error)throw x.error;state.orgTechnicianOverview=(x.data||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),technicianName:r.technician_name||'',att:safe(r.att),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct),points:safe(r.points),status:String(r.status||'').toUpperCase()}));}
+      if(daily){const x=results[i++];if(x.error)throw x.error;state.orgDailyOverview=(x.data||[]).map(r=>({squadCode:r.squad_code,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),totalAtt:safe(r.total_att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct)}));const y=results[i++];if(y.error)throw y.error;state.orgTechnicianDailyOverview=(y.data||[]).map(r=>({squadCode:r.squad_code,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct)}));}
+      state.orgOverviewLoaded=true;
+    }catch(err){console.warn('Consolidados organizacionais indisponiveis.',err);}finally{state.orgOverviewLoading=null;}})();return state.orgOverviewLoading;
+  }
+  async function ensureSuperAdminCommissions(force=false){
+    if(!state.supabase||!isSuperAdmin())return;if(state.superAdminCommissionsLoaded&&!force)return;if(state.superAdminCommissionsLoading)return state.superAdminCommissionsLoading;
+    state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,amount,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin')]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Admin geral']));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Admin geral',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;}catch(err){console.warn('Comissoes de Admin Geral indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
+  }
+  function viewNeedsFullMonth(name,section){return['individual','team','indicators','presentation','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
+  async function ensureViewData(name=state.currentView,section=state.adminSection){
+    if(!state.supabase||name==='home'||['users','audit','settings','profile','my-feedbacks','help'].includes(name))return;
+    const ids=(name==='indicators'||name==='team'||name==='individual')?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
+    if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true}));
+    if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
+    if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());
+    if(!jobs.length)return;setDataLoadIndicator(true,'Atualizando dados da tela...');try{await Promise.all(jobs);}finally{setDataLoadIndicator(false);}
+  }
+  function hydrateCurrentViewAsync(name=state.currentView,section=state.adminSection){
+    const token=`${name}:${section||''}:${state.squadCode}:${state.currentId||''}`;ensureViewData(name,section).then(()=>{const current=`${state.currentView}:${state.adminSection||''}:${state.squadCode}:${state.currentId||''}`;if(current!==token)return;refreshSelectors();render();}).catch(err=>{console.error(err);toast('Nao foi possivel carregar todos os dados desta tela.');});
+  }
+  function schedulePostLoginHydration(authUser){
+    if(state.backgroundHydrationStarted)return;state.backgroundHydrationStarted=true;schedulePerformanceIdle(()=>{
+      if(state.initialContextSource==='cache')refreshInitialContextInBackground(authUser);
+      if(state.squadCode&&state.squadCode!=='all')ensureSquadTheme(state.squadCode,{apply:true}).catch(()=>{});
+      if(state.squadCode&&state.squadCode!=='all'&&state.currentId)ensureMonthLoaded(state.squadCode,state.currentId,{silent:true}).then(()=>{if(state.currentView==='home')renderHome();}).catch(()=>{});
+      if(isSuperAdmin())ensureOrgOverviewData({daily:false,technicians:false}).catch(()=>{});
+    },{timeout:900});
+  }
+
   /* ===== Supabase: login + dados multi-squad ===== */
   async function initSupabase(){
     const cfg=window.APP_CONFIG||{};if(!cfg.supabaseUrl||!cfg.supabaseAnonKey)throw new Error('Preencha supabaseUrl e supabaseAnonKey em js/config.js.');
@@ -3598,53 +3735,16 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
     });
   }
-  function loadScript(src){return new Promise((resolve,reject)=>{if(window.supabase)return resolve();const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Falha ao carregar biblioteca Supabase.'));document.head.appendChild(s)})}
-  async function enterSupabaseSession(authUser){
-    const {data:profile,error}=await state.supabase.from('profiles').select('user_id,email,full_name,role,organization_id,squad_id,technician_name,squads(id,code,name)').eq('user_id',authUser.id).single();if(error)throw error;
-    let permissions={},uiPreferences=null,avatarPath=null;
-    try{
-      const {data:extra,error:extraError}=await state.supabase.from('profiles').select('permissions,ui_preferences,avatar_path').eq('user_id',authUser.id).single();
-      if(extraError)throw extraError;permissions=extra?.permissions||{};uiPreferences=extra?.ui_preferences||null;avatarPath=extra?.avatar_path||null;
-    }catch(err){
-      try{const {data:legacy,error:legacyError}=await state.supabase.from('profiles').select('permissions,ui_preferences').eq('user_id',authUser.id).single();if(legacyError)throw legacyError;permissions=legacy?.permissions||{};uiPreferences=legacy?.ui_preferences||null;}catch(legacyErr){console.warn('Configurações V2.38 ainda não migradas no Supabase; usando padrões locais.',legacyErr)}
-      console.warn('Avatar V2.42 ainda não migrado no Supabase; usando iniciais.',err);
-    }
-    state.user={userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name,role:profile.role,organizationId:profile.organization_id||null,squadCode:profile.squads?.code||null,techName:profile.technician_name?normalizeName(profile.technician_name):null,permissions,uiPreferences,avatarPath,avatarUrl:null};
-    await loadSupabaseData();state.presentationLastSyncAt=new Date().toISOString();await enterApp(state.user);
+  function loadScript(src){return new Promise((resolve,reject)=>{if(window.supabase)return resolve();const existing=document.querySelector(`script[data-dynamic-src="${src}"]`);if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',()=>reject(new Error('Falha ao carregar biblioteca Supabase.')),{once:true});return;}const s=document.createElement('script');s.src=src;s.async=true;s.crossOrigin='anonymous';s.fetchPriority='high';s.dataset.dynamicSrc=src;s.onload=resolve;s.onerror=()=>reject(new Error('Falha ao carregar biblioteca Supabase.'));document.head.appendChild(s)})}
+  async function enterSupabaseSession(authUser,{allowCache=true}={}){
+    state.performanceTracker=createPerformanceTracker('login');performanceMark('auth_ok');
+    if($('#bootMessage'))$('#bootMessage').textContent='Carregando seu perfil e a competencia atual...';showBoot('Carregando seu perfil e a competencia atual...');
+    const context=await loadInitialSupabaseContext(authUser,{allowCache});performanceMark('initial_context',{source:context.__source||'network'});
+    hydrateInitialContext(context,authUser);performanceMark('state_ready');
+    state.presentationLastSyncAt=new Date().toISOString();await enterApp(state.user);performanceMark('ui_ready');finishPerformanceDiagnostics(context.__source||'network');
+    schedulePostLoginHydration(authUser);
   }
-  async function loadSupabaseData(){
-    const {data:squads,error}=await state.supabase.from('squads').select('id,code,name').eq('active',true).order('code');if(error)throw error;state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];
-    for(const s of squads){state.squads[s.code]={code:s.code,name:s.name,dbId:s.id,months:{}};const {data:themes}=await state.supabase.from('squad_themes').select('theme').eq('squad_id',s.id).maybeSingle();if(themes?.theme)state.squads[s.code].theme=normalizeThemePayload(themes.theme);const {data:months,error:me}=await state.supabase.from('squad_months').select('id,year,month,source_file,latest_day,imported_at,team_result,redistributed,team_goal_att,team_goal_eval_pct,score_settings,finance_settings,finance_month_data,finance_model,finance_compare,finance_technician_compare,finance_individual_cap,finance_comparison_snapshot,is_closed,closed_at,closed_by,closed_snapshot,quality_person_daily_metrics(technician_name,technician_key,day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at),technician_monthly(id,user_id,technician_name,att,notes5,notes4,notes3,notes2,notes1,total_eval,avg_rating,eval_pct,evaluation_excluded_att,status,goals_hit,points,rank,discount,point_bonus,goal_att,goal_eval,technician_finance_monthly(id,manual_bonus,sales_commission,vacation,exclude_from_group_count,calculated),daily_metrics(day,att,notes5,notes4,notes3,notes2,notes1,off),quality_daily_metrics(day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at))').eq('squad_id',s.id).order('year',{ascending:false}).order('month',{ascending:false});if(me)throw me;for(const row of months||[]){const id=`${row.year}-${String(row.month).padStart(2,'0')}`,technicians=(row.technician_monthly||[]).map(t=>({dbId:t.id,userId:t.user_id,name:t.technician_name,att:safe(t.att),notes5:safe(t.notes5),notes4:safe(t.notes4),notes3:safe(t.notes3),notes2:safe(t.notes2),notes1:safe(t.notes1),totalEval:safe(t.total_eval),avg:safe(t.avg_rating),evalPct:safe(t.eval_pct),evaluationExcludedAtt:safe(t.evaluation_excluded_att),eligibleAtt:Math.max(0,safe(t.att)-safe(t.evaluation_excluded_att)),status:t.status||'',goalsHit:safe(t.goals_hit),points:safe(t.points),rank:safe(t.rank)||null,discount:safe(t.discount),pointBonus:safe(t.point_bonus),goalAtt:safe(t.goal_att),goalEval:safe(t.goal_eval),financeDbId:firstRelation(t.technician_finance_monthly).id||null,financeManualBonus:safe(firstRelation(t.technician_finance_monthly).manual_bonus),salesCommission:safe(firstRelation(t.technician_finance_monthly).sales_commission),vacation:!!firstRelation(t.technician_finance_monthly).vacation,excludeFromGroupCount:!!firstRelation(t.technician_finance_monthly).exclude_from_group_count,financeData:firstRelation(t.technician_finance_monthly).calculated||{},daily:(t.daily_metrics||[]).map(d=>({day:d.day,att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off})).sort((a,b)=>a.day-b.day),qualityDaily:(t.quality_daily_metrics||[]).map(q=>({day:safe(q.day),qualityType:q.quality_type,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),sourceFile:q.source_file||'',importedAt:q.imported_at||null})).sort((a,b)=>a.day-b.day||String(a.qualityType).localeCompare(String(b.qualityType)))}));const totals=deriveTotals(technicians);const monthData={dbId:row.id,id,year:row.year,month:row.month,monthName:MONTHS_PT[row.month-1],sourceFile:row.source_file||'Supabase',latestDay:row.latest_day||1,importedAt:row.imported_at,teamResult:row.team_result||'',redistributed:safe(row.redistributed),teamTotals:totals,settings:{teamGoalAtt:safe(row.team_goal_att),teamGoalEvalPct:Number(row.team_goal_eval_pct??.343)},scoreSettings:row.score_settings||{},financeSettings:row.finance_settings&&Object.keys(row.finance_settings).length?row.finance_settings:clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:row.finance_month_data||{},financeModel:(row.is_closed&&safe(row.closed_snapshot?.version)<3)?'individual':(row.finance_model||'squad'),financeCompare:row.finance_compare!==false,financeTechCompare:row.finance_technician_compare===true,financeIndividualCap:Number.isFinite(Number(row.finance_individual_cap))?safe(row.finance_individual_cap):7000,financeComparison:row.finance_comparison_snapshot||{},isClosed:!!row.is_closed,closedAt:row.closed_at||null,closedBy:row.closed_by||null,closedSnapshot:row.closed_snapshot||{},qualityExternal:(row.quality_person_daily_metrics||[]).map(q=>({technicianName:q.technician_name||'',technicianKey:nameLinkKey(q.technician_name||''),day:safe(q.day),qualityType:q.quality_type,notes5:safe(q.notes5),notes4:safe(q.notes4),notes3:safe(q.notes3),notes2:safe(q.notes2),notes1:safe(q.notes1),sourceFile:q.source_file||'',importedAt:q.imported_at||null})).sort((a,b)=>String(a.technicianName).localeCompare(String(b.technicianName),'pt-BR')||a.day-b.day||String(a.qualityType).localeCompare(String(b.qualityType))),technicians};recalculateMonth(monthData);state.squads[s.code].months[id]=monthData}}
-    state.superAdminCommissions=[];
-    if(isSuperAdmin()){
-      try{
-        const {data:comms,error:ce}=await state.supabase.from('super_admin_commissions').select('id,user_id,year,month,amount,notes').order('year',{ascending:false}).order('month',{ascending:false});if(ce)throw ce;
-        const {data:admins}=await state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin');const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Admin geral']));
-        state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Admin geral',amount:safe(c.amount)}));
-      }catch(err){console.warn('Comissões de Admin Geral indisponíveis. Confira a migração financeira V2.18.0.',err);}
-    }
-    try{
-      const {data:overview,error:overviewError}=await state.supabase.rpc('get_org_squad_monthly_overview');
-      if(overviewError)throw overviewError;
-      state.orgOverview=(overview||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),totalAtt:safe(r.total_att),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct),technicianCount:safe(r.technician_count)}));
-    }catch(err){console.warn('Visão consolidada por Squad indisponível; usando dados já permitidos pela sessão.',err);state.orgOverview=buildOrgOverviewFromState();}
-    try{
-      const {data:techOverview,error:techOverviewError}=await state.supabase.rpc('get_org_technician_monthly_overview');
-      if(techOverviewError)throw techOverviewError;
-      state.orgTechnicianOverview=(techOverview||[]).map(r=>({
-        squadCode:r.squad_code,squadName:r.squad_name,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),
-        technicianName:r.technician_name||'',att:safe(r.att),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct),points:safe(r.points),status:String(r.status||'').toUpperCase()
-      }));
-    }catch(err){console.warn('Visão geral dos técnicos indisponível; usando apenas os dados permitidos pela sessão.',err);state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();}
-    try{
-      const {data:dailyOverview,error:dailyOverviewError}=await state.supabase.rpc('get_org_daily_attendance_overview');
-      if(dailyOverviewError)throw dailyOverviewError;
-      state.orgDailyOverview=(dailyOverview||[]).map(r=>({squadCode:r.squad_code,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),totalAtt:safe(r.total_att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct)}));
-    }catch(err){console.warn('Consolidado diário do setor indisponível; usando apenas os dados permitidos pela sessão.',err);state.orgDailyOverview=buildOrgDailyOverviewFromState();}
-    try{
-      const {data:techDaily,error:techDailyError}=await state.supabase.rpc('get_org_technician_daily_overview');if(techDailyError)throw techDailyError;state.orgTechnicianDailyOverview=(techDaily||[]).map(r=>({squadCode:r.squad_code,id:`${r.year}-${String(r.month).padStart(2,'0')}`,year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct)}));
-    }catch(err){console.warn('Consolidado diário dos técnicos indisponível; usando dados locais permitidos.',err);state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
-  }
+  // V2.43: o carregamento monolitico anterior foi removido. Dados detalhados agora entram sob demanda.
   function periodWithinHistory(row,year,month){const key=year*100+month,from=safe(row.valid_from_year)*100+safe(row.valid_from_month),to=row.valid_to_year?safe(row.valid_to_year)*100+safe(row.valid_to_month):999999;return key>=from&&key<=to}
   async function userMapForSquadPeriod(squad,m){
     const userMap={};
@@ -3667,8 +3767,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const daily=(t.daily||[]).map(d=>({technician_month_id:tm.id,day:d.day,att:d.att,notes5:d.notes5,notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off}));if(daily.length){const {error:de}=await state.supabase.from('daily_metrics').insert(daily);if(de)throw de}
     }
     for(const old of existing||[]){if(!keepNames.has(nameLinkKey(old.technician_name))){const {error:se}=await state.supabase.from('technician_monthly').delete().eq('id',old.id);if(se)throw se}}
+    invalidateDashboardCaches();
   }
-  async function persistThemeToSupabase(codes=appearanceScopeCodes(),theme=state.theme){if(!state.supabase||!codes?.length)return;const normalized=normalizeThemePayload(theme),now=new Date().toISOString(),rows=codes.map(code=>state.squads?.[code]).filter(s=>s?.dbId).map(s=>({squad_id:s.dbId,theme:themePayload(normalized,s.code),updated_by:state.user.userId,updated_at:now}));if(!rows.length)return;const {error}=await state.supabase.from('squad_themes').upsert(rows,{onConflict:'squad_id'});if(error)throw error;codes.forEach(code=>{if(state.squads?.[code])state.squads[code].theme=clone(normalized)})}
+  async function persistThemeToSupabase(codes=appearanceScopeCodes(),theme=state.theme){if(!state.supabase||!codes?.length)return;const normalized=normalizeThemePayload(theme),now=new Date().toISOString(),rows=codes.map(code=>state.squads?.[code]).filter(s=>s?.dbId).map(s=>({squad_id:s.dbId,theme:themePayload(normalized,s.code),updated_by:state.user.userId,updated_at:now}));if(!rows.length)return;const {error}=await state.supabase.from('squad_themes').upsert(rows,{onConflict:'squad_id'});if(error)throw error;codes.forEach(code=>{if(state.squads?.[code])state.squads[code].theme=clone(normalized)});invalidateDashboardCaches({themes:true})}
 
   function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
   boot();

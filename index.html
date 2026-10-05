@@ -9,8 +9,11 @@
   </script>
   <link id="appFavicon" rel="icon" type="image/png" href="assets/favicon-brasil.png" />
   <title>Soften • Performance Hub</title>
-  <link rel="stylesheet" href="css/styles.css?v=2.42.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.42.0" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
+  <link rel="stylesheet" href="css/styles.css?v=2.43.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.43.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -18,7 +21,7 @@
   <section id="bootScreen" class="boot-screen" aria-live="polite">
     <div class="boot-card">
       <div class="boot-brand boot-brand-logo"><img src="assets/soften-logo-sidebar.png" alt="Soften Sistemas"><div><strong>Performance Hub</strong><span>Gestão de desempenho</span></div></div>
-      <div class="boot-dragon"><img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha"></div>
+      <div class="boot-dragon"><img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha" decoding="async" fetchpriority="high"></div>
       <div class="boot-spinner" aria-hidden="true"></div>
       <h1>Preparando seu painel</h1>
       <p id="bootMessage">Validando sua sessão e carregando os dados...</p>
@@ -67,14 +70,14 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.42.0 • Experiência inicial renovada</small>
+        <small class="login-version">V2.43.0 • Carregamento progressivo</small>
       </section>
     </div>
   </section>
 
   <section id="soundWelcome" class="sound-welcome hidden" aria-modal="true" role="dialog" aria-labelledby="soundWelcomeTitle">
     <div class="sound-welcome-card">
-      <div class="sound-welcome-art"><img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha"></div>
+      <div class="sound-welcome-art"><img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha" loading="lazy" decoding="async"></div>
       <span class="eyebrow">AMBIENTAÇÃO OPCIONAL</span>
       <h2 id="soundWelcomeTitle">Entrar na Casa do Dragão</h2>
       <p>Ative uma trilha épica ambiente em volume baixo. Você poderá pausar, silenciar ou ajustar o volume a qualquer momento pela lateral.</p>
@@ -142,7 +145,7 @@
         </div>
       </nav>
       <div class="campaign-visual" id="campaignVisual" aria-label="Campanha do Squad">
-        <img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha">
+        <img data-theme-art src="assets/brasil-em-campo-public.jpg" alt="Arte da campanha" loading="lazy" decoding="async">
         <div class="campaign-copy">
           <span>CAMPANHA DO SETOR</span>
           <strong id="campaignTitleDisplay">CASA DO DRAGÃO</strong>
@@ -155,8 +158,8 @@
         <button id="soundMuteBtn" class="sound-icon-btn" type="button" aria-label="Silenciar trilha">🔊</button>
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
-      <audio id="themeAudio" loop preload="metadata"></audio>
-      <div class="sidebar-footer">V2.42.0 • Squads A, B, D e E</div>
+      <audio id="themeAudio" loop preload="none"></audio>
+      <div class="sidebar-footer">V2.43.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -215,6 +218,7 @@
           <div class="top-user profile-shortcut" id="topUserProfileBtn" role="button" tabindex="0" title="Abrir meu perfil"><span class="user-avatar" id="topAvatar">A</span><div><b id="topUserName">Usuário</b><small id="topUserScope">Squad</small></div></div>
         </div>
       </header>
+      <div id="dataLoadIndicator" class="data-load-indicator hidden" aria-live="polite" aria-atomic="true"><i aria-hidden="true"></i><span>Carregando dados...</span></div>
 
       <section id="view-home" class="view active">
         <div class="home-hero card glass">
@@ -1032,7 +1036,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.42</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, navegação retrátil, avatar, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.43</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, navegação retrátil, avatar, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1350,14 +1354,15 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.42.0"></script>
-  <script src="js/finance-advanced.js?v=2.42.0"></script>
-  <script src="js/tv-engine.js?v=2.42.0"></script>
-  <script src="js/presentation.js?v=2.42.0"></script>
-  <script src="js/chart-engine.js?v=2.42.0"></script>
-  <script src="js/import-engine.js?v=2.42.0"></script>
-  <script src="js/predictive-engine.js?v=2.42.0"></script>
-  <script src="js/settings-engine.js?v=2.42.0"></script>
-  <script src="js/app.js?v=2.42.0"></script>
+  <script src="js/finance-rules.js?v=2.43.0"></script>
+  <script src="js/finance-advanced.js?v=2.43.0"></script>
+  <script src="js/tv-engine.js?v=2.43.0"></script>
+  <script src="js/presentation.js?v=2.43.0"></script>
+  <script src="js/chart-engine.js?v=2.43.0"></script>
+  <script src="js/import-engine.js?v=2.43.0"></script>
+  <script src="js/predictive-engine.js?v=2.43.0"></script>
+  <script src="js/settings-engine.js?v=2.43.0"></script>
+  <script src="js/performance-engine.js?v=2.43.0"></script>
+  <script src="js/app.js?v=2.43.0"></script>
 </body>
 </html>

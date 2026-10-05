@@ -222,3 +222,47 @@ test('V2.42 inclui migration de avatar privado no Supabase Storage', () => {
   assert.match(migration, /create policy user_avatars_select_org/);
   assert.match(migration, /create policy user_avatars_update_own/);
 });
+
+test('V2.43 carrega performance-engine antes do app principal', () => {
+  const performancePos = index.indexOf('js/performance-engine.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(performancePos >= 0, 'performance-engine.js deve estar no index.html');
+  assert.ok(appPos > performancePos, 'performance-engine.js deve carregar antes de app.js');
+  assert.match(app, /window\.SoftenPerformanceEngine/);
+});
+
+test('V2.43 libera a interface pelo contexto inicial e nao pelo carregamento monolitico antigo', () => {
+  const start = app.indexOf('async function enterSupabaseSession');
+  const end = app.indexOf('function periodWithinHistory', start);
+  assert.ok(start >= 0 && end > start, 'fluxo de sessao V2.43 deve existir');
+  const block = app.slice(start, end);
+  assert.match(block, /loadInitialSupabaseContext/);
+  assert.match(block, /enterApp\(state\.user\)/);
+  assert.equal(block.includes('loadSupabaseDataLegacy'), false, 'login nao pode depender do carregamento monolitico antigo');
+  assert.equal(app.includes('async function loadSupabaseDataLegacy'), false, 'codigo monolitico antigo deve ser removido do bundle');
+});
+
+test('V2.43 aplica lazy loading, cache e paralelismo por competencia', () => {
+  for (const marker of ['ensureMonthLoaded','ensureMonthsLoaded','ensureViewData','schedulePostLoginHydration','writePerformanceCache','readPerformanceCache','Promise.all']) {
+    assert.ok(app.includes(marker), `app.js deve conter ${marker}`);
+  }
+  assert.ok(index.includes('id="dataLoadIndicator"'), 'interface deve sinalizar carregamento sob demanda');
+  assert.match(index, /themeAudio" loop preload="none"/);
+});
+
+test('V2.43 possui RPC inicial enxuta e indices de apoio', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.43.0.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /create or replace function public\.get_initial_dashboard_context/);
+  assert.match(migration, /idx_squad_months_squad_period_desc/);
+  assert.match(migration, /idx_daily_metrics_tech_day/);
+  assert.match(migration, /grant execute on function public\.get_initial_dashboard_context\(\) to authenticated/);
+  const monthIndex = migration.slice(migration.indexOf("'month_index'"), migration.indexOf("'home_months'"));
+  assert.equal(monthIndex.includes("'finance_settings'"), false, 'indice inicial nao deve transportar regras financeiras pesadas');
+});
+
+test('V2.43 expoe diagnostico de performance sem bloquear o usuario', () => {
+  assert.match(app, /window\.SoftenPerformanceDiagnostics/);
+  assert.match(app, /finishPerformanceDiagnostics/);
+  assert.match(index, /preconnect" href="https:\/\/cdn\.jsdelivr\.net/);
+  assert.match(index, /preload" href="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2"/);
+});

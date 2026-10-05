@@ -1,3 +1,17 @@
+## V2.43.0 — Performance e carregamento progressivo
+- Substitui o carregamento monolítico pós-login por contexto inicial enxuto e hidratação progressiva.
+- Adiciona RPC `get_initial_dashboard_context()` para perfil, Squads, índice de competências e resumo do período atual.
+- Implementa lazy loading de competências completas somente quando a tela exige detalhes.
+- Paraleliza consultas independentes e deduplica requisições concorrentes da mesma competência.
+- Adiciona cache de sessão para contexto inicial, meses completos e temas, com invalidação após gravações relevantes.
+- Carrega consolidados organizacionais e comissões de Admin Geral somente quando necessários.
+- Adiciona indicador não bloqueante de carregamento sob demanda.
+- Expõe diagnóstico de tempo de login em `window.SoftenPerformanceDiagnostics`.
+- Adiciona índices de banco para período e métricas diárias via `MIGRACAO_V2.43.0.sql`.
+- Ajusta carregamento de assets: áudio sem preload e remoção de arquivos históricos sem uso em runtime.
+- Mantém fallback otimizado quando a migration V2.43 ainda não estiver instalada.
+- Amplia a suíte para **110 testes automatizados**.
+
 ## V2.42.0 — Navegação retrátil e avatar
 - Adiciona sidebar retrátil no desktop, com modo compacto de ícones e tooltips.
 - Torna Desempenho, Gestão e Conta recolhíveis e cria submódulos Financeiro, Pessoas e Governança.

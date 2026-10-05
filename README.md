@@ -4,9 +4,31 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.42.0`<br>
+**Versão atual:** `2.43.0`<br>
 
 
+
+
+## V2.43.0 — Performance e carregamento progressivo
+
+A V2.43.0 reduz o caminho crítico do login. Em vez de aguardar todos os Squads, todas as competências, métricas diárias, qualidade e financeiro antes de abrir a interface, o painel carrega primeiro um **contexto inicial enxuto** e libera a Home. Dados detalhados passam a entrar sob demanda.
+
+Principais mudanças:
+
+- RPC `get_initial_dashboard_context()` para perfil, permissões, Squads, índice de competências e resumo do período mais recente em uma única chamada;
+- lazy loading por competência com `ensureMonthLoaded()`;
+- paralelismo de consultas independentes com `Promise.all`;
+- cache de sessão para contexto inicial, competências e temas;
+- revalidação em segundo plano para sessões restauradas;
+- consolidados organizacionais, comissões e históricos pesados carregados somente quando necessários;
+- indicador discreto de carregamento durante hidratações sob demanda;
+- diagnóstico disponível em `window.SoftenPerformanceDiagnostics`;
+- preload/preconnect da biblioteca Supabase e trilha sonora com `preload=none`;
+- remoção de assets históricos sem referência no runtime.
+
+> Execute `supabase/migrations/MIGRACAO_V2.43.0.sql` antes de publicar o frontend para obter o ganho máximo. Se a RPC ainda não estiver instalada, existe fallback com consultas paralelas, porém menos eficiente.
+
+Detalhes técnicos: `docs/PERFORMANCE_V2.43.0.md`.
 
 
 ## V2.42.0 — Navegação retrátil e avatar
