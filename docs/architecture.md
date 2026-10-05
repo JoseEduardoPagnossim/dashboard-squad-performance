@@ -151,3 +151,8 @@ A Home usa uma grade CSS de 12 colunas. `app.js` aplica ordem, visibilidade e ta
 O drag-and-drop é progressivo: a mesma ordenação também pode ser feita pelas setas em `Configurações → Meu painel`. Em telas menores, as classes de tamanho convergem para 6 ou 12 colunas para preservar legibilidade. Widgets indisponíveis ao perfil, como a visão consolidada de Squads para Técnicos, permanecem fora do fluxo de personalização.
 
 A correção de ritmo visual fica em `css/design-system.css` e é intencionalmente seletiva. Ela adiciona padding apenas aos cards herdados identificados sem espaçamento próprio, evitando sobrescrever componentes que já controlavam seu padding internamente.
+
+
+## V2.45.1 — Correção da grade da Home
+
+A Home modular mantém `#homeWidgetGrid` como CSS Grid de 12 colunas mesmo com preferências pessoais ativas. A classe genérica `personal-layout-root` continua usando flex apenas nas telas legadas. Visibilidade em modo de edição e fora dele é tratada separadamente para preservar widgets ocultos.

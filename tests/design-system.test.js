@@ -67,3 +67,12 @@ test('V2.45 corrige ritmo interno dos cards sem padding proprio', () => {
   assert.match(css, /padding:var\(--ds-card-padding\)!important/);
   assert.match(css, /--ds-card-gap:16px/);
 });
+
+
+test('V2.45.1 padroniza espacamento estrutural dos cards mapeados', () => {
+  for (const selector of ['.home-content','.home-widget-grid','.team-history-section','.indicator-history-section','.history-section-head','.users-hero','.audit-hero','.settings-hero','.profile-hero','.settings-commandbar']) {
+    assert.ok(css.includes(selector), `Design System deve mapear espacamento de ${selector}`);
+  }
+  assert.match(css, /gap:var\(--ds-card-gap\)!important/);
+  assert.match(css, /margin-bottom:var\(--ds-card-gap\)!important/);
+});

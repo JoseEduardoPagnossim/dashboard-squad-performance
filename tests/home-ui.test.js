@@ -93,3 +93,18 @@ test('V2.45 oferece drag-and-drop e fallback de ordenacao nas Configuracoes', ()
   assert.match(app, /data-layout-move="up"/);
   assert.match(app, /data-layout-move="down"/);
 });
+
+
+test('V2.45.1 preserva CSS Grid da Home mesmo com layout pessoal ativo', () => {
+  assert.match(css, /\.personal-layout-root:not\(\.home-widget-grid\)\{display:flex!important/);
+  assert.match(css, /\.home-widget-grid\{display:grid!important/);
+  assert.match(css, /\.home-widget-grid\.personal-layout-root\{display:grid!important/);
+  assert.match(css, /width:100%;min-width:0/);
+  assert.match(css, /\.home-widget-role-unavailable\{display:none!important\}/);
+});
+
+test('V2.45.1 diferencia widget oculto em edicao e fora da edicao', () => {
+  assert.match(app, /classList\.toggle\('layout-user-hidden',!state\.homeLayoutEditMode&&hidden\)/);
+  assert.match(app, /classList\.toggle\('home-widget-edit-hidden',state\.homeLayoutEditMode&&hidden\)/);
+  assert.match(app, /state\.homeLayoutEditMode\?homeLayoutDraft\(\):savedHomeLayout\(\)/);
+});

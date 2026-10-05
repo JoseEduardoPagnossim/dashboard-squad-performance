@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.45.0`<br>
+**Versão atual:** `2.45.1`<br>
 
 
 
@@ -12,6 +12,13 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.45.1 — Correção da Home modular e espaçamento
+
+Patch corretivo da V2.45. A Home volta a usar a grade real de 12 colunas mesmo quando há layout pessoal ativo; os tamanhos Pequeno/Médio/Largo/Total passam a alterar a largura visual dos widgets. Também foi corrigido o estado de widgets ocultos após Salvar/Cancelar e ampliado o mapeamento de espaçamento entre grupos de cards.
+
+Detalhes: `docs/HOME_MODULAR_V2.45.1.md`.
 
 ## V2.45.0 — Home modular e correção de espaçamento
 

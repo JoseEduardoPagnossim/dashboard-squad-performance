@@ -34,7 +34,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.45.0';
+  const APP_VERSION = '2.45.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -321,9 +321,10 @@
   function homeLayoutDraft(){if(!state.homeLayoutDraft)state.homeLayoutDraft=savedHomeLayout();return state.homeLayoutDraft}
   function homeWidgetBarHtml(block,layout){const key=block.key,hidden=layout.hidden.includes(key),size=layout.sizes?.[key]||block.defaultSize||'full',options=layoutSizeOptions(block,size);return `<button class="home-widget-drag" type="button" title="Arraste o widget" aria-label="Arraste ${escapeHtml(block.label)}">⋮⋮</button><strong>${escapeHtml(block.label)}</strong>${options?`<label><span>Tamanho</span><select data-home-widget-size="${escapeHtml(key)}">${options}</select></label>`:''}<button class="btn secondary compact home-widget-visibility" type="button" data-home-widget-toggle="${escapeHtml(key)}">${hidden?'Mostrar':'Ocultar'}</button>`}
   function renderHomeWidgetEditState(){
-    const root=$('#homeWidgetGrid'),def=settingsLayoutDefinition('home');if(!root||!def)return;const layout=normalizeUiLayout('home',homeLayoutDraft());state.homeLayoutDraft=layout;
+    const root=$('#homeWidgetGrid'),def=settingsLayoutDefinition('home');if(!root||!def)return;
+    const layout=normalizeUiLayout('home',state.homeLayoutEditMode?homeLayoutDraft():savedHomeLayout());if(state.homeLayoutEditMode)state.homeLayoutDraft=layout;
     root.classList.toggle('home-layout-editing',state.homeLayoutEditMode);root.classList.toggle('layout-density-compact',layout.density==='compact');
-    layout.order.forEach((key,index)=>{const block=def.blocks.find(b=>b.key===key),el=block?$(block.selector):null;if(!el)return;const roleUnavailable=key==='squads'&&isTechnician();el.classList.toggle('home-widget-role-unavailable',roleUnavailable);el.style.order=String(index);el.classList.remove('layout-user-hidden','home-widget-size-small','home-widget-size-medium','home-widget-size-wide','home-widget-size-full');el.classList.add(`home-widget-size-${layout.sizes?.[key]||block.defaultSize||'full'}`);el.classList.toggle('home-widget-edit-hidden',layout.hidden.includes(key));el.draggable=state.homeLayoutEditMode&&!roleUnavailable;const bar=el.querySelector('.home-widget-editbar');if(bar){bar.innerHTML=state.homeLayoutEditMode?homeWidgetBarHtml(block,layout):'';bar.setAttribute('aria-hidden',state.homeLayoutEditMode?'false':'true');}});
+    layout.order.forEach((key,index)=>{const block=def.blocks.find(b=>b.key===key),el=block?$(block.selector):null;if(!el)return;const roleUnavailable=key==='squads'&&isTechnician(),hidden=layout.hidden.includes(key);el.classList.toggle('home-widget-role-unavailable',roleUnavailable);el.style.order=String(index);el.classList.remove('home-widget-size-small','home-widget-size-medium','home-widget-size-wide','home-widget-size-full');el.classList.add(`home-widget-size-${layout.sizes?.[key]||block.defaultSize||'full'}`);el.classList.toggle('layout-user-hidden',!state.homeLayoutEditMode&&hidden);el.classList.toggle('home-widget-edit-hidden',state.homeLayoutEditMode&&hidden);el.draggable=state.homeLayoutEditMode&&!roleUnavailable;const bar=el.querySelector('.home-widget-editbar');if(bar){bar.innerHTML=state.homeLayoutEditMode?homeWidgetBarHtml(block,layout):'';bar.setAttribute('aria-hidden',state.homeLayoutEditMode?'false':'true');}});
     $('#homeLayoutToolbar')?.classList.toggle('hidden',!state.homeLayoutEditMode);
   }
   function beginHomeLayoutEdit(){if(!requirePermission('dashboard.customize'))return;state.homeLayoutEditMode=true;state.homeLayoutDraft=savedHomeLayout();renderHomeWidgetEditState();$('#homeLayoutToolbar')?.scrollIntoView({behavior:'smooth',block:'nearest'});}

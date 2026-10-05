@@ -231,7 +231,7 @@ body{line-height:1.45;text-rendering:optimizeLegibility}
 }
 
 /* ========================================================================== 
-   V2.45.0 — Rhythm fix: cards que não possuíam padding próprio
+   V2.45.1 — Rhythm fix: padding + espaçamento estrutural + Home modular
    O mapeamento cobre cards de configuração, preditivo, auditoria, perfil,
    ajuda, gamificação e distribuição por dias úteis. Componentes que já
    possuem padding especializado continuam preservados.
@@ -254,9 +254,20 @@ body{line-height:1.45;text-rendering:optimizeLegibility}
 #appShell .settings-central-grid,
 #appShell .predictive-management-section,
 #appShell .profile-grid,
-#appShell .business-days-distribution-grid{
+#appShell .business-days-distribution-grid,
+#appShell .home-content,
+#appShell .home-widget-grid{
   gap:var(--ds-card-gap)!important;
 }
+#appShell .team-history-section,
+#appShell .indicator-history-section{margin-top:var(--ds-card-gap)!important}
+#appShell .history-section-head,
+#appShell .users-hero,
+#appShell .help-hero,
+#appShell .audit-hero,
+#appShell .settings-hero,
+#appShell .profile-hero{margin-bottom:var(--ds-card-gap)!important}
+#appShell .settings-commandbar{margin-bottom:var(--ds-card-gap)!important}
 #appShell .settings-card>.settings-module-badge:first-child{margin-top:0}
 #appShell .performance-system-card .performance-kpi-grid{margin-top:18px}
 #appShell .layout-density-compact .settings-hero,

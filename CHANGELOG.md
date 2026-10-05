@@ -1,3 +1,11 @@
+## V2.45.1 — Correção da grade da Home e espaçamento
+
+- Corrige conflito entre `.personal-layout-root` e `.home-widget-grid` que forçava `display:flex` e ignorava os tamanhos dos widgets.
+- Mantém a Home em grade de 12 colunas com largura total do container e responsividade existente.
+- Corrige persistência visual de widgets ocultos após Salvar/Cancelar; durante a edição eles permanecem visíveis de forma atenuada para poderem ser reativados.
+- Amplia o mapeamento de espaçamento para Home, históricos, cabeçalhos e barras de configuração usando `--ds-card-gap`.
+- Sem migration e sem alteração de cálculos, metas ou regras financeiras.
+
 ## V2.45.0 — Home modular e ritmo visual
 - Corrige padding interno ausente em cards herdados que não possuíam espaçamento próprio.
 - Padroniza gaps dos grids afetados sem alterar cards que já tinham padding específico.
