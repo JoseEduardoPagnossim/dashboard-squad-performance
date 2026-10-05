@@ -25,6 +25,7 @@ const auditScriptPosition = index.indexOf('js/audit-utils.js');
 const chartEngineScriptPosition = index.indexOf('js/chart-engine.js');
 const importEngineScriptPosition = index.indexOf('js/import-engine.js');
 const predictiveEngineScriptPosition = index.indexOf('js/predictive-engine.js');
+const alertEngineScriptPosition = index.indexOf('js/alert-engine.js');
 const settingsEngineScriptPosition = index.indexOf('js/settings-engine.js');
 const tvEngineScriptPosition = index.indexOf('js/tv-engine.js');
 const performanceEngineScriptPosition = index.indexOf('js/performance-engine.js');
@@ -36,6 +37,7 @@ if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils
 if (chartEngineScriptPosition < 0) errors.push('index.html não carrega js/chart-engine.js.');
 if (importEngineScriptPosition < 0) errors.push('index.html não carrega js/import-engine.js.');
 if (predictiveEngineScriptPosition < 0) errors.push('index.html não carrega js/predictive-engine.js.');
+if (alertEngineScriptPosition < 0) errors.push('index.html não carrega js/alert-engine.js.');
 if (settingsEngineScriptPosition < 0) errors.push('index.html não carrega js/settings-engine.js.');
 if (tvEngineScriptPosition < 0) errors.push('index.html não carrega js/tv-engine.js.');
 if (performanceEngineScriptPosition < 0) errors.push('index.html não carrega js/performance-engine.js.');
@@ -47,11 +49,12 @@ if (appScriptPosition >= 0 && auditScriptPosition > appScriptPosition) errors.pu
 if (appScriptPosition >= 0 && chartEngineScriptPosition > appScriptPosition) errors.push('js/chart-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && importEngineScriptPosition > appScriptPosition) errors.push('js/import-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && predictiveEngineScriptPosition > appScriptPosition) errors.push('js/predictive-engine.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && alertEngineScriptPosition > appScriptPosition) errors.push('js/alert-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && settingsEngineScriptPosition > appScriptPosition) errors.push('js/settings-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && tvEngineScriptPosition > appScriptPosition) errors.push('js/tv-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && performanceEngineScriptPosition > appScriptPosition) errors.push('js/performance-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && designSystemScriptPosition > appScriptPosition) errors.push('js/design-system.js deve ser carregado antes de js/app.js.');
-for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
+for (const id of ['view-audit','auditRows','confirmDialogPhraseInput','view-alerts','notificationBellBtn','notificationPopover','alertCenterRows','notificationComposerModal']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
 
@@ -64,6 +67,7 @@ for (const required of [
   'tests/chart-engine.test.js',
   'tests/import-engine.test.js',
   'tests/predictive-engine.test.js',
+  'tests/alert-engine.test.js',
   'tests/settings-engine.test.js',
   'tests/tv-engine.test.js',
   'tests/help-guide.test.js',
@@ -74,6 +78,7 @@ for (const required of [
   'js/chart-engine.js',
   'js/import-engine.js',
   'js/predictive-engine.js',
+  'js/alert-engine.js',
   'js/settings-engine.js',
   'js/tv-engine.js',
   'js/performance-engine.js',
@@ -97,6 +102,8 @@ for (const required of [
   'docs/HOME_MODULAR_V2.45.0.md',
   'docs/HOME_MODULAR_V2.45.1.md',
   'docs/FILTROS_IMPORTACAO_V2.45.2.md',
+  'docs/ALERTAS_NOTIFICACOES_V2.46.0.md',
+  'docs/COMO_USAR_V2.46.0.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -106,7 +113,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.42.0.sql',
   'supabase/migrations/MIGRACAO_V2.43.0.sql',
   'supabase/migrations/MIGRACAO_V2.43.1.sql',
-  'supabase/migrations/MIGRACAO_V2.43.2.sql'
+  'supabase/migrations/MIGRACAO_V2.43.2.sql',
+  'supabase/migrations/MIGRACAO_V2.46.0.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -145,6 +153,7 @@ if (appText.includes('squad-dashboard-v2.1.0')) errors.push('Referência ao nome
 if (!appText.includes('window.SoftenChartEngine')) errors.push('js/app.js não depende explicitamente do motor central de gráficos.');
 if (!appText.includes('window.SoftenImportEngine')) errors.push('js/app.js não depende explicitamente do motor de importação.');
 if (!appText.includes('window.SoftenPredictiveEngine')) errors.push('js/app.js não depende explicitamente do motor preditivo.');
+if (!appText.includes('window.SoftenAlertEngine')) errors.push('js/app.js não depende explicitamente do motor de alertas.');
 if (!appText.includes('window.SoftenSettingsEngine')) errors.push('js/app.js não depende explicitamente do motor de configurações.');
 if (!appText.includes('window.SoftenFinanceAdvanced')) errors.push('js/app.js não depende explicitamente do motor financeiro avançado.');
 if (!appText.includes('window.SoftenTvEngine')) errors.push('js/app.js não depende explicitamente do motor de TV/Comunicação.');
@@ -250,6 +259,22 @@ for (const sqlMarker of [
 ]) {
   if (!performanceMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.43.0 incompleta: ${sqlMarker}`);
 }
+
+const alertsMigrationText = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.46.0.sql'), 'utf8').toLowerCase().replace(/\s+/g, ' ');
+for (const sqlMarker of [
+  'create table if not exists public.internal_notifications',
+  'create table if not exists public.internal_notification_reads',
+  'alter table public.internal_notifications enable row level security',
+  'alter table public.internal_notification_reads enable row level security',
+  'create policy internal_notifications_select',
+  'create policy internal_notification_reads_insert',
+  'grant select, insert, update, delete on table public.internal_notifications to authenticated',
+  'grant select, insert, update, delete on table public.internal_notification_reads to authenticated'
+]) {
+  if (!alertsMigrationText.includes(sqlMarker)) errors.push(`Migracao V2.46.0 incompleta: ${sqlMarker}`);
+}
+if (!appText.includes("'notification.create'")) errors.push('js/app.js não audita publicação de notificação interna.');
+if (!appText.includes("'notification.archive'")) errors.push('js/app.js não audita encerramento de notificação interna.');
 
 // Toda nova migration que cria tabela em public deve declarar um GRANT explícito.
 // As duas tabelas da V2.18.0 são exceções históricas e foram remediadas pela V2.29.9.

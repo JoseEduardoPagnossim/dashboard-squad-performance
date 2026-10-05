@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.45.2`<br>
+**Versão atual:** `2.46.0`<br>
 
 
 
@@ -13,6 +13,34 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.46.0 — Central de Alertas + notificações internas
+
+A V2.46 transforma os sinais já existentes do painel em uma central única de acompanhamento e adiciona comunicação interna persistente dentro do Performance Hub.
+
+Principais entregas:
+
+- sino de notificações no topo com contador individual de não lidas;
+- nova tela **Central de Alertas** com filtros por status, origem, prioridade, categoria e busca;
+- alertas automáticos de ritmo, projeção, avaliação, risco técnico e cobertura de dados;
+- notificações internas publicadas por Administradores para todos, administradores, técnicos ou um Squad específico;
+- prioridade, categoria, período de validade e botão opcional de ação;
+- leitura individual por usuário e opção **Marcar tudo como lido**;
+- histórico administrativo das notificações publicadas, com status Ativa, Agendada, Expirada ou Encerrada;
+- atualização automática das notificações internas a cada 60 segundos;
+- fallback local no modo demonstração;
+- auditoria de publicação e encerramento;
+- novas permissões `notifications.view` e `notifications.manage`.
+
+### Atualização de banco obrigatória
+
+Antes de usar notificações internas no ambiente Supabase, execute:
+
+`supabase/migrations/MIGRACAO_V2.46.0.sql`
+
+Os alertas automáticos continuam funcionando mesmo se essa migration ainda não tiver sido executada.
+
+Detalhes: `docs/ALERTAS_NOTIFICACOES_V2.46.0.md`.
 
 ## V2.45.2 — Filtros superiores e importação deduplicada
 

@@ -40,6 +40,8 @@ test('sanitização limita profundidade e tamanho de arrays', () => {
 test('ações de auditoria são categorizadas e rotuladas', () => {
   assert.equal(audit.actionCategory('finance.config_update'), 'finance');
   assert.equal(audit.actionCategory('month.reopen'), 'month');
+  assert.equal(audit.actionCategory('notification.create'), 'notification');
   assert.equal(audit.actionCategory('unknown.action'), 'other');
   assert.equal(audit.actionLabel('month.reopen'), 'Competência reaberta');
+  assert.equal(audit.actionLabel('notification.create'), 'Notificação interna publicada');
 });

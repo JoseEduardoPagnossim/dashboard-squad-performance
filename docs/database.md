@@ -14,7 +14,7 @@ Em um projeto Supabase novo:
 6. configure URL e chave publishable/anon em `js/config.js`;
 7. valide login, leitura dos Squads e uma importação controlada antes de liberar o ambiente.
 
-`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.43.2, incluindo os `GRANT`s explícitos exigidos pela Data API e a simplificação de perfis.
+`supabase/schema.sql` é um instalador cumulativo para uma base vazia e reúne as evoluções necessárias até a V2.46.0, incluindo os `GRANT`s explícitos exigidos pela Data API e a simplificação de perfis.
 
 ## Atualização de uma base existente
 
@@ -107,3 +107,8 @@ supabase/migrations/MIGRACAO_V2.43.2.sql
 A migration converte qualquer perfil legado `squad_admin` para `super_admin`, remove vínculo fixo de Squad do Administrador e limpa overrides individuais de administradores. A função histórica `can_admin_squad(uuid)` é mantida para compatibilidade com policies existentes, mas passa a conceder administração somente a `super_admin` da mesma organização.
 
 Após a migration, republique `create-user` e `manage-user`, pois as versões V2.43.2 deixam de aceitar `squad_admin` como perfil de destino.
+
+
+## V2.46.0 — Notificações internas
+
+A Central de Alertas adiciona duas tabelas: `internal_notifications`, que armazena comunicados segmentados por organização/público/Squad, e `internal_notification_reads`, que registra leitura individual por usuário. RLS mantém publicação e encerramento restritos a Administradores e isola as leituras ao próprio usuário.

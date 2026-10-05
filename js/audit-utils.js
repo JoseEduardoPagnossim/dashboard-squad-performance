@@ -32,7 +32,7 @@
 
   function actionCategory(action=''){
     const prefix=String(action).split('.')[0];
-    return ['user','month','finance','goals','costs','quality','feedback','theme','presentation'].includes(prefix)?prefix:'other';
+    return ['user','month','finance','goals','costs','quality','feedback','theme','presentation','notification'].includes(prefix)?prefix:'other';
   }
 
   function actionLabel(action=''){
@@ -43,7 +43,8 @@
       'goals.team_update':'Metas do Squad alteradas','goals.monthly_metrics_update':'Metas e métricas individuais alteradas',
       'costs.support_update':'Custos do Suporte alterados',
       'quality.financial_import':'CSV de impacto financeiro importado','quality.financial_params_update':'Parâmetros de impacto financeiro alterados',
-      'presentation.playlist_create':'Playlist de TV criada','presentation.playlist_update':'Playlist de TV alterada','presentation.playlist_delete':'Playlist de TV excluída','presentation.device_create':'TV cadastrada','presentation.device_update':'TV alterada','presentation.device_delete':'TV excluída'
+      'presentation.playlist_create':'Playlist de TV criada','presentation.playlist_update':'Playlist de TV alterada','presentation.playlist_delete':'Playlist de TV excluída','presentation.device_create':'TV cadastrada','presentation.device_update':'TV alterada','presentation.device_delete':'TV excluída',
+      'notification.create':'Notificação interna publicada','notification.archive':'Notificação interna encerrada'
     };
     return labels[action]||String(action||'Ação administrativa');
   }

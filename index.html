@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.45.2" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.45.2" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.45.2" />
+  <link rel="stylesheet" href="css/styles.css?v=2.46.0" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.46.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.46.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -71,7 +71,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.45.2 • Filtros + importação</small>
+        <small class="login-version">V2.46.0 • Central de Alertas</small>
       </section>
     </div>
   </section>
@@ -101,6 +101,7 @@
           <button class="nav-group-toggle" type="button" data-nav-group-toggle="performance" aria-expanded="true"><span class="nav-group-label">DESEMPENHO</span><span class="nav-chevron">⌄</span></button>
           <div class="nav-group-items">
             <button class="nav-btn active" data-view="home"><span class="nav-icon">⌂</span><span class="nav-text">Início</span></button>
+            <button class="nav-btn" data-view="alerts" data-permission="notifications.view"><span class="nav-icon">♢</span><span class="nav-text">Alertas</span><span class="nav-notification-badge hidden" id="navNotificationBadge">0</span></button>
             <button class="nav-btn" data-view="individual"><span class="nav-icon">◈</span><span class="nav-text">Meu desempenho</span></button>
             <button class="nav-btn" data-view="team"><span class="nav-icon">♛</span><span class="nav-text">Visão do Squad</span></button>
             <button class="nav-btn super-only" data-permission="indicators.view" data-view="indicators"><span class="nav-icon">◔</span><span class="nav-text">Indicadores</span></button>
@@ -160,7 +161,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.45.2 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.46.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -212,6 +213,17 @@
             <span>Técnico</span>
             <select id="techSelect"></select>
           </label>
+          <div class="notification-shell" id="notificationShell" data-permission="notifications.view">
+            <button class="notification-bell" id="notificationBellBtn" type="button" aria-label="Abrir notificações" aria-expanded="false" aria-controls="notificationPopover" title="Notificações">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+              <span class="notification-badge hidden" id="notificationBadge">0</span>
+            </button>
+            <div class="notification-popover hidden" id="notificationPopover" role="dialog" aria-label="Notificações recentes">
+              <div class="notification-popover-head"><div><span class="eyebrow">NOTIFICAÇÕES</span><strong>O que precisa da sua atenção</strong></div><button class="link-btn" id="notificationMarkAllBtn" type="button">Marcar tudo como lido</button></div>
+              <div class="notification-popover-list" id="notificationPopoverList"></div>
+              <div class="notification-popover-foot"><button class="btn secondary compact" id="openAlertCenterBtn" type="button">Abrir Central de Alertas</button></div>
+            </div>
+          </div>
           <button class="color-mode-toggle" type="button" data-color-mode-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema claro e escuro">
             <span class="mode-icon mode-icon-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path></svg></span>
             <span class="mode-icon mode-icon-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
@@ -287,6 +299,46 @@
             </section>
           </div>
         </div>
+      </section>
+
+      <section id="view-alerts" class="view">
+        <div class="alert-center-head card glass">
+          <div><span class="eyebrow">CENTRAL DE ALERTAS • V2.46</span><h2>Alertas e notificações internas</h2><p>Reúne sinais automáticos da operação e comunicados publicados dentro do Performance Hub.</p></div>
+          <div class="alert-center-head-actions"><button class="btn secondary" id="refreshNotificationsBtn" type="button">↻ Atualizar</button><button class="btn primary admin-only" id="newNotificationBtn" data-permission="notifications.manage" type="button">+ Nova notificação</button></div>
+        </div>
+
+        <div class="alert-center-kpis" id="alertCenterKpis">
+          <article class="card"><span>Não lidos</span><strong id="alertKpiUnread">0</strong><small>Itens que ainda não foram vistos</small></article>
+          <article class="card"><span>Críticos</span><strong id="alertKpiCritical">0</strong><small>Sinais em prioridade máxima</small></article>
+          <article class="card"><span>Automáticos</span><strong id="alertKpiAutomatic">0</strong><small>Gerados pelos indicadores atuais</small></article>
+          <article class="card"><span>Internos</span><strong id="alertKpiInternal">0</strong><small>Comunicados da equipe</small></article>
+        </div>
+
+        <div class="alert-center-toolbar card">
+          <label><span>Status</span><select id="alertStatusFilter"><option value="all">Todos</option><option value="unread">Não lidos</option><option value="read">Lidos</option></select></label>
+          <label><span>Origem</span><select id="alertSourceFilter"><option value="all">Todas</option><option value="automatic">Automáticos</option><option value="internal">Notificações internas</option></select></label>
+          <label><span>Prioridade</span><select id="alertSeverityFilter"><option value="all">Todas</option><option value="critical">Crítica</option><option value="warning">Atenção</option><option value="info">Informativa</option><option value="success">Positiva</option></select></label>
+          <label><span>Categoria</span><select id="alertCategoryFilter"><option value="all">Todas</option><option value="performance">Performance</option><option value="operation">Operação</option><option value="announcement">Comunicado</option><option value="feedback">Feedback</option><option value="system">Sistema</option></select></label>
+          <label class="alert-search"><span>Buscar</span><input id="alertSearchInput" type="search" placeholder="Título ou conteúdo"></label>
+          <button class="btn secondary compact" id="alertMarkAllReadBtn" type="button">✓ Marcar tudo lido</button>
+        </div>
+
+        <div class="alert-center-grid">
+          <article class="card alert-feed-card">
+            <div class="section-title"><div><span class="eyebrow">MINHA CAIXA</span><h3>Prioridades para você</h3></div><span class="muted" id="alertFeedCount">0 itens</span></div>
+            <div class="alert-feed" id="alertCenterRows"><div class="chart-empty">Carregando alertas...</div></div>
+          </article>
+          <aside class="card alert-center-guide">
+            <span class="eyebrow">COMO FUNCIONA</span><h3>Do sinal à ação</h3>
+            <div class="alert-guide-list"><div><b>1</b><p><strong>Automáticos</strong><small>Nascem das metas, projeções e riscos já calculados pelo painel.</small></p></div><div><b>2</b><p><strong>Internos</strong><small>São publicados pelos administradores para todos, técnicos, admins ou um Squad.</small></p></div><div><b>3</b><p><strong>Leitura</strong><small>Comunicados ficam sincronizados por usuário. Alertas automáticos reaparecem quando o sinal muda.</small></p></div></div>
+            <div class="alert-center-status" id="alertCenterStatus">Atualizando notificações...</div>
+          </aside>
+        </div>
+
+        <article class="card alert-published-card admin-only" data-permission="notifications.manage">
+          <div class="section-title"><div><span class="eyebrow">GESTÃO</span><h3>Notificações publicadas</h3><p class="muted">Acompanhe comunicados ativos, agendados e encerrados.</p></div><button class="btn secondary compact" id="publishedNotificationsRefreshBtn" type="button">↻ Atualizar</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Notificação</th><th>Público</th><th>Prioridade</th><th>Início</th><th>Expira</th><th>Status</th><th>Ação</th></tr></thead><tbody id="publishedNotificationRows"><tr><td colspan="7" class="muted">Carregando...</td></tr></tbody></table></div>
+        </article>
       </section>
 
       <section id="view-individual" class="view">
@@ -1090,7 +1142,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.45.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.46.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1148,6 +1200,7 @@
         <div class="help-section-heading help-searchable" data-help-search="mapa módulos navegação onde fica"><span class="eyebrow">MAPA DO PAINEL</span><h2>Onde fazer cada coisa</h2><p>Use este mapa quando souber o que quer fazer, mas não lembrar em qual tela está a função.</p></div>
         <div class="help-module-grid">
           <article class="card help-module-card help-searchable" data-help-search="início home resumo alertas atalhos primeira tela login"><div class="help-module-top"><span class="how-icon blue">⌂</span><div><b>Início</b><small>Todos os perfis</small></div></div><p>É a primeira tela após o login. Resume os números mais relevantes para o perfil conectado, aponta alertas automáticos, mostra origem/competência e oferece atalhos para a próxima ação.</p><div class="help-do"><b>Use quando:</b><span>quiser entender rapidamente como está o mês antes de entrar em uma análise detalhada.</span></div><button class="btn secondary compact" type="button" data-help-view="home">Abrir Início</button></article>
+          <article class="card help-module-card help-searchable" data-help-search="central alertas notificações sino comunicado prioridade lido automático interno"><div class="help-module-top"><span class="how-icon red">!</span><div><b>Central de Alertas</b><small>Todos os perfis</small></div></div><p>Reúne sinais automáticos da operação e notificações internas publicadas pelos Administradores. O sino mostra o total individual de itens não lidos.</p><div class="help-do"><b>Use quando:</b><span>quiser priorizar o que exige ação agora, consultar comunicados ou marcar itens como lidos.</span></div><button class="btn secondary compact" type="button" data-help-view="alerts">Abrir Central de Alertas</button></article>
           <article class="card help-module-card help-searchable" data-help-search="meu desempenho técnico individual ranking meta status bonificação feedback"><div class="help-module-top"><span class="how-icon orange">◈</span><div><b>Meu desempenho</b><small>Todos os perfis</small></div></div><p>Mostra o resultado do técnico selecionado: atendimentos, avaliações, Nota 5, status auditável, metas, pontuação, ranking do período, ranking financeiro, histórico e bonificação estimada/oficial.</p><div class="help-do"><b>Use quando:</b><span>quiser entender o desempenho de uma pessoa e o motivo do status ou do valor recebido.</span></div><button class="btn secondary compact" type="button" data-help-view="individual">Abrir Meu desempenho</button></article>
           <article class="card help-module-card help-searchable" data-help-search="visão squad equipe ranking histórico consolidado comparativo setor"><div class="help-module-top"><span class="how-icon blue">♛</span><div><b>Visão do Squad</b><small>Visão consolidada</small></div></div><p>Reúne KPIs do grupo, ranking completo, histórico mensal por técnico, comparação consolidada dos Squads e evolução diária do setor.</p><div class="help-do"><b>Use quando:</b><span>precisar conduzir alinhamentos de equipe ou comparar comportamento entre grupos.</span></div><button class="btn secondary compact" type="button" data-help-view="team">Abrir Visão do Squad</button></article>
           <article class="card help-module-card super-help help-searchable" data-help-search="indicadores gestão preditiva projeção meta alertas qualidade serviço produto empresa dias úteis impacto financeiro"><div class="help-module-top"><span class="how-icon red">◔</span><div><b>Indicadores</b><small>Administrador</small></div></div><p>Central executiva com Realizado × Meta × Projeção, alertas automáticos, risco por técnico, comparativos, qualidade de Serviço/Produto/Empresa, dias úteis e impacto financeiro estimado.</p><div class="help-do"><b>Use quando:</b><span>quiser priorizar ações, antecipar risco de fechamento ou investigar tendência de qualidade.</span></div><button class="btn secondary compact" type="button" data-help-view="indicators" data-permission="indicators.view">Abrir Indicadores</button></article>
@@ -1172,6 +1225,11 @@
           <details class="card help-detail admin-help help-searchable" data-help-search="operação metas referência pontuação atendimento sem avaliação fechar reabrir competência">
             <summary><span class="how-icon blue">◎</span><div><b>Operação, metas e fechamento</b><small>Como manter a competência coerente</small></div><i>+</i></summary>
             <div class="help-detail-body"><ul><li>As <b>metas e referências</b> são configuradas em <b>Configurações → Operação e metas</b>.</li><li>Na tela Operação ficam os dados do mês, metas individuais, <b>Atend. sem avaliação</b>, histórico e ações de fechamento.</li><li><b>Atend. sem avaliação</b> continua contando como produção, mas sai do denominador da % de avaliação e da % de Nota 5 usada na bonificação.</li><li>O status usa quatro critérios do próprio Squad: atendimentos, total de avaliações, nota média e % avaliado.</li><li>Quando um técnico é desconsiderado da quantidade do grupo, a produção permanece nos totais, mas ele sai do divisor das referências.</li><li>Fechar congela o histórico. Para corrigir, reabra a competência, faça os ajustes e feche novamente.</li></ul></div>
+          </details>
+
+          <details class="card help-detail help-searchable" data-help-search="central alertas notificações internas sino leitura prioridade comunicado publicar público squad agendar expirar">
+            <summary><span class="how-icon red">!</span><div><b>Central de Alertas e notificações</b><small>Como priorizar sinais e comunicados internos</small></div><i>+</i></summary>
+            <div class="help-detail-body"><ul><li>O <b>sino</b> reúne itens não lidos do seu perfil e atualiza as notificações internas periodicamente.</li><li><b>Alertas automáticos</b> são derivados de metas, projeções, avaliação, risco e cobertura já calculados pelo painel.</li><li><b>Notificações internas</b> são comunicados publicados por Administradores para todos, administradores, técnicos ou um Squad específico.</li><li>Marcar como lido altera apenas a sua caixa. Para alertas automáticos, a leitura fica no navegador; para comunicados internos, fica sincronizada por usuário.</li><li>Administradores podem definir prioridade, categoria, início, expiração e um botão de ação. Encerrar uma notificação remove sua exibição sem apagar o histórico administrativo.</li></ul></div>
           </details>
 
           <details class="card help-detail super-help help-searchable" data-help-search="gestão preditiva realizado meta projeção confiança risco alertas comparação mês anterior dias úteis">
@@ -1208,7 +1266,7 @@
         <div class="how-middle-grid help-governance-grid">
           <article class="card how-permissions help-searchable" data-help-search="permissões administrador administrador técnico acesso">
             <div class="how-section-title"><span class="how-icon green">♟</span><div><span class="eyebrow">PERMISSÕES</span><h3>Quem normalmente acessa cada função?</h3></div></div>
-            <div class="permission-matrix modern"><div class="pm-head">Ação</div><div class="pm-head">Administrador</div><div class="pm-head">Técnico</div><div>Meu desempenho / Visão do Squad</div><div>✓</div><div>✓</div><div>Indicadores executivos</div><div>✓</div><div>—</div><div>Importar dados / metas / fechamento</div><div>✓</div><div>—</div><div>Bonificação administrativa</div><div>✓</div><div>—</div><div>Custos do Suporte</div><div>✓</div><div>—</div><div>Feedbacks administrativos</div><div>✓</div><div>—</div><div>Gerenciar usuários</div><div>✓</div><div>—</div><div>Configurar aparência / TV</div><div>✓</div><div>—</div><div>Visualizar Apresentação</div><div>✓</div><div>✓</div><div>Personalizar o próprio painel</div><div>✓</div><div>✓*</div></div>
+            <div class="permission-matrix modern"><div class="pm-head">Ação</div><div class="pm-head">Administrador</div><div class="pm-head">Técnico</div><div>Meu desempenho / Visão do Squad</div><div>✓</div><div>✓</div><div>Indicadores executivos</div><div>✓</div><div>—</div><div>Importar dados / metas / fechamento</div><div>✓</div><div>—</div><div>Bonificação administrativa</div><div>✓</div><div>—</div><div>Custos do Suporte</div><div>✓</div><div>—</div><div>Feedbacks administrativos</div><div>✓</div><div>—</div><div>Gerenciar usuários</div><div>✓</div><div>—</div><div>Configurar aparência / TV</div><div>✓</div><div>—</div><div>Visualizar Apresentação</div><div>✓</div><div>✓</div><div>Central de Alertas</div><div>✓</div><div>✓</div><div>Publicar notificações internas</div><div>✓</div><div>—</div><div>Personalizar o próprio painel</div><div>✓</div><div>✓*</div></div>
             <div class="help-note">* Administradores possuem acesso completo. Para Técnicos, as restrições específicas só podem reduzir recursos já permitidos pelo perfil; nunca elevar o nível de acesso.</div>
           </article>
           <article class="card how-flow admin-help help-searchable" data-help-search="rotina mensal checklist importar acompanhar conferir feedback relatório fechar">
@@ -1226,7 +1284,7 @@
 
           <article class="card how-mini help-searchable" data-help-search="perfil senha conta recuperação login segurança"><div class="how-section-title"><span class="how-icon blue">◉</span><div><span class="eyebrow">CONTA</span><h3>Perfil e senha</h3></div></div><ul><li>Em <b>Meu perfil</b>, qualquer usuário pode alterar a própria senha informando a senha atual.</li><li>A recuperação por e-mail continua disponível na tela de login.</li><li>Administradores não visualizam a senha do usuário.</li><li>Inativação de usuário bloqueia o acesso sem apagar os resultados históricos.</li></ul></article>
 
-          <article class="card how-mini admin-help help-searchable" data-help-search="persistência supabase migration migração histórico memória tv layout importação"><div class="how-section-title"><span class="how-icon purple">DB</span><div><span class="eyebrow">PERSISTÊNCIA</span><h3>Recursos que dependem das migrations</h3></div></div><ul><li><b>V2.36</b>: histórico compartilhado de importações.</li><li><b>V2.38</b>: layout por usuário e permissões específicas persistentes.</li><li><b>V2.39</b>: memória financeira compartilhada e imutável.</li><li><b>V2.40</b>: playlists, múltiplas TVs e monitor compartilhado.</li><li>Sem a migration correspondente, alguns recursos usam fallback local no navegador e podem não sincronizar entre dispositivos.</li></ul></article>
+          <article class="card how-mini admin-help help-searchable" data-help-search="persistência supabase migration migração histórico memória tv layout importação"><div class="how-section-title"><span class="how-icon purple">DB</span><div><span class="eyebrow">PERSISTÊNCIA</span><h3>Recursos que dependem das migrations</h3></div></div><ul><li><b>V2.36</b>: histórico compartilhado de importações.</li><li><b>V2.38</b>: layout por usuário e permissões específicas persistentes.</li><li><b>V2.39</b>: memória financeira compartilhada e imutável.</li><li><b>V2.40</b>: playlists, múltiplas TVs e monitor compartilhado.</li><li><b>V2.46</b>: notificações internas, segmentação de público e leitura individual.</li><li>Sem a migration correspondente, alguns recursos usam fallback local no navegador e podem não sincronizar entre dispositivos.</li></ul></article>
         </div>
 
         <article id="helpNoResults" class="card help-no-results hidden"><span>⌕</span><div><b>Nenhum tópico encontrado</b><p>Tente uma palavra mais curta, como “meta”, “TV”, “férias”, “CSV” ou “senha”.</p></div></article>
@@ -1302,6 +1360,27 @@
 
   <input id="csvInput" type="file" accept=".csv,text/csv" hidden>
   <input id="themeJsonInput" type="file" accept=".json,application/json" hidden>
+
+  <div id="notificationComposerModal" class="modal" aria-hidden="true" data-static-backdrop="true">
+    <div class="modal-card notification-composer-modal">
+      <button class="modal-close" data-close="notificationComposerModal">×</button>
+      <span class="eyebrow">NOTIFICAÇÃO INTERNA</span><h2>Publicar comunicado</h2><p>Crie uma mensagem dentro do Performance Hub e defina quem deve recebê-la.</p>
+      <form id="notificationComposerForm" class="notification-form">
+        <label class="notification-field full"><span>Título</span><input id="notificationTitleInput" type="text" maxlength="180" required placeholder="Ex.: Atenção ao fechamento da competência"></label>
+        <label class="notification-field full"><span>Mensagem</span><textarea id="notificationMessageInput" maxlength="2000" rows="5" required placeholder="Explique de forma objetiva o que precisa ser feito."></textarea></label>
+        <label class="notification-field"><span>Prioridade</span><select id="notificationSeverityInput"><option value="info">Informativa</option><option value="warning">Atenção</option><option value="critical">Crítica</option><option value="success">Positiva</option></select></label>
+        <label class="notification-field"><span>Categoria</span><select id="notificationCategoryInput"><option value="announcement">Comunicado</option><option value="operation">Operação</option><option value="performance">Performance</option><option value="feedback">Feedback</option><option value="system">Sistema</option></select></label>
+        <label class="notification-field"><span>Público</span><select id="notificationAudienceInput"><option value="all">Todos</option><option value="admins">Administradores</option><option value="technicians">Todos os técnicos</option><option value="squad">Squad específico</option></select></label>
+        <label class="notification-field hidden" id="notificationSquadField"><span>Squad</span><select id="notificationSquadInput"></select></label>
+        <label class="notification-field"><span>Início</span><input id="notificationStartsAtInput" type="datetime-local"></label>
+        <label class="notification-field"><span>Expira em</span><input id="notificationExpiresAtInput" type="datetime-local"></label>
+        <label class="notification-field"><span>Destino do botão</span><select id="notificationActionInput"><option value="">Sem botão</option><option value="home">Início</option><option value="individual">Meu desempenho</option><option value="team">Visão do Squad</option><option value="indicators">Indicadores</option><option value="presentation">Apresentação</option><option value="admin:operation">Operação</option><option value="feedbacks">Feedbacks</option><option value="my-feedbacks">Meus feedbacks</option><option value="settings">Configurações</option></select></label>
+        <label class="notification-field"><span>Texto do botão</span><input id="notificationActionLabelInput" type="text" maxlength="60" placeholder="Abrir"></label>
+        <div class="notification-form-note full" id="notificationComposerStatus">A publicação exige a migração V2.46.0 no Supabase.</div>
+        <div class="modal-actions full"><button class="btn secondary" type="button" data-close="notificationComposerModal">Cancelar</button><button class="btn primary" id="notificationPublishBtn" type="submit">Publicar notificação</button></div>
+      </form>
+    </div>
+  </div>
 
   <div id="reconciliationModal" class="modal" aria-hidden="true"><div class="modal-card reconciliation-modal-card"><button class="modal-close" data-close="reconciliationModal">×</button><div class="modal-icon">≠</div><h2 id="reconciliationModalTitle">Conciliação da competência</h2><p id="reconciliationModalText">Técnicos com diferença entre as fontes.</p><div class="table-wrap reconciliation-detail-wrap"><table><thead><tr><th>Técnico</th><th>Squad</th><th>Serviço</th><th>Produto</th><th>Empresa</th><th>Dif. Produto</th><th>Dif. Empresa</th></tr></thead><tbody id="reconciliationDetailRows"></tbody></table></div><div class="modal-actions"><button class="btn secondary" data-close="reconciliationModal">Fechar</button></div></div></div>
 
@@ -1414,16 +1493,17 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.45.2"></script>
-  <script src="js/finance-advanced.js?v=2.45.2"></script>
-  <script src="js/tv-engine.js?v=2.45.2"></script>
-  <script src="js/presentation.js?v=2.45.2"></script>
-  <script src="js/chart-engine.js?v=2.45.2"></script>
-  <script src="js/import-engine.js?v=2.45.2"></script>
-  <script src="js/predictive-engine.js?v=2.45.2"></script>
-  <script src="js/settings-engine.js?v=2.45.2"></script>
-  <script src="js/performance-engine.js?v=2.45.2"></script>
-  <script src="js/design-system.js?v=2.45.2"></script>
-  <script src="js/app.js?v=2.45.2"></script>
+  <script src="js/finance-rules.js?v=2.46.0"></script>
+  <script src="js/finance-advanced.js?v=2.46.0"></script>
+  <script src="js/tv-engine.js?v=2.46.0"></script>
+  <script src="js/presentation.js?v=2.46.0"></script>
+  <script src="js/chart-engine.js?v=2.46.0"></script>
+  <script src="js/import-engine.js?v=2.46.0"></script>
+  <script src="js/predictive-engine.js?v=2.46.0"></script>
+  <script src="js/alert-engine.js?v=2.46.0"></script>
+  <script src="js/settings-engine.js?v=2.46.0"></script>
+  <script src="js/performance-engine.js?v=2.46.0"></script>
+  <script src="js/design-system.js?v=2.46.0"></script>
+  <script src="js/app.js?v=2.46.0"></script>
 </body>
 </html>

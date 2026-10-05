@@ -8,6 +8,7 @@ const index = readFileSync(join(root, 'index.html'), 'utf8');
 const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 const engine = readFileSync(join(root, 'js', 'chart-engine.js'), 'utf8');
 const predictiveEngine = readFileSync(join(root, 'js', 'predictive-engine.js'), 'utf8');
+const alertEngine = readFileSync(join(root, 'js', 'alert-engine.js'), 'utf8');
 const settingsEngine = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf8');
 const financeAdvancedEngine = readFileSync(join(root, 'js', 'finance-advanced.js'), 'utf8');
 const tvEngine = readFileSync(join(root, 'js', 'tv-engine.js'), 'utf8');
@@ -335,4 +336,34 @@ test('V2.43.2 Edge Functions criam e editam apenas Administrador ou Técnico', (
   assert.match(manageUser, /\['super_admin','technician'\]\.includes\(role\)/);
   assert.equal(createUser.includes("['super_admin','squad_admin','technician']"), false);
   assert.equal(manageUser.includes("['super_admin','squad_admin','technician']"), false);
+});
+
+
+test('V2.46 carrega alert-engine antes do app principal', () => {
+  const alertPos = index.indexOf('js/alert-engine.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(alertPos >= 0, 'alert-engine.js deve estar no index.html');
+  assert.ok(appPos > alertPos, 'alert-engine.js deve carregar antes de app.js');
+  assert.match(app, /window\.SoftenAlertEngine/);
+  for (const marker of ['automaticAlert','buildFeed','filterFeed','audienceMatches','counts']) assert.ok(alertEngine.includes(marker), `alert-engine.js deve conter ${marker}`);
+});
+
+test('V2.46 possui sino, Central de Alertas e compositor interno', () => {
+  for (const id of ['notificationBellBtn','notificationBadge','notificationPopover','view-alerts','alertCenterRows','alertKpiUnread','alertKpiCritical','newNotificationBtn','notificationComposerModal','notificationComposerForm','publishedNotificationRows']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /ensureNotificationsLoaded/);
+  assert.match(app, /markAllNotificationsRead/);
+  assert.match(app, /publishInternalNotification/);
+  assert.match(app, /archiveInternalNotification/);
+});
+
+test('V2.46 inclui migration com RLS e leitura individual', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.46.0.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /create table if not exists public\.internal_notifications/);
+  assert.match(migration, /create table if not exists public\.internal_notification_reads/);
+  assert.match(migration, /alter table public\.internal_notifications enable row level security/);
+  assert.match(migration, /create policy internal_notifications_select/);
+  assert.match(migration, /create policy internal_notification_reads_insert/);
+  assert.match(migration, /unique \(notification_id, user_id\)/);
 });

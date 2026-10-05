@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.43.2.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.46.0.
 
 Depois:
 
@@ -50,6 +50,7 @@ V2.42.0
 V2.43.0
 V2.43.1
 V2.43.2
+V2.46.0
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -96,3 +97,8 @@ A telemetria contém apenas tempos, nome técnico do evento, origem resumida, ve
 `MIGRACAO_V2.43.2.sql` converte qualquer `squad_admin` legado para `super_admin`, remove vínculo fixo de Squad e restrições individuais dos Administradores e atualiza `can_admin_squad(uuid)` para conceder administração somente ao Administrador global da organização.
 
 Depois da migration, republique as Edge Functions `create-user` e `manage-user`, pois elas passam a aceitar somente `super_admin` e `technician` como perfis ativos.
+
+
+## V2.46.0 — Central de Alertas
+
+`MIGRACAO_V2.46.0.sql` cria `internal_notifications` e `internal_notification_reads`. As policies mantêm o isolamento por organização, restringem publicação/encerramento a Administradores e permitem que cada usuário registre somente a própria leitura. Técnicos recebem apenas comunicados destinados a todos, técnicos ou ao próprio Squad.

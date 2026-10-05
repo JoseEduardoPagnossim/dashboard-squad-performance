@@ -8,7 +8,11 @@ test('V2.43.2 trabalha com Administrador e Tecnico como perfis ativos', () => {
   assert.equal(adminPerms['permissions.manage'], true);
   assert.equal(adminPerms['finance.manage'], true);
   assert.equal(adminPerms['indicators.view'], true);
+  assert.equal(adminPerms['notifications.view'], true);
+  assert.equal(adminPerms['notifications.manage'], true);
   assert.equal(techPerms['finance.manage'], false);
+  assert.equal(techPerms['notifications.view'], true);
+  assert.equal(techPerms['notifications.manage'], false);
   assert.equal(techPerms['dashboard.customize'], true);
   assert.equal(engine.normalizeRole('squad_admin'), 'super_admin', 'papel legado deve ser normalizado como Administrador');
 });

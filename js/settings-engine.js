@@ -6,6 +6,8 @@
   const PERMISSIONS=[
     {key:'dashboard.customize',section:'Experiência',label:'Personalizar o próprio painel',roles:['super_admin','technician']},
     {key:'presentation.view',section:'Experiência',label:'Visualizar Apresentação / TV',roles:['super_admin','technician']},
+    {key:'notifications.view',section:'Experiência',label:'Visualizar Central de Alertas',roles:['super_admin','technician']},
+    {key:'notifications.manage',section:'Gestão',label:'Publicar notificações internas',roles:['super_admin']},
     {key:'presentation.manage',section:'Gestão',label:'Configurar Apresentação / TV',roles:['super_admin']},
     {key:'indicators.view',section:'Gestão',label:'Visualizar Indicadores executivos',roles:['super_admin']},
     {key:'data.import',section:'Operação',label:'Importar dados e qualidade',roles:['super_admin']},

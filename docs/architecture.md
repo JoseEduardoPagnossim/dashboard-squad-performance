@@ -163,3 +163,10 @@ A Home modular mantém `#homeWidgetGrid` como CSS Grid de 12 colunas mesmo com p
 A visibilidade do cabeçalho passa a ser derivada por uma única matriz de contexto em `app.js`. `showView()`, `applyPermissions()`, mudanças de seção dos Indicadores e atualização dos seletores reutilizam a mesma decisão, evitando que uma rotina reexiba controles que outra acabou de ocultar.
 
 O importador financeiro mantém validação semântica das quatro dimensões obrigatórias, mas o mapeamento de cabeçalhos fica no `import-engine.js`, com aliases explícitos. O parser comum de CSV também reconhece a diretiva `sep=;`, beneficiando os demais fluxos de importação sem alterar a estrutura de dados persistida.
+
+
+## V2.46.0 — Central de Alertas
+
+A camada de alertas possui um motor puro em `js/alert-engine.js`. Ele normaliza notificações internas, aplica público/validade, combina sinais automáticos com comunicados persistentes, ordena por leitura/prioridade e filtra a caixa do usuário. O `app.js` permanece responsável por derivar sinais a partir do estado operacional, sincronizar Supabase/localStorage e navegar para a ação relacionada.
+
+Notificações internas ficam em `internal_notifications`; leituras individuais em `internal_notification_reads`. Alertas automáticos continuam derivados dos dados existentes e guardam apenas o estado de leitura local, evitando duplicar indicadores no banco.

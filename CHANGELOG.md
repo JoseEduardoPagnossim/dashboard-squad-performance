@@ -1,3 +1,15 @@
+## V2.46.0 — Central de Alertas + notificações internas
+
+- Adiciona sino global com contador de itens não lidos e popover de notificações recentes.
+- Cria a Central de Alertas com KPIs, filtros, busca e ações contextuais.
+- Reaproveita sinais operacionais existentes para alertas automáticos de performance e cobertura.
+- Permite a Administradores publicar notificações para Todos, Administradores, Técnicos ou Squad específico.
+- Adiciona prioridade, categoria, agendamento, expiração e destino opcional de ação.
+- Persiste leitura individual no Supabase e mantém leitura local para alertas automáticos.
+- Inclui gestão das notificações publicadas e encerramento sem exclusão histórica.
+- Adiciona auditoria para publicação/encerramento e permissões `notifications.view`/`notifications.manage`.
+- Inclui `MIGRACAO_V2.46.0.sql` com RLS por organização, perfil e Squad.
+
 ## V2.45.2 — Filtros superiores e CSV deduplicado
 
 - Centraliza a visibilidade dos filtros superiores para evitar divergência entre `showView()` e `applyPermissions()`.
