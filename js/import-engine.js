@@ -26,9 +26,24 @@
     product:{label:'Nota Produto',accepted:['NotaProduto','Nota Produto'],aliases:['notaproduto']},
     company:{label:'Nota Empresa',accepted:['NotaEmpresa','Nota Empresa'],aliases:['notaempresa']}
   };
+  const QUALITY_IMPORT_HEADER_ALIASES={
+    date:{label:'Data da avaliação',accepted:['Time','DataAvaliacao','Data Avaliação','Data da Avaliação','Data'],aliases:['time','dataavaliacao','datadaavaliacao','data']},
+    technician:{label:'Técnico',accepted:['nomeApresentativo','Nome Apresentativo','Tecnico','Técnico','Atendente'],aliases:['nomeapresentativo','tecnico','atendente']},
+    product:{label:'Nota Produto',accepted:['NotaProduto','Nota Produto'],aliases:['notaproduto']},
+    company:{label:'Nota Empresa',accepted:['NotaEmpresa','Nota Empresa'],aliases:['notaempresa']}
+  };
   function resolveFinancialImpactColumns(headers=[]){
     const original=(headers||[]).map(v=>String(v||'').trim()),normalized=original.map(normalizeCsvHeader),indexes={},missing=[];
     for(const [key,definition] of Object.entries(FINANCIAL_IMPACT_HEADER_ALIASES)){
+      const index=normalized.findIndex(header=>definition.aliases.includes(header));
+      indexes[key]=index>=0?index:null;
+      if(index<0)missing.push({key,label:definition.label,accepted:[...definition.accepted]});
+    }
+    return{indexes,missing,headers:original,normalizedHeaders:normalized};
+  }
+  function resolveQualityImportColumns(headers=[]){
+    const original=(headers||[]).map(v=>String(v||'').trim()),normalized=original.map(normalizeCsvHeader),indexes={},missing=[];
+    for(const [key,definition] of Object.entries(QUALITY_IMPORT_HEADER_ALIASES)){
       const index=normalized.findIndex(header=>definition.aliases.includes(header));
       indexes[key]=index>=0?index:null;
       if(index<0)missing.push({key,label:definition.label,accepted:[...definition.accepted]});
@@ -86,5 +101,5 @@
     };
   }
   function canRollback(record){return Boolean(record&&record.status==='success'&&record.beforeSnapshot&&Object.keys(record.beforeSnapshot||{}).length>0)}
-  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,summarizeService,summarizeQuality,validatePreview,historySummary,canRollback};
+  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,resolveQualityImportColumns,summarizeService,summarizeQuality,validatePreview,historySummary,canRollback};
 });

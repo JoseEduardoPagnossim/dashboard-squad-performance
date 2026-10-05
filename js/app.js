@@ -29,6 +29,9 @@
   const tvEngine = window.SoftenTvEngine;
   if(!tvEngine) throw new Error('SoftenTvEngine não carregado. Verifique js/tv-engine.js.');
   const {normalizePlaylist:normalizeTvPlaylist,normalizeDevice:normalizeTvDevice,statusForDevice:tvDeviceStatus,monitorSummary:tvMonitorSummary,humanAge:tvHumanAge,generateDeviceKey:generateTvDeviceKey,deviceUrl:buildTvDeviceUrl,heartbeatPayload:buildTvHeartbeatPayload}=tvEngine;
+  const navigationEngine = window.SoftenNavigationEngine;
+  if(!navigationEngine) throw new Error('SoftenNavigationEngine não carregado. Verifique js/navigation-engine.js.');
+  const {routeFromLocation:readNavigationRoute,routeUrl:buildNavigationUrl,searchCommands:searchNavigationCommands,normalizeText:normalizeNavigationText}=navigationEngine;
   const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,setBlockSize:setUiBlockSize,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups,normalizeRole:normalizeAccessRole}=settingsEngine;
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
@@ -37,7 +40,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.46.0';
+  const APP_VERSION = '2.47.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -94,6 +97,10 @@
     notificationRefreshTimer:null,
     notificationPopoverOpen:false,
     notificationFilters:{status:'all',source:'all',severity:'all',category:'all',search:''},
+    routeApplying:false,
+    globalSearchOpen:false,
+    globalSearchIndex:0,
+    globalSearchResults:[],
     recoveryMode:false,
     pendingCsv:null,
     importHistory:[],
@@ -180,6 +187,156 @@
     access:{label:'Usuários e permissões',icon:'♟'},
     system:{label:'Performance do sistema',icon:'◴'}
   };
+
+  const ADMIN_SECTION_META={operation:{label:'Operação',icon:'↻'},finance:{label:'Bonificação',icon:'R$'},costs:{label:'Custos',icon:'⏱'},appearance:{label:'Aparência',icon:'✦'}};
+  const INDICATOR_SECTION_META={performance:{label:'Indicadores gerais',icon:'◔'},quality:{label:'Qualidade',icon:'★'},'financial-impact':{label:'Impacto financeiro',icon:'R$'},'business-days':{label:'Dias úteis',icon:'▤'},detail:{label:'Detalhamento de qualidade',icon:'≡'}};
+  const GLOBAL_NAV_COMMANDS=[
+    {id:'home',label:'Início',description:'Resumo e atalhos do Performance Hub',group:'Navegação',icon:'⌂',view:'home',keywords:'home começo resumo dashboard'},
+    {id:'alerts',label:'Central de Alertas',description:'Alertas automáticos e notificações internas',group:'Navegação',icon:'♢',view:'alerts',permission:'notifications.view',keywords:'alertas notificações avisos sino'},
+    {id:'individual',label:'Meu desempenho',description:'Indicadores individuais do técnico selecionado',group:'Desempenho',icon:'◈',view:'individual',keywords:'tecnico individual produtividade avaliação pontos'},
+    {id:'team',label:'Visão do Squad',description:'Performance consolidada do Squad',group:'Desempenho',icon:'♛',view:'team',keywords:'equipe squad ranking desempenho'},
+    {id:'indicator-performance',label:'Indicadores gerais',description:'Visão executiva, produtividade e gestão preditiva',group:'Indicadores',icon:'◔',view:'indicators',indicatorSection:'performance',permission:'indicators.view',keywords:'indicadores geral gestão preditiva projeção'},
+    {id:'indicator-quality',label:'Indicadores · Qualidade',description:'Serviço, Produto e Empresa',group:'Indicadores',icon:'★',view:'indicators',indicatorSection:'quality',permission:'indicators.view',keywords:'qualidade serviço produto empresa avaliação'},
+    {id:'indicator-financial-impact',label:'Indicadores · Impacto financeiro',description:'Exposição financeira associada à qualidade',group:'Indicadores',icon:'R$',view:'indicators',indicatorSection:'financial-impact',permission:'indicators.view',keywords:'financeiro qualidade mrr risco receita clientes'},
+    {id:'indicator-business-days',label:'Indicadores · Dias úteis',description:'Comparativo de competências pelo mesmo corte de dias úteis',group:'Indicadores',icon:'▤',view:'indicators',indicatorSection:'business-days',permission:'indicators.view',keywords:'dias úteis comparação competências meses'},
+    {id:'indicator-detail',label:'Indicadores · Detalhamento',description:'Notas baixas e leitura detalhada por técnico',group:'Indicadores',icon:'≡',view:'indicators',indicatorSection:'detail',permission:'indicators.view',keywords:'detalhamento notas baixas técnico qualidade'},
+    {id:'presentation',label:'Apresentação',description:'Ranking, TV e visualização de apresentação',group:'Desempenho',icon:'▣',view:'presentation',permission:'presentation.view',keywords:'tv apresentação ranking carrossel fullscreen'},
+    {id:'admin-operation',label:'Operação',description:'Importação, metas e fechamento mensal',group:'Gestão',icon:'↻',view:'admin',adminSection:'operation',adminOnly:true,keywords:'operação importação metas mês'},
+    {id:'admin-finance',label:'Bonificação',description:'Financeiro e memória de cálculo',group:'Gestão',icon:'R$',view:'admin',adminSection:'finance',permission:'finance.view',adminOnly:true,keywords:'financeiro bonificação comissão férias'},
+    {id:'admin-costs',label:'Custos',description:'Custos operacionais do suporte',group:'Gestão',icon:'⏱',view:'admin',adminSection:'costs',permission:'costs.view',adminOnly:true,keywords:'custos folha horas operação'},
+    {id:'feedbacks',label:'Feedbacks',description:'Gestão de feedbacks dos técnicos',group:'Pessoas',icon:'✎',view:'feedbacks',permission:'feedback.manage',adminOnly:true,keywords:'feedback pessoas técnico avaliação'},
+    {id:'users',label:'Usuários',description:'Usuários, perfis e permissões',group:'Pessoas',icon:'♟',view:'users',permission:'users.manage',adminOnly:true,keywords:'usuários acessos permissões perfil'},
+    {id:'audit',label:'Auditoria',description:'Histórico de ações administrativas',group:'Governança',icon:'⌁',view:'audit',permission:'audit.view',adminOnly:true,keywords:'auditoria histórico alterações ações'},
+    {id:'settings',label:'Configurações',description:'Central de configurações do painel',group:'Configurações',icon:'⚙',view:'settings',keywords:'configurações ajustes preferências'},
+    {id:'settings-personalization',label:'Configurações · Meu painel',description:'Layout, densidade e personalização individual',group:'Configurações',icon:'▦',view:'settings',settingsModule:'personalization',permission:'dashboard.customize',keywords:'layout widgets personalização painel'},
+    {id:'settings-operation',label:'Configurações · Operação e metas',description:'Metas e parâmetros mensais',group:'Configurações',icon:'◎',view:'settings',settingsModule:'operation',adminOnly:true,keywords:'metas operação parâmetros'},
+    {id:'settings-finance',label:'Configurações · Bonificação',description:'Modelo financeiro e regras de bonificação',group:'Configurações',icon:'R$',view:'settings',settingsModule:'finance',permission:'finance.view',adminOnly:true,keywords:'bonificação financeiro regras'},
+    {id:'settings-appearance',label:'Configurações · Aparência e gráficos',description:'Tema, identidade visual e preferências de gráficos',group:'Configurações',icon:'✦',view:'settings',settingsModule:'appearance',permission:'appearance.manage',adminOnly:true,keywords:'tema aparência gráficos cores'},
+    {id:'settings-presentation',label:'Configurações · Apresentação / TV',description:'Playlists, TVs e preferências da apresentação',group:'Configurações',icon:'▣',view:'settings',settingsModule:'presentation',permission:'presentation.manage',adminOnly:true,keywords:'tv apresentação playlist dispositivos'},
+    {id:'settings-access',label:'Configurações · Usuários e permissões',description:'Perfis e acesso granular',group:'Configurações',icon:'♟',view:'settings',settingsModule:'access',permission:'permissions.manage',adminOnly:true,keywords:'usuários permissões acesso'},
+    {id:'settings-system',label:'Configurações · Performance do sistema',description:'Métricas técnicas e observabilidade',group:'Configurações',icon:'◴',view:'settings',settingsModule:'system',adminOnly:true,keywords:'performance sistema cache métricas diagnóstico'},
+    {id:'profile',label:'Meu perfil',description:'Dados pessoais, avatar e senha',group:'Conta',icon:'◉',view:'profile',keywords:'perfil avatar senha conta'},
+    {id:'my-feedbacks',label:'Meus feedbacks',description:'Histórico de feedbacks recebidos',group:'Conta',icon:'✎',view:'my-feedbacks',techOnly:true,keywords:'meus feedbacks técnico'},
+    {id:'help',label:'Como usar',description:'Ajuda e guia do Performance Hub',group:'Conta',icon:'?',view:'help',keywords:'ajuda guia manual como usar'}
+  ];
+  function commandAllowed(command){
+    if(command.adminOnly&&!isAdmin())return false;if(command.techOnly&&!isTechnician())return false;if(command.permission&&!hasPermission(command.permission))return false;
+    if(command.view==='admin'){
+      if(!isAdmin())return false;
+      if(command.adminSection==='operation'&&!hasPermission('data.import')&&!hasPermission('goals.manage')&&!hasPermission('month.manage'))return false;
+      if(command.adminSection==='finance'&&!hasPermission('finance.view'))return false;
+      if(command.adminSection==='costs'&&!hasPermission('costs.view'))return false;
+      if(command.adminSection==='appearance'&&!hasPermission('appearance.manage'))return false;
+    }
+    if(command.view==='indicators'&&!hasPermission('indicators.view'))return false;
+    if(command.view==='presentation'&&!hasPermission('presentation.view'))return false;
+    if(command.view==='alerts'&&!hasPermission('notifications.view'))return false;
+    if(command.settingsModule&&!settingsModuleAllowed(command.settingsModule))return false;
+    return true;
+  }
+  function globalNavigationCommands(){
+    const commands=GLOBAL_NAV_COMMANDS.filter(commandAllowed).map(x=>({...x}));
+    if(isSuperAdmin())Object.values(state.squads||{}).sort((a,b)=>a.code.localeCompare(b.code)).forEach(s=>commands.push({id:`squad-${s.code}`,label:`Squad ${s.code}`,description:`Abrir a visão consolidada de ${s.name||`Squad ${s.code}`}`,group:'Squads',icon:s.code,view:'team',squad:s.code,keywords:`squad ${s.code} ${s.name||''} equipe`}));
+    if(state.squadCode&&state.squadCode!=='all'){
+      const names=new Map();for(const m of Object.values(currentMonths()||{}))for(const t of m?.technicians||[]){const key=normalizeNavigationText(t.name);if(key&&!names.has(key))names.set(key,t.name);}
+      [...names.values()].sort((a,b)=>a.localeCompare(b,'pt-BR')).slice(0,80).forEach(name=>commands.push({id:`tech-${state.squadCode}-${normalizeNavigationText(name).replace(/\s+/g,'-')}`,label:name,description:`Abrir desempenho individual · Squad ${state.squadCode}`,group:'Técnicos',icon:'◈',view:'individual',tech:name,keywords:`técnico ${name} desempenho squad ${state.squadCode}`}));
+    }
+    return commands;
+  }
+  function routeAccessible(route){
+    const target={view:route?.page||'home',adminSection:route?.section||null,settingsModule:route?.module||null,indicatorSection:route?.indicator||null};
+    if(target.view==='home')return true;
+    const candidates=GLOBAL_NAV_COMMANDS.filter(c=>c.view===target.view).filter(c=>!target.adminSection||c.adminSection===target.adminSection).filter(c=>!target.settingsModule||c.settingsModule===target.settingsModule).filter(c=>!target.indicatorSection||c.indicatorSection===target.indicatorSection);
+    if(candidates.length)return candidates.some(commandAllowed);
+    return !['admin','users','feedbacks','audit','indicators','presentation','alerts','my-feedbacks'].includes(target.view);
+  }
+  function currentPersistentRoute(){
+    const page=state.currentView||'home',route={page};
+    if(page==='admin')route.section=state.adminSection||'operation';
+    if(page==='settings'&&state.settingsModule&&state.settingsModule!=='all')route.module=state.settingsModule;
+    if(page==='indicators')route.indicator=state.indicatorSection||'performance';
+    if(state.squadCode)route.squad=state.squadCode;
+    if(state.squadCode!=='all'&&state.currentId)route.month=state.currentId;
+    if(page==='individual'&&state.techName)route.tech=state.techName;
+    if(['individual','team','indicators','presentation'].includes(page)){if(state.analysisStartDate)route.from=state.analysisStartDate;if(state.analysisEndDate)route.to=state.analysisEndDate;}
+    return route;
+  }
+  function syncPersistentUrl({replace=false}={}){
+    if(!state.user||state.routeApplying||PRESENTATION_ROUTE.enabled)return;
+    const next=buildNavigationUrl(window.location.href,currentPersistentRoute()),current=new URL(window.location.href);
+    if(next.pathname===current.pathname&&next.search===current.search&&next.hash===current.hash)return;
+    const method=replace?'replaceState':'pushState';window.history[method]({softenRoute:true},'',`${next.pathname}${next.search}${next.hash}`);
+  }
+  function routeTechnicianName(value){const wanted=normalizeNavigationText(value);if(!wanted)return null;for(const m of Object.values(currentMonths()||{}))for(const t of m?.technicians||[])if(normalizeNavigationText(t.name)===wanted)return t.name;return null}
+  async function restorePersistentRoute(route=readNavigationRoute(window.location),{canonicalize=true}={}){
+    if(PRESENTATION_ROUTE.enabled||!state.user)return;state.routeApplying=true;
+    try{
+      const target=routeAccessible(route)?route:{page:'home'};
+      if(isSuperAdmin()&&target.squad){const code=target.squad==='all'?'all':String(target.squad).toUpperCase();if((code==='all'||state.squads?.[code])&&code!==state.squadCode)await selectSquad(code,{history:'none'});}
+      if(state.squadCode!=='all'&&target.month&&currentMonths()?.[target.month]){state.currentId=target.month;if(state.supabase&&!isPerformanceFullMonth(currentMonths()[target.month]))ensureMonthLoaded(state.squadCode,target.month,{silent:true}).catch(()=>{});chooseDefaultTech();}
+      if(target.from||target.to){const range=clampAnalysisRange(target.from||state.analysisStartDate,target.to||state.analysisEndDate);if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();}}
+      if(target.page==='indicators'&&target.indicator&&INDICATOR_SECTION_META[target.indicator])state.indicatorSection=target.indicator;
+      if(target.page==='settings')state.settingsModule=target.module&&SETTINGS_MODULES[target.module]&&settingsModuleAllowed(target.module)?target.module:'all';
+      if(target.page==='admin'&&target.section&&ADMIN_SECTION_META[target.section])state.adminSection=target.section;
+      if(target.page==='individual'&&target.tech){const found=routeTechnicianName(target.tech);if(found)state.techName=found;}
+      refreshSelectors();showView(target.page||'home',target.page==='admin'?state.adminSection:null,{history:'none'});if(target.page==='settings')applySettingsModuleFilter({scroll:false});updateBreadcrumbs();
+    }finally{state.routeApplying=false;if(canonicalize)syncPersistentUrl({replace:true});}
+  }
+  function breadcrumbRoute(label,target=null,icon=''){return{label,target,icon}}
+  function currentBreadcrumbItems(){
+    if(state.currentView==='home')return[breadcrumbRoute('Início',null,'⌂')];
+    const items=[breadcrumbRoute('Início',{view:'home'},'⌂')],page=state.currentView;
+    if(['alerts','individual','team','indicators','presentation'].includes(page))items.push(breadcrumbRoute('Desempenho'));
+    if(page==='alerts')items.push(breadcrumbRoute('Central de Alertas'));
+    else if(page==='individual')items.push(breadcrumbRoute('Meu desempenho'));
+    else if(page==='team')items.push(breadcrumbRoute('Visão do Squad'));
+    else if(page==='presentation')items.push(breadcrumbRoute('Apresentação'));
+    else if(page==='indicators'){items.push(breadcrumbRoute('Indicadores',{view:'indicators',indicatorSection:'performance'}));items.push(breadcrumbRoute(INDICATOR_SECTION_META[state.indicatorSection]?.label||'Indicadores gerais'));}
+    else if(page==='admin'){
+      items.push(breadcrumbRoute('Gestão'));
+      if(['finance','costs'].includes(state.adminSection))items.push(breadcrumbRoute('Financeiro'));
+      items.push(breadcrumbRoute(ADMIN_SECTION_META[state.adminSection]?.label||'Operação'));
+    }else if(['feedbacks','users'].includes(page)){items.push(breadcrumbRoute('Gestão'));items.push(breadcrumbRoute('Pessoas'));items.push(breadcrumbRoute(page==='feedbacks'?'Feedbacks':'Usuários'));}
+    else if(page==='audit'){items.push(breadcrumbRoute('Gestão'));items.push(breadcrumbRoute('Governança'));items.push(breadcrumbRoute('Auditoria'));}
+    else if(page==='settings'){items.push(breadcrumbRoute('Configurações',state.settingsModule!=='all'?{view:'settings'}:null,'⚙'));if(state.settingsModule!=='all')items.push(breadcrumbRoute(SETTINGS_MODULES[state.settingsModule]?.label||'Configurações'));}
+    else if(page==='profile'){items.push(breadcrumbRoute('Conta'));items.push(breadcrumbRoute('Meu perfil'));}
+    else if(page==='my-feedbacks'){items.push(breadcrumbRoute('Conta'));items.push(breadcrumbRoute('Meus feedbacks'));}
+    else if(page==='help'){items.push(breadcrumbRoute('Conta'));items.push(breadcrumbRoute('Como usar'));}
+    return items;
+  }
+  function breadcrumbTargetAttrs(target){if(!target)return'';return Object.entries(target).map(([key,value])=>` data-breadcrumb-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}="${escapeHtml(value)}"`).join('')}
+  function updateBreadcrumbs(){
+    const el=$('#appBreadcrumbs');if(!el)return;const items=currentBreadcrumbItems();el.innerHTML=items.map((item,index)=>{const last=index===items.length-1,icon=index===0?'<span class="breadcrumb-home-icon">⌂</span>':'';if(item.target&&!last)return`<span class="breadcrumb-item"><button class="breadcrumb-link" type="button"${breadcrumbTargetAttrs(item.target)}>${icon}${escapeHtml(item.label)}</button></span>`;return`<span class="breadcrumb-item"><span class="${last?'breadcrumb-current':'breadcrumb-label'}"${last?' aria-current="page"':''}>${icon}${escapeHtml(item.label)}</span></span>`}).join('');
+  }
+  async function executeNavigationTarget(target={}){
+    const previousApplying=state.routeApplying;state.routeApplying=true;
+    try{
+      if(target.squad&&isSuperAdmin()&&target.squad!==state.squadCode)await selectSquad(target.squad,{history:'none'});
+      if(target.month&&state.squadCode!=='all'&&currentMonths()?.[target.month]){state.currentId=target.month;chooseDefaultTech();}
+      if(target.tech){const found=routeTechnicianName(target.tech);if(found)state.techName=found;}
+      if(target.indicatorSection&&INDICATOR_SECTION_META[target.indicatorSection])state.indicatorSection=target.indicatorSection;
+      if(target.settingsModule&&SETTINGS_MODULES[target.settingsModule]&&settingsModuleAllowed(target.settingsModule))state.settingsModule=target.settingsModule;
+      if(target.adminSection&&ADMIN_SECTION_META[target.adminSection])state.adminSection=target.adminSection;
+      refreshSelectors();showView(target.view||'home',target.view==='admin'?state.adminSection:null,{history:'none'});if(target.view==='settings')applySettingsModuleFilter({scroll:true});
+    }finally{state.routeApplying=previousApplying;}
+    updateBreadcrumbs();syncPersistentUrl({replace:false});
+  }
+  function globalSearchResultById(id){return state.globalSearchResults.find(x=>x.id===id)||globalNavigationCommands().find(x=>x.id===id)||null}
+  function renderGlobalSearch(){
+    const host=$('#globalSearchResults'),input=$('#globalSearchInput');if(!host)return;const query=input?.value||'',commands=globalNavigationCommands();state.globalSearchResults=searchNavigationCommands(commands,query,16);if(state.globalSearchIndex>=state.globalSearchResults.length)state.globalSearchIndex=Math.max(0,state.globalSearchResults.length-1);
+    if(!state.globalSearchResults.length){host.innerHTML='<div class="global-search-empty"><div><strong>Nenhum resultado encontrado</strong><small>Tente outro termo, nome de tela, configuração, Squad ou técnico.</small></div></div>';return;}
+    let lastGroup='';host.innerHTML=state.globalSearchResults.map((command,index)=>{const group=command.group||'Navegação',heading=group!==lastGroup?`<div class="global-search-group">${escapeHtml(group)}</div>`:'';lastGroup=group;return`${heading}<button class="global-search-result ${index===state.globalSearchIndex?'is-active':''}" type="button" role="option" aria-selected="${index===state.globalSearchIndex?'true':'false'}" data-global-command="${escapeHtml(command.id)}"><span class="global-search-result-icon">${escapeHtml(command.icon||'→')}</span><span class="global-search-result-copy"><strong>${escapeHtml(command.label)}</strong><small>${escapeHtml(command.description||'Abrir')}</small></span><span class="global-search-result-group">${escapeHtml(group)}</span></button>`}).join('');
+    host.querySelector('.global-search-result.is-active')?.scrollIntoView({block:'nearest'});
+  }
+  function openGlobalSearch(){if(!state.user||PRESENTATION_ROUTE.enabled)return;setNotificationPopover(false);state.globalSearchOpen=true;state.globalSearchIndex=0;const palette=$('#globalSearchPalette');palette?.classList.remove('hidden');palette?.setAttribute('aria-hidden','false');document.body.classList.add('command-palette-open');if($('#globalSearchInput'))$('#globalSearchInput').value='';renderGlobalSearch();setTimeout(()=>$('#globalSearchInput')?.focus(),0)}
+  function closeGlobalSearch(){state.globalSearchOpen=false;$('#globalSearchPalette')?.classList.add('hidden');$('#globalSearchPalette')?.setAttribute('aria-hidden','true');document.body.classList.remove('command-palette-open')}
+  function moveGlobalSearch(delta){if(!state.globalSearchResults.length)return;state.globalSearchIndex=(state.globalSearchIndex+delta+state.globalSearchResults.length)%state.globalSearchResults.length;renderGlobalSearch()}
+  async function activateGlobalSearch(id=null){const command=id?globalSearchResultById(id):state.globalSearchResults[state.globalSearchIndex];if(!command)return;closeGlobalSearch();await executeNavigationTarget(command)}
+  function handleGlobalSearchKeydown(e){
+    if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){e.preventDefault();state.globalSearchOpen?closeGlobalSearch():openGlobalSearch();return;}
+    if(!state.globalSearchOpen)return;
+    if(e.key==='Escape'){e.preventDefault();closeGlobalSearch();return;}if(e.key==='ArrowDown'){e.preventDefault();moveGlobalSearch(1);return;}if(e.key==='ArrowUp'){e.preventDefault();moveGlobalSearch(-1);return;}if(e.key==='Enter'){e.preventDefault();activateGlobalSearch();}
+  }
   function prepareCentralSettings(){
     const target=$('#centralConfigModules');if(!target)return;
     $$('[data-central-config]').forEach(card=>{
@@ -224,10 +381,11 @@
     if($('#settingsNoResults'))$('#settingsNoResults').classList.toggle('hidden',visible>0);
     if(scroll&&first)setTimeout(()=>first.scrollIntoView({behavior:'smooth',block:'start'}),20);
   }
-  function openSettingsModule(module='all',{scroll=true}={}){
+  function openSettingsModule(module='all',{scroll=true,history='push'}={}){
     const requested=SETTINGS_MODULES[module]?module:'all';state.settingsModule=requested;
-    if(state.currentView!=='settings')showView('settings');else renderSettings();
-    applySettingsModuleFilter({scroll});
+    if(state.currentView!=='settings')showView('settings',null,{history:'none'});else renderSettings();
+    applySettingsModuleFilter({scroll});updateBreadcrumbs();
+    if(history!=='none')syncPersistentUrl({replace:history==='replace'});
   }
 
 
@@ -510,7 +668,15 @@
     $('#forgotPasswordBtn').addEventListener('click',handleForgotPassword);
     $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
     $('#logoutBtn').addEventListener('click',logout);
-    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{showView(btn.dataset.view,btn.dataset.adminSection||null);if(btn.dataset.settingsModule)openSettingsModule(btn.dataset.settingsModule,{scroll:true});}));
+    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.settingsModule)return openSettingsModule(btn.dataset.settingsModule,{scroll:true});showView(btn.dataset.view,btn.dataset.adminSection||null);}));
+    $('#globalSearchTrigger')?.addEventListener('click',openGlobalSearch);
+    $('#globalSearchBackdrop')?.addEventListener('click',closeGlobalSearch);
+    $('#globalSearchInput')?.addEventListener('input',()=>{state.globalSearchIndex=0;renderGlobalSearch();});
+    $('#globalSearchResults')?.addEventListener('mousemove',e=>{const btn=e.target.closest('[data-global-command]');if(!btn)return;const index=state.globalSearchResults.findIndex(x=>x.id===btn.dataset.globalCommand);if(index>=0&&index!==state.globalSearchIndex){state.globalSearchIndex=index;renderGlobalSearch();}});
+    $('#globalSearchResults')?.addEventListener('click',e=>{const btn=e.target.closest('[data-global-command]');if(btn)activateGlobalSearch(btn.dataset.globalCommand);});
+    $('#appBreadcrumbs')?.addEventListener('click',e=>{const btn=e.target.closest('[data-breadcrumb-view]');if(!btn)return;executeNavigationTarget({view:btn.dataset.breadcrumbView,adminSection:btn.dataset.breadcrumbAdminSection||null,settingsModule:btn.dataset.breadcrumbSettingsModule||null,indicatorSection:btn.dataset.breadcrumbIndicatorSection||null});});
+    document.addEventListener('keydown',handleGlobalSearchKeydown);
+    window.addEventListener('popstate',()=>{if(state.user&&!PRESENTATION_ROUTE.enabled)restorePersistentRoute(readNavigationRoute(window.location),{canonicalize:true}).catch(err=>console.error('Falha ao restaurar rota do navegador.',err));});
     if($('#view-home'))$('#view-home').addEventListener('click',handleHomeClick);
     $('#saveHomeLayoutBtn')?.addEventListener('click',saveHomeLayoutEdit);
     $('#cancelHomeLayoutBtn')?.addEventListener('click',cancelHomeLayoutEdit);
@@ -550,7 +716,7 @@
     if($('#helpSearchInput'))$('#helpSearchInput').addEventListener('input',applyHelpSearch);
     if($('#clearHelpSearchBtn'))$('#clearHelpSearchBtn').addEventListener('click',()=>{$('#helpSearchInput').value='';applyHelpSearch();$('#helpSearchInput').focus();});
     $$('[data-help-view],[data-help-admin-section],[data-help-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openHelpTarget(btn)));
-    if($('#settingsMonthSelect'))$('#settingsMonthSelect').addEventListener('change',e=>{if(!e.target.value)return;state.currentId=e.target.value;chooseDefaultTech();refreshSelectors();renderSettings();});
+    if($('#settingsMonthSelect'))$('#settingsMonthSelect').addEventListener('change',e=>{if(!e.target.value)return;state.currentId=e.target.value;chooseDefaultTech();refreshSelectors();renderSettings();syncPersistentUrl({replace:true});});
     if($('#openUsersPermissionsBtn'))$('#openUsersPermissionsBtn').addEventListener('click',()=>showView('users'));
     if($('#resetUserPermissionsBtn'))$('#resetUserPermissionsBtn').addEventListener('click',()=>{state.editPermissionDraft={};renderPermissionEditor($('#editUserRole').value);});
     ['#topUserProfileBtn'].forEach(sel=>{const el=$(sel);if(!el)return;el.addEventListener('click',()=>showView('profile'));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('profile')}})});
@@ -578,9 +744,9 @@
     window.addEventListener('error',e=>captureClientPerformanceError('window_error',e.error||e.message,{source:String(e.filename||'').split('/').pop()||'window'}));
     window.addEventListener('unhandledrejection',e=>captureClientPerformanceError('unhandled_rejection',e.reason||'Promise rejeitada',{source:'promise'}));
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){queueCachePerformanceSample();flushPerformanceTelemetry();}});
-    $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
-    $('#monthSelect').addEventListener('change',async e=>{state.currentId=e.target.value;if(state.supabase&&state.squadCode!=='all'){try{await ensureMonthLoaded(state.squadCode,state.currentId);}catch(err){toast('Nao foi possivel carregar esta competencia.');}}chooseDefaultTech();refreshSelectors();render();});
-    $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
+    $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value,{history:'replace'});});
+    $('#monthSelect').addEventListener('change',async e=>{state.currentId=e.target.value;if(state.supabase&&state.squadCode!=='all'){try{await ensureMonthLoaded(state.squadCode,state.currentId);}catch(err){toast('Nao foi possivel carregar esta competencia.');}}chooseDefaultTech();refreshSelectors();render();syncPersistentUrl({replace:true});});
+    $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value;renderIndividual();syncPersistentUrl({replace:true});});
     $('#adminImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('service')});
     if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
     if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
@@ -772,7 +938,7 @@
   }
   function showLogin(message=''){ hideBoot();$('#loginScreen').classList.remove('hidden');$('#appShell').classList.add('hidden');if(message)$('#loginError').textContent=message; }
   async function logout(){
-    stopThemeAudio();clearInterval(state.notificationRefreshTimer);state.notificationRefreshTimer=null;const cacheScope=performanceScope();clearPerformanceCacheScope(cacheScope);clearPerformanceCacheScope('initial');if(state.supabase) await state.supabase.auth.signOut();sessionStorage.removeItem('squadDemoSession');state.user=null;state.backgroundHydrationStarted=false;showLogin();
+    closeGlobalSearch();stopThemeAudio();clearInterval(state.notificationRefreshTimer);state.notificationRefreshTimer=null;const cacheScope=performanceScope();clearPerformanceCacheScope(cacheScope);clearPerformanceCacheScope('initial');if(state.supabase) await state.supabase.auth.signOut();sessionStorage.removeItem('squadDemoSession');state.user=null;state.backgroundHydrationStarted=false;showLogin();
   }
 
   async function enterApp(user){
@@ -798,10 +964,11 @@
     if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
     resetAnalysisRange(true);
     applyPermissions();applyNavigationPreferences();refreshSelectors();render();
+    if(!PRESENTATION_ROUTE.enabled)await restorePersistentRoute(readNavigationRoute(window.location),{canonicalize:true});
     hideBoot();$('#loginScreen').classList.add('hidden');$('#appShell').classList.remove('hidden');
     refreshCurrentUserAvatarUrl().catch(err=>console.warn('Avatar indisponível; usando iniciais.',err));
-    if(PRESENTATION_ROUTE.enabled){window.SoftenPresentation?.setDirectMode(true);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.remove('hidden');showView('presentation');}
-    else window.SoftenPresentation?.setDirectMode(false);
+    if(PRESENTATION_ROUTE.enabled){window.SoftenPresentation?.setDirectMode(true);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.remove('hidden');showView('presentation',null,{history:'none'});}
+    else{window.SoftenPresentation?.setDirectMode(false);updateBreadcrumbs();}
     initializeThemeAudio();
     ensureNotificationsLoaded(false).catch(()=>{});
     clearInterval(state.notificationRefreshTimer);state.notificationRefreshTimer=setInterval(()=>ensureNotificationsLoaded(true).catch(()=>{}),60000);
@@ -928,7 +1095,7 @@
     $$('[data-analysis-preset]').forEach(b=>b.classList.toggle('active',b.dataset.analysisPreset===state.analysisPreset));
   }
   function handleAnalysisDateInput(which,value){
-    const next=clampAnalysisRange(which==='start'?value:state.analysisStartDate,which==='end'?value:state.analysisEndDate);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();
+    const next=clampAnalysisRange(which==='start'?value:state.analysisStartDate,which==='end'?value:state.analysisEndDate);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();syncPersistentUrl({replace:true});
   }
   function setAnalysisPreset(preset){
     const bounds=importedDateBounds();if(!bounds.max)return;let end=currentCalendarMonthLatest(bounds)||bounds.max,start=end;
@@ -937,7 +1104,7 @@
     else if(preset==='15d'){start=addCalendarDays(end,-14);}
     else if(preset==='prev-month'){const d=parseIsoAnalysisDate(end);d.setDate(1);d.setMonth(d.getMonth()-1);const y=d.getFullYear(),m=d.getMonth()+1,id=`${y}-${String(m).padStart(2,'0')}`;let last=new Date(y,m,0).getDate();const latestDays=analysisScopeSquads().map(s=>safe(s.months?.[id]?.latestDay)).filter(Boolean);if(latestDays.length)last=Math.max(...latestDays);start=isoDateParts(y,m,1);end=isoDateParts(y,m,last);}
     else {const d=parseIsoAnalysisDate(end);start=isoDateParts(d.getFullYear(),d.getMonth()+1,1);preset='month';}
-    const next=clampAnalysisRange(start,end);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset=preset;syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();
+    const next=clampAnalysisRange(start,end);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset=preset;syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();syncPersistentUrl({replace:true});
   }
   function analysisRangeLabel(){if(!state.analysisStartDate||!state.analysisEndDate)return'Sem período';const a=parseIsoAnalysisDate(state.analysisStartDate),b=parseIsoAnalysisDate(state.analysisEndDate),fmt=d=>d.toLocaleDateString('pt-BR');return state.analysisStartDate===state.analysisEndDate?fmt(a):`${fmt(a)} até ${fmt(b)}`}
   function analysisMonthIds(){
@@ -1028,18 +1195,19 @@
   }
   function periodTeamGoal(squad){let total=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;total+=safe(teamSettings(m).teamGoalAtt)*(days/Math.max(1,businessDaysMonFri(m.year,m.month)));}return total;}
 
-  async function selectSquad(code){
+  async function selectSquad(code,{history='replace'}={}){
     if(!isSuperAdmin())return; state.squadCode=code;
     if(code==='all'){
       state.currentId=null;state.techName='';
       // A visão consolidada preserva a identidade visual do último Squad selecionado.
       // O tema é visual e não interfere nos dados consolidados.
       applyTheme(state.theme||loadLastTheme());
-      if(state.currentView==='individual')showView('team');
+      if(state.currentView==='individual')showView('team',null,{history:'none'});
     }
     else{rememberLastSquad(code);chooseLatestMonth();chooseDefaultTech();state.theme=resolveLegacyTheme(state.squads[code]?.theme||loadThemeForSquad(code));applyTheme(state.theme);}
-    resetAnalysisRange(true);refreshSelectors();render();applyPermissions();
+    resetAnalysisRange(true);refreshSelectors();render();applyPermissions();updateBreadcrumbs();
     if(state.supabase&&state.currentView!=='home')hydrateCurrentViewAsync(state.currentView,state.adminSection);
+    if(history!=='none')syncPersistentUrl({replace:history==='replace'});
   }
   function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
 
@@ -1081,7 +1249,7 @@
     return visibility;
   }
 
-  function showView(name,adminSection=null){
+  function showView(name,adminSection=null,{history='push'}={}){
     if((name==='admin'||name==='users'||name==='feedbacks'||name==='audit')&&!isAdmin())return;
     if(name==='my-feedbacks'&&!isTechnician())return;
     if(name==='alerts'&&!hasPermission('notifications.view'))return toast('Você não possui permissão para visualizar a Central de Alertas.');
@@ -1102,7 +1270,7 @@
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;const sameSettings=name!=='settings'||(b.dataset.settingsModule?b.dataset.settingsModule===state.settingsModule:!b.dataset.settingsModule);b.classList.toggle('active',sameView&&sameSection&&sameSettings)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
     const titles={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
-    $('#pageTitle').textContent=titles[name]||'Performance Hub';
+    $('#pageTitle').textContent=titles[name]||'Performance Hub';document.title=`${titles[name]||'Performance Hub'} • Soften Performance Hub`;
     if($('#squadEyebrow'))$('#squadEyebrow').textContent=name==='home'?(isSuperAdmin()?'PERFORMANCE HUB':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`):(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`);
     syncTopFiltersForView(name,state.adminSection);
     syncAnalysisDateControls();
@@ -1112,6 +1280,7 @@
     $('#mobileMenu')?.setAttribute('aria-label','Abrir menu lateral');
     render();
     if(state.supabase&&name!=='home')hydrateCurrentViewAsync(name,state.adminSection);
+    updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});
     resetViewScroll();
   }
 
@@ -1317,7 +1486,7 @@
       state.notificationReadIds=[...new Set([...(state.notificationReadIds||[]).map(String),...internalIds])];if(!state.supabase)writeLocalArray(demoNotificationReadKey(),state.notificationReadIds);refreshNotificationSurfaces();toast(`${unread.length} item(ns) marcado(s) como lido(s).`);
     }catch(err){console.error(err);toast('Não foi possível marcar todas as notificações como lidas.');}
   }
-  async function openNotificationAction(id){const item=notificationFeedItem(id);if(!item)return;await markNotificationRead(item);setNotificationPopover(false);if(!notificationActionAllowed(item))return;if(item.actionView==='admin')showView('admin',item.actionSection||'operation');else if(item.actionView==='indicators'){showView('indicators');if(item.actionSection)setIndicatorSection(item.actionSection);}else showView(item.actionView);}
+  async function openNotificationAction(id){const item=notificationFeedItem(id);if(!item)return;await markNotificationRead(item);setNotificationPopover(false);if(!notificationActionAllowed(item))return;if(item.actionView==='admin')showView('admin',item.actionSection||'operation');else if(item.actionView==='indicators'){if(item.actionSection&&INDICATOR_SECTION_META[item.actionSection])state.indicatorSection=item.actionSection;showView('indicators');}else showView(item.actionView);}
   function notificationFeedItemHtml(item){const action=notificationActionAllowed(item)?`<button class="btn secondary compact" type="button" data-notification-action="${escapeHtml(item.id)}">${escapeHtml(item.actionLabel||'Abrir')}</button>`:'';return`<article class="alert-feed-item ${escapeHtml(item.severity)} ${item.read?'read':'unread'}"><div class="alert-feed-icon">${notificationIcon(item)}</div><div class="alert-feed-copy"><div class="alert-feed-meta"><span>${escapeHtml(notificationSourceLabel(item))}</span><span>${escapeHtml(notificationCategoryLabel(item.category))}</span><span>${escapeHtml(notificationSeverityLabel(item.severity))}</span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.text)}</p><div class="alert-feed-actions">${item.read?'<span class="alert-read-state">✓ Lido</span>':`<button class="link-btn" type="button" data-notification-read="${escapeHtml(item.id)}">Marcar como lido</button>`}${action}</div></div></article>`}
   function publishedNotificationStatus(row){const n=alertEngine.normalizeInternal(row),now=Date.now(),start=new Date(n.startsAt).getTime(),end=n.expiresAt?new Date(n.expiresAt).getTime():Infinity;if(!n.active)return{key:'inactive',label:'Encerrada'};if(start>now)return{key:'scheduled',label:'Agendada'};if(end<=now)return{key:'expired',label:'Expirada'};return{key:'active',label:'Ativa'}}
   function renderPublishedNotifications(){
@@ -1642,10 +1811,11 @@ function renderIndicatorSafely(label,renderFn,targetIds=[]){
   }
 }
 
-function setIndicatorSection(section){
+function setIndicatorSection(section,{history='push'}={}){
   const allowed=new Set(['performance','quality','financial-impact','business-days','detail']);
   state.indicatorSection=allowed.has(section)?section:'performance';
   if(state.currentView==='indicators')renderIndicators();
+  updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});
 }
 function syncIndicatorSectionUi(){
   const section=state.indicatorSection;
@@ -3400,7 +3570,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=expectedKind;
     const quality=expectedKind==='quality',service=expectedKind==='service';
     $('#importMessage').textContent=quality?`Selecione o CSV de Produto/Empresa para ${scope}.`:service?`Selecione o CSV operacional de atendimentos para ${scope}.`:`Selecione o CSV para atualizar ${scope}.`;
-    $('#importDetails').innerHTML=quality?'<b>CSV Produto/Empresa:</b> Time, nomeApresentativo, NotaProduto e NotaEmpresa. Cada linha representa uma avaliação. <b>NotaServico é ignorada</b> e cliente não é necessário.':service?'<b>CSV Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.':'<b>Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.<br><b>Qualidade Produto/Empresa:</b> Time, nomeApresentativo, NotaProduto e NotaEmpresa. <b>NotaServico é ignorada</b> neste segundo arquivo.';
+    $('#importDetails').innerHTML=quality?'<b>CSV Produto/Empresa:</b> Time ou DataAvaliacao, nomeApresentativo, NotaProduto e NotaEmpresa. Cada linha representa uma avaliação. <b>NotaServico é ignorada</b> e cliente não é necessário.':service?'<b>CSV Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.':'<b>Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.<br><b>Qualidade Produto/Empresa:</b> Time, nomeApresentativo, NotaProduto e NotaEmpresa. <b>NotaServico é ignorada</b> neste segundo arquivo.';
     if($('#csvPeriodHint'))$('#csvPeriodHint').textContent=quality?'Produto/Empresa exige que a competência operacional já esteja importada. Ao confirmar um mês, as demais competências existentes no mesmo CSV e já cadastradas no escopo também são sincronizadas.':service?'A reimportação substitui Serviço/atendimentos do mês e preserva Produto/Empresa.':'O tipo do CSV é identificado automaticamente.';
     $('#importProgress').style.width='0%';$('#chooseFileBtn').disabled=false;$('#confirmCsvImportBtn').classList.add('hidden');$('#confirmCsvImportBtn').disabled=false;$('#csvPeriodBlock').classList.add('hidden');$('#importPreviewBlock')?.classList.add('hidden');openModal('importModal');
   }
@@ -3484,13 +3654,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
 
   function detectCsvKind(text){
-    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(!lines.length)throw new Error('CSV vazio.');const headers=new Set(lines[0].map(normalizeHeader));if(headers.has('nomeapresentativo')&&headers.has('notaproduto')&&headers.has('notaempresa'))return'quality';if(headers.has('tecnico')&&headers.has('grupoatendimento')&&headers.has('quantidade'))return'service';throw new Error('Formato de CSV não reconhecido. Use o CSV operacional ou o CSV de avaliações com Time, nomeApresentativo, NotaProduto e NotaEmpresa.');
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(!lines.length)throw new Error('CSV vazio.');const rawHeaders=lines[0].map(v=>String(v||'').trim()),quality=importEngine.resolveQualityImportColumns(rawHeaders),headers=new Set(rawHeaders.map(normalizeHeader));if(!quality.missing.length)return'quality';if(headers.has('tecnico')&&headers.has('grupoatendimento')&&headers.has('quantidade'))return'service';const found=rawHeaders.filter(Boolean).join(', ')||'nenhum';throw new Error(`Formato de CSV não reconhecido. Para Produto/Empresa, use DataAvaliacao ou Time, nomeApresentativo, NotaProduto e NotaEmpresa. Cabeçalhos encontrados: ${found}.`);
   }
   function csvRating(v){const n=Math.trunc(csvNumber(v));return n>=1&&n<=5?n:null}
   function parseQualityCsv(text){
-    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV de qualidade vazio ou sem linhas de dados.');const headers=lines[0].map(normalizeHeader),idx={};headers.forEach((h,i)=>idx[h]=i);for(const h of ['time','nomeapresentativo','notaproduto','notaempresa'])if(idx[h]==null)throw new Error(`Coluna obrigatória não encontrada no CSV de qualidade: ${h}.`);const rows=[];let ignored=0;
-    for(const cols of lines.slice(1)){const date=parseCsvDate(cols[idx.time]),name=normalizeName(cols[idx.nomeapresentativo]),productNote=csvRating(cols[idx.notaproduto]),companyNote=csvRating(cols[idx.notaempresa]);if(!date||!name||(!productNote&&!companyNote)){ignored++;continue}const year=date.year,month=date.month,day=date.day;rows.push({id:`${year}-${String(month).padStart(2,'0')}`,year,month,day,name,productNote,companyNote});}
-    if(!rows.length)throw new Error('Nenhuma avaliação válida de Produto ou Empresa foi encontrada.');return{rows,ignored,total:lines.length-1};
+    const lines=parseCsvRows(String(text||'').replace(/^﻿/,''));if(lines.length<2)throw new Error('CSV de qualidade vazio ou sem linhas de dados.');const rawHeaders=lines[0].map(v=>String(v||'').trim()),resolved=importEngine.resolveQualityImportColumns(rawHeaders);if(resolved.missing.length){const missing=resolved.missing.map(item=>`${item.label} (aceitos: ${item.accepted.join(', ')})`).join('; '),found=rawHeaders.filter(Boolean).join(', ')||'nenhum';throw new Error(`Coluna obrigatória não encontrada no CSV de qualidade: ${missing}. Cabeçalhos encontrados: ${found}.`);}const idx=resolved.indexes,rows=[];let ignored=0;
+    for(const cols of lines.slice(1)){const date=parseCsvDate(cols[idx.date]),name=normalizeName(cols[idx.technician]),productNote=csvRating(cols[idx.product]),companyNote=csvRating(cols[idx.company]);if(!date||!name||(!productNote&&!companyNote)){ignored++;continue}const year=date.year,month=date.month,day=date.day;rows.push({id:`${year}-${String(month).padStart(2,'0')}`,year,month,day,name,productNote,companyNote});}
+    if(!rows.length)throw new Error('Nenhuma avaliação válida de Produto ou Empresa foi encontrada. Confira a data, o técnico e as notas do arquivo.');return{rows,ignored,total:lines.length-1};
   }
   function qualityUserAliasKeys(name){const key=nameLinkKey(name),keys=new Set([key]);for(const u of state.userDirectory||[]){if(u.role!=='technician')continue;if(samePersonName(u.fullName,name)||samePersonName(u.techName,name)){if(u.techName)keys.add(nameLinkKey(u.techName));if(u.fullName)keys.add(nameLinkKey(u.fullName));}}return keys}
   function monthOrdinal(id){const [y,m]=String(id||'').split('-').map(Number);return safe(y)*12+safe(m)}

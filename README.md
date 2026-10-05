@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.46.0`<br>
+**Versão atual:** `2.47.1`<br>
 
 
 
@@ -13,6 +13,43 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+
+
+## V2.47.1 — Correção da importação de notas Produto/Empresa
+
+Patch corretivo da Central de Importação. O CSV de avaliações agora usa a mesma tolerância de cabeçalhos já disponível no Impacto Financeiro.
+
+- aceita `DataAvaliacao`, `Data Avaliação`, `Data da Avaliação`, `Time` ou `Data`;
+- aceita `nomeApresentativo`, `Técnico`, `Tecnico` ou `Atendente`;
+- continua exigindo `NotaProduto` e `NotaEmpresa`;
+- `NotaServico` permanece ignorada nessa importação;
+- arquivo real de setembro validado com 1.706 linhas de dados;
+- não exige migration;
+- suíte automatizada validada com **167/167 testes aprovados**.
+
+Detalhes: `docs/IMPORTACAO_QUALIDADE_V2.47.1.md`.
+
+## V2.47.0 — Busca global / Ctrl+K + breadcrumbs + URLs persistentes
+
+A V2.47 unifica a navegação do Performance Hub e reduz a dependência do menu lateral para encontrar recursos.
+
+Principais entregas:
+
+- **Ctrl+K / Cmd+K** abre uma busca global por telas, Indicadores, Configurações, Squads e técnicos disponíveis no perfil;
+- resultados da busca respeitam as permissões efetivas do usuário;
+- breadcrumbs exibem a hierarquia funcional da tela e permitem voltar a níveis navegáveis;
+- a URL passa a refletir página, seção, módulo, Squad, competência, técnico e período quando aplicável;
+- Voltar/Avançar do navegador restaura a rota sem criar estados duplicados;
+- filtros atualizam a URL com `replaceState`, enquanto mudanças de tela entram no histórico;
+- atualizar a página ou abrir um link copiado restaura a mesma área após o login;
+- rota normal da Apresentação usa `page=presentation` e permanece separada do modo TV legado `view=presentation`;
+- novo `js/navigation-engine.js` centraliza parsing de rota e busca;
+- não exige migration de banco;
+- suíte automatizada validada com **164/164 testes aprovados**.
+
+Detalhes: `docs/NAVEGACAO_GLOBAL_V2.47.0.md`.
 
 ## V2.46.0 — Central de Alertas + notificações internas
 

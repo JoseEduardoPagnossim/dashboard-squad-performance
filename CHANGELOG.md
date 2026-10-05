@@ -1,3 +1,27 @@
+## V2.47.1 — Correção da importação Produto/Empresa com DataAvaliacao
+
+- Corrige a Central de Importação de qualidade, que ainda exigia literalmente a coluna `Time`.
+- Passa a aceitar `DataAvaliacao`, `Data Avaliação`, `Data da Avaliação`, `Time` ou `Data` como coluna de data.
+- Mantém `nomeApresentativo` e adiciona aliases seguros `Técnico`, `Tecnico` e `Atendente`.
+- Mantém `NotaProduto` e `NotaEmpresa` obrigatórias; `NotaServico` continua ignorada na importação de Produto/Empresa.
+- Melhora a mensagem de erro exibindo aliases aceitos e cabeçalhos realmente encontrados.
+- Validação feita também contra o CSV real de setembro enviado para diagnóstico: 1.706 linhas de dados reconhecidas.
+- Sem migration de banco.
+- Suíte automatizada: **167/167 testes aprovados**.
+
+## V2.47.0 — Busca global, breadcrumbs e URLs persistentes
+
+- Adiciona busca global com `Ctrl+K` / `Cmd+K` e navegação completa por teclado.
+- Indexa telas, seções de Indicadores, módulos de Configurações, Squads e técnicos disponíveis no contexto carregado.
+- Filtra resultados conforme perfil e permissões efetivas.
+- Adiciona breadcrumbs derivados da mesma rota usada pela navegação.
+- Persiste página, seção, módulo, Squad, competência, técnico e período na URL quando aplicável.
+- Integra `pushState`, `replaceState` e `popstate` para suportar links compartilháveis e Voltar/Avançar.
+- Separa a rota normal `page=presentation` do modo TV `view=presentation`.
+- Cria `js/navigation-engine.js` e testes dedicados de normalização, URL e busca.
+- Não exige migration de banco.
+- Suíte automatizada: **164/164 testes aprovados**.
+
 ## V2.46.0 — Central de Alertas + notificações internas
 
 - Adiciona sino global com contador de itens não lidos e popover de notificações recentes.

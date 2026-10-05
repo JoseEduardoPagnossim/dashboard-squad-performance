@@ -78,3 +78,23 @@ test('V2.45.2 parser CSV continua respeitando campos delimitados entre aspas',()
   const rows=engine.parseCsvRows('Data,Texto\n01/10/2026,"A, B"');
   assert.deepEqual(rows[1],['01/10/2026','A, B']);
 });
+
+
+test('V2.47.1 importacao de qualidade aceita DataAvaliacao no lugar de Time',()=>{
+  const r=engine.resolveQualityImportColumns(['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa']);
+  assert.deepEqual(r.missing,[]);
+  assert.deepEqual(r.indexes,{date:0,technician:1,product:3,company:4});
+});
+
+test('V2.47.1 importacao de qualidade aceita aliases com acento e tecnico alternativo',()=>{
+  const r=engine.resolveQualityImportColumns(['Data Avaliação','Técnico','Nota Produto','Nota Empresa']);
+  assert.deepEqual(r.missing,[]);
+  assert.deepEqual(r.indexes,{date:0,technician:1,product:2,company:3});
+});
+
+test('V2.47.1 importacao de qualidade continua bloqueando arquivo incompleto',()=>{
+  const r=engine.resolveQualityImportColumns(['DataAvaliacao','nomeApresentativo','NotaProduto']);
+  assert.equal(r.missing.length,1);
+  assert.equal(r.missing[0].key,'company');
+  assert.ok(r.missing[0].accepted.includes('NotaEmpresa'));
+});

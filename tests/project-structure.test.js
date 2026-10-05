@@ -12,6 +12,7 @@ const alertEngine = readFileSync(join(root, 'js', 'alert-engine.js'), 'utf8');
 const settingsEngine = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf8');
 const financeAdvancedEngine = readFileSync(join(root, 'js', 'finance-advanced.js'), 'utf8');
 const tvEngine = readFileSync(join(root, 'js', 'tv-engine.js'), 'utf8');
+const navigationEngine = readFileSync(join(root, 'js', 'navigation-engine.js'), 'utf8');
 
 test('chart-engine carrega antes do app principal', () => {
   const enginePos = index.indexOf('js/chart-engine.js');
@@ -367,3 +368,44 @@ test('V2.46 inclui migration com RLS e leitura individual', () => {
   assert.match(migration, /create policy internal_notification_reads_insert/);
   assert.match(migration, /unique \(notification_id, user_id\)/);
 });
+
+test('V2.47 carrega navigation-engine antes do app principal', () => {
+  const navigationPos = index.indexOf('js/navigation-engine.js');
+  const appPos = index.indexOf('js/app.js');
+  assert.ok(navigationPos >= 0, 'navigation-engine.js deve estar no index.html');
+  assert.ok(appPos > navigationPos, 'navigation-engine.js deve carregar antes de app.js');
+  assert.match(app, /window\.SoftenNavigationEngine/);
+  for (const marker of ['routeFromLocation','routeUrl','searchCommands','normalizeRoute']) assert.ok(navigationEngine.includes(marker), `navigation-engine.js deve conter ${marker}`);
+});
+
+test('V2.47 possui busca global, Ctrl+K e breadcrumbs', () => {
+  for (const id of ['globalSearchTrigger','globalSearchPalette','globalSearchInput','globalSearchResults','appBreadcrumbs']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.match(app, /handleGlobalSearchKeydown/);
+  assert.match(app, /globalNavigationCommands/);
+  assert.match(app, /updateBreadcrumbs/);
+  assert.match(app, /executeNavigationTarget/);
+});
+
+test('V2.47 mantém URL persistente com histórico do navegador', () => {
+  assert.match(app, /syncPersistentUrl/);
+  assert.match(app, /restorePersistentRoute/);
+  assert.match(app, /window\.history\[method\]/);
+  assert.match(app, /window\.addEventListener\('popstate'/);
+  assert.match(navigationEngine, /ROUTE_PARAMS=\['page','section','module','indicator','squad','month','tech','from','to'\]/);
+});
+
+test('V2.47 não conflita rota normal com modo TV da Apresentação', () => {
+  const presentation = readFileSync(join(root, 'js', 'presentation.js'), 'utf8');
+  assert.match(presentation, /params\.get\('view'\) === 'presentation'/);
+  assert.match(navigationEngine, /url\.searchParams\.set\('page',route\.page\)/);
+  assert.equal(navigationEngine.includes("searchParams.set('view'"), false, 'navegação normal não deve gerar view=presentation');
+});
+
+test('V2.47 é frontend-only e não exige migration nova', () => {
+  const { existsSync } = require('node:fs');
+  assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.47.0.sql')), false);
+  assert.ok(index.includes('V2.47.1'));
+});
+
