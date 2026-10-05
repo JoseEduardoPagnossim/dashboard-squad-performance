@@ -28,6 +28,7 @@ const predictiveEngineScriptPosition = index.indexOf('js/predictive-engine.js');
 const settingsEngineScriptPosition = index.indexOf('js/settings-engine.js');
 const tvEngineScriptPosition = index.indexOf('js/tv-engine.js');
 const performanceEngineScriptPosition = index.indexOf('js/performance-engine.js');
+const designSystemScriptPosition = index.indexOf('js/design-system.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
 if (financeAdvancedScriptPosition < 0) errors.push('index.html não carrega js/finance-advanced.js.');
@@ -38,6 +39,7 @@ if (predictiveEngineScriptPosition < 0) errors.push('index.html não carrega js/
 if (settingsEngineScriptPosition < 0) errors.push('index.html não carrega js/settings-engine.js.');
 if (tvEngineScriptPosition < 0) errors.push('index.html não carrega js/tv-engine.js.');
 if (performanceEngineScriptPosition < 0) errors.push('index.html não carrega js/performance-engine.js.');
+if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
 if (financeAdvancedScriptPosition >= 0 && financeScriptPosition >= 0 && financeAdvancedScriptPosition < financeScriptPosition) errors.push('js/finance-advanced.js deve carregar depois de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeAdvancedScriptPosition > appScriptPosition) errors.push('js/finance-advanced.js deve ser carregado antes de js/app.js.');
@@ -48,6 +50,7 @@ if (appScriptPosition >= 0 && predictiveEngineScriptPosition > appScriptPosition
 if (appScriptPosition >= 0 && settingsEngineScriptPosition > appScriptPosition) errors.push('js/settings-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && tvEngineScriptPosition > appScriptPosition) errors.push('js/tv-engine.js deve ser carregado antes de js/app.js.');
 if (appScriptPosition >= 0 && performanceEngineScriptPosition > appScriptPosition) errors.push('js/performance-engine.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && designSystemScriptPosition > appScriptPosition) errors.push('js/design-system.js deve ser carregado antes de js/app.js.');
 for (const id of ['view-audit','auditRows','confirmDialogPhraseInput']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
@@ -67,12 +70,15 @@ for (const required of [
   'tests/home-ui.test.js',
   'tests/project-structure.test.js',
   'tests/performance-engine.test.js',
+  'tests/design-system.test.js',
   'js/chart-engine.js',
   'js/import-engine.js',
   'js/predictive-engine.js',
   'js/settings-engine.js',
   'js/tv-engine.js',
   'js/performance-engine.js',
+  'js/design-system.js',
+  'css/design-system.css',
   'js/finance-rules.js',
   'js/finance-advanced.js',
   'js/audit-utils.js',
@@ -85,6 +91,8 @@ for (const required of [
   'docs/COMO_USAR_V2.43.1.md',
   'docs/PERFIS_PERMISSOES_V2.43.2.md',
   'docs/COMO_USAR_V2.43.2.md',
+  'docs/COMO_USAR_V2.44.0.md',
+  'docs/DESIGN_SYSTEM_V2.44.0.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -105,6 +113,14 @@ for (const match of css.matchAll(/url\(\s*['"]?([^'"\)]+)['"]?\s*\)/g)) {
   const ref = match[1].trim();
   if (ref.startsWith('#')) continue;
   assertLocalRef(dirname(cssPath), ref, 'css/styles.css');
+}
+
+const designCssPath = join(root, 'css', 'design-system.css');
+const designCss = readFileSync(designCssPath, 'utf8');
+for (const match of designCss.matchAll(/url\(\s*['"]?([^'"\)]+)['"]?\s*\)/g)) {
+  const ref = match[1].trim();
+  if (ref.startsWith('#')) continue;
+  assertLocalRef(dirname(designCssPath), ref, 'css/design-system.css');
 }
 
 function walk(dir) {

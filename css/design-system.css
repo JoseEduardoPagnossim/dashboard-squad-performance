@@ -1,0 +1,231 @@
+/* ========================================================================== 
+   SOFTEN PERFORMANCE HUB — DESIGN SYSTEM V2.44.0
+   Camada visual central. Mantem os tokens de tema (bg/panel/accent/etc.) e
+   padroniza tipografia, espacamento, controles, cards, tabelas e estados.
+   ========================================================================== */
+:root{
+  --ds-space-1:4px;
+  --ds-space-2:8px;
+  --ds-space-3:12px;
+  --ds-space-4:16px;
+  --ds-space-5:20px;
+  --ds-space-6:24px;
+  --ds-space-7:32px;
+  --ds-space-8:40px;
+  --ds-radius-xs:8px;
+  --ds-radius-sm:10px;
+  --ds-radius-md:12px;
+  --ds-radius-lg:16px;
+  --ds-radius-xl:20px;
+  --ds-control-h-sm:34px;
+  --ds-control-h:42px;
+  --ds-control-h-lg:46px;
+  --ds-page-gap:16px;
+  --ds-card-padding:22px;
+  --ds-card-padding-compact:16px;
+  --ds-border:color-mix(in srgb,var(--text) 9%,transparent);
+  --ds-border-strong:color-mix(in srgb,var(--text) 15%,transparent);
+  --ds-surface:color-mix(in srgb,var(--panel) 97%,transparent);
+  --ds-surface-raised:color-mix(in srgb,var(--panel2) 95%,var(--panel));
+  --ds-surface-subtle:color-mix(in srgb,var(--text) 2.5%,transparent);
+  --ds-hover:color-mix(in srgb,var(--text) 5%,transparent);
+  --ds-accent-soft:color-mix(in srgb,var(--accent) 10%,transparent);
+  --ds-shadow-1:0 1px 2px rgba(0,0,0,.12),0 5px 16px rgba(0,0,0,.06);
+  --ds-shadow-2:0 14px 38px rgba(0,0,0,.16),0 3px 9px rgba(0,0,0,.08);
+  --ds-focus:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);
+  --ds-text-xs:9px;
+  --ds-text-sm:10px;
+  --ds-text-md:12px;
+  --ds-text-lg:14px;
+  --ds-title-sm:18px;
+  --ds-title-md:22px;
+  --ds-title-lg:30px;
+}
+
+html[data-color-mode="light"]{
+  --ds-border:rgba(15,23,42,.09);
+  --ds-border-strong:rgba(15,23,42,.15);
+  --ds-surface:color-mix(in srgb,var(--panel) 98%,white);
+  --ds-surface-raised:color-mix(in srgb,var(--panel2) 96%,white);
+  --ds-surface-subtle:rgba(15,23,42,.018);
+  --ds-hover:rgba(15,23,42,.035);
+  --ds-shadow-1:0 1px 2px rgba(15,23,42,.025),0 5px 18px rgba(15,23,42,.035);
+  --ds-shadow-2:0 14px 38px rgba(15,23,42,.07),0 3px 10px rgba(15,23,42,.035);
+}
+
+/* Base typography and rhythm */
+body{line-height:1.45;text-rendering:optimizeLegibility}
+#appShell .main{padding-bottom:52px}
+#appShell .view{padding-top:24px}
+#appShell .view.active{animation:ds-view-in .18s ease-out}
+@keyframes ds-view-in{from{opacity:.55;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#appShell .view.active{animation:none}}
+
+#appShell h1,#appShell h2,#appShell h3,#appShell h4{letter-spacing:-.025em;text-wrap:balance}
+#appShell .top-title h1{font-size:var(--ds-title-md);font-weight:780}
+#appShell .eyebrow{font-size:var(--ds-text-xs);letter-spacing:.145em;font-weight:850}
+#appShell .muted{font-size:var(--ds-text-sm);line-height:1.55}
+
+/* Focus and disabled states */
+#appShell button:focus-visible,#appShell input:focus-visible,#appShell select:focus-visible,#appShell textarea:focus-visible,
+.login-screen button:focus-visible,.login-screen input:focus-visible{
+  outline:none!important;box-shadow:var(--ds-focus)!important;border-color:color-mix(in srgb,var(--accent) 48%,var(--ds-border))!important;
+}
+#appShell button:disabled,#appShell input:disabled,#appShell select:disabled,#appShell textarea:disabled{opacity:.52;cursor:not-allowed;filter:saturate(.7)}
+
+/* Buttons */
+#appShell .btn,.login-screen .btn,.modal .btn{
+  min-height:var(--ds-control-h);padding:9px 15px;border-radius:var(--ds-radius-md);
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-size:11px;font-weight:760;line-height:1.15;letter-spacing:-.006em;
+  border:1px solid var(--ds-border);box-shadow:none;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease,filter .16s ease;
+}
+#appShell .btn:hover,.login-screen .btn:hover,.modal .btn:hover{transform:translateY(-1px);box-shadow:var(--ds-shadow-1)}
+#appShell .btn:active,.login-screen .btn:active,.modal .btn:active{transform:translateY(0) scale(.99)}
+#appShell .btn.compact,.modal .btn.compact{min-height:var(--ds-control-h-sm);padding:7px 11px;border-radius:var(--ds-radius-sm);font-size:10px}
+#appShell .btn.primary,.login-screen .btn.primary,.modal .btn.primary{
+  border-color:color-mix(in srgb,var(--accent) 48%,transparent);
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#101318;
+  box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 12%,transparent);
+}
+#appShell .btn.secondary,.modal .btn.secondary{
+  background:color-mix(in srgb,var(--panel2) 82%,transparent);color:var(--text);border-color:var(--ds-border);
+}
+#appShell .btn.secondary:hover,.modal .btn.secondary:hover{background:var(--ds-hover);border-color:var(--ds-border-strong)}
+#appShell .link-btn{min-height:32px;border-radius:var(--ds-radius-sm);padding:6px 8px;font-weight:700}
+
+/* Controls and form fields */
+#appShell .control{min-height:var(--ds-control-h);border-radius:var(--ds-radius-md);border-color:var(--ds-border);background:color-mix(in srgb,var(--panel) 76%,transparent);box-shadow:none}
+#appShell .control:hover{border-color:var(--ds-border-strong);background:var(--ds-surface-subtle)}
+#appShell input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),#appShell textarea,#appShell select,
+.modal input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),.modal textarea,.modal select{
+  border-radius:var(--ds-radius-sm);font-size:11px;
+}
+#appShell label>span,.modal label>span{font-size:var(--ds-text-xs);font-weight:760;letter-spacing:.02em}
+#appShell textarea,.modal textarea{line-height:1.55;resize:vertical}
+
+/* Card system: surface > KPI > analysis > configuration */
+#appShell .card,.modal-card,.sound-welcome-card{
+  border:1px solid var(--ds-border)!important;border-radius:var(--ds-radius-lg)!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--panel2) 75%,var(--panel)),var(--ds-surface))!important;
+  box-shadow:var(--ds-shadow-1)!important;
+}
+#appShell .card{transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+#appShell .card:hover{transform:none!important;box-shadow:var(--ds-shadow-1)!important;border-color:var(--ds-border-strong)!important}
+#appShell .card.ds-card-interactive:hover{transform:translateY(-1px)!important;box-shadow:var(--ds-shadow-2)!important}
+#appShell .ds-card-kpi{padding:18px 19px!important;min-height:132px;position:relative;overflow:hidden}
+#appShell .ds-card-kpi:after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent 78%);opacity:.72}
+#appShell .ds-card-analysis{overflow:hidden}
+#appShell .ds-card-config{border-color:color-mix(in srgb,var(--accent) 12%,var(--ds-border))!important}
+#appShell .ds-card-config>.section-title:first-child{margin-bottom:16px}
+#appShell .ds-card-muted{background:color-mix(in srgb,var(--panel) 93%,transparent)!important;box-shadow:none!important}
+
+/* Section headings */
+#appShell .section-title{min-height:42px;align-items:flex-start;gap:16px}
+#appShell .section-title>div{min-width:0}
+#appShell .section-title h2,#appShell .section-title h3{margin:4px 0 0;font-size:var(--ds-title-sm);font-weight:760;line-height:1.18}
+#appShell .section-title+.muted{margin-top:5px}
+#appShell .admin-actions,#appShell .modal-actions{gap:8px;align-items:center}
+
+/* KPI values */
+#appShell .kpi-grid,#appShell .team-kpis,#appShell .indicator-kpis,#appShell .home-kpi-grid,#appShell .performance-kpi-grid{gap:var(--ds-space-3)!important}
+#appShell .kpi-value strong,#appShell .home-kpi-card>strong,#appShell .indicator-kpi strong,#appShell .feedback-stat strong{
+  font-variant-numeric:tabular-nums;letter-spacing:-.045em;
+}
+#appShell .kpi-value strong{font-size:32px}
+#appShell .progress,#appShell .team-progress,#appShell .home-kpi-progress{height:6px!important}
+
+/* Tables */
+#appShell .table-wrap,#appShell .status-matrix-scroll{
+  position:relative;border:1px solid var(--ds-border);border-radius:var(--ds-radius-md);background:color-mix(in srgb,var(--panel) 66%,transparent);
+  scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 32%,transparent) transparent;
+}
+#appShell .table-wrap:focus-visible{box-shadow:var(--ds-focus);border-color:color-mix(in srgb,var(--accent) 35%,var(--ds-border))}
+#appShell table{width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+#appShell th{
+  height:40px;padding:10px 13px;position:sticky;top:0;z-index:3;
+  background:color-mix(in srgb,var(--panel2) 94%,var(--bg));backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--ds-border);color:color-mix(in srgb,var(--muted) 92%,var(--text));
+  font-size:9px;font-weight:820;line-height:1.2;letter-spacing:.065em;text-transform:uppercase;white-space:nowrap;
+}
+#appShell td{height:44px;padding:10px 13px;border-bottom:1px solid color-mix(in srgb,var(--ds-border) 82%,transparent);font-size:11px;line-height:1.4;vertical-align:middle}
+#appShell tbody tr{background:transparent;transition:background .14s ease}
+#appShell tbody tr:nth-child(even){background:color-mix(in srgb,var(--text) 1.25%,transparent)}
+#appShell tbody tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+#appShell tbody tr:last-child td{border-bottom:0}
+#appShell .ds-table-wide th:first-child,#appShell .ds-table-wide td:first-child:not([colspan]){
+  position:sticky;left:0;z-index:2;background:color-mix(in srgb,var(--panel) 98%,var(--bg));box-shadow:1px 0 0 var(--ds-border);
+}
+#appShell .ds-table-wide th:first-child{z-index:5;background:color-mix(in srgb,var(--panel2) 96%,var(--bg))}
+#appShell .ds-table-dense th{height:36px;padding:8px 10px;font-size:8px}
+#appShell .ds-table-dense td{height:39px;padding:8px 10px;font-size:10px}
+#appShell .ds-table-compact th{height:33px;padding:7px 8px;font-size:8px}
+#appShell .ds-table-compact td{height:35px;padding:7px 8px;font-size:9px}
+#appShell td input[type="number"],#appShell td input[type="text"],#appShell td select{min-height:32px!important;padding:6px 8px!important;font-size:10px!important}
+#appShell .table-tech-name{font-weight:720}
+#appShell .table-wrap.ds-scrollable:after{content:"";position:sticky;right:0;float:right;width:10px;height:1px;pointer-events:none}
+
+/* Status / badges / chips */
+#appShell [class*="badge"],#appShell [class*="chip"],#appShell .pace,#appShell .status,#appShell .period-chip{
+  font-variant-numeric:tabular-nums;
+}
+#appShell .period-chip,#appShell .history-chip,#appShell .settings-module-badge,#appShell .profile-storage-badge,#appShell .profile-security-badge{
+  min-height:26px;display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:8px;font-weight:820;letter-spacing:.045em;
+}
+
+/* Lists / rows */
+#appShell .rank-row,#appShell .leader-item,#appShell .ranking-row,#appShell .finance-ranking-row,#appShell .feedback-row,#appShell .audit-item{
+  border-radius:var(--ds-radius-md)!important;border-color:var(--ds-border)!important;background:var(--ds-surface-subtle)!important;
+}
+#appShell .rank-row:hover,#appShell .leader-item:hover,#appShell .ranking-row:hover,#appShell .finance-ranking-row:hover,#appShell .feedback-row:hover{
+  background:var(--ds-hover)!important;border-color:var(--ds-border-strong)!important;
+}
+
+/* Empty / loading states */
+#appShell .chart-empty,#appShell .empty-state-v241,#appShell .performance-empty-row{
+  border-radius:var(--ds-radius-lg);color:var(--muted)
+}
+#appShell .chart-empty{min-height:120px;display:grid;place-items:center;text-align:center;padding:24px;border:1px dashed var(--ds-border);background:var(--ds-surface-subtle)}
+#appShell .data-load-indicator{border:1px solid var(--ds-border);box-shadow:var(--ds-shadow-2)}
+
+/* Modal system */
+.modal{background:color-mix(in srgb,#000 58%,transparent);backdrop-filter:blur(9px)}
+.modal-card{border-radius:var(--ds-radius-xl)!important;box-shadow:0 28px 90px rgba(0,0,0,.38)!important}
+.modal-close{border-radius:var(--ds-radius-sm)!important}
+
+/* Login shares the same control geometry without changing its visual identity */
+.login-card-v241{border-radius:var(--ds-radius-xl)!important;box-shadow:var(--ds-shadow-2)!important}
+.login-card-v241 input{border-radius:var(--ds-radius-md)!important}
+.login-feature-grid>div{border-radius:var(--ds-radius-md)}
+
+/* Existing personal density now affects the entire visual system consistently. */
+#appShell .layout-density-compact{--ds-card-padding:var(--ds-card-padding-compact);--ds-page-gap:12px}
+#appShell .layout-density-compact .card:not(.chart-card){padding-top:var(--ds-card-padding-compact)!important;padding-bottom:var(--ds-card-padding-compact)!important}
+#appShell .layout-density-compact .ds-card-kpi{min-height:112px;padding:14px 15px!important}
+#appShell .layout-density-compact th{height:35px;padding-top:7px;padding-bottom:7px}
+#appShell .layout-density-compact td{height:38px;padding-top:7px;padding-bottom:7px}
+
+/* Responsive */
+@media(max-width:1100px){
+  :root{--ds-card-padding:20px}
+  #appShell .section-title{gap:10px}
+}
+@media(max-width:760px){
+  :root{--ds-card-padding:17px;--ds-page-gap:12px}
+  #appShell .main{padding-left:14px;padding-right:14px}
+  #appShell .view{padding-top:16px}
+  #appShell .card:not(.chart-card):not(.home-kpi-card){border-radius:14px!important}
+  #appShell .section-title{display:grid;grid-template-columns:minmax(0,1fr);min-height:0}
+  #appShell .section-title>span,#appShell .section-title>.btn{justify-self:start}
+  #appShell .admin-actions{flex-wrap:wrap}
+  #appShell .admin-actions>.btn{flex:1 1 150px}
+  #appShell .table-wrap{margin-left:-2px;margin-right:-2px;border-radius:11px}
+  #appShell th{height:36px;padding:8px 10px;font-size:8px}
+  #appShell td{height:39px;padding:8px 10px;font-size:10px}
+}
+@media(max-width:520px){
+  #appShell .btn:not(.compact){min-height:40px}
+  #appShell .modal-actions{display:grid;grid-template-columns:1fr}
+  #appShell .modal-actions .btn{width:100%}
+}

@@ -133,3 +133,10 @@ A aplicação passa a considerar apenas dois papéis ativos: `super_admin` (Admi
 Administradores não possuem Squad fixo e sempre recebem o conjunto completo de permissões administrativas. `permissions` continua existindo para restrições do Técnico e compatibilidade com preferências já persistidas. A Home possui apenas dois caminhos por perfil: técnico ou administrador global.
 
 O nome SQL `can_admin_squad(uuid)` foi preservado para evitar reescrever policies históricas; semanticamente, na V2.43.2 ele significa “pode administrar este Squad” e retorna verdadeiro somente para `super_admin` da mesma organização.
+
+
+## V2.44.0 — Camada de Design System
+
+A aplicação passa a possuir uma camada visual explícita entre os estilos históricos do produto e os estilos específicos da Apresentação/TV. A ordem de carregamento é `styles.css` → `design-system.css` → `presentation.css`. O arquivo `design-system.css` concentra tokens e padrões de componentes, enquanto `design-system.js` aplica somente metadados/classes leves às tabelas e cards existentes.
+
+A camada não acessa Supabase, não executa regras de negócio e não participa do caminho crítico de autenticação. O observador de DOM reage apenas à inserção de novas tabelas e agenda a classificação com `requestAnimationFrame`.

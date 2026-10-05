@@ -1,3 +1,14 @@
+## V2.44.0 — Design System e padronização visual
+- Cria `css/design-system.css` como camada visual central e temática.
+- Cria `js/design-system.js` para classificação semântica de cards e tabelas.
+- Padroniza tipografia, espaçamento, raios, sombras, controles e estados de interação.
+- Diferencia visualmente cards de KPI, análise, configuração e informação.
+- Melhora tabelas com cabeçalho fixo, zebra sutil, números tabulares, primeira coluna fixa em grades largas e densidade automática.
+- Integra a preferência de densidade do usuário ao novo sistema visual.
+- Mantém temas, gráficos, TV, regras de negócio, permissões e performance sem mudanças funcionais.
+- Não exige migration de banco.
+- Suíte automatizada da versão: **129/129 testes aprovados**.
+
 ## V2.43.2 — Simplificação de perfis e permissões
 - Remove Admin de Squad dos fluxos ativos da interface, mantendo apenas Administrador e Técnico.
 - Administradores passam a ter acesso integral a todos os Squads e módulos, sem restrições individuais por `permissions`.

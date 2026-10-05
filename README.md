@@ -4,12 +4,32 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.43.2`<br>
+**Versão atual:** `2.44.0`<br>
 
 
 
 
 
+
+
+## V2.44.0 — Design System e padronização visual
+
+A V2.44.0 consolida a linguagem visual do Performance Hub. Foi criada uma camada própria de **Design System** para padronizar tipografia, espaçamento, controles, cards, tabelas, estados e responsividade sem alterar regras de negócio ou a arquitetura de carregamento rápido da V2.43.
+
+Principais mudanças:
+
+- novo `css/design-system.css` com tokens visuais `--ds-*`;
+- novo `js/design-system.js` para classificar cards e tabelas de forma leve;
+- cards diferenciados por finalidade: KPI, análise e configuração;
+- botões, inputs, selects, textareas, foco, hover e disabled padronizados;
+- tabelas com cabeçalho fixo, linhas alternadas discretas, primeira coluna fixa em grades largas e densidade automática;
+- números tabulares para facilitar comparação vertical;
+- preferência de densidade compacta/confortável passa a refletir também em cards e tabelas;
+- apresentação/TV mantém camada visual própria;
+- nenhuma migration nova é necessária;
+- suíte automatizada validada com **129/129 testes aprovados**.
+
+Detalhes: `docs/DESIGN_SYSTEM_V2.44.0.md`.
 
 ## V2.43.2 — Simplificação de perfis e permissões
 
