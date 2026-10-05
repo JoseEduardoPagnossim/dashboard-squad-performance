@@ -22,7 +22,7 @@
   if(!settingsEngine) throw new Error('SoftenSettingsEngine não carregado. Verifique js/settings-engine.js.');
   const performanceEngine = window.SoftenPerformanceEngine;
   if(!performanceEngine) throw new Error('SoftenPerformanceEngine nao carregado. Verifique js/performance-engine.js.');
-  const {writeCache:writePerformanceCache,readCache:readPerformanceCache,clearScope:clearPerformanceCacheScope,createTracker:createPerformanceTracker,monthCacheId:performanceMonthCacheId,themeCacheId:performanceThemeCacheId,initialCacheId:performanceInitialCacheId,isFullMonth:isPerformanceFullMonth,markMonth:markPerformanceMonth,scheduleIdle:schedulePerformanceIdle}=performanceEngine;
+  const {writeCache:writePerformanceCache,readCache:readPerformanceCache,clearScope:clearPerformanceCacheScope,createTracker:createPerformanceTracker,monthCacheId:performanceMonthCacheId,themeCacheId:performanceThemeCacheId,initialCacheId:performanceInitialCacheId,isFullMonth:isPerformanceFullMonth,markMonth:markPerformanceMonth,scheduleIdle:schedulePerformanceIdle,recordEvent:recordLocalPerformanceEvent,recordError:recordLocalPerformanceError,metricsSnapshot:getLocalPerformanceMetrics,resetMetrics:resetLocalPerformanceMetrics,observeLongTasks:observePerformanceLongTasks}=performanceEngine;
   const tvEngine = window.SoftenTvEngine;
   if(!tvEngine) throw new Error('SoftenTvEngine não carregado. Verifique js/tv-engine.js.');
   const {normalizePlaylist:normalizeTvPlaylist,normalizeDevice:normalizeTvDevice,statusForDevice:tvDeviceStatus,monitorSummary:tvMonitorSummary,humanAge:tvHumanAge,generateDeviceKey:generateTvDeviceKey,deviceUrl:buildTvDeviceUrl,heartbeatPayload:buildTvHeartbeatPayload}=tvEngine;
@@ -34,6 +34,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
+  const APP_VERSION = '2.43.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -142,6 +143,13 @@
     superAdminCommissionsLoading:null,
     performanceDiagnostics:null,
     performanceTracker:null,
+    performanceLoginStartedAt:null,
+    performanceRemoteSummary:null,
+    performanceRemoteLoading:false,
+    performanceRemoteError:'',
+    performanceTelemetryQueue:[],
+    performanceTelemetryTimer:null,
+    performanceTelemetryAvailable:true,
     initialContextSource:'',
     backgroundHydrationStarted:false,
     audio:{source:null,playing:false,pendingResume:false,previewing:false,previewBefore:null,fadeTimer:null}
@@ -154,7 +162,8 @@
     finance:{label:'Bonificação',icon:'R$'},
     appearance:{label:'Aparência e gráficos',icon:'✦'},
     presentation:{label:'Apresentação / TV',icon:'▣'},
-    access:{label:'Usuários e permissões',icon:'♟'}
+    access:{label:'Usuários e permissões',icon:'♟'},
+    system:{label:'Performance do sistema',icon:'◴'}
   };
   function prepareCentralSettings(){
     const target=$('#centralConfigModules');if(!target)return;
@@ -177,6 +186,7 @@
     if(module==='appearance')return isAdmin()&&hasPermission('appearance.manage');
     if(module==='presentation')return isAdmin()&&hasPermission('presentation.manage');
     if(module==='access')return isSuperAdmin()&&hasPermission('permissions.manage');
+    if(module==='system')return isSuperAdmin();
     return true;
   }
   function syncSettingsContext(){
@@ -278,6 +288,7 @@
       renderPresentationOpsAdmin();
     }
     const groups=settingsPermissionGroups(state.user?.role||'technician');if($('#settingsPermissionOverview'))$('#settingsPermissionOverview').innerHTML=Object.entries(groups).map(([section,items])=>`<div><strong>${escapeHtml(section)}</strong><span>${items.filter(p=>perms[p.key]).length}/${items.length} ativas</span></div>`).join('');
+    if(isSuperAdmin())renderPerformanceSettings();
     applySettingsModuleFilter();
   }
 
@@ -434,6 +445,7 @@
     applyTheme(loadLastTheme());
     bindSystemColorMode();
     showBoot();
+    try{observePerformanceLongTasks();}catch(e){}
     prepareCentralSettings();
     bindStaticEvents();
     if((window.APP_CONFIG?.mode||'demo')==='supabase'){
@@ -472,6 +484,9 @@
     $$('[data-open-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.openSettingsModule)));
     $$('#settingsModuleNav [data-settings-module-filter]').forEach(btn=>btn.addEventListener('click',()=>openSettingsModule(btn.dataset.settingsModuleFilter,{scroll:false})));
     if($('#settingsSearchInput'))$('#settingsSearchInput').addEventListener('input',()=>{state.settingsModule='all';applySettingsModuleFilter();});
+    $('#refreshPerformanceMetricsBtn')?.addEventListener('click',()=>loadPerformanceRemoteSummary(true));
+    $('#resetPerformanceMetricsBtn')?.addEventListener('click',resetPerformanceCenter);
+    $('#exportPerformanceMetricsBtn')?.addEventListener('click',exportPerformanceDiagnostics);
     if($('#helpSearchInput'))$('#helpSearchInput').addEventListener('input',applyHelpSearch);
     if($('#clearHelpSearchBtn'))$('#clearHelpSearchBtn').addEventListener('click',()=>{$('#helpSearchInput').value='';applyHelpSearch();$('#helpSearchInput').focus();});
     $$('[data-help-view],[data-help-admin-section],[data-help-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openHelpTarget(btn)));
@@ -500,6 +515,9 @@
     sidebarBackdrop?.addEventListener('click',()=>setSidebarOpen(false));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sidebar?.classList.contains('open'))setSidebarOpen(false)});
     window.addEventListener('resize',()=>{if(window.innerWidth>980&&sidebar?.classList.contains('open'))setSidebarOpen(false);applyNavigationPreferences();});
+    window.addEventListener('error',e=>captureClientPerformanceError('window_error',e.error||e.message,{source:String(e.filename||'').split('/').pop()||'window'}));
+    window.addEventListener('unhandledrejection',e=>captureClientPerformanceError('unhandled_rejection',e.reason||'Promise rejeitada',{source:'promise'}));
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){queueCachePerformanceSample();flushPerformanceTelemetry();}});
     $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value);});
     $('#monthSelect').addEventListener('change',async e=>{state.currentId=e.target.value;if(state.supabase&&state.squadCode!=='all'){try{await ensureMonthLoaded(state.squadCode,state.currentId);}catch(err){toast('Nao foi possivel carregar esta competencia.');}}chooseDefaultTech();refreshSelectors();render();});
     $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value; renderIndividual();});
@@ -644,7 +662,7 @@
   }
 
   async function handleLogin(e){
-    e.preventDefault(); $('#loginError').textContent='';
+    e.preventDefault(); state.performanceLoginStartedAt=performance.now(); $('#loginError').textContent='';
     const email=$('#loginEmail').value.trim().toLowerCase(), password=$('#loginPassword').value;
     const btn=$('.login-submit'); btn.disabled=true; btn.textContent='Entrando...';
     try{
@@ -1204,7 +1222,7 @@
   function applyPresentationRouteBundle(bundle){if(!bundle)return null;const device=normalizeTvDevice(bundle.device||{}),playlist=bundle.playlist?normalizeTvPlaylist(bundle.playlist):null;state.presentationRouteDevice=device;state.presentationRoutePlaylist=playlist;const config=playlist?.config?allowedPresentationConfig(playlist.config):allowedPresentationConfig({...window.SoftenPresentation?.getConfig?.(),squad:device.squad});window.SoftenPresentation?.applyConfig?.(config);PRESENTATION_ROUTE.squad=config.squad||device.squad||PRESENTATION_ROUTE.squad;PRESENTATION_ROUTE.playlist=playlist?.id||device.playlistId||'';state.presentationRouteConfigSignature=routeBundleSignature(bundle);return config;}
   async function preparePresentationRouteContext(){if(!PRESENTATION_ROUTE.tv)return;try{const bundle=await fetchPresentationRouteBundle();if(bundle)applyPresentationRouteBundle(bundle);else console.warn('TV cadastrada não encontrada ou inativa; mantendo parâmetros da URL.');}catch(err){console.warn('Não foi possível carregar a configuração dinâmica da TV. Mantendo a configuração disponível na URL/local.',err);}}
   async function refreshPresentationRouteConfig(){if(!PRESENTATION_ROUTE.tv)return false;try{const bundle=await fetchPresentationRouteBundle();if(!bundle)return false;const sig=routeBundleSignature(bundle);if(sig===state.presentationRouteConfigSignature)return false;const config=applyPresentationRouteBundle(bundle),target=String(config?.squad||'all');if(isSuperAdmin()&&target!==state.squadCode&&(['all',...Object.keys(state.squads)].includes(target)))await selectSquad(target);return true;}catch(err){console.warn('Falha ao verificar atualização da playlist da TV.',err);return false}}
-  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.43.0',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
+  async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.43.1',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
 
   function presentationDailyRows(){
     const source=buildOrgTechnicianDailyOverviewFromState();
@@ -3617,11 +3635,65 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     el.classList.toggle('hidden',!active);const text=el.querySelector('span');if(text)text.textContent=label;
   }
   function performanceMark(name,data){try{state.performanceTracker?.mark(name,data)}catch(e){}}
+  let lastPerformanceCacheSampleAt=0;
+  function performanceCacheMeta(){
+    try{const snap=getLocalPerformanceMetrics?.();const c=snap?.cache||{};return{cache_hits:safe(c.hit),cache_misses:safe(c.miss),cache_stale:safe(c.stale),cache_writes:safe(c.write),cache_hit_rate:Number(c.hitRate||0)}}catch(e){return{}}
+  }
+  function queuePerformanceTelemetry(event){
+    if(!event||!state.supabase||!state.user||state.performanceTelemetryAvailable===false)return;
+    state.performanceTelemetryQueue.push(event);if(state.performanceTelemetryQueue.length>50)state.performanceTelemetryQueue.splice(0,state.performanceTelemetryQueue.length-50);
+    clearTimeout(state.performanceTelemetryTimer);state.performanceTelemetryTimer=setTimeout(()=>schedulePerformanceIdle(()=>flushPerformanceTelemetry(),{timeout:1200}),900);
+  }
+  async function flushPerformanceTelemetry(){
+    if(!state.supabase||!state.user||state.performanceTelemetryAvailable===false||!state.performanceTelemetryQueue.length)return 0;
+    clearTimeout(state.performanceTelemetryTimer);state.performanceTelemetryTimer=null;const batch=state.performanceTelemetryQueue.splice(0,20);
+    try{const {data,error}=await state.supabase.rpc('record_performance_events',{p_events:batch});if(error)throw error;state.performanceTelemetryAvailable=true;return safe(data)}catch(err){
+      const msg=String(err?.message||err||'');if(/record_performance_events|function .* does not exist|schema cache/i.test(msg)){state.performanceTelemetryAvailable=false;state.performanceRemoteError='Execute a MIGRACAO_V2.43.1.sql para habilitar o histórico centralizado.';}
+      else{state.performanceTelemetryQueue.unshift(...batch);if(state.performanceTelemetryQueue.length>50)state.performanceTelemetryQueue.length=50;}
+      return 0;
+    }
+  }
+  function recordRuntimePerformance(type,name,durationMs=0,meta={},success=true,source=''){
+    const merged={...performanceCacheMeta(),...(meta||{})};const local=recordLocalPerformanceEvent?.(type,name,durationMs,merged,success);
+    queuePerformanceTelemetry({event_type:type,event_name:name,duration_ms:Math.max(0,Number(durationMs)||0),success:success!==false,source:String(source||meta?.source||'').slice(0,80),metadata:merged,app_version:APP_VERSION});return local;
+  }
+  function captureClientPerformanceError(name,error,meta={}){
+    try{const local=recordLocalPerformanceError?.(name,error,meta);const message=String(error?.message||error||'Erro desconhecido').replace(/\s+/g,' ').slice(0,300);queuePerformanceTelemetry({event_type:'error',event_name:name,duration_ms:0,success:false,source:String(meta?.source||'client').slice(0,80),metadata:{...performanceCacheMeta(),message},app_version:APP_VERSION});return local}catch(e){return null}
+  }
+  function queueCachePerformanceSample(force=false){
+    const now=Date.now();if(!force&&now-lastPerformanceCacheSampleAt<60000)return;lastPerformanceCacheSampleAt=now;const meta=performanceCacheMeta();recordLocalPerformanceEvent?.('cache','session_cache',0,meta,true);queuePerformanceTelemetry({event_type:'cache',event_name:'session_cache',duration_ms:0,success:true,source:'session',metadata:meta,app_version:APP_VERSION});
+  }
+  function performanceMs(value){const n=safe(value);return n>=1000?`${(n/1000).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} s`:`${Math.round(n)} ms`}
+  function performanceEventLabel(name){const key=String(name||'');const labels={'month_load':'Competência completa','month_cache_hit':'Competência via cache','view:individual':'Meu desempenho','view:team':'Visão do Squad','view:indicators':'Indicadores','view:presentation':'Apresentação','view:feedbacks':'Feedbacks','view:admin:operation':'Operação','view:admin:finance':'Bonificação','view:admin:costs':'Custos','login_to_ui':'Login até a Home'};return labels[key]||key.replace(/^view:/,'').replaceAll(':',' • ').replaceAll('_',' ')}
+  function performanceStepLabel(name){const key=String(name||'');const labels={'auth_sign_in':'Autenticação','auth_ok':'Sessão autenticada','initial_context':'Contexto inicial','state_ready':'Preparação do painel','ui_ready':'Home utilizável','supabase_library':'Biblioteca Supabase','session_checked':'Validação da sessão'};return labels[key]||key.replaceAll('_',' ')}
+  async function loadPerformanceRemoteSummary(force=false){
+    if(!isSuperAdmin()||!state.supabase)return null;if(state.performanceRemoteLoading)return state.performanceRemoteLoading;if(state.performanceRemoteSummary&&!force){renderPerformanceSettings();return state.performanceRemoteSummary;}
+    state.performanceRemoteLoading=(async()=>{state.performanceRemoteError='';try{await flushPerformanceTelemetry();const {data,error}=await state.supabase.rpc('get_performance_summary',{p_hours:168});if(error)throw error;state.performanceRemoteSummary=data||{};state.performanceTelemetryAvailable=true;return state.performanceRemoteSummary;}catch(err){const msg=String(err?.message||err||'');state.performanceRemoteError=/get_performance_summary|function .* does not exist|schema cache/i.test(msg)?'Execute a MIGRACAO_V2.43.1.sql para habilitar métricas históricas.':'Não foi possível consultar as métricas históricas agora.';return null;}finally{state.performanceRemoteLoading=false;renderPerformanceSettings();}})();return state.performanceRemoteLoading;
+  }
+  function renderPerformanceSettings(){
+    const card=$('#performanceSystemCard');if(!card||!isSuperAdmin())return;const local=getLocalPerformanceMetrics?.()||{},cache=local.cache||{},latest=state.performanceDiagnostics||null,remote=state.performanceRemoteSummary||{},logins=remote.logins||{};
+    if($('#performanceMetricLastLogin'))$('#performanceMetricLastLogin').textContent=latest?performanceMs(latest.totalMs):'—';
+    if($('#performanceMetricAvgLogin'))$('#performanceMetricAvgLogin').textContent=safe(logins.count)?performanceMs(logins.avg_ms):'—';
+    if($('#performanceMetricP95Login'))$('#performanceMetricP95Login').textContent=safe(logins.count)?performanceMs(logins.p95_ms):'—';
+    if($('#performanceMetricCache'))$('#performanceMetricCache').textContent=`${Math.round(safe(cache.hitRate)*100)}%`;
+    if($('#performanceMetricErrors'))$('#performanceMetricErrors').textContent=remote.errors!=null?fmtInt(remote.errors):fmtInt((local.events||[]).filter(e=>e.type==='error').length);
+    if($('#performanceMetricLongTasks'))$('#performanceMetricLongTasks').textContent=fmtInt(local.longTasks||0);
+    if($('#performanceLocalStatus'))$('#performanceLocalStatus').textContent=`Sessão atual • ${fmtInt(cache.hit||0)} hits / ${fmtInt(cache.miss||0)} misses • ${fmtInt(local.longTasks||0)} long tasks`;
+    const steps=$('#performanceLoginSteps');if(steps)steps.innerHTML=latest?.steps?.length?latest.steps.map(step=>`<div><span>${escapeHtml(performanceStepLabel(step.name))}</span><strong>${performanceMs(step.ms)}</strong></div>`).join(''):'<div class="performance-empty-row">Faça um novo login para registrar as etapas desta sessão.</div>';
+    const modules=$('#performanceModuleRows'),moduleRows=Array.isArray(remote.modules)?remote.modules:[];if(modules)modules.innerHTML=moduleRows.length?moduleRows.slice(0,10).map(row=>`<tr><td>${escapeHtml(row.name||'—')}</td><td>${fmtInt(row.count)}</td><td>${performanceMs(row.avg_ms)}</td><td>${performanceMs(row.p95_ms)}</td><td>${performanceMs(row.max_ms)}</td></tr>`).join(''):'<tr><td colspan="5" class="muted">Ainda não há histórico centralizado de módulos.</td></tr>';
+    const errors=$('#performanceRecentErrors'),errorRows=Array.isArray(remote.recent_errors)?remote.recent_errors:[];if(errors)errors.innerHTML=errorRows.length?errorRows.map(row=>`<div class="performance-error-item"><strong>${escapeHtml(row.name||'Erro')}</strong><span>${escapeHtml(row.message||'Sem detalhe')}</span><small>${escapeHtml(formatDateTime(row.created_at))} • ${escapeHtml(row.app_version||'')}</small></div>`).join(''):'<div class="performance-empty-row">Nenhum erro recente registrado.</div>';
+    const status=$('#performanceRemoteStatus');if(status){if(state.performanceRemoteLoading)status.textContent='Atualizando métricas históricas...';else if(state.performanceRemoteError)status.textContent=state.performanceRemoteError;else if(remote.generated_at)status.textContent=`Últimos 7 dias • ${fmtInt(remote.total_events||0)} eventos leves • atualizado ${formatDateTime(remote.generated_at)}`;else status.textContent='As métricas históricas são carregadas somente quando esta área é aberta.';}
+    if(!state.performanceRemoteSummary&&!state.performanceRemoteLoading&&!state.performanceRemoteError&&state.supabase)schedulePerformanceIdle(()=>loadPerformanceRemoteSummary(false),{timeout:1000});
+  }
+  function resetPerformanceCenter(){resetLocalPerformanceMetrics?.();state.performanceDiagnostics=null;renderPerformanceSettings();toast('Métricas locais desta sessão foram zeradas. O histórico do Supabase não foi apagado.');}
+  function exportPerformanceDiagnostics(){const payload={version:APP_VERSION,exportedAt:new Date().toISOString(),latestLogin:state.performanceDiagnostics||null,local:getLocalPerformanceMetrics?.()||{},remote:state.performanceRemoteSummary||null};downloadJson(payload,`performance-diagnostics-${new Date().toISOString().slice(0,10)}.json`);toast('Diagnóstico de performance exportado.');}
   function finishPerformanceDiagnostics(source=''){
     try{
       if(source)state.performanceTracker?.set('initialSource',source);
       const snap=state.performanceTracker?.snapshot?.();if(!snap)return;
-      state.performanceDiagnostics=snap;window.SoftenPerformanceDiagnostics={latest:snap,get:()=>state.performanceDiagnostics};
+      if(state.performanceLoginStartedAt){const fullMs=Math.max(snap.totalMs,performance.now()-state.performanceLoginStartedAt),authMs=Math.max(0,fullMs-snap.totalMs);snap.authToUiMs=snap.totalMs;snap.totalMs=fullMs;if(authMs>1)snap.steps=[{name:'auth_sign_in',ms:authMs},...(snap.steps||[])];state.performanceLoginStartedAt=null;}
+      state.performanceDiagnostics=snap;window.SoftenPerformanceDiagnostics={latest:snap,get:()=>state.performanceDiagnostics,local:()=>getLocalPerformanceMetrics?.()||{},flush:()=>flushPerformanceTelemetry()};
+      recordRuntimePerformance('login','login_to_ui',snap.totalMs,{initial_source:source||'',steps:snap.steps?.length||0},true,source||'login');queueCachePerformanceSample(true);
       console.info(`[Performance Hub] ${Math.round(snap.totalMs)} ms ate a interface utilizavel.`,snap);
     }catch(e){}
   }
@@ -3660,7 +3732,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const [{data:profile,error:pe},{data:squads,error:se},{data:monthIndex,error:me}]=await Promise.all([profileQuery,squadsQuery,monthsQuery]);if(pe)throw pe;if(se)throw se;if(me)throw me;
     const rows=monthIndex||[],latestKey=rows.reduce((mx,r)=>Math.max(mx,safe(r.year)*100+safe(r.month)),0),year=Math.floor(latestKey/100),month=latestKey%100;
     let home=[];if(latestKey){const {data,error}=await state.supabase.from('squad_months').select(SUMMARY_MONTH_SELECT).eq('year',year).eq('month',month);if(error)throw error;const codeById=new Map((squads||[]).map(s=>[String(s.id),s.code]));home=(data||[]).map(r=>({...r,squad_code:codeById.get(String(r.squad_id))||''}));}
-    const codeById=new Map((squads||[]).map(s=>[String(s.id),s.code]));return{schema:'fallback-v2.43.0',profile,squads:squads||[],month_index:rows.map(r=>({...r,squad_code:codeById.get(String(r.squad_id))||''})),home_months:home,__source:'fallback'};
+    const codeById=new Map((squads||[]).map(s=>[String(s.id),s.code]));return{schema:'fallback-v2.43.1',profile,squads:squads||[],month_index:rows.map(r=>({...r,squad_code:codeById.get(String(r.squad_id))||''})),home_months:home,__source:'fallback'};
   }
   async function loadInitialSupabaseContext(authUser,{allowCache=true}={}){
     const cacheScope='initial',cacheKey=performanceInitialCacheId(authUser.id),cached=allowCache?readPerformanceCache(cacheScope,cacheKey):null;
@@ -3678,9 +3750,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   async function ensureMonthLoaded(code,id,{force=false,silent=false}={}){
     code=String(code||'').toUpperCase();const squad=state.squads?.[code],existing=squad?.months?.[id];if(!state.supabase||!squad||!id)return existing||null;if(!force&&isPerformanceFullMonth(existing))return existing;
-    const scope=performanceScope(),key=performanceMonthCacheId(code,id,'full');if(!force){const cached=readPerformanceCache(scope,key);if(cached?.value){squad.months[id]=cached.value;return squad.months[id];}}
+    const scope=performanceScope(),key=performanceMonthCacheId(code,id,'full');if(!force){const cached=readPerformanceCache(scope,key);if(cached?.value){squad.months[id]=cached.value;recordLocalPerformanceEvent?.('module','month_cache_hit',0,{squad:code,period:id},true);return squad.months[id];}}
     const promiseKey=`month:${code}:${id}`;if(state.dataPromises[promiseKey])return state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(true,`Carregando ${monthLabelFromId(id)}...`);
-    state.dataPromises[promiseKey]=(async()=>{try{let query=state.supabase.from('squad_months').select(FULL_MONTH_SELECT);if(existing?.dbId)query=query.eq('id',existing.dbId);else{const [year,month]=String(id).split('-').map(Number);query=query.eq('squad_id',squad.dbId).eq('year',year).eq('month',month);}const {data,error}=await query.single();if(error)throw error;const m=normalizeSupabaseMonthRow(data,'full');squad.months[id]=m;writePerformanceCache(scope,key,m,5*60*1000);return m;}catch(err){console.error('Falha ao carregar competencia sob demanda.',code,id,err);throw err;}finally{delete state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(false);}})();return state.dataPromises[promiseKey];
+    state.dataPromises[promiseKey]=(async()=>{const started=performance.now();try{let query=state.supabase.from('squad_months').select(FULL_MONTH_SELECT);if(existing?.dbId)query=query.eq('id',existing.dbId);else{const [year,month]=String(id).split('-').map(Number);query=query.eq('squad_id',squad.dbId).eq('year',year).eq('month',month);}const {data,error}=await query.single();if(error)throw error;const m=normalizeSupabaseMonthRow(data,'full');squad.months[id]=m;writePerformanceCache(scope,key,m,5*60*1000);recordRuntimePerformance('module','month_load',performance.now()-started,{squad:code,period:id},true,'supabase');return m;}catch(err){recordRuntimePerformance('module','month_load',performance.now()-started,{squad:code,period:id,message:String(err?.message||err||'').slice(0,180)},false,'supabase');console.error('Falha ao carregar competencia sob demanda.',code,id,err);throw err;}finally{delete state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(false);}})();return state.dataPromises[promiseKey];
   }
   async function ensureMonthsLoaded(codes,ids,{silent=false}={}){
     const jobs=[];for(const code of [...new Set(codes||[])])for(const id of [...new Set(ids||[])])if(state.squads?.[code]?.months?.[id]&&!isPerformanceFullMonth(state.squads[code].months[id]))jobs.push(ensureMonthLoaded(code,id,{silent:true}).catch(err=>null));if(!jobs.length)return[];if(!silent)setDataLoadIndicator(true,`Carregando ${jobs.length} competencia(s)...`);try{return await Promise.all(jobs);}finally{if(!silent)setDataLoadIndicator(false);}
@@ -3707,7 +3779,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true}));
     if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
     if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());
-    if(!jobs.length)return;setDataLoadIndicator(true,'Atualizando dados da tela...');try{await Promise.all(jobs);}finally{setDataLoadIndicator(false);}
+    if(!jobs.length)return;const metricName=`view:${name}${section?`:${section}`:''}`,started=performance.now();setDataLoadIndicator(true,'Atualizando dados da tela...');try{const result=await Promise.all(jobs);recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,squad:state.squadCode||'',period:state.currentId||''},true,'lazy');return result;}catch(err){recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,message:String(err?.message||err||'').slice(0,180)},false,'lazy');throw err;}finally{setDataLoadIndicator(false);}
   }
   function hydrateCurrentViewAsync(name=state.currentView,section=state.adminSection){
     const token=`${name}:${section||''}:${state.squadCode}:${state.currentId||''}`;ensureViewData(name,section).then(()=>{const current=`${state.currentView}:${state.adminSection||''}:${state.squadCode}:${state.currentId||''}`;if(current!==token)return;refreshSelectors();render();}).catch(err=>{console.error(err);toast('Nao foi possivel carregar todos os dados desta tela.');});

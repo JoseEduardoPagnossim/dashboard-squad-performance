@@ -4,10 +4,32 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.43.0`<br>
+**Versão atual:** `2.43.1`<br>
 
 
 
+
+
+## V2.43.1 — Métricas de performance e ajustes finos
+
+A V2.43.1 mantém o carregamento rápido da V2.43 e adiciona uma camada de **observabilidade leve** para acompanhar o comportamento real do sistema sem voltar a pesar o login.
+
+Principais mudanças:
+
+- mede o tempo completo entre o clique em **Entrar** e a Home utilizável;
+- mantém o detalhamento das etapas do login para diagnóstico técnico;
+- mede carregamentos lazy por módulo e por competência;
+- contabiliza **cache hit, miss, stale e write** durante a sessão;
+- monitora **long tasks** do navegador quando a API está disponível;
+- captura erros JavaScript e promises rejeitadas sem enviar stack, senha ou conteúdo operacional;
+- envia telemetria em lote e somente em segundo plano, depois da interface utilizável;
+- adiciona `Configurações → Performance` para Admin Geral com média, P95, erros e módulos mais lentos;
+- adiciona exportação JSON do diagnóstico local + histórico agregado;
+- mantém fallback local caso a migration V2.43.1 ainda não esteja instalada.
+
+> Execute `supabase/migrations/MIGRACAO_V2.43.1.sql` para habilitar o histórico centralizado de performance. Sem ela, o painel continua rápido e o diagnóstico da sessão permanece disponível apenas localmente.
+
+Detalhes: `docs/PERFORMANCE_OBSERVABILITY_V2.43.1.md`.
 
 ## V2.43.0 — Performance e carregamento progressivo
 

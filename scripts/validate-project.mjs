@@ -81,6 +81,8 @@ for (const required of [
   'docs/EXPERIENCIA_INICIAL_V2.41.0.md',
   'docs/NAVEGACAO_PERFIL_V2.42.0.md',
   'docs/PERFORMANCE_V2.43.0.md',
+  'docs/PERFORMANCE_OBSERVABILITY_V2.43.1.md',
+  'docs/COMO_USAR_V2.43.1.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -88,7 +90,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.39.0.sql',
   'supabase/migrations/MIGRACAO_V2.40.0.sql',
   'supabase/migrations/MIGRACAO_V2.42.0.sql',
-  'supabase/migrations/MIGRACAO_V2.43.0.sql'
+  'supabase/migrations/MIGRACAO_V2.43.0.sql',
+  'supabase/migrations/MIGRACAO_V2.43.1.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
@@ -241,6 +244,20 @@ for (const migrationFile of readdirSync(migrationsDir).filter(name => name.endsW
     }
   }
 }
+
+
+const performanceObservabilityMigration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.43.1.sql'), 'utf8').toLowerCase();
+for (const sqlMarker of [
+  'create table if not exists public.app_performance_events',
+  'create or replace function public.record_performance_events',
+  'create or replace function public.get_performance_summary',
+  'alter table public.app_performance_events enable row level security'
+]) {
+  if (!performanceObservabilityMigration.includes(sqlMarker)) errors.push(`Migração V2.43.1 incompleta: ${sqlMarker}`);
+}
+if (!appText.includes('record_performance_events')) errors.push('js/app.js não envia telemetria V2.43.1 em lote.');
+if (!appText.includes('get_performance_summary')) errors.push('js/app.js não consulta o resumo V2.43.1.');
+if (!index.includes('id="performanceSystemCard"')) errors.push('index.html não contém a central de performance V2.43.1.');
 
 if (errors.length) {
   console.error('Falha na validação do projeto:\n- ' + errors.join('\n- '));

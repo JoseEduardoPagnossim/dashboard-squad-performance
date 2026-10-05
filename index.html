@@ -12,8 +12,8 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.43.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.43.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.43.1" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.43.1" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -70,7 +70,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.43.0 • Carregamento progressivo</small>
+        <small class="login-version">V2.43.1 • Carregamento progressivo</small>
       </section>
     </div>
   </section>
@@ -159,7 +159,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.43.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.43.1 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -948,6 +948,7 @@
           <button type="button" class="admin-only" data-settings-module-filter="appearance" data-permission="appearance.manage"><span>✦</span> Aparência e gráficos</button>
           <button type="button" class="admin-only" data-settings-module-filter="presentation" data-permission="presentation.manage"><span>▣</span> Apresentação / TV</button>
           <button type="button" class="super-only" data-settings-module-filter="access" data-permission="permissions.manage"><span>♟</span> Acessos</button>
+          <button type="button" class="super-only" data-settings-module-filter="system"><span>◴</span> Performance</button>
         </nav>
 
         <div class="settings-grid settings-central-grid" id="settingsCentralGrid">
@@ -971,6 +972,36 @@
             <p>Os perfis continuam definindo o limite máximo de acesso. Dentro desse limite, o Admin Geral pode retirar permissões específicas de cada usuário sem criar novos perfis.</p>
             <div id="settingsPermissionOverview" class="permission-overview"></div>
             <div class="admin-actions"><button class="btn primary" id="openUsersPermissionsBtn" type="button">Gerenciar permissões dos usuários</button></div>
+          </article>
+
+          <article class="card settings-card super-only settings-module-card performance-system-card" id="performanceSystemCard" data-config-module="system" data-config-search="performance sistema login carregamento cache erros métricas p95 observabilidade velocidade">
+            <div class="settings-module-badge"><span>◴</span><strong>MÓDULO: PERFORMANCE DO SISTEMA</strong></div>
+            <div class="section-title"><div><span class="eyebrow">OBSERVABILIDADE • V2.43.1</span><h3>Saúde e velocidade do painel</h3></div><span class="period-chip">Admin Geral</span></div>
+            <p>Acompanhe o tempo real de login, carregamentos sob demanda, eficiência do cache e erros recentes. A coleta é leve, não registra senhas nem conteúdo operacional e é enviada ao Supabase somente depois que a interface já está utilizável.</p>
+            <div class="performance-kpi-grid">
+              <div><span>Último login</span><strong id="performanceMetricLastLogin">—</strong><small>Sessão atual</small></div>
+              <div><span>Média de login</span><strong id="performanceMetricAvgLogin">—</strong><small>Últimos 7 dias</small></div>
+              <div><span>P95 de login</span><strong id="performanceMetricP95Login">—</strong><small>95% abaixo deste tempo</small></div>
+              <div><span>Cache hit</span><strong id="performanceMetricCache">0%</strong><small>Sessão atual</small></div>
+              <div><span>Erros</span><strong id="performanceMetricErrors">0</strong><small>Últimos 7 dias</small></div>
+              <div><span>Long tasks</span><strong id="performanceMetricLongTasks">0</strong><small>Travamentos &gt; 50 ms</small></div>
+            </div>
+            <div class="performance-observability-grid">
+              <div class="performance-panel">
+                <div class="performance-panel-title"><strong>Etapas do último login</strong><small id="performanceLocalStatus">Sessão atual</small></div>
+                <div id="performanceLoginSteps" class="performance-step-list"><div class="performance-empty-row">Faça um novo login para registrar as etapas desta sessão.</div></div>
+              </div>
+              <div class="performance-panel">
+                <div class="performance-panel-title"><strong>Erros recentes</strong><small>Histórico centralizado</small></div>
+                <div id="performanceRecentErrors" class="performance-error-list"><div class="performance-empty-row">Nenhum erro recente registrado.</div></div>
+              </div>
+            </div>
+            <div class="performance-panel performance-module-panel">
+              <div class="performance-panel-title"><strong>Carregamentos mais lentos</strong><small>Últimos 7 dias</small></div>
+              <div class="table-wrap"><table class="data-table performance-table"><thead><tr><th>Módulo</th><th>Amostras</th><th>Média</th><th>P95</th><th>Máximo</th></tr></thead><tbody id="performanceModuleRows"><tr><td colspan="5" class="muted">As métricas históricas são carregadas quando esta área é aberta.</td></tr></tbody></table></div>
+            </div>
+            <small id="performanceRemoteStatus" class="performance-remote-status">As métricas históricas são carregadas somente quando esta área é aberta.</small>
+            <div class="admin-actions performance-actions"><button class="btn primary" id="refreshPerformanceMetricsBtn" type="button">Atualizar métricas</button><button class="btn secondary" id="exportPerformanceMetricsBtn" type="button">Exportar diagnóstico</button><button class="btn secondary" id="resetPerformanceMetricsBtn" type="button">Zerar métricas locais</button></div>
           </article>
         </div>
         <div id="settingsNoResults" class="empty-state settings-empty hidden"><div>⌕</div><h2>Nenhuma configuração encontrada</h2><p>Tente outro termo ou selecione “Todas”.</p></div>
@@ -1036,7 +1067,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.43</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, navegação retrátil, avatar, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.43.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: Home, navegação retrátil, avatar, dados, metas, indicadores, gestão preditiva, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1162,6 +1193,7 @@
         <div class="how-bottom-grid help-current-grid">
           <article class="card how-mini help-searchable" data-help-search="gamificação status pontuação acima abaixo critérios"><div class="how-section-title"><span class="how-icon orange">◆</span><div><span class="eyebrow">GAMIFICAÇÃO</span><h3>Status e pontuação</h3></div></div><ul><li>O status compara quatro indicadores com as referências atuais do Squad: atendimentos, avaliações, nota média e % avaliado.</li><li>2, 3 ou 4 critérios atingidos = <b>ACIMA</b>; 0 ou 1 = <b>ABAIXO</b>; sem atendimento = sem status.</li><li>A pontuação combina produção e qualidade e é independente do motor financeiro.</li><li>Use o detalhamento auditável para entender exatamente quais critérios foram atingidos.</li></ul></article>
 
+          <article class="card how-mini help-searchable" data-help-search="performance login velocidade cache erro p95 observabilidade sistema"><div class="how-section-title"><span class="how-icon blue">◴</span><div><span class="eyebrow">PERFORMANCE</span><h3>Como acompanhar a velocidade</h3></div></div><ul><li>Admin Geral pode abrir <b>Configurações → Performance</b> para acompanhar login, P95, cache, long tasks e erros recentes.</li><li>As métricas históricas dependem da <b>MIGRACAO_V2.43.1.sql</b>; sem ela, o diagnóstico local da sessão continua funcionando.</li><li>A telemetria é enviada em segundo plano e não bloqueia o login nem o carregamento dos módulos.</li><li>Use <b>Exportar diagnóstico</b> quando precisar analisar uma lentidão pontual.</li></ul></article>
           <article class="card how-mini help-searchable" data-help-search="gráficos filtros período calendário tooltip legenda fullscreen aparência"><div class="how-section-title"><span class="how-icon red">◔</span><div><span class="eyebrow">GRÁFICOS</span><h3>Como analisar melhor</h3></div></div><ul><li>Use os atalhos de período e os calendários para comparar exatamente o intervalo desejado.</li><li>Passe o mouse sobre os pontos para ver o tooltip compartilhado e sobre a legenda para destacar uma série.</li><li>Quando disponível, abra o gráfico em tela cheia para análise de muitos técnicos.</li><li>Fonte, rótulos, altura, linha, pontos e escala são controlados em <b>Configurações → Aparência e gráficos</b>.</li></ul></article>
 
           <article class="card how-mini help-searchable" data-help-search="perfil senha conta recuperação login segurança"><div class="how-section-title"><span class="how-icon blue">◉</span><div><span class="eyebrow">CONTA</span><h3>Perfil e senha</h3></div></div><ul><li>Em <b>Meu perfil</b>, qualquer usuário pode alterar a própria senha informando a senha atual.</li><li>A recuperação por e-mail continua disponível na tela de login.</li><li>Administradores não visualizam a senha do usuário.</li><li>Inativação de usuário bloqueia o acesso sem apagar os resultados históricos.</li></ul></article>
@@ -1354,15 +1386,15 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.43.0"></script>
-  <script src="js/finance-advanced.js?v=2.43.0"></script>
-  <script src="js/tv-engine.js?v=2.43.0"></script>
-  <script src="js/presentation.js?v=2.43.0"></script>
-  <script src="js/chart-engine.js?v=2.43.0"></script>
-  <script src="js/import-engine.js?v=2.43.0"></script>
-  <script src="js/predictive-engine.js?v=2.43.0"></script>
-  <script src="js/settings-engine.js?v=2.43.0"></script>
-  <script src="js/performance-engine.js?v=2.43.0"></script>
-  <script src="js/app.js?v=2.43.0"></script>
+  <script src="js/finance-rules.js?v=2.43.1"></script>
+  <script src="js/finance-advanced.js?v=2.43.1"></script>
+  <script src="js/tv-engine.js?v=2.43.1"></script>
+  <script src="js/presentation.js?v=2.43.1"></script>
+  <script src="js/chart-engine.js?v=2.43.1"></script>
+  <script src="js/import-engine.js?v=2.43.1"></script>
+  <script src="js/predictive-engine.js?v=2.43.1"></script>
+  <script src="js/settings-engine.js?v=2.43.1"></script>
+  <script src="js/performance-engine.js?v=2.43.1"></script>
+  <script src="js/app.js?v=2.43.1"></script>
 </body>
 </html>

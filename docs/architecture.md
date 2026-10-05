@@ -119,3 +119,8 @@ O novo login modifica somente apresentação e hierarquia visual. O caminho de a
 - O avatar usa Supabase Storage privado no bucket `user-avatars`. `profiles.avatar_path` mantém apenas a referência do arquivo.
 - O frontend reduz a imagem antes do upload; a interface não carrega avatars da lista de usuários para evitar N chamadas de Storage.
 - A URL assinada do próprio usuário é carregada depois que a aplicação já foi liberada, evitando transformar a foto em dependência do caminho crítico do login.
+
+
+## V2.43.1 — Observabilidade
+
+`js/performance-engine.js` passa a manter métricas locais de cache, eventos e long tasks. O `app.js` envia somente eventos técnicos sanitizados em lote pela RPC `record_performance_events`, fora do caminho crítico do login. A leitura histórica fica em `Configurações → Performance` e usa `get_performance_summary`, disponível apenas ao Admin Geral.

@@ -1,3 +1,15 @@
+## V2.43.1 — Métricas de performance e ajustes finos
+- Mede o login completo, incluindo autenticação, até a interface utilizável.
+- Registra tempos de carregamento por módulo e por competência.
+- Adiciona contadores de cache hit/miss/stale/write e long tasks do navegador.
+- Captura erros de runtime e promises rejeitadas com payload sanitizado.
+- Envia telemetria em lote, de forma assíncrona e fora do caminho crítico do login.
+- Cria `Configurações → Performance` para Admin Geral com média, P95, erros e módulos mais lentos.
+- Adiciona exportação JSON do diagnóstico para análise pontual.
+- Inclui `MIGRACAO_V2.43.1.sql` com tabela de eventos e RPCs seguras de gravação/resumo.
+- Mantém fallback local quando a migration ainda não foi aplicada.
+- Amplia a suíte automatizada para **118 testes**.
+
 ## V2.43.0 — Performance e carregamento progressivo
 - Substitui o carregamento monolítico pós-login por contexto inicial enxuto e hidratação progressiva.
 - Adiciona RPC `get_initial_dashboard_context()` para perfil, Squads, índice de competências e resumo do período atual.

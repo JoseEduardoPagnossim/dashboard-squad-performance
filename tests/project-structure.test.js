@@ -266,3 +266,41 @@ test('V2.43 expoe diagnostico de performance sem bloquear o usuario', () => {
   assert.match(index, /preconnect" href="https:\/\/cdn\.jsdelivr\.net/);
   assert.match(index, /preload" href="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2"/);
 });
+
+test('V2.43.1 possui central de observabilidade para Admin Geral', () => {
+  for (const id of ['performanceSystemCard','performanceMetricLastLogin','performanceMetricAvgLogin','performanceMetricP95Login','performanceMetricCache','performanceMetricErrors','performanceModuleRows','performanceRecentErrors','refreshPerformanceMetricsBtn','exportPerformanceMetricsBtn']) {
+    assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
+  }
+  assert.ok(index.includes('data-settings-module-filter="system"'));
+  assert.match(app, /renderPerformanceSettings/);
+  assert.match(app, /loadPerformanceRemoteSummary/);
+  assert.match(app, /recordRuntimePerformance/);
+  assert.match(app, /captureClientPerformanceError/);
+});
+
+test('V2.43.1 envia telemetria em lote sem bloquear o login', () => {
+  assert.match(app, /record_performance_events/);
+  assert.match(app, /performanceTelemetryQueue/);
+  assert.match(app, /schedulePerformanceIdle/);
+  const start = app.indexOf('async function enterSupabaseSession');
+  const end = app.indexOf('function periodWithinHistory', start);
+  const block = app.slice(start, end);
+  assert.equal(block.includes('await flushPerformanceTelemetry'), false, 'login nao deve aguardar envio de telemetria');
+});
+
+test('V2.43.1 inclui migration de observabilidade com RPCs seguras', () => {
+  const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.43.1.sql'), 'utf8').toLowerCase();
+  assert.match(migration, /create table if not exists public\.app_performance_events/);
+  assert.match(migration, /alter table public\.app_performance_events enable row level security/);
+  assert.match(migration, /create or replace function public\.record_performance_events/);
+  assert.match(migration, /create or replace function public\.get_performance_summary/);
+  assert.match(migration, /v_role <> 'super_admin'/);
+  assert.match(migration, /revoke all on table public\.app_performance_events from anon, authenticated/);
+});
+
+test('V2.43.1 mede carregamento sob demanda e cache', () => {
+  assert.match(app, /month_cache_hit/);
+  assert.match(app, /recordRuntimePerformance\('module','month_load'/);
+  assert.match(app, /recordRuntimePerformance\('module',metricName/);
+  assert.match(app, /queueCachePerformanceSample/);
+});

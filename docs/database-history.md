@@ -425,3 +425,8 @@ O heartbeat não concede permissão para alterar playlist, Squad ou regras de ap
 ## V2.42.0 — Avatar
 
 `profiles.avatar_path` referencia o arquivo WebP privado em `user-avatars`. A migration cria bucket com limite de 128 KB, políticas de leitura por organização, escrita somente no próprio caminho e a RPC `save_my_avatar_path(text)`.
+
+
+## V2.43.1 — observabilidade de performance
+
+Execute `supabase/migrations/MIGRACAO_V2.43.1.sql` após a V2.43.0 para habilitar histórico centralizado de tempos de login, lazy loading, cache e erros técnicos. A tabela `app_performance_events` não é exposta diretamente ao frontend; escrita e leitura agregada passam pelas RPCs dedicadas.

@@ -86,3 +86,8 @@ Sem a migration, a aplicação mantém fallback em `localStorage`, adequado apen
 ## V2.42.0 — Avatar
 
 `profiles.avatar_path` referencia o arquivo WebP privado em `user-avatars`. A migration cria bucket com limite de 128 KB, políticas de leitura por organização, escrita somente no próprio caminho e a RPC `save_my_avatar_path(text)`.
+
+
+## V2.43.1 — Performance
+
+A observabilidade centralizada usa `app_performance_events`. O papel `authenticated` não possui acesso direto à tabela. `record_performance_events(jsonb)` recebe lotes pequenos e `get_performance_summary(integer)` entrega apenas agregados para Admin Geral.
