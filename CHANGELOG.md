@@ -1,3 +1,15 @@
+## V2.48.4 — Design System completo nos campos + sidebar estabilizada
+
+- Corrige regressão estrutural da sidebar com grid vertical único e scroll restrito à navegação.
+- Mantém campanha, player e versão acessíveis em desktop mesmo com zoom/altura reduzida.
+- Padroniza visualmente todos os tipos de campo usados no sistema.
+- Remove aparência nativa de `search`, spinners de `number`, seta nativa de `select` e indicadores nativos visíveis de data.
+- Date/month/datetime-local recebem acionador visual do Design System mantendo o picker do navegador apenas como mecanismo interno.
+- Inputs de cor viram fonte oculta e passam a ser acionados por swatch próprio.
+- Todos os `input[type=file]` permanecem ocultos e acessíveis somente por botões do sistema.
+- Design System passa a classificar também controles adicionados dinamicamente.
+- Sem migration de banco.
+
 ## V2.48.3 — Tipografia configurável, controles padronizados e salvamento explícito
 
 - Adiciona fonte do sistema por tema com três opções: Inter, Roboto e Source Sans 3.

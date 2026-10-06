@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.3`<br>
+**Versão atual:** `2.48.4`<br>
 
 
 
@@ -18,6 +18,12 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.48.4 — Design System completo e sidebar estabilizada
+
+Revisão global dos campos de formulário para impedir que controles do Chrome/Edge escapem do Design System. Pesquisa, números, selects, datas, cores, checkbox/radio, sliders e uploads passam a ter comportamento visual consistente. A sidebar de desktop também foi consolidada em uma grade vertical estável, deixando apenas a navegação com scroll.
+
+Detalhes: `docs/CONTROLES_DESIGN_SYSTEM_V2.48.4.md`.
 
 ## V2.48.3 — Tipografia e consistência de configuração
 

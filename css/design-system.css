@@ -336,3 +336,125 @@ html[data-color-mode="light"] #appShell input[type="date"],html[data-color-mode=
 .theme-editor-footer>small{display:block;color:var(--muted);font-size:9px}.theme-editor-footer>small.pending{color:var(--warn)}.theme-editor-footer>small.saved{color:var(--success)}
 .theme-editor-footer .modal-actions{margin-top:9px}
 @media(max-width:620px){.theme-upload-field{align-items:flex-start;flex-direction:column}.theme-upload-actions{justify-content:flex-start}.theme-editor-footer{margin-left:-22px;margin-right:-22px;margin-bottom:-22px;padding-left:22px;padding-right:22px}}
+
+/* ========================================================================== 
+   V2.48.4 — Form controls 100% Design System
+   Remove a aparência visual nativa do navegador de todos os controles visíveis.
+   ========================================================================== */
+:root{
+  --ds-field-bg:color-mix(in srgb,var(--panel2) 88%,var(--bg));
+  --ds-field-bg-hover:color-mix(in srgb,var(--panel2) 93%,var(--bg));
+  --ds-field-border:color-mix(in srgb,var(--text) 12%,transparent);
+  --ds-field-border-hover:color-mix(in srgb,var(--accent) 28%,var(--ds-field-border));
+  --ds-field-placeholder:color-mix(in srgb,var(--muted) 78%,transparent);
+}
+
+/* Base única para campos textuais/numéricos/pesquisa/data. Exclui fontes ocultas
+   ou componentes que possuem tratamento próprio abaixo. */
+#appShell input:not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.native-date-picker),
+#appShell textarea,
+.modal input:not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.native-date-picker),
+.modal textarea,
+.login-screen input:not([type="hidden"]):not([type="file"]),
+.sound-welcome input:not([type="hidden"]):not([type="file"]),
+.global-search-overlay input:not([type="hidden"]):not([type="file"]){
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  min-height:var(--ds-control-h,40px);
+  padding:9px 11px;
+  border:1px solid var(--ds-field-border)!important;
+  border-radius:var(--ds-radius-sm,10px)!important;
+  background:var(--ds-field-bg)!important;
+  color:var(--text)!important;
+  font:inherit;
+  line-height:1.25;
+  outline:0!important;
+  box-shadow:none!important;
+  caret-color:var(--accent);
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+#appShell input:not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.native-date-picker):hover,
+#appShell textarea:hover,.modal input:not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not(.native-date-picker):hover,.modal textarea:hover,
+.login-screen input:not([type="hidden"]):not([type="file"]):hover{
+  border-color:var(--ds-field-border-hover)!important;background:var(--ds-field-bg-hover)!important;
+}
+#appShell input::placeholder,#appShell textarea::placeholder,.modal input::placeholder,.modal textarea::placeholder,.login-screen input::placeholder,.global-search-overlay input::placeholder{color:var(--ds-field-placeholder)!important;opacity:1}
+
+/* Pesquisa: remove o X/lupa nativos do Chromium/Safari. */
+#appShell input[type="search"],.modal input[type="search"],.global-search-overlay input[type="search"]{-webkit-appearance:none!important;appearance:none!important}
+#appShell input[type="search"]::-webkit-search-decoration,#appShell input[type="search"]::-webkit-search-cancel-button,#appShell input[type="search"]::-webkit-search-results-button,#appShell input[type="search"]::-webkit-search-results-decoration,
+.modal input[type="search"]::-webkit-search-decoration,.modal input[type="search"]::-webkit-search-cancel-button,.modal input[type="search"]::-webkit-search-results-button,.modal input[type="search"]::-webkit-search-results-decoration,
+.global-search-overlay input[type="search"]::-webkit-search-decoration,.global-search-overlay input[type="search"]::-webkit-search-cancel-button{display:none!important;-webkit-appearance:none!important}
+
+/* Number: sem spinners nativos. */
+#appShell input[type="number"],.modal input[type="number"]{-moz-appearance:textfield!important;appearance:textfield!important}
+#appShell input[type="number"]::-webkit-outer-spin-button,#appShell input[type="number"]::-webkit-inner-spin-button,.modal input[type="number"]::-webkit-outer-spin-button,.modal input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none!important;margin:0!important}
+
+/* Select: campo fechado totalmente desenhado pelo DS. */
+#appShell select,.modal select{
+  appearance:none!important;-webkit-appearance:none!important;-moz-appearance:none!important;
+  min-height:var(--ds-control-h,40px);padding:9px 34px 9px 11px!important;
+  border:1px solid var(--ds-field-border)!important;border-radius:var(--ds-radius-sm,10px)!important;
+  background-color:var(--ds-field-bg)!important;color:var(--text)!important;outline:0!important;box-shadow:none!important;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%)!important;
+  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%!important;background-size:5px 5px,5px 5px!important;background-repeat:no-repeat!important;
+  transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease;
+}
+#appShell select:hover,.modal select:hover{border-color:var(--ds-field-border-hover)!important;background-color:var(--ds-field-bg-hover)!important}
+#appShell select::-ms-expand,.modal select::-ms-expand{display:none}
+#appShell select option,.modal select option{background:var(--panel2);color:var(--text)}
+
+/* Campos dentro de componentes que já possuem sua própria moldura não recebem
+   uma segunda caixa interna. */
+#appShell .control input:not(.date-text-input),#appShell .control select,
+#appShell .search-field input,#appShell .filter-field select,#appShell .alert-search input,
+#appShell .global-search-input-shell input,#appShell .input-suffix input,
+.global-search-overlay .global-search-input-shell input{
+  min-height:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+#appShell .control select,#appShell .filter-field select{padding-top:2px!important;padding-bottom:2px!important}
+#appShell .date-text-input{min-height:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:2px 42px 2px 0!important}
+
+/* Date/month/datetime-local: removemos o ícone nativo. A classe ds-picker-shell,
+   aplicada pelo design-system.js, fornece o acionador visual padronizado. */
+.ds-picker-shell{position:relative;display:block;width:100%;min-width:0}
+.ds-picker-shell>input[type="date"],.ds-picker-shell>input[type="month"],.ds-picker-shell>input[type="datetime-local"]{width:100%;padding-right:43px!important}
+.ds-picker-shell>input::-webkit-calendar-picker-indicator{opacity:0!important;display:none!important;-webkit-appearance:none!important}
+.ds-picker-button{position:absolute;right:1px;top:1px;bottom:1px;width:38px;border:0;border-left:1px solid var(--ds-field-border);border-radius:0 calc(var(--ds-radius-sm,10px) - 1px) calc(var(--ds-radius-sm,10px) - 1px) 0;background:color-mix(in srgb,var(--accent) 5%,transparent);color:var(--muted);display:grid;place-items:center;cursor:pointer;font-size:14px;transition:.16s}
+.ds-picker-button:hover{background:color-mix(in srgb,var(--accent) 11%,transparent);color:var(--accent)}
+.ds-picker-button:focus-visible{outline:0;box-shadow:inset 0 0 0 2px var(--ds-focus)}
+
+/* Color: o input nativo vira fonte oculta; o usuário vê somente o swatch DS. */
+.ds-color-source{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;padding:0!important;border:0!important}
+.ds-color-trigger{width:38px;height:34px;min-width:38px;padding:3px;border:1px solid var(--ds-field-border);border-radius:9px;background:var(--ds-field-bg);cursor:pointer;display:grid;place-items:center;transition:.16s}
+.ds-color-trigger:hover{border-color:var(--ds-field-border-hover);background:var(--ds-field-bg-hover)}
+.ds-color-trigger>i{display:block;width:100%;height:100%;border-radius:6px;background:var(--ds-color-value,#000);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 14%,transparent)}
+
+/* Checkbox / radio / ranges ficam explicitamente sob o DS em qualquer contexto. */
+#appShell input[type="checkbox"],#appShell input[type="radio"],.modal input[type="checkbox"],.modal input[type="radio"]{accent-color:transparent!important}
+#appShell input[type="range"],.modal input[type="range"],.sound-player input[type="range"]{accent-color:transparent!important}
+
+/* Uploads não podem surgir como campo nativo por regressão. */
+#appShell input[type="file"],.modal input[type="file"]{display:none!important}
+
+/* Estados consistentes. */
+#appShell input:disabled,#appShell select:disabled,#appShell textarea:disabled,.modal input:disabled,.modal select:disabled,.modal textarea:disabled{opacity:.52!important;cursor:not-allowed!important;filter:saturate(.7)}
+#appShell input[readonly],.modal input[readonly]{background:color-mix(in srgb,var(--panel) 70%,var(--bg))!important;color:var(--muted)!important}
+
+/* Command bars: evita que um search sem classe específica volte ao cinza nativo. */
+#appShell .settings-commandbar input,#appShell .settings-commandbar select{width:100%;max-width:none}
+#appShell .settings-search input{min-height:40px!important;background:var(--ds-field-bg)!important;border:1px solid var(--ds-field-border)!important;border-radius:var(--ds-radius-sm,10px)!important;padding:9px 11px!important}
+
+/* Select customizado: o elemento HTML permanece como fonte de valor para toda a
+   lógica existente, mas nunca é o componente visual apresentado ao usuário. */
+.ds-select-shell{position:relative;display:inline-block;width:100%;min-width:0;vertical-align:middle}
+.ds-select-source{position:absolute!important;inset:auto!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:0!important;opacity:0!important;pointer-events:none!important;border:0!important;background:transparent!important;clip-path:inset(50%)!important}
+.ds-select-trigger{width:100%;min-height:var(--ds-control-h,40px);display:grid;grid-template-columns:minmax(0,1fr) 18px;align-items:center;gap:7px;padding:8px 10px 8px 11px;border:1px solid var(--ds-field-border);border-radius:var(--ds-radius-sm,10px);background:var(--ds-field-bg);color:var(--text);font:inherit;text-align:left;cursor:pointer;box-shadow:none;transition:.16s}
+.ds-select-trigger:hover{border-color:var(--ds-field-border-hover);background:var(--ds-field-bg-hover)}
+.ds-select-trigger:disabled{opacity:.52;cursor:not-allowed}.ds-select-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-select-chevron{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-1px,-1px);justify-self:center;transition:transform .16s}.ds-select-shell.open .ds-select-chevron{transform:rotate(225deg) translate(-1px,-1px)}
+.ds-select-menu{display:none;position:absolute;left:0;right:auto;top:calc(100% + 6px);z-index:320;min-width:100%;width:max-content;max-width:min(360px,80vw);max-height:280px;overflow:auto;padding:6px;border:1px solid var(--ds-border-strong);border-radius:12px;background:color-mix(in srgb,var(--panel2) 98%,var(--bg));box-shadow:0 18px 46px rgba(0,0,0,.38);overscroll-behavior:contain}.ds-select-shell.open>.ds-select-menu{display:grid;gap:2px}.ds-select-shell.open-up>.ds-select-menu{top:auto;bottom:calc(100% + 6px)}
+.ds-select-option{display:block;width:100%;min-width:150px;padding:9px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:10px;line-height:1.3;text-align:left;cursor:pointer;white-space:nowrap}.ds-select-option:hover,.ds-select-option:focus-visible{outline:0;border-color:color-mix(in srgb,var(--accent) 20%,var(--ds-border));background:color-mix(in srgb,var(--accent) 7%,transparent)}.ds-select-option.selected{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:800}.ds-select-option:disabled{opacity:.38;cursor:not-allowed}
+#appShell .control .ds-select-shell{width:auto;min-width:76px;max-width:190px}#appShell .control .ds-select-trigger{min-height:0;height:auto;padding:2px 24px 2px 0;border:0;background:transparent;border-radius:0}.control .ds-select-menu{min-width:170px}
+#appShell .filter-field .ds-select-shell{min-width:130px}#appShell td .ds-select-trigger{min-height:32px;padding:6px 9px;font-size:10px}
+.modal .ds-select-shell,#appShell .admin-form .ds-select-shell,#appShell .settings-commandbar .ds-select-shell,#appShell .chart-preferences-grid .ds-select-shell,#appShell .notification-field .ds-select-shell{width:100%}
+@media(max-width:760px){.ds-select-menu{position:fixed;left:10px!important;right:10px!important;top:auto!important;bottom:10px!important;width:auto!important;max-width:none;max-height:48vh;border-radius:14px;padding:8px}.ds-select-option{min-width:0;padding:11px 12px}}
