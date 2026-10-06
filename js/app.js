@@ -36,7 +36,7 @@
   if(!workspaceEngine) throw new Error('SoftenWorkspaceEngine não carregado. Verifique js/workspace-engine.js.');
   const {normalizeWorkspace,routeSignature:workspaceRouteSignature,mergeRememberedFilters:mergeWorkspaceRememberedFilters,rememberFilters:rememberWorkspaceFilters,createSavedView:createWorkspaceSavedView,renameSavedView:renameWorkspaceSavedView,deleteSavedView:deleteWorkspaceSavedView,favoriteForRoute:workspaceFavoriteForRoute,toggleFavorite:toggleWorkspaceFavorite,setPersistentFilters:setWorkspacePersistentFilters,clearFilterMemory:clearWorkspaceFilterMemory}=workspaceEngine;
   const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeBaseUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,setBlockSize:setUiBlockSize,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups,normalizeRole:normalizeAccessRole}=settingsEngine;
-  function normalizeUiPreferences(preferences){const base=normalizeBaseUiPreferences(preferences);return{...base,version:4,workspace:normalizeWorkspace(preferences?.workspace)}}
+  function normalizeUiPreferences(preferences){const raw=preferences&&typeof preferences==='object'?preferences:{},base=normalizeBaseUiPreferences(raw),legacy=Number(raw.version||0)<5,navigation=legacy?normalizeUiNavigation({sidebarCollapsed:base.navigation?.sidebarCollapsed===true}):base.navigation;return{...base,version:5,navigation,workspace:normalizeWorkspace(raw.workspace)}}
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -44,7 +44,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.48.4';
+  const APP_VERSION = '2.48.5';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -406,14 +406,17 @@
 
 
   function userPreferenceStorageKey(user=state.user){return `softenPerformanceUiPreferencesV1:${user?.userId||user?.email||'anonymous'}`}
-  function loadLocalUiPreferences(user=state.user){try{return normalizeUiPreferences(JSON.parse(localStorage.getItem(userPreferenceStorageKey(user))||'{}'))}catch(e){return defaultUiPreferences()}}
+  function readLocalUiPreferences(user=state.user){try{const value=JSON.parse(localStorage.getItem(userPreferenceStorageKey(user))||'{}');return value&&typeof value==='object'?value:{}}catch(e){return{}}}
+  function loadLocalUiPreferences(user=state.user){return normalizeUiPreferences(readLocalUiPreferences(user))}
   function saveLocalUiPreferences(prefs=state.uiPreferences,user=state.user){try{localStorage.setItem(userPreferenceStorageKey(user),JSON.stringify(normalizeUiPreferences(prefs)))}catch(e){console.warn('Não foi possível salvar o layout local.',e)}}
   function effectivePermissionsFor(user=state.user){return settingsEffectivePermissions(user?.role||'technician',user?.permissions||{})}
   function hasPermission(key,user=state.user){return effectivePermissionsFor(user)[key]===true}
   function requirePermission(key,message='Você não possui permissão para esta ação.'){if(hasPermission(key))return true;toast(message);return false}
   function loadUserUiPreferences(user=state.user){
-    const local=loadLocalUiPreferences(user),remote=user?.uiPreferences&&typeof user.uiPreferences==='object'?normalizeUiPreferences(user.uiPreferences):null;
-    state.uiPreferences=remote||local;saveLocalUiPreferences(state.uiPreferences,user);return state.uiPreferences;
+    const localRaw=readLocalUiPreferences(user),remoteRaw=user?.uiPreferences&&typeof user.uiPreferences==='object'?user.uiPreferences:null,source=remoteRaw||localRaw,needsMigration=Number(source?.version||0)<5;
+    state.uiPreferences=normalizeUiPreferences(source);saveLocalUiPreferences(state.uiPreferences,user);
+    if(needsMigration&&user&&state.supabase)setTimeout(()=>persistMyUiPreferences(),0);
+    return state.uiPreferences;
   }
   let uiPreferencePersistTimer=null;
   function navigationPreferences(){return normalizeUiNavigation(state.uiPreferences?.navigation)}

@@ -1,3 +1,15 @@
+## V2.48.5 — Correção de regressões dos controles e navegação
+
+- Corrige a regressão da V2.48.4 que reparentava todos os `<select>` e podia quebrar filtros dependentes como Squad, competência, técnico, grupos e selects dinâmicos.
+- O `<select>` original permanece no mesmo ponto do DOM e continua sendo a fonte de verdade; o Design System usa um proxy visual irmão, sem alterar listeners ou estrutura esperada pela aplicação.
+- O menu de opções passa a abrir em portal fixo no `body`, evitando corte por `overflow` em topbar, cards, tabelas e modais.
+- Remove hooks globais em `HTMLSelectElement.prototype`; sincronização passa a ser local, por MutationObserver e verificação leve de estado.
+- Mantém sincronização quando opções são reconstruídas via `innerHTML`, quando o valor é alterado por JavaScript, quando o campo é desabilitado e quando selects são adicionados/removidos dinamicamente.
+- Faz recuperação única das preferências de navegação antigas para reabrir grupos/subgrupos da sidebar após a regressão, preservando apenas o estado de sidebar inteira recolhida.
+- Mantém search, number, date/month/datetime-local, color, checkbox/radio, range, file, textarea e demais inputs dentro do Design System.
+- Sem migration de banco.
+- Suíte automatizada: **201/201 testes aprovados**; smoke visual/funcional adicional validou selects dependentes e todos os tipos de controle no Chromium.
+
 ## V2.48.4 — Design System completo nos campos + sidebar estabilizada
 
 - Corrige regressão estrutural da sidebar com grid vertical único e scroll restrito à navegação.

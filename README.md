@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.4`<br>
+**Versão atual:** `2.48.5`<br>
 
 
 
@@ -18,6 +18,14 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.48.5 — Controles estáveis e revisão de regressão
+
+Patch corretivo da V2.48.4. Os selects continuam totalmente personalizados, mas o elemento nativo não é mais movido no DOM. Isso preserva os filtros encadeados de Squad, mês, técnico, grupos, tabelas e configurações dinâmicas. A sidebar também recupera uma única vez grupos/subgrupos que tenham ficado indevidamente recolhidos na transição anterior.
+
+A revisão mantém todos os demais tipos de campo no Design System e adiciona validações específicas para selects dinâmicos e dependentes. Validação final: **201/201 testes aprovados**, além de smoke funcional em Chromium para filtros dependentes e controles.
+
+Detalhes: `docs/CONTROLES_ESTAVEIS_V2.48.5.md`.
 
 ## V2.48.4 — Design System completo e sidebar estabilizada
 

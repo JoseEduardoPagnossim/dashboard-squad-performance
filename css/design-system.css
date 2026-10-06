@@ -338,7 +338,7 @@ html[data-color-mode="light"] #appShell input[type="date"],html[data-color-mode=
 @media(max-width:620px){.theme-upload-field{align-items:flex-start;flex-direction:column}.theme-upload-actions{justify-content:flex-start}.theme-editor-footer{margin-left:-22px;margin-right:-22px;margin-bottom:-22px;padding-left:22px;padding-right:22px}}
 
 /* ========================================================================== 
-   V2.48.4 — Form controls 100% Design System
+   V2.48.5 — Form controls 100% Design System
    Remove a aparência visual nativa do navegador de todos os controles visíveis.
    ========================================================================== */
 :root{
@@ -445,16 +445,21 @@ html[data-color-mode="light"] #appShell input[type="date"],html[data-color-mode=
 #appShell .settings-commandbar input,#appShell .settings-commandbar select{width:100%;max-width:none}
 #appShell .settings-search input{min-height:40px!important;background:var(--ds-field-bg)!important;border:1px solid var(--ds-field-border)!important;border-radius:var(--ds-radius-sm,10px)!important;padding:9px 11px!important}
 
-/* Select customizado: o elemento HTML permanece como fonte de valor para toda a
-   lógica existente, mas nunca é o componente visual apresentado ao usuário. */
-.ds-select-shell{position:relative;display:inline-block;width:100%;min-width:0;vertical-align:middle}
-.ds-select-source{position:absolute!important;inset:auto!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:0!important;opacity:0!important;pointer-events:none!important;border:0!important;background:transparent!important;clip-path:inset(50%)!important}
-.ds-select-trigger{width:100%;min-height:var(--ds-control-h,40px);display:grid;grid-template-columns:minmax(0,1fr) 18px;align-items:center;gap:7px;padding:8px 10px 8px 11px;border:1px solid var(--ds-field-border);border-radius:var(--ds-radius-sm,10px);background:var(--ds-field-bg);color:var(--text);font:inherit;text-align:left;cursor:pointer;box-shadow:none;transition:.16s}
+/* Select customizado sem reparentar o <select> original.
+   O elemento nativo permanece exatamente no mesmo ponto do DOM para não quebrar
+   listeners, filtros dinâmicos, formulários ou código legado. O proxy visual é
+   um irmão e o menu abre em portal fixo no body, evitando cortes por overflow. */
+.ds-select-proxy{position:relative;display:inline-block;width:100%;min-width:0;vertical-align:middle;flex:1 1 auto}
+.ds-select-source{position:absolute!important;inset:auto!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:0!important;opacity:0!important;pointer-events:none!important;border:0!important;background:transparent!important;background-image:none!important;clip-path:inset(50%)!important;overflow:hidden!important}
+.ds-select-trigger{width:100%;min-height:var(--ds-control-h,40px);display:grid;grid-template-columns:minmax(0,1fr) 18px;align-items:center;gap:7px;padding:8px 10px 8px 11px;border:1px solid var(--ds-field-border);border-radius:var(--ds-radius-sm,10px);background:var(--ds-field-bg);color:var(--text);font:inherit;text-align:left;cursor:pointer;box-shadow:none;transition:border-color .16s ease,background .16s ease,box-shadow .16s ease}
 .ds-select-trigger:hover{border-color:var(--ds-field-border-hover);background:var(--ds-field-bg-hover)}
-.ds-select-trigger:disabled{opacity:.52;cursor:not-allowed}.ds-select-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-select-chevron{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-1px,-1px);justify-self:center;transition:transform .16s}.ds-select-shell.open .ds-select-chevron{transform:rotate(225deg) translate(-1px,-1px)}
-.ds-select-menu{display:none;position:absolute;left:0;right:auto;top:calc(100% + 6px);z-index:320;min-width:100%;width:max-content;max-width:min(360px,80vw);max-height:280px;overflow:auto;padding:6px;border:1px solid var(--ds-border-strong);border-radius:12px;background:color-mix(in srgb,var(--panel2) 98%,var(--bg));box-shadow:0 18px 46px rgba(0,0,0,.38);overscroll-behavior:contain}.ds-select-shell.open>.ds-select-menu{display:grid;gap:2px}.ds-select-shell.open-up>.ds-select-menu{top:auto;bottom:calc(100% + 6px)}
-.ds-select-option{display:block;width:100%;min-width:150px;padding:9px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:10px;line-height:1.3;text-align:left;cursor:pointer;white-space:nowrap}.ds-select-option:hover,.ds-select-option:focus-visible{outline:0;border-color:color-mix(in srgb,var(--accent) 20%,var(--ds-border));background:color-mix(in srgb,var(--accent) 7%,transparent)}.ds-select-option.selected{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:800}.ds-select-option:disabled{opacity:.38;cursor:not-allowed}
-#appShell .control .ds-select-shell{width:auto;min-width:76px;max-width:190px}#appShell .control .ds-select-trigger{min-height:0;height:auto;padding:2px 24px 2px 0;border:0;background:transparent;border-radius:0}.control .ds-select-menu{min-width:170px}
-#appShell .filter-field .ds-select-shell{min-width:130px}#appShell td .ds-select-trigger{min-height:32px;padding:6px 9px;font-size:10px}
-.modal .ds-select-shell,#appShell .admin-form .ds-select-shell,#appShell .settings-commandbar .ds-select-shell,#appShell .chart-preferences-grid .ds-select-shell,#appShell .notification-field .ds-select-shell{width:100%}
-@media(max-width:760px){.ds-select-menu{position:fixed;left:10px!important;right:10px!important;top:auto!important;bottom:10px!important;width:auto!important;max-width:none;max-height:48vh;border-radius:14px;padding:8px}.ds-select-option{min-width:0;padding:11px 12px}}
+.ds-select-trigger:focus-visible{outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent);border-color:color-mix(in srgb,var(--accent) 58%,var(--ds-field-border))}
+.ds-select-trigger:disabled{opacity:.52;cursor:not-allowed}.ds-select-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-select-chevron{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-1px,-1px);justify-self:center;transition:transform .16s}.ds-select-proxy.open .ds-select-chevron{transform:rotate(225deg) translate(-1px,-1px)}
+.ds-select-menu{display:none;position:fixed;left:var(--ds-select-left,8px);top:var(--ds-select-top,8px);z-index:1200;width:var(--ds-select-width,220px);max-width:min(380px,calc(100vw - 16px));max-height:var(--ds-select-max-height,300px);overflow:auto;padding:6px;border:1px solid var(--ds-border-strong);border-radius:12px;background:color-mix(in srgb,var(--panel2) 98%,var(--bg));box-shadow:0 18px 46px rgba(0,0,0,.42);overscroll-behavior:contain;scrollbar-gutter:stable;color:var(--text)}
+.ds-select-menu.open{display:grid;gap:2px}
+.ds-select-option{display:block;width:100%;min-width:0;padding:9px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:10px;line-height:1.3;text-align:left;cursor:pointer;white-space:normal}
+.ds-select-option:hover,.ds-select-option:focus-visible{outline:0;border-color:color-mix(in srgb,var(--accent) 20%,var(--ds-border));background:color-mix(in srgb,var(--accent) 7%,transparent)}.ds-select-option.selected{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:800}.ds-select-option:disabled{opacity:.38;cursor:not-allowed}
+#appShell .control .ds-select-proxy{width:auto;min-width:76px;max-width:190px;flex:0 1 190px}#appShell .control .ds-select-trigger{min-height:0;height:auto;padding:2px 24px 2px 0;border:0;background:transparent;border-radius:0}
+#appShell .filter-field .ds-select-proxy{min-width:130px}#appShell td .ds-select-trigger{min-height:32px;padding:6px 9px;font-size:10px}
+.modal .ds-select-proxy,#appShell .admin-form .ds-select-proxy,#appShell .settings-commandbar .ds-select-proxy,#appShell .chart-preferences-grid .ds-select-proxy,#appShell .notification-field .ds-select-proxy{width:100%;max-width:none}
+@media(max-width:760px){.ds-select-menu{left:10px!important;right:10px!important;top:auto!important;bottom:10px!important;width:auto!important;max-width:none;max-height:48vh;border-radius:14px;padding:8px}.ds-select-option{padding:11px 12px}}
