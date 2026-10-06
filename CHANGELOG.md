@@ -1,3 +1,14 @@
+## V2.48.3 — Tipografia configurável, controles padronizados e salvamento explícito
+
+- Adiciona fonte do sistema por tema com três opções: Inter, Roboto e Source Sans 3.
+- A fonte passa a ser aplicada à interface completa e acompanhada pelo JSON do tema.
+- Padroniza selects, checkboxes, radios, ranges, campos temporais, cores e upload visual no Design System.
+- Substitui o upload nativo visível do fundo por botão + status de arquivo.
+- Personalização de tema passa a operar em rascunho: preview imediato, mas persistência apenas ao clicar em **Salvar tema**.
+- Cancelar/fechar o modal restaura o tema anterior sem gravar alterações.
+- Mantém botões de salvamento já existentes nas configurações de gráficos, layout, metas, financeiro, custos, apresentação e usuários.
+- Inclui MIGRACAO_V2.48.3.sql somente para expor `fontFamily` na identidade visual pública do boot/login; nenhuma tabela nova é criada.
+
 ## V2.48.2 — Tema persistente no boot/login e carregamento sem flicker
 
 - Remove o fallback visual imediato para **Brasil em Campo** quando o navegador está sem cache local.

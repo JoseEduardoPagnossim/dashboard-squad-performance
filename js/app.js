@@ -44,15 +44,17 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.48.2';
+  const APP_VERSION = '2.48.3';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
   const PRESENTATION_ROUTE = window.SoftenPresentation?.route || {enabled:false,squad:'',direct:false};
+  const SYSTEM_FONT_OPTIONS = Object.freeze({inter:{label:'Inter',stack:'\"Inter\",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif'},roboto:{label:'Roboto',stack:'\"Roboto\",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif'},'source-sans':{label:'Source Sans 3',stack:'\"Source Sans 3\",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif'}});
+  const DEFAULT_SYSTEM_FONT = 'inter';
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
-  const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
-  const BOOT_FALLBACK_THEME = {name:'Soften Performance Hub',campaignTitle:'Performance Hub',campaignTagline:'Gestão de desempenho',preset:'bootstrap',soundtrack:null,soundtrackName:'',soundtrackVolume:.18,favicon:'assets/soften-logo-sidebar.png',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#20b7f5',secondary:'#176bd3'},light:{...DEFAULT_LIGHT_COLORS,accent:'#0284c7',secondary:'#2563eb'}},background:null,opacity:.06};
+  const DEFAULT_THEME = {fontFamily:DEFAULT_SYSTEM_FONT,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
+  const BOOT_FALLBACK_THEME = {fontFamily:DEFAULT_SYSTEM_FONT,name:'Soften Performance Hub',campaignTitle:'Performance Hub',campaignTagline:'Gestão de desempenho',preset:'bootstrap',soundtrack:null,soundtrackName:'',soundtrackVolume:.18,favicon:'assets/soften-logo-sidebar.png',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#20b7f5',secondary:'#176bd3'},light:{...DEFAULT_LIGHT_COLORS,accent:'#0284c7',secondary:'#2563eb'}},background:null,opacity:.06};
   const PUBLIC_THEME_ORG_SLUG = String(window.APP_CONFIG?.publicOrganizationSlug||'soften-sistemas').trim()||'soften-sistemas';
   const DEMO_USERS = Array.isArray(window.SOFTEN_DEMO_USERS) ? [...window.SOFTEN_DEMO_USERS] : [];
 
@@ -76,6 +78,8 @@
     currentId:null,
     techName:null,
     theme:clone(DEFAULT_THEME),
+    themeEditorSnapshot:null,
+    themeEditorDirty:false,
     chartPreferences:clone(DEFAULT_CHART_PREFERENCES),
     appearanceScope:'squad',
     uiPreferences:defaultUiPreferences(),
@@ -595,14 +599,21 @@
   }
   function collectPermissionOverrides(){const out={};$$('[data-user-permission]').forEach(input=>{if(!input.checked)out[input.dataset.userPermission]=false});return out}
 
+  function normalizeSystemFont(value){const key=String(value||'').trim().toLowerCase();return SYSTEM_FONT_OPTIONS[key]?key:DEFAULT_SYSTEM_FONT}
+  function systemFontStack(value){return SYSTEM_FONT_OPTIONS[normalizeSystemFont(value)].stack}
+  function applySystemFont(value){const key=normalizeSystemFont(value);document.documentElement.style.setProperty('--app-font-family',systemFontStack(key));document.documentElement.dataset.systemFont=key;const preview=$('#systemFontPreview');if(preview)preview.style.fontFamily=systemFontStack(key);return key}
+  function syncSystemFontControl(){const key=normalizeSystemFont(state.theme?.fontFamily);if($('#systemFontSelect'))$('#systemFontSelect').value=key;applySystemFont(key)}
+
   function currentChartPreferences(){return normalizeChartPreferences(state.theme?.chartPreferences||state.chartPreferences||DEFAULT_CHART_PREFERENCES)}
   function applyChartPreferences(prefs){
     const cfg=applyChartCssVariables(document.documentElement.style,prefs);
     state.chartPreferences=cfg;
     return cfg;
   }
-  function syncChartPreferencePreview(){
-    const cfg=currentChartPreferences();
+  function syncChartPreferencePreview(fontOverride=null){
+    const cfg=currentChartPreferences(),fontKey=normalizeSystemFont(fontOverride||state.theme?.fontFamily);
+    if($('#systemFontSelect'))$('#systemFontSelect').value=fontKey;
+    if($('#systemFontPreview'))$('#systemFontPreview').style.fontFamily=systemFontStack(fontKey);
     if($('#chartLabelFontInput'))$('#chartLabelFontInput').value=cfg.labelFontSize;
     if($('#chartAxisFontInput'))$('#chartAxisFontInput').value=cfg.axisFontSize;
     if($('#chartLegendFontInput'))$('#chartLegendFontInput').value=cfg.legendFontSize;
@@ -635,24 +646,23 @@
   function appearanceScopeLabel(){const codes=appearanceScopeCodes();return state.appearanceScope==='all'&&isSuperAdmin()?`todos os Squads (${codes.join(', ')})`:(codes[0]?`Squad ${codes[0]}`:'nenhum Squad')}
   function previewChartPreferences(){
     if(!canEditAppearance())return;
-    const cfg=collectChartPreferencesFromUi();
-    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg});
-    applyChartPreferences(cfg);syncChartPreferencePreview();render();
+    const cfg=collectChartPreferencesFromUi(),fontKey=normalizeSystemFont($('#systemFontSelect')?.value||state.theme?.fontFamily);
+    applyChartPreferences(cfg);applySystemFont(fontKey);syncChartPreferencePreview(fontKey);render();
     if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Pré-visualização aplicada. Clique em salvar para persistir em ${appearanceScopeLabel()}.`;
   }
   function saveChartPreferences(){
     if(!canEditAppearance())return toast('Selecione um Squad específico ou use o escopo Todos os Squads como Administrador.');
-    const cfg=collectChartPreferencesFromUi();
-    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,preset:'custom'});
-    applyChartPreferences(cfg);syncChartPreferencePreview();saveTheme();render();
+    const cfg=collectChartPreferencesFromUi(),fontKey=normalizeSystemFont($('#systemFontSelect')?.value||state.theme?.fontFamily);
+    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,fontFamily:fontKey,preset:'custom'});
+    applyChartPreferences(cfg);applySystemFont(fontKey);syncChartPreferencePreview(fontKey);saveTheme();render();
     if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Configuração visual salva em ${appearanceScopeLabel()}.`;
     toast(`Configuração visual salva em ${appearanceScopeLabel()}.`);
   }
   function resetChartPreferences(){
     if(!canEditAppearance())return toast('Selecione um Squad específico ou use o escopo Todos os Squads como Administrador.');
-    const cfg=normalizeChartPreferences(DEFAULT_CHART_PREFERENCES);
-    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,preset:'custom'});
-    applyChartPreferences(cfg);syncChartPreferencePreview();saveTheme();render();
+    const cfg=normalizeChartPreferences(DEFAULT_CHART_PREFERENCES),fontKey=DEFAULT_SYSTEM_FONT;
+    state.theme=normalizeThemePayload({...state.theme,chartPreferences:cfg,fontFamily:fontKey,preset:'custom'});
+    applyChartPreferences(cfg);applySystemFont(fontKey);syncChartPreferencePreview(fontKey);saveTheme();render();
     if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Padrão restaurado em ${appearanceScopeLabel()}.`;
     toast(`Configuração visual restaurada em ${appearanceScopeLabel()}.`);
   }
@@ -857,7 +867,7 @@
     $('#adminImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('service')});
     if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
     if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
-    $('#adminThemeBtn').addEventListener('click',()=>{if(!requirePermission('appearance.manage'))return;if(canEditAppearance())openModal('themeModal');else toast('Selecione um Squad específico ou use Todos os Squads como Administrador.')});
+    $('#adminThemeBtn').addEventListener('click',()=>{if(!requirePermission('appearance.manage'))return;beginThemeEditor()});
     if($('#openUsersBtn'))$('#openUsersBtn').addEventListener('click',()=>{if(requirePermission('users.manage'))showView('users')});
     $('#newUserBtn').addEventListener('click',()=>{if(requirePermission('users.manage'))openCreateUser()});
     if($('#auditSearchInput'))$('#auditSearchInput').addEventListener('input',renderAuditRows);
@@ -919,7 +929,9 @@
     if($('#saveFinancialImpactParamsBtn'))$('#saveFinancialImpactParamsBtn').addEventListener('click',saveFinancialImpactParameters);
     $('#copyPreviousGoalsBtn').addEventListener('click',copyGoalsFromPreviousMonth);
     $('#saveScoreSettingsBtn').addEventListener('click',saveScoreSettings);
-    $$('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+    $$('[data-close]').forEach(b=>b.addEventListener('click',()=>b.dataset.close==='themeModal'?cancelThemeEditor():closeModal(b.dataset.close)));
+    if($('#saveThemeChangesBtn'))$('#saveThemeChangesBtn').addEventListener('click',saveThemeEditor);
+    if($('#cancelThemeChangesBtn'))$('#cancelThemeChangesBtn').addEventListener('click',cancelThemeEditor);
     if($('#confirmDialogConfirm'))$('#confirmDialogConfirm').addEventListener('click',()=>settleConfirmDialog(true));
     if($('#confirmDialogCancel'))$('#confirmDialogCancel').addEventListener('click',()=>settleConfirmDialog(false));
     if($('#confirmDialogClose'))$('#confirmDialogClose').addEventListener('click',()=>settleConfirmDialog(false));
@@ -929,7 +941,7 @@
       m.addEventListener('pointerdown',e=>{backdropDown=e.target===m;});
       m.addEventListener('pointerup',e=>{
         const staticBackdrop=m.dataset.staticBackdrop==='true';
-        if(!staticBackdrop&&backdropDown&&e.target===m)closeModal(m.id);
+        if(!staticBackdrop&&backdropDown&&e.target===m){if(m.id==='themeModal')cancelThemeEditor();else closeModal(m.id);}
         backdropDown=false;
       });
       m.addEventListener('pointercancel',()=>{backdropDown=false});
@@ -937,8 +949,11 @@
     $$('[data-color-mode-toggle]').forEach(b=>b.addEventListener('click',toggleColorMode));
     $$('[data-theme-edit-mode]').forEach(b=>b.addEventListener('click',()=>applyColorMode(b.dataset.themeEditMode,{persist:true,reapplyTheme:true})));
     $$('.preset').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.theme)));
-    $('#accentColor').addEventListener('input',e=>{if(!isAdmin())return;setThemePaletteColor('accent',e.target.value);state.theme.name='Personalizado';state.theme.preset='custom';saveTheme();updateThemeName();});
-    $('#secondaryColor').addEventListener('input',e=>{if(!isAdmin())return;setThemePaletteColor('secondary',e.target.value);state.theme.name='Personalizado';state.theme.preset='custom';saveTheme();updateThemeName();});
+    $('#accentColor').addEventListener('input',e=>{if(!isAdmin())return;setThemePaletteColor('accent',e.target.value);state.theme.name='Personalizado';state.theme.preset='custom';syncThemeColorText();markThemeEditorDirty();updateThemeName();});
+    $('#secondaryColor').addEventListener('input',e=>{if(!isAdmin())return;setThemePaletteColor('secondary',e.target.value);state.theme.name='Personalizado';state.theme.preset='custom';syncThemeColorText();markThemeEditorDirty();updateThemeName();});
+    if($('#accentColorText'))$('#accentColorText').addEventListener('change',e=>applyThemeHexInput('accent',e.target));
+    if($('#secondaryColorText'))$('#secondaryColorText').addEventListener('change',e=>applyThemeHexInput('secondary',e.target));
+    if($('#chooseBackgroundBtn'))$('#chooseBackgroundBtn').addEventListener('click',()=>$('#backgroundFile')?.click());
     $('#backgroundFile').addEventListener('change',handleBackground);
     if($('#chooseFaviconBtn'))$('#chooseFaviconBtn').addEventListener('click',()=>$('#faviconFile')?.click());
     if($('#faviconFile'))$('#faviconFile').addEventListener('change',handleFavicon);
@@ -948,21 +963,21 @@
     if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').addEventListener('click',previewThemeSoundtrack);
     if($('#resetSoundtrack'))$('#resetSoundtrack').addEventListener('click',resetSoundtrack);
     if($('#removeSoundtrack'))$('#removeSoundtrack').addEventListener('click',removeSoundtrack);
-    if($('#soundtrackNameInput'))$('#soundtrackNameInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.soundtrackName=e.target.value.trim()||DEFAULT_SOUNDTRACK_NAME;state.theme.preset='custom';saveTheme();syncSoundPlayerUi();});
-    if($('#soundtrackDefaultVolume')){$('#soundtrackDefaultVolume').addEventListener('input',e=>{if(!isAdmin())return;const v=clamp(safe(e.target.value)/100,0,1);state.theme.soundtrackVolume=v;if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(v*100)}%`;});$('#soundtrackDefaultVolume').addEventListener('change',()=>{if(!isAdmin())return;state.theme.preset='custom';saveTheme();});}
+    if($('#soundtrackNameInput'))$('#soundtrackNameInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.soundtrackName=e.target.value.trim()||DEFAULT_SOUNDTRACK_NAME;state.theme.preset='custom';markThemeEditorDirty();syncSoundPlayerUi();});
+    if($('#soundtrackDefaultVolume')){$('#soundtrackDefaultVolume').addEventListener('input',e=>{if(!isAdmin())return;const v=clamp(safe(e.target.value)/100,0,1);state.theme.soundtrackVolume=v;if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(v*100)}%`;});$('#soundtrackDefaultVolume').addEventListener('change',()=>{if(!isAdmin())return;state.theme.preset='custom';markThemeEditorDirty();});}
     if($('#soundToggleBtn'))$('#soundToggleBtn').addEventListener('click',toggleSoundPlayback);
     if($('#soundMuteBtn'))$('#soundMuteBtn').addEventListener('click',toggleSoundMute);
     if($('#soundVolume'))$('#soundVolume').addEventListener('input',handleSoundVolume);
     if($('#soundEnterOn'))$('#soundEnterOn').addEventListener('click',()=>chooseSoundWelcome(true));
     if($('#soundEnterOff'))$('#soundEnterOff').addEventListener('click',()=>chooseSoundWelcome(false));
-    $('#campaignNameInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTitle=e.target.value;state.theme.name=e.target.value||'Personalizado';state.theme.preset='custom';saveTheme();applyTheme(state.theme);});
-    $('#campaignTaglineInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTagline=e.target.value;state.theme.preset='custom';saveTheme();applyTheme(state.theme);});
+    $('#campaignNameInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTitle=e.target.value;state.theme.name=e.target.value||'Personalizado';state.theme.preset='custom';markThemeEditorDirty();applyTheme(state.theme,{remember:false});});
+    $('#campaignTaglineInput').addEventListener('input',e=>{if(!isAdmin())return;state.theme.campaignTagline=e.target.value;state.theme.preset='custom';markThemeEditorDirty();applyTheme(state.theme,{remember:false});});
     $('#saveGoalsBtn').addEventListener('click',saveTeamGoals);
     $('#autoGoalBtn').addEventListener('click',useAutomaticTeamGoal);
     $('#importThemeBtn').addEventListener('click',()=>{if(canEditAppearance())$('#themeJsonInput').click();else toast('Selecione um Squad específico ou use Todos os Squads como Administrador.')});
     $('#themeJsonInput').addEventListener('change',handleThemeJson);
     $('#exportThemeBtn').addEventListener('click',exportTheme);
-    $('#removeBg').addEventListener('click',()=>{if(!isAdmin())return;state.theme.background=null;state.theme.preset='custom';document.documentElement.style.setProperty('--hero-img','none');saveTheme();toast('Fundo removido.');});
+    $('#removeBg').addEventListener('click',()=>{if(!isAdmin())return;state.theme.background=null;state.theme.preset='custom';applyTheme(state.theme,{remember:false});markThemeEditorDirty('Fundo removido na prévia. Salve o tema para confirmar.');toast('Fundo removido da prévia.');});
     [
       ['analysisStartDate','analysisStartDatePicker','start'],
       ['analysisEndDate','analysisEndDatePicker','end'],
@@ -990,7 +1005,7 @@
     if($('#saveChartPrefsBtn'))$('#saveChartPrefsBtn').addEventListener('click',saveChartPreferences);
     if($('#resetChartPrefsBtn'))$('#resetChartPrefsBtn').addEventListener('click',resetChartPreferences);
     if($('#appearanceScopeSelect'))$('#appearanceScopeSelect').addEventListener('change',e=>{state.appearanceScope=e.target.value==='all'&&isSuperAdmin()?'all':'squad';renderAdmin();});
-    ['#chartLabelDensity','#chartScaleMode','#chartScaleMinInput','#chartScaleMaxInput','#chartLabelFontInput','#chartAxisFontInput','#chartLegendFontInput','#chartHeightInput','#chartCardPaddingInput','#chartLineWidthInput','#chartPointRadiusInput'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',previewChartPreferences)});
+    ['#systemFontSelect','#chartLabelDensity','#chartScaleMode','#chartScaleMinInput','#chartScaleMaxInput','#chartLabelFontInput','#chartAxisFontInput','#chartLegendFontInput','#chartHeightInput','#chartCardPaddingInput','#chartLineWidthInput','#chartPointRadiusInput'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',previewChartPreferences)});
     let allTechResizeTimer=null;window.addEventListener('resize',()=>{const monthlyOpen=$('#allTechniciansModal')?.classList.contains('open'),dailyOpen=$('#dailyTechniciansModal')?.classList.contains('open');if(!monthlyOpen&&!dailyOpen)return;clearTimeout(allTechResizeTimer);allTechResizeTimer=setTimeout(()=>{if(monthlyOpen)renderAllTechniciansFullscreenChart(state.allTechniciansRangeIds);if(dailyOpen)renderDailyTechniciansFullscreenChart();},120);});
   }
 
@@ -3970,7 +3985,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;
     const ok=/^audio\/(mpeg|mp3|ogg|wav|x-wav|mp4|m4a|aac)$/i.test(f.type||'')||/\.(mp3|ogg|wav|m4a|aac)$/i.test(f.name||'');if(!ok){toast('Use MP3, OGG, WAV, M4A ou AAC.');e.target.value='';return}
     if(f.size>3*1024*1024){toast('Use uma trilha de até 3 MB para manter o tema leve.');e.target.value='';return}
-    const reader=new FileReader();reader.onload=()=>{state.theme.soundtrack=reader.result;state.theme.soundtrackName=(f.name||DEFAULT_SOUNDTRACK_NAME).replace(/\.[^.]+$/,'');state.theme.soundtrackVolume=state.theme.soundtrackVolume??.24;state.theme.preset='custom';saveTheme();applySoundtrack(state.theme,{preservePlayback:false});if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName;toast('Trilha do tema atualizada.')};reader.readAsDataURL(f);e.target.value='';
+    const reader=new FileReader();reader.onload=()=>{state.theme.soundtrack=reader.result;state.theme.soundtrackName=(f.name||DEFAULT_SOUNDTRACK_NAME).replace(/\.[^.]+$/,'');state.theme.soundtrackVolume=state.theme.soundtrackVolume??.24;state.theme.preset='custom';markThemeEditorDirty();applySoundtrack(state.theme,{preservePlayback:false});if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName;toast('Trilha do tema atualizada.')};reader.readAsDataURL(f);e.target.value='';
   }
   async function previewThemeSoundtrack(){
     const cfg=themeAudioConfig();if(!cfg.src){toast('Nenhuma trilha configurada neste tema.');return}
@@ -3978,8 +3993,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(state.audio.previewing){cancelAudioFade();audio.pause();const before=state.audio.previewBefore||{};audio.volume=before.volume??preferredAudioVolume();audio.muted=!!before.muted;try{audio.currentTime=before.currentTime??0}catch(e){}state.audio.previewing=false;state.audio.previewBefore=null;if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').textContent='▶ Ouvir trilha';if(before.wasPlaying)await playThemeAudio(true);else syncSoundPlayerUi();return}
     state.audio.previewBefore={volume:audio.volume,muted:audio.muted,wasPlaying:!audio.paused,currentTime:safe(audio.currentTime)};state.audio.previewing=true;cancelAudioFade();audio.pause();try{audio.currentTime=0}catch(e){}audio.volume=0;audio.muted=false;try{await audio.play();fadeAudioTo(cfg.volume,1500);if($('#previewSoundtrackBtn'))$('#previewSoundtrackBtn').textContent='❚❚ Pausar prévia';syncSoundPlayerUi()}catch(e){state.audio.previewing=false;state.audio.previewBefore=null;audio.volume=preferredAudioVolume();toast('Clique novamente para permitir a reprodução do áudio.')}
   }
-  function resetSoundtrack(){if(!isAdmin())return;state.theme.soundtrack=DEFAULT_SOUNDTRACK;state.theme.soundtrackName=DEFAULT_SOUNDTRACK_NAME;state.theme.soundtrackVolume=.24;state.theme.preset='custom';saveTheme();applyTheme(state.theme);toast('Trilha original restaurada.')}
-  function removeSoundtrack(){if(!isAdmin())return;state.theme.soundtrack=null;state.theme.soundtrackName='';state.theme.preset='custom';saveTheme();applyTheme(state.theme);toast('Trilha removida deste tema.')}
+  function resetSoundtrack(){if(!isAdmin())return;state.theme.soundtrack=DEFAULT_SOUNDTRACK;state.theme.soundtrackName=DEFAULT_SOUNDTRACK_NAME;state.theme.soundtrackVolume=.24;state.theme.preset='custom';markThemeEditorDirty();applyTheme(state.theme,{remember:false});toast('Trilha original aplicada na prévia.')}
+  function removeSoundtrack(){if(!isAdmin())return;state.theme.soundtrack=null;state.theme.soundtrackName='';state.theme.preset='custom';markThemeEditorDirty();applyTheme(state.theme,{remember:false});toast('Trilha removida da prévia.')}
 
   function themeColorSubset(source={}){
     const out={};
@@ -3997,6 +4012,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function syncLegacyThemeColors(t){const d=t.colors?.dark||DEFAULT_DARK_COLORS;['accent','secondary','bg','bg2','panel','text'].forEach(k=>t[k]=d[k]);t.panel2=d.panel2;t.muted=d.muted;t.border=d.border;return t}
   function normalizeThemePayload(theme){
     const t=clone(theme||DEFAULT_THEME);
+    t.fontFamily=normalizeSystemFont(t.fontFamily);
     if(t.preset==='vermithor'||(!t.preset&&(!t.campaignTitle||t.campaignTitle==='Dragão Vermithor'))){if(!t.name||t.name==='Vermithor')t.name='Casa do Dragão';if(!t.campaignTitle||t.campaignTitle==='Dragão Vermithor')t.campaignTitle='Casa do Dragão';if(!t.campaignTagline||t.campaignTagline==='Transforme números em conquista.')t.campaignTagline='Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.';}
     if(!t.favicon)t.favicon=DEFAULT_FAVICON;if(!Object.prototype.hasOwnProperty.call(t,'soundtrack'))t.soundtrack=DEFAULT_SOUNDTRACK;if(!t.soundtrackName&&t.soundtrack)t.soundtrackName=DEFAULT_SOUNDTRACK_NAME;if(t.soundtrackVolume==null)t.soundtrackVolume=.24;
     const flat=themeColorSubset(t),rawDark=themeColorSubset(t.colors?.dark||{}),rawLight=themeColorSubset(t.colors?.light||{}),hasDual=Object.keys(rawDark).length||Object.keys(rawLight).length;
@@ -4029,7 +4045,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const vars={accent:p.accent,accent2:p.secondary,bg:p.bg,bg2:p.bg2,panel:p.panel,panel2:p.panel2,text:p.text,muted:p.muted,border:p.border,success:p.success,danger:p.danger,warn:p.warn,shadow:p.shadow};
     Object.entries(vars).forEach(([k,v])=>{if(v!=null)r.setProperty(`--${k}`,v)});
     updateThemeMetaColor(p);syncColorModeUi();
-    if($('#accentColor'))$('#accentColor').value=p.accent||'#f0a33a';if($('#secondaryColor'))$('#secondaryColor').value=p.secondary||'#ef5a29';
+    if($('#accentColor'))$('#accentColor').value=p.accent||'#f0a33a';if($('#secondaryColor'))$('#secondaryColor').value=p.secondary||'#ef5a29';if($('#accentColorText'))$('#accentColorText').value=String(p.accent||'#f0a33a').toUpperCase();if($('#secondaryColorText'))$('#secondaryColorText').value=String(p.secondary||'#ef5a29').toUpperCase();
     return t;
   }
   function applyColorMode(mode,{persist=true,reapplyTheme=true}={}){
@@ -4046,6 +4062,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function setThemePaletteColor(key,value){
     state.theme=normalizeThemePayload(state.theme);const mode=state.colorMode==='light'?'light':'dark';state.theme.colors[mode][key]=value;if(mode==='dark')syncLegacyThemeColors(state.theme);applyThemePalette(state.theme);
   }
+  function setThemeEditStatus(message,pending=true){const el=$('#themeEditStatus');if(!el)return;el.textContent=message;el.classList.toggle('pending',!!pending);el.classList.remove('saved')}
+  function markThemeEditorDirty(message='Alterações em pré-visualização. Clique em Salvar tema para confirmar.'){state.themeEditorDirty=true;setThemeEditStatus(message,true)}
+  function syncThemeColorText(){const p=themePalette(state.theme,state.colorMode);if($('#accentColorText'))$('#accentColorText').value=String(p.accent||'#f0a33a').toUpperCase();if($('#secondaryColorText'))$('#secondaryColorText').value=String(p.secondary||'#ef5a29').toUpperCase();}
+  function beginThemeEditor(){if(!canEditAppearance())return toast('Selecione um Squad específico ou use Todos os Squads como Administrador.');state.themeEditorSnapshot=clone(normalizeThemePayload(state.theme));state.themeEditorDirty=false;applyTheme(state.theme,{remember:false});syncThemeColorText();if($('#backgroundFileName'))$('#backgroundFileName').textContent=state.theme.background?'Fundo atual carregado':'Sem fundo personalizado';setThemeEditStatus('Nenhuma alteração pendente.',false);openModal('themeModal')}
+  function cancelThemeEditor(){const snapshot=state.themeEditorSnapshot;if(snapshot){state.theme=normalizeThemePayload(snapshot);applyTheme(state.theme,{remember:false});syncChartPreferencePreview()}state.themeEditorSnapshot=null;state.themeEditorDirty=false;if($('#backgroundFile'))$('#backgroundFile').value='';closeModal('themeModal');toast('Alterações do tema descartadas.')}
+  function saveThemeEditor(){if(!canEditAppearance())return toast('Você não possui permissão para salvar o tema.');state.theme=normalizeThemePayload({...state.theme,campaignTitle:$('#campaignNameInput')?.value?.trim()||state.theme.campaignTitle,name:$('#campaignNameInput')?.value?.trim()||state.theme.name||'Personalizado',campaignTagline:$('#campaignTaglineInput')?.value?.trim()||'',preset:'custom'});saveTheme();applyTheme(state.theme,{remember:true});state.themeEditorSnapshot=clone(state.theme);state.themeEditorDirty=false;setThemeEditStatus('Tema salvo.',false);closeModal('themeModal');toast(`Tema salvo em ${appearanceScopeLabel()}.`)}
+  function applyThemeHexInput(key,input){let value=String(input?.value||'').trim();if(!value.startsWith('#'))value='#'+value;if(!/^#[0-9a-f]{6}$/i.test(value))return setThemeEditStatus('Informe uma cor hexadecimal válida, como #F0A33A.',true);input.value=value.toUpperCase();setThemePaletteColor(key,value);state.theme.name='Personalizado';state.theme.preset='custom';syncThemeColorText();markThemeEditorDirty()}
+
   function applyPreset(name){
     if(!isAdmin())return;
     const presets={
@@ -4054,7 +4078,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       neon:{name:'Neon',campaignTitle:'Squad Neon',campaignTagline:'Acelere. Evolua. Conquiste.',preset:'neon',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#c05cff',secondary:'#21dbc9',bg:'#090514',bg2:'#151029',panel:'rgba(23,15,42,.9)',panel2:'rgba(31,21,54,.94)',text:'#faf5ff'},light:{...DEFAULT_LIGHT_COLORS,accent:'#9333ea',secondary:'#0f9f91'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.18},
       clean:{name:'Claro',campaignTitle:'Performance',campaignTagline:'Clareza para acompanhar cada resultado.',preset:'clean',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#7c8cf8',secondary:'#4f68dd',bg:'#0b1020',bg2:'#121a2c',panel:'rgba(19,27,45,.92)',panel2:'rgba(27,38,61,.94)'},light:{...DEFAULT_LIGHT_COLORS,accent:'#3157d5',secondary:'#6a7be8',bg:'#e9eef5',bg2:'#f7f9fc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#172033'}},background:null,favicon:DEFAULT_FAVICON,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.24,opacity:.06}
     };
-    state.theme=normalizeThemePayload({...presets[name]||presets.vermithor,chartPreferences:currentChartPreferences()});saveTheme();applyTheme(state.theme);toast(`Tema ${state.theme.name} aplicado.`)
+    state.theme=normalizeThemePayload({...presets[name]||presets.vermithor,fontFamily:normalizeSystemFont(state.theme?.fontFamily),chartPreferences:currentChartPreferences()});markThemeEditorDirty();applyTheme(state.theme,{remember:false});toast(`Prévia do tema ${state.theme.name} aplicada.`)
   }
   function applyCampaignIdentity(theme,safeBg,fallbackTitle,fallbackTagline){
     const title=theme.campaignTitle||fallbackTitle||theme.name||'Performance';
@@ -4072,7 +4096,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#houseMottoText'))$('#houseMottoText').textContent=tagline;
   }
   function applyTheme(t,{remember=true}={}){
-    state.theme=normalizeThemePayload(t||DEFAULT_THEME);applyThemePalette(state.theme);applyChartPreferences(state.theme.chartPreferences||DEFAULT_CHART_PREFERENCES);const r=document.documentElement.style;
+    state.theme=normalizeThemePayload(t||DEFAULT_THEME);applySystemFont(state.theme.fontFamily);applyThemePalette(state.theme);applyChartPreferences(state.theme.chartPreferences||DEFAULT_CHART_PREFERENCES);const r=document.documentElement.style;
     if(state.theme.opacity!=null)r.setProperty('--hero-opacity',state.theme.opacity);const safeBg=sanitizeThemeBackground(state.theme.background),bg=safeBg?`url("${safeBg}")`:state.theme.preset==='vermithor'?"url('assets/vermithor.png')":'none';r.setProperty('--hero-img',bg);
     const fallbackTitle=state.theme.preset==='vermithor'?'Casa do Dragão':(state.theme.name||`Squad ${state.squadCode}`),fallbackTagline=state.theme.preset==='vermithor'?'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.':'Acompanhe, evolua e conquiste.';
     applyCampaignIdentity(state.theme,safeBg,fallbackTitle,fallbackTagline);
@@ -4080,7 +4104,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#campaignNameInput'))$('#campaignNameInput').value=state.theme.campaignTitle||fallbackTitle;if($('#campaignTaglineInput'))$('#campaignTaglineInput').value=state.theme.campaignTagline||fallbackTagline;applyFavicon(state.theme.favicon);if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName||'';if($('#soundtrackDefaultVolume'))$('#soundtrackDefaultVolume').value=Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100);if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100)}%`;applySoundtrack(state.theme);updateThemeName()
   }
   function updateThemeName(){if($('#themeName'))$('#themeName').textContent=state.theme?.name||state.theme?.campaignTitle||'Personalizado';syncColorModeUi()}
-  function handleBackground(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;if(f.size>5*1024*1024){toast('Use uma imagem de até 5 MB.');return}const reader=new FileReader();reader.onload=()=>{state.theme.background=reader.result;state.theme.name=$('#campaignNameInput').value||'Personalizado';state.theme.campaignTitle=$('#campaignNameInput').value||state.theme.campaignTitle||`Squad ${state.squadCode}`;state.theme.campaignTagline=$('#campaignTaglineInput').value||state.theme.campaignTagline||'';state.theme.preset='custom';saveTheme();applyTheme(state.theme);toast('Fundo atualizado.')};reader.readAsDataURL(f)}
+  function handleBackground(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;if(f.size>5*1024*1024){toast('Use uma imagem de até 5 MB.');return}const reader=new FileReader();reader.onload=()=>{state.theme.background=reader.result;state.theme.name=$('#campaignNameInput').value||'Personalizado';state.theme.campaignTitle=$('#campaignNameInput').value||state.theme.campaignTitle||`Squad ${state.squadCode}`;state.theme.campaignTagline=$('#campaignTaglineInput').value||state.theme.campaignTagline||'';state.theme.preset='custom';if($('#backgroundFileName'))$('#backgroundFileName').textContent=f.name||'Nova imagem selecionada';markThemeEditorDirty();applyTheme(state.theme,{remember:false});toast('Fundo atualizado na prévia.')};reader.readAsDataURL(f)}
   function sanitizeThemeBackground(v){if(!v)return null;const s=String(v).trim();return/^(data:image\/(png|jpeg|jpg|webp|gif);base64,|https?:\/\/|assets\/)/i.test(s)?s:null}
   function applyFavicon(value){
     const safe=sanitizeThemeBackground(value)||DEFAULT_FAVICON;
@@ -4093,13 +4117,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;
     if(!/^image\/(png|jpeg|jpg|webp|gif)$/i.test(f.type||'')){toast('Use PNG, JPG, WEBP ou GIF para o favicon.');e.target.value='';return}
     if(f.size>750*1024){toast('Use um favicon de até 750 KB.');e.target.value='';return}
-    const reader=new FileReader();reader.onload=()=>{state.theme.favicon=reader.result;state.theme.preset='custom';saveTheme();applyFavicon(state.theme.favicon);toast('Favicon do tema atualizado.')};reader.readAsDataURL(f);
+    const reader=new FileReader();reader.onload=()=>{state.theme.favicon=reader.result;state.theme.preset='custom';markThemeEditorDirty();applyFavicon(state.theme.favicon);toast('Favicon atualizado na prévia.')};reader.readAsDataURL(f);
   }
-  function resetFavicon(){if(!isAdmin())return;state.theme.favicon=DEFAULT_FAVICON;state.theme.preset='custom';if($('#faviconFile'))$('#faviconFile').value='';saveTheme();applyFavicon(DEFAULT_FAVICON);toast('Favicon padrão restaurado.')}
-  function themePayload(theme=state.theme,code=state.squadCode){const t=normalizeThemePayload(theme);const d=t.colors.dark;return{schema:'squad-theme-v2',name:t.name||'Personalizado',campaignTitle:t.campaignTitle||t.name||(code&&code!=='all'?`Squad ${code}`:'Performance Hub'),campaignTagline:t.campaignTagline||'',colors:clone(t.colors),accent:d.accent,secondary:d.secondary,bg:d.bg,bg2:d.bg2,panel:d.panel,panel2:d.panel2,text:d.text,muted:d.muted,border:d.border,background:t.background||null,favicon:t.favicon||DEFAULT_FAVICON,soundtrack:Object.prototype.hasOwnProperty.call(t,'soundtrack')?t.soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:t.soundtrackName||'',soundtrackVolume:clamp(Number(t.soundtrackVolume??.24),0,1),opacity:t.opacity??.28,chartPreferences:clone(normalizeChartPreferences(t.chartPreferences||DEFAULT_CHART_PREFERENCES))}}
+  function resetFavicon(){if(!isAdmin())return;state.theme.favicon=DEFAULT_FAVICON;state.theme.preset='custom';if($('#faviconFile'))$('#faviconFile').value='';markThemeEditorDirty();applyFavicon(DEFAULT_FAVICON);toast('Favicon padrão aplicado na prévia.')}
+  function themePayload(theme=state.theme,code=state.squadCode){const t=normalizeThemePayload(theme);const d=t.colors.dark;return{schema:'squad-theme-v2',fontFamily:normalizeSystemFont(t.fontFamily),name:t.name||'Personalizado',campaignTitle:t.campaignTitle||t.name||(code&&code!=='all'?`Squad ${code}`:'Performance Hub'),campaignTagline:t.campaignTagline||'',colors:clone(t.colors),accent:d.accent,secondary:d.secondary,bg:d.bg,bg2:d.bg2,panel:d.panel,panel2:d.panel2,text:d.text,muted:d.muted,border:d.border,background:t.background||null,favicon:t.favicon||DEFAULT_FAVICON,soundtrack:Object.prototype.hasOwnProperty.call(t,'soundtrack')?t.soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:t.soundtrackName||'',soundtrackVolume:clamp(Number(t.soundtrackVolume??.24),0,1),opacity:t.opacity??.28,chartPreferences:clone(normalizeChartPreferences(t.chartPreferences||DEFAULT_CHART_PREFERENCES))}}
   function downloadJson(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
   function exportTheme(){if(!canEditAppearance())return;const suffix=state.appearanceScope==='all'&&isSuperAdmin()?'todos-squads':`squad-${state.squadCode.toLowerCase()}`;downloadJson(themePayload(),`tema-${suffix}.json`);toast('Tema exportado em JSON com paletas clara/escura e preferências de gráficos.')}
-  async function handleThemeJson(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());if(!['squad-theme-v1','squad-theme-v2'].includes(raw.schema))throw new Error('Arquivo de tema incompatível.');const theme={...raw,preset:'custom'};delete theme.schema;delete theme._instrucoes;if(theme.background&&!sanitizeThemeBackground(theme.background))throw new Error('Fundo inválido.');if(theme.favicon&&!sanitizeThemeBackground(theme.favicon))throw new Error('Favicon inválido.');if(theme.soundtrack&&!sanitizeThemeAudio(theme.soundtrack))throw new Error('Trilha sonora inválida.');state.theme=normalizeThemePayload(theme);saveTheme();applyTheme(state.theme);toast(raw.schema==='squad-theme-v1'?'Tema antigo convertido para Light/Dark e aplicado.':'Tema importado e aplicado.')}catch(err){toast(err.message||'Não foi possível importar o tema.')}finally{e.target.value=''}}
+  async function handleThemeJson(e){if(!isAdmin())return;const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());if(!['squad-theme-v1','squad-theme-v2'].includes(raw.schema))throw new Error('Arquivo de tema incompatível.');const theme={...raw,preset:'custom'};delete theme.schema;delete theme._instrucoes;if(theme.background&&!sanitizeThemeBackground(theme.background))throw new Error('Fundo inválido.');if(theme.favicon&&!sanitizeThemeBackground(theme.favicon))throw new Error('Favicon inválido.');if(theme.soundtrack&&!sanitizeThemeAudio(theme.soundtrack))throw new Error('Trilha sonora inválida.');state.theme=normalizeThemePayload(theme);saveTheme();applyTheme(state.theme,{remember:true});toast(raw.schema==='squad-theme-v1'?'Tema antigo convertido para Light/Dark e aplicado.':'Tema importado e aplicado.')}catch(err){toast(err.message||'Não foi possível importar o tema.')}finally{e.target.value=''}}
 
   /* ===== V2.43: carregamento progressivo, cache e diagnostico ===== */
   const FULL_MONTH_SELECT='id,year,month,source_file,latest_day,imported_at,team_result,redistributed,team_goal_att,team_goal_eval_pct,score_settings,finance_settings,finance_month_data,finance_model,finance_compare,finance_technician_compare,finance_individual_cap,finance_comparison_snapshot,is_closed,closed_at,closed_by,closed_snapshot,quality_person_daily_metrics(technician_name,technician_key,day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at),technician_monthly(id,user_id,technician_name,att,notes5,notes4,notes3,notes2,notes1,total_eval,avg_rating,eval_pct,evaluation_excluded_att,status,goals_hit,points,rank,discount,point_bonus,goal_att,goal_eval,technician_finance_monthly(id,manual_bonus,sales_commission,vacation,exclude_from_group_count,calculated),daily_metrics(day,att,notes5,notes4,notes3,notes2,notes1,off),quality_daily_metrics(day,quality_type,notes5,notes4,notes3,notes2,notes1,source_file,imported_at))';

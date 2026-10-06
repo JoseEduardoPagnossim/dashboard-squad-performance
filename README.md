@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.2`<br>
+**Versão atual:** `2.48.3`<br>
 
 
 
@@ -17,6 +17,13 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.3 — Tipografia e consistência de configuração
+
+A Aparência passa a permitir três fontes do sistema (Inter, Roboto e Source Sans 3), persistidas no próprio tema. O Design System também padroniza controles que ainda dependiam do visual nativo do navegador. O editor de tema agora trabalha em rascunho, com preview, **Salvar tema** e **Cancelar**, evitando persistência enquanto o administrador ainda está experimentando as opções.
+
+A migration `MIGRACAO_V2.48.3.sql` apenas atualiza a RPC pública de identidade visual para incluir `fontFamily`; não cria ou altera tabelas.
 
 
 ## V2.48.2 — Tema persistente antes do login e carregamento sem flicker
