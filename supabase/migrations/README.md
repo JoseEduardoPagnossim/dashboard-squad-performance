@@ -102,3 +102,8 @@ Depois da migration, republique as Edge Functions `create-user` e `manage-user`,
 ## V2.46.0 — Central de Alertas
 
 `MIGRACAO_V2.46.0.sql` cria `internal_notifications` e `internal_notification_reads`. As policies mantêm o isolamento por organização, restringem publicação/encerramento a Administradores e permitem que cada usuário registre somente a própria leitura. Técnicos recebem apenas comunicados destinados a todos, técnicos ou ao próprio Squad.
+
+
+## V2.48.2 — Identidade visual pública do boot/login
+
+`MIGRACAO_V2.48.2.sql` cria a RPC `get_public_theme_bootstrap(text)`. Ela permite que a tela de entrada recupere somente a identidade visual antes da autenticação, sem conceder `SELECT` anônimo nas tabelas do sistema. Após o login, o frontend continua carregando o tema autenticado exato do Squad.

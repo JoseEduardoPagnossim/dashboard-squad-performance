@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.1`<br>
+**Versão atual:** `2.48.2`<br>
 
 
 
@@ -17,6 +17,22 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.2 — Tema persistente antes do login e carregamento sem flicker
+
+Patch corretivo que elimina a dependência exclusiva do cache do navegador para a identidade visual pública e impede a troca temporária para **Brasil em Campo** durante o carregamento.
+
+- quando existe cache local válido, ele continua sendo usado para acelerar o primeiro paint;
+- sem cache, a tela de boot usa identidade neutra da Soften em vez do tema futebol;
+- uma RPC pública e sanitizada recupera do Supabase somente a identidade visual antes do login;
+- o tema exato do Squad autenticado é aguardado antes de liberar a Home;
+- remove imagens de futebol hardcoded do HTML inicial e do `--hero-img` padrão;
+- mantém RLS das tabelas: nenhuma tabela de tema passa a aceitar `SELECT` anônimo;
+- **exige `MIGRACAO_V2.48.2.sql`**;
+- suíte automatizada validada com **187/187 testes aprovados**.
+
+Detalhes: `docs/TEMA_BOOTSTRAP_V2.48.2.md`.
 
 ## V2.48.1 — Sidebar responsiva em zoom e viewport reduzida
 

@@ -44,7 +44,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.48.1';
+  const APP_VERSION = '2.48.2';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -52,6 +52,8 @@
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
+  const BOOT_FALLBACK_THEME = {name:'Soften Performance Hub',campaignTitle:'Performance Hub',campaignTagline:'Gestão de desempenho',preset:'bootstrap',soundtrack:null,soundtrackName:'',soundtrackVolume:.18,favicon:'assets/soften-logo-sidebar.png',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#20b7f5',secondary:'#176bd3'},light:{...DEFAULT_LIGHT_COLORS,accent:'#0284c7',secondary:'#2563eb'}},background:null,opacity:.06};
+  const PUBLIC_THEME_ORG_SLUG = String(window.APP_CONFIG?.publicOrganizationSlug||'soften-sistemas').trim()||'soften-sistemas';
   const DEMO_USERS = Array.isArray(window.SOFTEN_DEMO_USERS) ? [...window.SOFTEN_DEMO_USERS] : [];
 
   function loadDemoCreatedUsers(){
@@ -691,7 +693,7 @@
     return shared&&!isLegacyVermithorTheme(shared)&&sanitizeThemeBackground(shared.background)?normalizeThemePayload(shared):t;
   }
   function loadThemeForSquad(code){const t=allThemes()[code];return resolveLegacyTheme(t||DEFAULT_THEME)}
-  function loadLastTheme(){
+  function loadCachedTheme(){
     try{
       const direct=JSON.parse(localStorage.getItem(LAST_THEME_KEY)||'null');
       if(direct)return normalizeThemePayload(direct);
@@ -699,9 +701,10 @@
       if(lastCode&&themes[lastCode])return normalizeThemePayload(themes[lastCode]);
       if(themes.D)return normalizeThemePayload(themes.D);
       const first=Object.values(themes).find(Boolean);
-      return first?normalizeThemePayload(first):clone(DEFAULT_THEME);
-    }catch(e){return clone(DEFAULT_THEME)}
+      return first?normalizeThemePayload(first):null;
+    }catch(e){return null}
   }
+  function loadLastTheme(){return loadCachedTheme()||clone(DEFAULT_THEME)}
   function rememberLastTheme(theme){try{const normalized=normalizeThemePayload(theme||DEFAULT_THEME);if(isLegacyVermithorTheme(normalized))return;localStorage.setItem(LAST_THEME_KEY,JSON.stringify(normalized))}catch(err){console.warn('Não foi possível guardar o último tema para as telas públicas.',err)}}
   function rememberLastSquad(code){if(!code||code==='all')return;try{localStorage.setItem(LAST_SQUAD_KEY,String(code))}catch(e){}}
   let themePersistTimer=null;
@@ -719,11 +722,26 @@
     const el=$('#bootScreen');if(!el)return;el.classList.remove('hidden');if($('#bootMessage'))$('#bootMessage').textContent=message;
   }
   function hideBoot(){const el=$('#bootScreen');if(el)el.classList.add('hidden')}
+  async function hydratePublicThemeBootstrap(){
+    if(!state.supabase||!PUBLIC_THEME_ORG_SLUG)return null;
+    try{
+      if($('#bootMessage'))$('#bootMessage').textContent='Carregando identidade visual...';
+      const {data,error}=await state.supabase.rpc('get_public_theme_bootstrap',{p_org_slug:PUBLIC_THEME_ORG_SLUG});
+      if(error)throw error;
+      if(!data||typeof data!=='object'||Array.isArray(data)||!Object.keys(data).length)return null;
+      const theme=normalizeThemePayload(data);applyTheme(theme);return theme;
+    }catch(err){
+      const msg=String(err?.message||err||'');
+      if(!/get_public_theme_bootstrap|function .* does not exist|schema cache/i.test(msg))console.warn('Tema público de entrada indisponível.',err);
+      return null;
+    }
+  }
 
   async function boot(){
     state.performanceTracker=createPerformanceTracker('boot');
     applyColorMode(state.colorMode,{persist:false,reapplyTheme:false});
-    applyTheme(loadLastTheme());
+    const cachedBootTheme=loadCachedTheme();
+    applyTheme(cachedBootTheme||BOOT_FALLBACK_THEME,{remember:!!cachedBootTheme});
     bindSystemColorMode();
     showBoot();
     try{observePerformanceLongTasks();}catch(e){}
@@ -735,8 +753,9 @@
         await initSupabase();performanceMark('supabase_library');
         if($('#bootMessage'))$('#bootMessage').textContent='Validando sua sessão...';
         const {data}=await state.supabase.auth.getSession();performanceMark('session_checked');
-        if(state.recoveryMode){showLogin('Link de recuperação validado. Defina sua nova senha.');openModal('recoveryModal');return;}
+        if(state.recoveryMode){if(!cachedBootTheme)await hydratePublicThemeBootstrap();showLogin('Link de recuperação validado. Defina sua nova senha.');openModal('recoveryModal');return;}
         if(data?.session) return await enterSupabaseSession(data.session.user,{allowCache:true});
+        if(!cachedBootTheme)await hydratePublicThemeBootstrap();
         showLogin();
       }
       catch(err){console.error(err); showLogin('Não foi possível conectar ao Supabase. Confira js/config.js.');}
@@ -1044,9 +1063,10 @@
       state.currentView='home';
     }
     if(state.squadCode==='all'){
-      state.currentId=null;state.techName='';state.theme=loadLastTheme();applyTheme(state.theme);
+      state.currentId=null;state.techName='';state.theme=loadCachedTheme()||state.theme||BOOT_FALLBACK_THEME;applyTheme(state.theme);
     }else{
       rememberLastSquad(state.squadCode);chooseLatestMonth();chooseDefaultTech();
+      if(state.supabase){try{await ensureSquadTheme(state.squadCode,{force:false,apply:false})}catch(err){console.warn('Tema do Squad indisponível durante a entrada; usando cache local.',err)}}
       state.theme=resolveLegacyTheme(state.squads[state.squadCode]?.theme||loadThemeForSquad(state.squadCode));applyTheme(state.theme);
     }
     if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
@@ -4051,12 +4071,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#houseMottoTitle'))$('#houseMottoTitle').textContent=title.toUpperCase();
     if($('#houseMottoText'))$('#houseMottoText').textContent=tagline;
   }
-  function applyTheme(t){
+  function applyTheme(t,{remember=true}={}){
     state.theme=normalizeThemePayload(t||DEFAULT_THEME);applyThemePalette(state.theme);applyChartPreferences(state.theme.chartPreferences||DEFAULT_CHART_PREFERENCES);const r=document.documentElement.style;
     if(state.theme.opacity!=null)r.setProperty('--hero-opacity',state.theme.opacity);const safeBg=sanitizeThemeBackground(state.theme.background),bg=safeBg?`url("${safeBg}")`:state.theme.preset==='vermithor'?"url('assets/vermithor.png')":'none';r.setProperty('--hero-img',bg);
     const fallbackTitle=state.theme.preset==='vermithor'?'Casa do Dragão':(state.theme.name||`Squad ${state.squadCode}`),fallbackTagline=state.theme.preset==='vermithor'?'Unifique os squads, mantenha o fogo das metas e avance o reino dos resultados.':'Acompanhe, evolua e conquiste.';
     applyCampaignIdentity(state.theme,safeBg,fallbackTitle,fallbackTagline);
-    rememberLastTheme(state.theme);
+    if(remember)rememberLastTheme(state.theme);
     if($('#campaignNameInput'))$('#campaignNameInput').value=state.theme.campaignTitle||fallbackTitle;if($('#campaignTaglineInput'))$('#campaignTaglineInput').value=state.theme.campaignTagline||fallbackTagline;applyFavicon(state.theme.favicon);if($('#soundtrackNameInput'))$('#soundtrackNameInput').value=state.theme.soundtrackName||'';if($('#soundtrackDefaultVolume'))$('#soundtrackDefaultVolume').value=Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100);if($('#soundtrackDefaultVolumeLabel'))$('#soundtrackDefaultVolumeLabel').textContent=`${Math.round(clamp(Number(state.theme.soundtrackVolume??.24),0,1)*100)}%`;applySoundtrack(state.theme);updateThemeName()
   }
   function updateThemeName(){if($('#themeName'))$('#themeName').textContent=state.theme?.name||state.theme?.campaignTitle||'Personalizado';syncColorModeUi()}

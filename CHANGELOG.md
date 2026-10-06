@@ -1,3 +1,14 @@
+## V2.48.2 — Tema persistente no boot/login e carregamento sem flicker
+
+- Remove o fallback visual imediato para **Brasil em Campo** quando o navegador está sem cache local.
+- Adiciona identidade neutra da Soften enquanto o tema persistido ainda está sendo resolvido.
+- Adiciona RPC pública sanitizada `get_public_theme_bootstrap` para recuperar somente identidade visual antes do login.
+- Mantém `squad_themes` protegido por RLS e sem `SELECT` anônimo direto.
+- Aguarda o tema exato do Squad antes de liberar a interface autenticada.
+- Remove imagens de futebol hardcoded do boot, boas-vindas de áudio e campanha inicial.
+- Exige `MIGRACAO_V2.48.2.sql`.
+- Suíte automatizada: **187/187 testes aprovados**.
+
 ## V2.48.1 — Sidebar responsiva em zoom e viewport reduzida
 
 - Corrige desaparecimento progressivo da campanha, player e versão em 100% de zoom/viewport baixa.

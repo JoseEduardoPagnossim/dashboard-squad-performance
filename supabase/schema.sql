@@ -210,6 +210,49 @@ grant execute on function public.is_super_admin() to authenticated;
 grant execute on function public.can_read_squad(uuid) to authenticated;
 grant execute on function public.can_admin_squad(uuid) to authenticated;
 
+-- V2.48.2 - identidade visual publica do boot/login.
+create or replace function public.get_public_theme_bootstrap(
+  p_org_slug text default 'soften-sistemas'
+)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_strip_nulls(
+    jsonb_build_object(
+      'name', st.theme -> 'name',
+      'campaignTitle', st.theme -> 'campaignTitle',
+      'campaignTagline', st.theme -> 'campaignTagline',
+      'preset', st.theme -> 'preset',
+      'colors', st.theme -> 'colors',
+      'accent', st.theme -> 'accent',
+      'secondary', st.theme -> 'secondary',
+      'bg', st.theme -> 'bg',
+      'bg2', st.theme -> 'bg2',
+      'panel', st.theme -> 'panel',
+      'panel2', st.theme -> 'panel2',
+      'text', st.theme -> 'text',
+      'muted', st.theme -> 'muted',
+      'border', st.theme -> 'border',
+      'background', st.theme -> 'background',
+      'favicon', st.theme -> 'favicon',
+      'opacity', st.theme -> 'opacity'
+    )
+  )
+  from public.squad_themes st
+  join public.squads s on s.id = st.squad_id
+  join public.organizations o on o.id = s.organization_id
+  where o.slug = p_org_slug
+    and s.active = true
+  order by st.updated_at desc, s.code asc
+  limit 1;
+$$;
+
+revoke all on function public.get_public_theme_bootstrap(text) from public;
+grant execute on function public.get_public_theme_bootstrap(text) to anon, authenticated;
+
 -- RLS
 alter table public.organizations enable row level security;
 alter table public.squads enable row level security;

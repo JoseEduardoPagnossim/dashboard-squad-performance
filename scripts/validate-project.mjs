@@ -83,6 +83,7 @@ for (const required of [
   'tests/performance-engine.test.js',
   'tests/navigation-engine.test.js',
   'tests/workspace-engine.test.js',
+  'tests/theme-bootstrap.test.js',
   'tests/design-system.test.js',
   'js/chart-engine.js',
   'js/import-engine.js',
@@ -118,6 +119,7 @@ for (const required of [
   'docs/NAVEGACAO_GLOBAL_V2.47.0.md',
   'docs/VISOES_FAVORITOS_V2.48.0.md',
   'docs/SIDEBAR_RESPONSIVA_V2.48.1.md',
+  'docs/TEMA_BOOTSTRAP_V2.48.2.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -128,7 +130,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.43.0.sql',
   'supabase/migrations/MIGRACAO_V2.43.1.sql',
   'supabase/migrations/MIGRACAO_V2.43.2.sql',
-  'supabase/migrations/MIGRACAO_V2.46.0.sql'
+  'supabase/migrations/MIGRACAO_V2.46.0.sql',
+  'supabase/migrations/MIGRACAO_V2.48.2.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }
