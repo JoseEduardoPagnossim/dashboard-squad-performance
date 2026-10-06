@@ -1,3 +1,25 @@
+## V2.48.1 — Sidebar responsiva em zoom e viewport reduzida
+
+- Corrige desaparecimento progressivo da campanha, player e versão em 100% de zoom/viewport baixa.
+- Transforma `sidebar-nav` na única área rolável da sidebar desktop.
+- Preserva cabeçalho, campanha e rodapé fora do scroll da navegação.
+- Mantém a campanha visível e compacta abaixo de 900 px e 760 px de altura.
+- Respeita `100dvh` e evita overflow horizontal.
+- Não exige migration de banco.
+
+## V2.48.0 — Visões salvas, filtros persistentes e favoritos
+
+- Adiciona estrela de favorito e painel pessoal de **Visões** no cabeçalho.
+- Permite salvar a visão atual com nome, rota e filtros aplicáveis.
+- Permite abrir, renomear, excluir e favoritar visões salvas.
+- Integra favoritos e visões salvas à busca global `Ctrl+K`.
+- Lembra Squad, competência, técnico e período por contexto de tela.
+- URLs explícitas e visões salvas têm prioridade sobre filtros lembrados.
+- Reutiliza `profiles.ui_preferences`/`save_my_ui_preferences`; não cria tabela nova.
+- Inclui `js/workspace-engine.js` e testes dedicados.
+- Sem migration de banco.
+- Suíte automatizada: **180/180 testes aprovados**.
+
 ## V2.47.1 — Correção da importação Produto/Empresa com DataAvaliacao
 
 - Corrige a Central de Importação de qualidade, que ainda exigia literalmente a coluna `Time`.

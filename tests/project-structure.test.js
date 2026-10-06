@@ -13,6 +13,8 @@ const settingsEngine = readFileSync(join(root, 'js', 'settings-engine.js'), 'utf
 const financeAdvancedEngine = readFileSync(join(root, 'js', 'finance-advanced.js'), 'utf8');
 const tvEngine = readFileSync(join(root, 'js', 'tv-engine.js'), 'utf8');
 const navigationEngine = readFileSync(join(root, 'js', 'navigation-engine.js'), 'utf8');
+const workspaceEngine = readFileSync(join(root, 'js', 'workspace-engine.js'), 'utf8');
+const styles = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 
 test('chart-engine carrega antes do app principal', () => {
   const enginePos = index.indexOf('js/chart-engine.js');
@@ -406,6 +408,55 @@ test('V2.47 não conflita rota normal com modo TV da Apresentação', () => {
 test('V2.47 é frontend-only e não exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.47.0.sql')), false);
-  assert.ok(index.includes('V2.47.1'));
+  assert.ok(index.includes('V2.48.1'));
 });
 
+
+
+test('V2.48 carrega workspace-engine entre navegação e app principal', () => {
+  const navigationPos=index.indexOf('js/navigation-engine.js');
+  const workspacePos=index.indexOf('js/workspace-engine.js');
+  const appPos=index.indexOf('js/app.js');
+  assert.ok(workspacePos>=0,'workspace-engine.js deve estar no index.html');
+  assert.ok(workspacePos>navigationPos,'workspace-engine.js deve carregar depois do motor de navegação');
+  assert.ok(appPos>workspacePos,'workspace-engine.js deve carregar antes de app.js');
+  assert.match(app,/window\.SoftenWorkspaceEngine/);
+  for(const marker of ['normalizeWorkspace','mergeRememberedFilters','createSavedView','toggleFavorite']) assert.ok(workspaceEngine.includes(marker),`workspace-engine.js deve conter ${marker}`);
+});
+
+test('V2.48 possui atalhos de favoritos, visões salvas e modal de captura', () => {
+  for(const id of ['workspaceShell','currentFavoriteBtn','workspaceMenuBtn','workspacePopover','savedViewModal','savedViewForm','savedViewNameInput']) assert.ok(index.includes(`id="${id}"`),`index.html deve conter ${id}`);
+  assert.match(app,/toggleCurrentFavorite/);
+  assert.match(app,/openSavedViewModal/);
+  assert.match(app,/workspaceDynamicCommands/);
+});
+
+test('V2.48 lembra filtros por contexto e mantém URL explícita prioritária', () => {
+  assert.match(app,/rememberCurrentWorkspaceFilters/);
+  assert.match(app,/rememberedRoute/);
+  assert.match(app,/workspaceExact/);
+  assert.match(workspaceEngine,/mergeRememberedFilters/);
+  assert.match(workspaceEngine,/routeContextKey/);
+});
+
+test('V2.48 reutiliza ui_preferences e não exige migration nova', () => {
+  const { existsSync } = require('node:fs');
+  assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.0.sql')),false);
+  assert.match(app,/save_my_ui_preferences/);
+  assert.ok(index.includes('V2.48.1'));
+});
+
+
+test('V2.48.1 preserva rodape e campanha com scroll apenas na navegacao lateral', () => {
+  assert.match(styles, /V2\.48\.1 - SIDEBAR RESPONSIVA/);
+  assert.match(styles, /\.sidebar-nav\{[\s\S]*?flex:1 1 auto!important;[\s\S]*?min-height:0!important;[\s\S]*?overflow-y:auto!important;/);
+  assert.match(styles, /height:100dvh!important;/);
+  assert.match(styles, /@media\(min-width:981px\) and \(max-height:900px\)[\s\S]*?\.campaign-visual\{display:block!important;/);
+  assert.match(styles, /@media\(min-width:981px\) and \(max-height:760px\)[\s\S]*?\.sidebar-footer\{display:block!important;/);
+});
+
+test('V2.48.1 e frontend-only e nao exige migration nova', () => {
+  const { existsSync } = require('node:fs');
+  assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.1.sql')),false);
+  assert.ok(index.includes('V2.48.1'));
+});

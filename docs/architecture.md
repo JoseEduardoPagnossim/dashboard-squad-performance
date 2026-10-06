@@ -170,3 +170,24 @@ O importador financeiro mantém validação semântica das quatro dimensões obr
 A camada de alertas possui um motor puro em `js/alert-engine.js`. Ele normaliza notificações internas, aplica público/validade, combina sinais automáticos com comunicados persistentes, ordena por leitura/prioridade e filtra a caixa do usuário. O `app.js` permanece responsável por derivar sinais a partir do estado operacional, sincronizar Supabase/localStorage e navegar para a ação relacionada.
 
 Notificações internas ficam em `internal_notifications`; leituras individuais em `internal_notification_reads`. Alertas automáticos continuam derivados dos dados existentes e guardam apenas o estado de leitura local, evitando duplicar indicadores no banco.
+
+
+## V2.47.0 — Navegação persistente
+
+`js/navigation-engine.js` centraliza a rota normal do aplicativo, serializando página, seção, módulo, Squad, competência, técnico e período em query parameters seguros. O `app.js` mantém a URL sincronizada com `pushState`/`replaceState` e restaura o estado com `popstate`, sem conflitar com a rota legada `view=presentation` usada pela TV.
+
+
+## V2.48.0 — Workspace pessoal: visões, filtros e favoritos
+
+`js/workspace-engine.js` é uma camada pura sobre a navegação da V2.47. Ela normaliza snapshots de rota, cria assinaturas estáveis, separa memória de filtros por contexto funcional e aplica limites defensivos às coleções pessoais.
+
+O estado é persistido dentro de `profiles.ui_preferences.workspace`, reutilizando a coluna JSON e a RPC `save_my_ui_preferences` criadas na V2.38.0. Não existe tabela adicional nem migration nova. A mesma estrutura possui fallback em `localStorage`, mantendo o comportamento já usado por layout e navegação.
+
+A precedência é intencional: **rota explícita/visão salva → filtros lembrados → contexto padrão da sessão**. Assim, links compartilhados e Voltar/Avançar continuam determinísticos, enquanto a navegação comum recupera a última combinação pessoal de filtros para cada tela/subseção.
+
+Favoritos e visões salvas são convertidos em comandos dinâmicos e entram na mesma busca `Ctrl+K`, passando novamente pela checagem de permissões antes de serem exibidos ou abertos.
+
+
+## V2.48.1 — Sidebar com áreas flexíveis por altura
+
+A sidebar desktop passa a ser um flex container restrito a `100dvh`. O cabeçalho, a campanha, o player e a versão são elementos não encolhíveis; `sidebar-nav` recebe `flex: 1`, `min-height: 0` e `overflow-y: auto`. Em alturas menores, a campanha é compactada por media query em vez de ser removida.

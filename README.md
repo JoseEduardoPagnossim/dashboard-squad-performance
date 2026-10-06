@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.47.1`<br>
+**Versão atual:** `2.48.1`<br>
 
 
 
@@ -16,6 +16,41 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.1 — Sidebar responsiva em zoom e viewport reduzida
+
+Patch corretivo da V2.48 que impede a barra lateral de esconder a arte da campanha, player e versão quando o navegador está em 100% de zoom ou a altura útil da janela é menor. O cabeçalho e o rodapé ficam preservados e somente a lista de navegação assume rolagem interna.
+
+- menu lateral passa a respeitar `100dvh`;
+- a navegação recebe `min-height: 0` e scroll vertical próprio;
+- campanha deixa de ser ocultada em desktop por regras antigas de `max-height`;
+- a arte fica progressivamente mais compacta em alturas abaixo de 900 px e 760 px;
+- versão permanece visível;
+- sidebar recolhida e comportamento mobile continuam preservados;
+- não exige migration de banco.
+
+Detalhes: `docs/SIDEBAR_RESPONSIVA_V2.48.1.md`.
+
+## V2.48.0 — Visões salvas, filtros persistentes e favoritos
+
+A V2.48 transforma a navegação persistente da V2.47 em um espaço pessoal de trabalho por usuário.
+
+Principais entregas:
+
+- estrela no topo para favoritar a visão atual com todos os filtros relevantes;
+- painel **Visões** com favoritos, visões salvas e controle de filtros persistentes;
+- salvamento nomeado da tela atual incluindo seção, Squad, competência, técnico e período;
+- abrir, renomear, excluir e favoritar visões salvas;
+- favoritos e visões salvas também aparecem na busca global `Ctrl+K`;
+- memória automática de Squad, mês, técnico e período por contexto de tela;
+- filtros explícitos da URL ou de uma visão salva têm prioridade sobre a memória automática;
+- persistência reutiliza `profiles.ui_preferences` e a RPC `save_my_ui_preferences`, com fallback local;
+- limites defensivos de 30 visões salvas, 20 favoritos e 40 contextos de filtros;
+- não exige migration nova;
+- suíte automatizada validada com **180/180 testes aprovados**.
+
+Detalhes: `docs/VISOES_FAVORITOS_V2.48.0.md`.
 
 ## V2.47.1 — Correção da importação de notas Produto/Empresa
 

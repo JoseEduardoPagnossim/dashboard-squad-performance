@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.47.1" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.47.1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.47.1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.48.1" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.48.1" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.48.1" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -71,7 +71,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.47.1 • Importação de qualidade</small>
+        <small class="login-version">V2.48.1 • Sidebar responsiva</small>
       </section>
     </div>
   </section>
@@ -161,7 +161,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.47.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.48.1 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -216,6 +216,11 @@
           <button class="global-search-trigger" id="globalSearchTrigger" type="button" aria-label="Abrir busca global" title="Busca global (Ctrl+K)">
             <span class="global-search-trigger-icon" aria-hidden="true">⌕</span><span class="global-search-trigger-label">Buscar</span><kbd>Ctrl K</kbd>
           </button>
+          <div class="workspace-shell" id="workspaceShell">
+            <button class="workspace-favorite-btn" id="currentFavoriteBtn" type="button" aria-label="Favoritar visão atual" aria-pressed="false" title="Favoritar visão atual"><span data-favorite-icon aria-hidden="true">☆</span></button>
+            <button class="workspace-menu-btn" id="workspaceMenuBtn" type="button" aria-label="Abrir visões salvas e favoritos" aria-expanded="false" aria-controls="workspacePopover" title="Visões salvas e favoritos"><span aria-hidden="true">▣</span><span class="workspace-menu-label">Visões</span><b class="workspace-count hidden" id="workspaceSavedCount">0</b></button>
+            <div class="workspace-popover hidden" id="workspacePopover" role="dialog" aria-label="Visões salvas e favoritos"></div>
+          </div>
           <div class="notification-shell" id="notificationShell" data-permission="notifications.view">
             <button class="notification-bell" id="notificationBellBtn" type="button" aria-label="Abrir notificações" aria-expanded="false" aria-controls="notificationPopover" title="Notificações">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
@@ -1146,7 +1151,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.47.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.48.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1181,6 +1186,11 @@
         <article class="card help-navigation-v242 help-searchable" data-help-search="busca global ctrl k command palette breadcrumb url persistente link navegador voltar avançar navegação">
           <div><span class="eyebrow">NAVEGAÇÃO GLOBAL • V2.47</span><h3>Encontre qualquer área sem procurar no menu</h3><p>Pressione <b>Ctrl+K</b> (ou Cmd+K no macOS) para pesquisar telas, Indicadores, Configurações, Squads e técnicos disponíveis no seu acesso. O breadcrumb mostra onde você está e a URL acompanha a navegação.</p></div>
           <div class="help-navigation-points"><span><b>Busca global</b><small>Digite o nome da tela, recurso, Squad ou técnico e pressione Enter.</small></span><span><b>Breadcrumbs</b><small>Visualize a hierarquia atual e volte para níveis navegáveis com um clique.</small></span><span><b>URLs persistentes</b><small>Atualizar a página, usar Voltar/Avançar ou copiar o link preserva a rota e os principais filtros.</small></span></div>
+        </article>
+
+        <article class="card help-navigation-v242 help-searchable" data-help-search="visão salva favorito estrela filtros persistentes lembrar squad mês técnico período atalhos pessoais">
+          <div><span class="eyebrow">ATALHOS PESSOAIS • V2.48</span><h3>Retome análises recorrentes sem refazer filtros</h3><p>Use a <b>estrela</b> para favoritar a combinação atual ou abra <b>Visões</b> para salvar um atalho com nome. O sistema também pode lembrar automaticamente os filtros usados em cada contexto.</p></div>
+          <div class="help-navigation-points"><span><b>Visões salvas</b><small>Guarde tela, Squad, mês, técnico e período e abra tudo novamente com um clique.</small></span><span><b>Favoritos</b><small>Atalhos rápidos aparecem no painel Visões e também no Ctrl+K.</small></span><span><b>Filtros persistentes</b><small>A memória é separada por tela e pode ser desligada ou limpa quando quiser.</small></span></div>
         </article>
 
         <div class="how-primary-grid how-primary-grid-four">
@@ -1496,6 +1506,21 @@
     </div>
   </div>
 
+  <div id="savedViewModal" class="modal" aria-hidden="true" data-static-backdrop="true">
+    <div class="modal-card saved-view-modal">
+      <button class="modal-close" data-close="savedViewModal">×</button>
+      <span class="eyebrow">VISÕES SALVAS</span>
+      <h2 id="savedViewModalTitle">Salvar visão atual</h2>
+      <p id="savedViewModalText">A tela e os filtros atuais serão guardados no seu perfil.</p>
+      <div class="saved-view-context" id="savedViewContext">Visão atual</div>
+      <form id="savedViewForm" class="saved-view-form">
+        <label><span>Nome da visão</span><input id="savedViewNameInput" type="text" maxlength="72" autocomplete="off" required placeholder="Ex.: Qualidade · Squad D · Setembro"></label>
+        <label class="saved-view-favorite-option"><input id="savedViewFavoriteInput" type="checkbox"><span><strong>Adicionar aos favoritos</strong><small>Também deixar disponível como atalho rápido.</small></span></label>
+        <div class="modal-actions"><button class="btn secondary" type="button" data-close="savedViewModal">Cancelar</button><button class="btn primary" type="submit">Salvar visão</button></div>
+      </form>
+    </div>
+  </div>
+
   <section class="global-search-overlay hidden" id="globalSearchPalette" aria-hidden="true">
     <button class="global-search-backdrop" id="globalSearchBackdrop" type="button" aria-label="Fechar busca global"></button>
     <div class="global-search-dialog" role="dialog" aria-modal="true" aria-labelledby="globalSearchTitle">
@@ -1518,18 +1543,19 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/finance-rules.js?v=2.47.1"></script>
-  <script src="js/finance-advanced.js?v=2.47.1"></script>
-  <script src="js/tv-engine.js?v=2.47.1"></script>
-  <script src="js/presentation.js?v=2.47.1"></script>
-  <script src="js/chart-engine.js?v=2.47.1"></script>
-  <script src="js/import-engine.js?v=2.47.1"></script>
-  <script src="js/predictive-engine.js?v=2.47.1"></script>
-  <script src="js/alert-engine.js?v=2.47.1"></script>
-  <script src="js/settings-engine.js?v=2.47.1"></script>
-  <script src="js/performance-engine.js?v=2.47.1"></script>
-  <script src="js/navigation-engine.js?v=2.47.1"></script>
-  <script src="js/design-system.js?v=2.47.1"></script>
-  <script src="js/app.js?v=2.47.1"></script>
+  <script src="js/finance-rules.js?v=2.48.1"></script>
+  <script src="js/finance-advanced.js?v=2.48.1"></script>
+  <script src="js/tv-engine.js?v=2.48.1"></script>
+  <script src="js/presentation.js?v=2.48.1"></script>
+  <script src="js/chart-engine.js?v=2.48.1"></script>
+  <script src="js/import-engine.js?v=2.48.1"></script>
+  <script src="js/predictive-engine.js?v=2.48.1"></script>
+  <script src="js/alert-engine.js?v=2.48.1"></script>
+  <script src="js/settings-engine.js?v=2.48.1"></script>
+  <script src="js/performance-engine.js?v=2.48.1"></script>
+  <script src="js/navigation-engine.js?v=2.48.1"></script>
+  <script src="js/workspace-engine.js?v=2.48.1"></script>
+  <script src="js/design-system.js?v=2.48.1"></script>
+  <script src="js/app.js?v=2.48.1"></script>
 </body>
 </html>

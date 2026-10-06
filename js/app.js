@@ -32,7 +32,11 @@
   const navigationEngine = window.SoftenNavigationEngine;
   if(!navigationEngine) throw new Error('SoftenNavigationEngine não carregado. Verifique js/navigation-engine.js.');
   const {routeFromLocation:readNavigationRoute,routeUrl:buildNavigationUrl,searchCommands:searchNavigationCommands,normalizeText:normalizeNavigationText}=navigationEngine;
-  const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,setBlockSize:setUiBlockSize,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups,normalizeRole:normalizeAccessRole}=settingsEngine;
+  const workspaceEngine = window.SoftenWorkspaceEngine;
+  if(!workspaceEngine) throw new Error('SoftenWorkspaceEngine não carregado. Verifique js/workspace-engine.js.');
+  const {normalizeWorkspace,routeSignature:workspaceRouteSignature,mergeRememberedFilters:mergeWorkspaceRememberedFilters,rememberFilters:rememberWorkspaceFilters,createSavedView:createWorkspaceSavedView,renameSavedView:renameWorkspaceSavedView,deleteSavedView:deleteWorkspaceSavedView,favoriteForRoute:workspaceFavoriteForRoute,toggleFavorite:toggleWorkspaceFavorite,setPersistentFilters:setWorkspacePersistentFilters,clearFilterMemory:clearWorkspaceFilterMemory}=workspaceEngine;
+  const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeBaseUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,setBlockSize:setUiBlockSize,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups,normalizeRole:normalizeAccessRole}=settingsEngine;
+  function normalizeUiPreferences(preferences){const base=normalizeBaseUiPreferences(preferences);return{...base,version:4,workspace:normalizeWorkspace(preferences?.workspace)}}
 
   const DEFAULT_FAVICON = 'assets/favicon-brasil.png';
   const DEFAULT_SOUNDTRACK = 'assets/casa-do-dragao-ambient.mp3';
@@ -40,7 +44,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.47.1';
+  const APP_VERSION = '2.48.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -101,6 +105,8 @@
     globalSearchOpen:false,
     globalSearchIndex:0,
     globalSearchResults:[],
+    workspacePopoverOpen:false,
+    savedViewEditingId:null,
     recoveryMode:false,
     pendingCsv:null,
     importHistory:[],
@@ -235,7 +241,7 @@
     return true;
   }
   function globalNavigationCommands(){
-    const commands=GLOBAL_NAV_COMMANDS.filter(commandAllowed).map(x=>({...x}));
+    const commands=[...workspaceDynamicCommands(),...GLOBAL_NAV_COMMANDS].filter(commandAllowed).map(x=>({...x}));
     if(isSuperAdmin())Object.values(state.squads||{}).sort((a,b)=>a.code.localeCompare(b.code)).forEach(s=>commands.push({id:`squad-${s.code}`,label:`Squad ${s.code}`,description:`Abrir a visão consolidada de ${s.name||`Squad ${s.code}`}`,group:'Squads',icon:s.code,view:'team',squad:s.code,keywords:`squad ${s.code} ${s.name||''} equipe`}));
     if(state.squadCode&&state.squadCode!=='all'){
       const names=new Map();for(const m of Object.values(currentMonths()||{}))for(const t of m?.technicians||[]){const key=normalizeNavigationText(t.name);if(key&&!names.has(key))names.set(key,t.name);}
@@ -263,15 +269,16 @@
   }
   function syncPersistentUrl({replace=false}={}){
     if(!state.user||state.routeApplying||PRESENTATION_ROUTE.enabled)return;
-    const next=buildNavigationUrl(window.location.href,currentPersistentRoute()),current=new URL(window.location.href);
-    if(next.pathname===current.pathname&&next.search===current.search&&next.hash===current.hash)return;
-    const method=replace?'replaceState':'pushState';window.history[method]({softenRoute:true},'',`${next.pathname}${next.search}${next.hash}`);
+    const route=currentPersistentRoute();rememberCurrentWorkspaceFilters();
+    const next=buildNavigationUrl(window.location.href,route),current=new URL(window.location.href);
+    if(next.pathname===current.pathname&&next.search===current.search&&next.hash===current.hash){syncWorkspaceToolbar();return;}
+    const method=replace?'replaceState':'pushState';window.history[method]({softenRoute:true},'',`${next.pathname}${next.search}${next.hash}`);syncWorkspaceToolbar();
   }
   function routeTechnicianName(value){const wanted=normalizeNavigationText(value);if(!wanted)return null;for(const m of Object.values(currentMonths()||{}))for(const t of m?.technicians||[])if(normalizeNavigationText(t.name)===wanted)return t.name;return null}
   async function restorePersistentRoute(route=readNavigationRoute(window.location),{canonicalize=true}={}){
     if(PRESENTATION_ROUTE.enabled||!state.user)return;state.routeApplying=true;
     try{
-      const target=routeAccessible(route)?route:{page:'home'};
+      const rawTarget=routeAccessible(route)?route:{page:'home'},target=rawTarget.page==='home'?rawTarget:rememberedRoute(rawTarget);
       if(isSuperAdmin()&&target.squad){const code=target.squad==='all'?'all':String(target.squad).toUpperCase();if((code==='all'||state.squads?.[code])&&code!==state.squadCode)await selectSquad(code,{history:'none'});}
       if(state.squadCode!=='all'&&target.month&&currentMonths()?.[target.month]){state.currentId=target.month;if(state.supabase&&!isPerformanceFullMonth(currentMonths()[target.month]))ensureMonthLoaded(state.squadCode,target.month,{silent:true}).catch(()=>{});chooseDefaultTech();}
       if(target.from||target.to){const range=clampAnalysisRange(target.from||state.analysisStartDate,target.to||state.analysisEndDate);if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();}}
@@ -306,18 +313,21 @@
   }
   function breadcrumbTargetAttrs(target){if(!target)return'';return Object.entries(target).map(([key,value])=>` data-breadcrumb-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}="${escapeHtml(value)}"`).join('')}
   function updateBreadcrumbs(){
-    const el=$('#appBreadcrumbs');if(!el)return;const items=currentBreadcrumbItems();el.innerHTML=items.map((item,index)=>{const last=index===items.length-1,icon=index===0?'<span class="breadcrumb-home-icon">⌂</span>':'';if(item.target&&!last)return`<span class="breadcrumb-item"><button class="breadcrumb-link" type="button"${breadcrumbTargetAttrs(item.target)}>${icon}${escapeHtml(item.label)}</button></span>`;return`<span class="breadcrumb-item"><span class="${last?'breadcrumb-current':'breadcrumb-label'}"${last?' aria-current="page"':''}>${icon}${escapeHtml(item.label)}</span></span>`}).join('');
+    const el=$('#appBreadcrumbs');if(el){const items=currentBreadcrumbItems();el.innerHTML=items.map((item,index)=>{const last=index===items.length-1,icon=index===0?'<span class="breadcrumb-home-icon">⌂</span>':'';if(item.target&&!last)return`<span class="breadcrumb-item"><button class="breadcrumb-link" type="button"${breadcrumbTargetAttrs(item.target)}>${icon}${escapeHtml(item.label)}</button></span>`;return`<span class="breadcrumb-item"><span class="${last?'breadcrumb-current':'breadcrumb-label'}"${last?' aria-current="page"':''}>${icon}${escapeHtml(item.label)}</span></span>`}).join('');}
+    syncWorkspaceToolbar();
   }
   async function executeNavigationTarget(target={}){
+    const requestedRoute=navigationRouteFromTarget(target),resolvedRoute=target.workspaceExact?workspaceEngine.copyRoute(requestedRoute):rememberedRoute(requestedRoute),resolved={...target,...navigationTargetFromRoute(resolvedRoute)};
     const previousApplying=state.routeApplying;state.routeApplying=true;
     try{
-      if(target.squad&&isSuperAdmin()&&target.squad!==state.squadCode)await selectSquad(target.squad,{history:'none'});
-      if(target.month&&state.squadCode!=='all'&&currentMonths()?.[target.month]){state.currentId=target.month;chooseDefaultTech();}
-      if(target.tech){const found=routeTechnicianName(target.tech);if(found)state.techName=found;}
-      if(target.indicatorSection&&INDICATOR_SECTION_META[target.indicatorSection])state.indicatorSection=target.indicatorSection;
-      if(target.settingsModule&&SETTINGS_MODULES[target.settingsModule]&&settingsModuleAllowed(target.settingsModule))state.settingsModule=target.settingsModule;
-      if(target.adminSection&&ADMIN_SECTION_META[target.adminSection])state.adminSection=target.adminSection;
-      refreshSelectors();showView(target.view||'home',target.view==='admin'?state.adminSection:null,{history:'none'});if(target.view==='settings')applySettingsModuleFilter({scroll:true});
+      if(resolved.squad&&isSuperAdmin()&&resolved.squad!==state.squadCode)await selectSquad(resolved.squad,{history:'none'});
+      if(resolved.month&&state.squadCode!=='all'&&currentMonths()?.[resolved.month]){state.currentId=resolved.month;chooseDefaultTech();}
+      if(resolved.from||resolved.to){const range=clampAnalysisRange(resolved.from||state.analysisStartDate,resolved.to||state.analysisEndDate);if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();}}
+      if(resolved.tech){const found=routeTechnicianName(resolved.tech);if(found)state.techName=found;}
+      if(resolved.indicatorSection&&INDICATOR_SECTION_META[resolved.indicatorSection])state.indicatorSection=resolved.indicatorSection;
+      if(resolved.settingsModule&&SETTINGS_MODULES[resolved.settingsModule]&&settingsModuleAllowed(resolved.settingsModule))state.settingsModule=resolved.settingsModule;
+      if(resolved.adminSection&&ADMIN_SECTION_META[resolved.adminSection])state.adminSection=resolved.adminSection;
+      refreshSelectors();showView(resolved.view||'home',resolved.view==='admin'?state.adminSection:null,{history:'none'});if(resolved.view==='settings')applySettingsModuleFilter({scroll:true});
     }finally{state.routeApplying=previousApplying;}
     updateBreadcrumbs();syncPersistentUrl({replace:false});
   }
@@ -328,7 +338,7 @@
     let lastGroup='';host.innerHTML=state.globalSearchResults.map((command,index)=>{const group=command.group||'Navegação',heading=group!==lastGroup?`<div class="global-search-group">${escapeHtml(group)}</div>`:'';lastGroup=group;return`${heading}<button class="global-search-result ${index===state.globalSearchIndex?'is-active':''}" type="button" role="option" aria-selected="${index===state.globalSearchIndex?'true':'false'}" data-global-command="${escapeHtml(command.id)}"><span class="global-search-result-icon">${escapeHtml(command.icon||'→')}</span><span class="global-search-result-copy"><strong>${escapeHtml(command.label)}</strong><small>${escapeHtml(command.description||'Abrir')}</small></span><span class="global-search-result-group">${escapeHtml(group)}</span></button>`}).join('');
     host.querySelector('.global-search-result.is-active')?.scrollIntoView({block:'nearest'});
   }
-  function openGlobalSearch(){if(!state.user||PRESENTATION_ROUTE.enabled)return;setNotificationPopover(false);state.globalSearchOpen=true;state.globalSearchIndex=0;const palette=$('#globalSearchPalette');palette?.classList.remove('hidden');palette?.setAttribute('aria-hidden','false');document.body.classList.add('command-palette-open');if($('#globalSearchInput'))$('#globalSearchInput').value='';renderGlobalSearch();setTimeout(()=>$('#globalSearchInput')?.focus(),0)}
+  function openGlobalSearch(){if(!state.user||PRESENTATION_ROUTE.enabled)return;setNotificationPopover(false);setWorkspacePopover(false);state.globalSearchOpen=true;state.globalSearchIndex=0;const palette=$('#globalSearchPalette');palette?.classList.remove('hidden');palette?.setAttribute('aria-hidden','false');document.body.classList.add('command-palette-open');if($('#globalSearchInput'))$('#globalSearchInput').value='';renderGlobalSearch();setTimeout(()=>$('#globalSearchInput')?.focus(),0)}
   function closeGlobalSearch(){state.globalSearchOpen=false;$('#globalSearchPalette')?.classList.add('hidden');$('#globalSearchPalette')?.setAttribute('aria-hidden','true');document.body.classList.remove('command-palette-open')}
   function moveGlobalSearch(delta){if(!state.globalSearchResults.length)return;state.globalSearchIndex=(state.globalSearchIndex+delta+state.globalSearchResults.length)%state.globalSearchResults.length;renderGlobalSearch()}
   async function activateGlobalSearch(id=null){const command=id?globalSearchResultById(id):state.globalSearchResults[state.globalSearchIndex];if(!command)return;closeGlobalSearch();await executeNavigationTarget(command)}
@@ -414,6 +424,79 @@
   function scheduleUiPreferencePersist(){
     saveLocalUiPreferences(state.uiPreferences);clearTimeout(uiPreferencePersistTimer);uiPreferencePersistTimer=setTimeout(()=>persistMyUiPreferences(),450);
   }
+
+  function workspacePreferences(){return normalizeWorkspace(state.uiPreferences?.workspace)}
+  function updateWorkspacePreferences(workspace,{persist=true,render=true}={}){
+    const next=normalizeWorkspace(workspace);state.uiPreferences=normalizeUiPreferences({...state.uiPreferences,workspace:next});
+    if(render)syncWorkspaceToolbar();if(persist)scheduleUiPreferencePersist();else saveLocalUiPreferences(state.uiPreferences);return next;
+  }
+  function navigationTargetFromRoute(route={}){
+    const r=workspaceEngine.copyRoute(route);return{view:r.page||'home',adminSection:r.section||null,settingsModule:r.module||null,indicatorSection:r.indicator||null,squad:r.squad||null,month:r.month||null,tech:r.tech||null,from:r.from||null,to:r.to||null};
+  }
+  function navigationRouteFromTarget(target={}){
+    return workspaceEngine.copyRoute({page:target.view||target.page||'home',section:target.adminSection||target.section||null,module:target.settingsModule||target.module||null,indicator:target.indicatorSection||target.indicator||null,squad:target.squad||null,month:target.month||null,tech:target.tech||null,from:target.from||null,to:target.to||null});
+  }
+  function rememberedRoute(route={}){const ws=workspacePreferences();return mergeWorkspaceRememberedFilters(route,ws.filterMemory,ws.persistentFilters)}
+  function rememberCurrentWorkspaceFilters(){
+    if(!state.user||state.routeApplying||PRESENTATION_ROUTE.enabled)return;const ws=workspacePreferences(),route=currentPersistentRoute(),next=rememberWorkspaceFilters(ws,route);
+    if(JSON.stringify(next.filterMemory)!==JSON.stringify(ws.filterMemory))updateWorkspacePreferences(next,{persist:true,render:false});
+  }
+  function workspaceRouteTitle(route={}){
+    const r=workspaceEngine.copyRoute(route),page=r.page||'home';
+    if(page==='admin')return ADMIN_SECTION_META[r.section]?.label||'Gestão';
+    if(page==='settings')return r.module&&SETTINGS_MODULES[r.module]?`Configurações · ${SETTINGS_MODULES[r.module].label}`:'Configurações';
+    if(page==='indicators')return r.indicator&&INDICATOR_SECTION_META[r.indicator]?`Indicadores · ${INDICATOR_SECTION_META[r.indicator].label.replace(/^Indicadores\s*/i,'')}`:'Indicadores';
+    const labels={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    return labels[page]||'Performance Hub';
+  }
+  function workspaceRouteContext(route={}){
+    const r=workspaceEngine.copyRoute(route),parts=[],dateLabel=value=>{const d=parseIsoAnalysisDate(value);return d?d.toLocaleDateString('pt-BR'):String(value||'')};if(r.squad)parts.push(r.squad==='all'?'Todos os Squads':`Squad ${r.squad}`);if(r.month)parts.push(monthLabelFromId(r.month));if(r.tech)parts.push(r.tech);if(r.from&&r.to)parts.push(`${dateLabel(r.from)} → ${dateLabel(r.to)}`);return parts.join(' · ');
+  }
+  function defaultSavedViewName(route=currentPersistentRoute()){const title=workspaceRouteTitle(route),context=workspaceRouteContext(route);return context?`${title} · ${context}`:title}
+  function currentRouteFavorite(){return workspaceFavoriteForRoute(workspacePreferences(),currentPersistentRoute())}
+  function workspaceRouteOpenable(route){return routeAccessible(workspaceEngine.copyRoute(route))}
+  function workspaceDynamicCommands(){
+    const ws=workspacePreferences(),out=[];
+    for(const fav of ws.favorites){if(!workspaceRouteOpenable(fav.route))continue;out.push({id:`workspace-favorite-${fav.id}`,label:fav.label,description:`Favorito${workspaceRouteContext(fav.route)?` · ${workspaceRouteContext(fav.route)}`:''}`,group:'Favoritos',icon:'★',...navigationTargetFromRoute(fav.route),workspaceRoute:fav.route,workspaceExact:true,priority:150});}
+    for(const saved of ws.savedViews){if(!workspaceRouteOpenable(saved.route))continue;out.push({id:`workspace-saved-${saved.id}`,label:saved.name,description:`Visão salva${workspaceRouteContext(saved.route)?` · ${workspaceRouteContext(saved.route)}`:''}`,group:'Visões salvas',icon:'▣',...navigationTargetFromRoute(saved.route),workspaceRoute:saved.route,workspaceExact:true,priority:125});}
+    return out;
+  }
+  function setWorkspacePopover(open){
+    state.workspacePopoverOpen=!!open;const pop=$('#workspacePopover'),btn=$('#workspaceMenuBtn');pop?.classList.toggle('hidden',!state.workspacePopoverOpen);btn?.setAttribute('aria-expanded',state.workspacePopoverOpen?'true':'false');if(state.workspacePopoverOpen){setNotificationPopover(false);renderWorkspacePopover();}
+  }
+  function toggleWorkspacePopover(){setWorkspacePopover(!state.workspacePopoverOpen)}
+  function workspaceListRow(item,type){
+    const isSaved=type==='saved',route=item.route,context=workspaceRouteContext(route),fav=isSaved?workspaceFavoriteForRoute(workspacePreferences(),route):item;
+    return `<div class="workspace-list-row" data-workspace-${isSaved?'saved':'favorite'}="${escapeHtml(item.id)}"><button class="workspace-list-open" type="button" data-workspace-open-${isSaved?'saved':'favorite'}="${escapeHtml(item.id)}"><span class="workspace-list-icon">${isSaved?'▣':'★'}</span><span><strong>${escapeHtml(isSaved?item.name:item.label)}</strong><small>${escapeHtml(context||workspaceRouteTitle(route))}</small></span></button><div class="workspace-list-actions">${isSaved?`<button type="button" class="workspace-icon-btn ${fav?'active':''}" data-workspace-favorite-saved="${escapeHtml(item.id)}" title="${fav?'Remover dos favoritos':'Adicionar aos favoritos'}">★</button><button type="button" class="workspace-icon-btn" data-workspace-edit-saved="${escapeHtml(item.id)}" title="Renomear visão">✎</button><button type="button" class="workspace-icon-btn danger" data-workspace-delete-saved="${escapeHtml(item.id)}" title="Excluir visão">×</button>`:`<button type="button" class="workspace-icon-btn danger" data-workspace-remove-favorite="${escapeHtml(item.id)}" title="Remover favorito">×</button>`}</div></div>`;
+  }
+  function renderWorkspacePopover(){
+    const ws=workspacePreferences(),host=$('#workspacePopover');if(!host)return;const favorites=ws.favorites.filter(f=>workspaceRouteOpenable(f.route)),saved=ws.savedViews.filter(v=>workspaceRouteOpenable(v.route));
+    const favList=favorites.length?favorites.map(x=>workspaceListRow(x,'favorite')).join(''):'<div class="workspace-empty">Nenhum favorito ainda. Use a estrela no topo para adicionar a visão atual.</div>';
+    const savedList=saved.length?saved.map(x=>workspaceListRow(x,'saved')).join(''):'<div class="workspace-empty">Salve uma combinação de tela e filtros para abrir novamente com um clique.</div>';
+    host.innerHTML=`<div class="workspace-popover-head"><div><span class="eyebrow">ATALHOS PESSOAIS</span><strong>Visões e favoritos</strong></div><button class="workspace-popover-close" id="workspacePopoverCloseBtn" type="button" aria-label="Fechar">×</button></div><div class="workspace-current-card"><div><strong>${escapeHtml(workspaceRouteTitle(currentPersistentRoute()))}</strong><small>${escapeHtml(workspaceRouteContext(currentPersistentRoute())||'Visão atual')}</small></div><button class="btn primary compact" id="saveCurrentViewBtn" type="button" ${state.currentView==='home'?'disabled':''}>Salvar visão</button></div><label class="workspace-filter-toggle"><span><strong>Filtros persistentes</strong><small>Lembrar Squad, mês, técnico e período por tela.</small></span><input id="workspacePersistentFiltersToggle" type="checkbox" ${ws.persistentFilters?'checked':''}><i></i></label><div class="workspace-section-head"><strong>Favoritos</strong><span>${favorites.length}</span></div><div class="workspace-list">${favList}</div><div class="workspace-section-head"><strong>Visões salvas</strong><span>${saved.length}</span></div><div class="workspace-list">${savedList}</div><div class="workspace-popover-foot"><button class="link-btn" id="workspaceClearFiltersBtn" type="button" ${Object.keys(ws.filterMemory||{}).length?'':'disabled'}>Limpar filtros lembrados</button><small>${state.supabase?'Sincronizado no seu perfil':'Salvo neste navegador'}</small></div>`;
+  }
+  function syncWorkspaceToolbar(){
+    const route=currentPersistentRoute(),fav=workspaceFavoriteForRoute(workspacePreferences(),route),btn=$('#currentFavoriteBtn'),count=$('#workspaceSavedCount'),ws=workspacePreferences(),canFavorite=route.page!=='home';
+    if(btn){btn.disabled=!canFavorite;btn.classList.toggle('active',!!fav);btn.setAttribute('aria-pressed',fav?'true':'false');btn.title=canFavorite?(fav?'Remover visão atual dos favoritos':'Favoritar visão atual'):'A tela inicial já é o ponto de partida';const icon=btn.querySelector('[data-favorite-icon]');if(icon)icon.textContent=fav?'★':'☆';}
+    if(count){const total=ws.savedViews.length+ws.favorites.length;count.textContent=String(total);count.classList.toggle('hidden',total===0);}
+    if(state.workspacePopoverOpen)renderWorkspacePopover();
+  }
+  function toggleCurrentFavorite(){
+    const route=currentPersistentRoute();if(route.page==='home')return toast('A tela inicial já é o seu ponto de partida.');const ws=workspacePreferences(),existing=workspaceFavoriteForRoute(ws,route),label=defaultSavedViewName(route),next=toggleWorkspaceFavorite(ws,{route,label});updateWorkspacePreferences(next);toast(existing?'Favorito removido.':'Visão adicionada aos favoritos.');
+  }
+  function openSavedViewModal(id=null){
+    const ws=workspacePreferences(),saved=id?ws.savedViews.find(v=>v.id===id):null;if(!saved&&state.currentView==='home')return toast('Abra uma tela com filtros antes de salvar uma visão.');state.savedViewEditingId=saved?.id||null;const route=saved?.route||currentPersistentRoute(),fav=workspaceFavoriteForRoute(ws,route);if($('#savedViewModalTitle'))$('#savedViewModalTitle').textContent=saved?'Renomear visão salva':'Salvar visão atual';if($('#savedViewModalText'))$('#savedViewModalText').textContent=saved?'Altere o nome sem perder os filtros e o destino já salvos.':'A tela, o Squad, a competência, o técnico e o período atuais serão guardados.';if($('#savedViewNameInput'))$('#savedViewNameInput').value=saved?.name||defaultSavedViewName(route);if($('#savedViewFavoriteInput'))$('#savedViewFavoriteInput').checked=!!fav;if($('#savedViewContext'))$('#savedViewContext').textContent=`${workspaceRouteTitle(route)}${workspaceRouteContext(route)?` · ${workspaceRouteContext(route)}`:''}`;openModal('savedViewModal');setTimeout(()=>$('#savedViewNameInput')?.select(),0);
+  }
+  async function saveSavedViewFromModal(e){
+    e?.preventDefault();const name=String($('#savedViewNameInput')?.value||'').trim();if(!name)return toast('Informe um nome para a visão.');const ws=workspacePreferences(),editing=state.savedViewEditingId,saved=editing?ws.savedViews.find(v=>v.id===editing):null,route=saved?.route||currentPersistentRoute();let next=editing?renameWorkspaceSavedView(ws,editing,name):createWorkspaceSavedView(ws,{name,route});const shouldFavorite=!!$('#savedViewFavoriteInput')?.checked,existing=workspaceFavoriteForRoute(next,route);if(shouldFavorite&&!existing)next=toggleWorkspaceFavorite(next,{route,label:name});if(!shouldFavorite&&existing)next=toggleWorkspaceFavorite(next,{route,label:name});if(shouldFavorite){const fav=workspaceFavoriteForRoute(next,route);if(fav&&fav.label!==name)next={...next,favorites:next.favorites.map(x=>x.id===fav.id?{...x,label:name}:x)}}updateWorkspacePreferences(next);state.savedViewEditingId=null;closeModal('savedViewModal');toast(editing?'Visão atualizada.':'Visão salva.');
+  }
+  async function deleteWorkspaceSavedViewById(id){
+    const ws=workspacePreferences(),saved=ws.savedViews.find(v=>v.id===id);if(!saved)return;if(!await confirmDialog(`Excluir a visão salva “${saved.name}”? Os dados do painel não serão alterados.`,{title:'Excluir visão salva',confirmText:'Excluir',tone:'danger'}))return;updateWorkspacePreferences(deleteWorkspaceSavedView(ws,id));toast('Visão salva excluída.');
+  }
+  async function openWorkspaceRoute(route){setWorkspacePopover(false);await executeNavigationTarget({...navigationTargetFromRoute(route),workspaceExact:true})}
+  function handleWorkspacePopoverClick(e){
+    const close=e.target.closest('#workspacePopoverCloseBtn');if(close)return setWorkspacePopover(false);const save=e.target.closest('#saveCurrentViewBtn');if(save)return openSavedViewModal();const openSaved=e.target.closest('[data-workspace-open-saved]');if(openSaved){const row=workspacePreferences().savedViews.find(v=>v.id===openSaved.dataset.workspaceOpenSaved);if(row)openWorkspaceRoute(row.route);return}const openFav=e.target.closest('[data-workspace-open-favorite]');if(openFav){const row=workspacePreferences().favorites.find(v=>v.id===openFav.dataset.workspaceOpenFavorite);if(row)openWorkspaceRoute(row.route);return}const edit=e.target.closest('[data-workspace-edit-saved]');if(edit)return openSavedViewModal(edit.dataset.workspaceEditSaved);const del=e.target.closest('[data-workspace-delete-saved]');if(del){deleteWorkspaceSavedViewById(del.dataset.workspaceDeleteSaved);return}const favSaved=e.target.closest('[data-workspace-favorite-saved]');if(favSaved){const ws=workspacePreferences(),row=ws.savedViews.find(v=>v.id===favSaved.dataset.workspaceFavoriteSaved);if(!row)return;const existing=workspaceFavoriteForRoute(ws,row.route),next=toggleWorkspaceFavorite(ws,{route:row.route,label:row.name});updateWorkspacePreferences(next);toast(existing?'Visão removida dos favoritos.':'Visão adicionada aos favoritos.');return}const removeFav=e.target.closest('[data-workspace-remove-favorite]');if(removeFav){const ws=workspacePreferences(),row=ws.favorites.find(v=>v.id===removeFav.dataset.workspaceRemoveFavorite);if(row)updateWorkspacePreferences(toggleWorkspaceFavorite(ws,{route:row.route,label:row.label}));return}const clear=e.target.closest('#workspaceClearFiltersBtn');if(clear){updateWorkspacePreferences(clearWorkspaceFilterMemory(workspacePreferences()));toast('Filtros lembrados foram limpos.');}}
+  function handleWorkspacePopoverChange(e){const toggle=e.target.closest('#workspacePersistentFiltersToggle');if(!toggle)return;updateWorkspacePreferences(setWorkspacePersistentFilters(workspacePreferences(),toggle.checked));toast(toggle.checked?'Filtros persistentes ativados.':'Filtros persistentes desativados.');}
   function updateNavigationPreferences(mutator){
     const next=mutator(navigationPreferences())||navigationPreferences();
     state.uiPreferences=normalizeUiPreferences({...state.uiPreferences,navigation:next});applyNavigationPreferences();scheduleUiPreferencePersist();
@@ -668,9 +751,14 @@
     $('#forgotPasswordBtn').addEventListener('click',handleForgotPassword);
     $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
     $('#logoutBtn').addEventListener('click',logout);
-    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.settingsModule)return openSettingsModule(btn.dataset.settingsModule,{scroll:true});showView(btn.dataset.view,btn.dataset.adminSection||null);}));
+    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>executeNavigationTarget({view:btn.dataset.view||'home',adminSection:btn.dataset.adminSection||null,settingsModule:btn.dataset.settingsModule||null})));
     $('#globalSearchTrigger')?.addEventListener('click',openGlobalSearch);
     $('#globalSearchBackdrop')?.addEventListener('click',closeGlobalSearch);
+    $('#currentFavoriteBtn')?.addEventListener('click',e=>{e.stopPropagation();toggleCurrentFavorite();});
+    $('#workspaceMenuBtn')?.addEventListener('click',e=>{e.stopPropagation();toggleWorkspacePopover();});
+    $('#workspacePopover')?.addEventListener('click',e=>{e.stopPropagation();handleWorkspacePopoverClick(e);});
+    $('#workspacePopover')?.addEventListener('change',handleWorkspacePopoverChange);
+    $('#savedViewForm')?.addEventListener('submit',saveSavedViewFromModal);
     $('#globalSearchInput')?.addEventListener('input',()=>{state.globalSearchIndex=0;renderGlobalSearch();});
     $('#globalSearchResults')?.addEventListener('mousemove',e=>{const btn=e.target.closest('[data-global-command]');if(!btn)return;const index=state.globalSearchResults.findIndex(x=>x.id===btn.dataset.globalCommand);if(index>=0&&index!==state.globalSearchIndex){state.globalSearchIndex=index;renderGlobalSearch();}});
     $('#globalSearchResults')?.addEventListener('click',e=>{const btn=e.target.closest('[data-global-command]');if(btn)activateGlobalSearch(btn.dataset.globalCommand);});
@@ -698,7 +786,7 @@
     $('#refreshPerformanceMetricsBtn')?.addEventListener('click',()=>loadPerformanceRemoteSummary(true));
     $('#resetPerformanceMetricsBtn')?.addEventListener('click',resetPerformanceCenter);
     $('#exportPerformanceMetricsBtn')?.addEventListener('click',exportPerformanceDiagnostics);
-    $('#notificationBellBtn')?.addEventListener('click',e=>{e.stopPropagation();toggleNotificationPopover();});
+    $('#notificationBellBtn')?.addEventListener('click',e=>{e.stopPropagation();setWorkspacePopover(false);toggleNotificationPopover();});
     $('#notificationMarkAllBtn')?.addEventListener('click',markAllNotificationsRead);
     $('#openAlertCenterBtn')?.addEventListener('click',()=>{setNotificationPopover(false);showView('alerts');});
     $('#refreshNotificationsBtn')?.addEventListener('click',()=>ensureNotificationsLoaded(true));
@@ -712,7 +800,7 @@
     $('#notificationPopoverList')?.addEventListener('click',handleNotificationDelegatedClick);
     $('#alertCenterRows')?.addEventListener('click',handleNotificationDelegatedClick);
     $('#publishedNotificationRows')?.addEventListener('click',handleNotificationDelegatedClick);
-    document.addEventListener('click',e=>{if(state.notificationPopoverOpen&&!e.target.closest('#notificationShell'))setNotificationPopover(false);});
+    document.addEventListener('click',e=>{if(state.notificationPopoverOpen&&!e.target.closest('#notificationShell'))setNotificationPopover(false);if(state.workspacePopoverOpen&&!e.target.closest('#workspaceShell'))setWorkspacePopover(false);});
     if($('#helpSearchInput'))$('#helpSearchInput').addEventListener('input',applyHelpSearch);
     if($('#clearHelpSearchBtn'))$('#clearHelpSearchBtn').addEventListener('click',()=>{$('#helpSearchInput').value='';applyHelpSearch();$('#helpSearchInput').focus();});
     $$('[data-help-view],[data-help-admin-section],[data-help-settings-module]').forEach(btn=>btn.addEventListener('click',()=>openHelpTarget(btn)));
