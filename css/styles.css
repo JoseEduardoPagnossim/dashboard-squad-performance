@@ -2090,5 +2090,5 @@ html[data-color-mode="light"] .workspace-popover{box-shadow:0 24px 62px rgba(15,
 }
 @media(min-width:981px){
   .sidebar.sidebar-collapsed .sidebar-footer{font-size:0!important;overflow:visible!important;text-overflow:clip!important}
-  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.5";font-size:7px;letter-spacing:.02em;color:var(--muted)}
+  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.6";font-size:7px;letter-spacing:.02em;color:var(--muted)}
 }

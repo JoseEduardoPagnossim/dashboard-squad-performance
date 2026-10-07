@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.5`<br>
+**Versão atual:** `2.48.6`<br>
 
 
 
@@ -18,6 +18,12 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.48.6 — Hotfix de layout e selects invisíveis
+
+Correção crítica da V2.48.5. O select nativo permanece como fonte funcional do Design System, mas agora é isolado de regras legadas de largura com especificidade suficiente para nunca ampliar o documento horizontalmente. O patch remove o scroll global que deslocava o painel e fazia a sidebar desaparecer visualmente.
+
+Detalhes: `docs/REGRESSAO_LAYOUT_V2.48.6.md`.
 
 ## V2.48.5 — Controles estáveis e revisão de regressão
 

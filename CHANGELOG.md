@@ -1,3 +1,12 @@
+## V2.48.6 — Hotfix de overflow horizontal e integridade do Design System
+
+- Corrige regressão em que os selects-fonte invisíveis de Squad, mês, técnico e outros filtros herdavam `width:100%!important` de regras legadas.
+- Elimina o crescimento indevido do documento e o scroll horizontal global que fazia a sidebar parecer desaparecer.
+- Reforça a ocultação do select nativo com seletor de maior especificidade, largura mínima/máxima de 1px e contenção de layout.
+- Mantém o proxy visual do Design System sem mover o select original e sem alterar listeners de negócio.
+- Adiciona validação de integridade horizontal para desktop e breakpoints responsivos.
+- Sem migration de banco.
+
 ## V2.48.5 — Correção de regressões dos controles e navegação
 
 - Corrige a regressão da V2.48.4 que reparentava todos os `<select>` e podia quebrar filtros dependentes como Squad, competência, técnico, grupos e selects dinâmicos.
