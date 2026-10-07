@@ -132,8 +132,8 @@
     const {trigger,menu,proxy}=controller;
     const signature=selectOptionSignature(select);
     if(rebuild||signature!==controller.signature)rebuildSelectMenu(controller);
-    const value=trigger?.querySelector('.ds-select-value');if(value)value.textContent=selectDisplayLabel(select);
-    if(trigger){trigger.disabled=Boolean(select.disabled);trigger.setAttribute('aria-disabled',select.disabled?'true':'false');}
+    const label=selectDisplayLabel(select);const value=trigger?.querySelector('.ds-select-value');if(value)value.textContent=label;
+    if(trigger){trigger.disabled=Boolean(select.disabled);trigger.setAttribute('aria-disabled',select.disabled?'true':'false');trigger.title=label;}
     proxy?.classList.toggle('disabled',Boolean(select.disabled));
     [...(menu?.querySelectorAll('.ds-select-option')||[])].forEach((item,index)=>{
       const selected=index===select.selectedIndex;item.classList.toggle('selected',selected);item.setAttribute('aria-selected',selected?'true':'false');

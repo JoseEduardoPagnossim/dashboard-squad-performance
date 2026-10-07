@@ -408,7 +408,7 @@ test('V2.47 não conflita rota normal com modo TV da Apresentação', () => {
 test('V2.47 é frontend-only e não exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.47.0.sql')), false);
-  assert.ok(index.includes('V2.48.10'));
+  assert.ok(index.includes('V2.48.11'));
 });
 
 
@@ -443,7 +443,7 @@ test('V2.48 reutiliza ui_preferences e não exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.0.sql')),false);
   assert.match(app,/save_my_ui_preferences/);
-  assert.ok(index.includes('V2.48.10'));
+  assert.ok(index.includes('V2.48.11'));
 });
 
 
@@ -458,5 +458,5 @@ test('V2.48.1 preserva rodape e campanha com scroll apenas na navegacao lateral'
 test('V2.48.1 e frontend-only e nao exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.1.sql')),false);
-  assert.ok(index.includes('V2.48.10'));
+  assert.ok(index.includes('V2.48.11'));
 });

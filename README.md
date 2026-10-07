@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.10`<br>
+**Versão atual:** `2.48.11`<br>
 
 
 
@@ -20,6 +20,17 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.48.11 — Topbar legível e calendário do Design System
+
+- Reorganiza visualmente os filtros de **Squad, Mês e Técnico** na topbar: o rótulo fica acima do valor, liberando a largura do campo para o conteúdo selecionado sem alterar os `selects` originais nem seus eventos.
+- Aumenta a largura útil dos atalhos de período para evitar textos cortados como **Este mês**.
+- Substitui o calendário nativo usado nos filtros de período por um calendário próprio do Design System, com navegação mensal, limites de datas importadas, destaque do intervalo e ação **Hoje**.
+- A seleção continua chamando o mesmo `handleAnalysisDateInput()`, preservando URL, estado, filtros e cálculos.
+- O mesmo calendário é usado nos filtros de período da topbar e dos Indicadores.
+- Não altera sidebar, motor financeiro, bonificação, Supabase ou schema. Não exige migration.
+
+Detalhes: `docs/TOPBAR_CALENDARIO_V2.48.11.md`.
 
 ## V2.48.10 — Bonificação orientada ao fechamento
 

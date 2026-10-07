@@ -1,3 +1,12 @@
+## V2.48.11 — Topbar legível e calendário próprio
+
+- Squad, mês e técnico passam a usar rótulo superior e valor em linha própria na topbar, reduzindo truncamentos sem alterar a lógica dos filtros.
+- Atalhos de período ganham largura suficiente para exibir seus textos completos.
+- Filtros de data deixam de abrir o calendário nativo do navegador e passam a usar calendário próprio do Design System.
+- O novo calendário respeita intervalo importado, período atual, navegação mensal e seleção por `handleAnalysisDateInput()`.
+- Nenhuma regra financeira ou estrutura de banco foi alterada.
+- Sem migration.
+
 ## V2.48.10 — Bonificação orientada ao fechamento e limpeza de atalhos
 
 - Remove avisos intermediários que redirecionavam Operação, Bonificação e Apresentação/TV para a Central de Configurações.

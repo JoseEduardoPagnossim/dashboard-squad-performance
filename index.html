@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.48.10" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.48.10" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.48.10" />
+  <link rel="stylesheet" href="css/styles.css?v=2.48.11" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.48.11" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.48.11" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.48.10 • Fechamento financeiro</small>
+        <small class="login-version">V2.48.11 • Topbar e calendário</small>
       </section>
     </div>
   </section>
@@ -164,7 +164,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.48.10 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.48.11 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -190,7 +190,7 @@
               <div class="date-input-shell">
                 <input id="analysisStartDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data inicial">
                 <button class="date-picker-button" type="button" data-date-picker-for="analysisStartDate" aria-label="Abrir calendário da data inicial"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="analysisStartDatePicker" class="native-date-picker" type="date" tabindex="-1" aria-hidden="true">
+                <input id="analysisStartDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
               </div>
               <small class="date-field-error" id="analysisStartDateError" aria-live="polite"></small>
             </div>
@@ -200,7 +200,7 @@
               <div class="date-input-shell">
                 <input id="analysisEndDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data final">
                 <button class="date-picker-button" type="button" data-date-picker-for="analysisEndDate" aria-label="Abrir calendário da data final"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="analysisEndDatePicker" class="native-date-picker" type="date" tabindex="-1" aria-hidden="true">
+                <input id="analysisEndDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
               </div>
               <small class="date-field-error" id="analysisEndDateError" aria-live="polite"></small>
             </div>
@@ -653,7 +653,7 @@
               <div class="date-input-shell">
                 <input id="indicatorStartDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data inicial dos indicadores">
                 <button class="date-picker-button" type="button" data-date-picker-for="indicatorStartDate" aria-label="Abrir calendário da data inicial dos indicadores"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="indicatorStartDatePicker" class="native-date-picker" type="date" tabindex="-1" aria-hidden="true">
+                <input id="indicatorStartDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
               </div>
               <small class="date-field-error" id="indicatorStartDateError" aria-live="polite"></small>
             </div>
@@ -662,7 +662,7 @@
               <div class="date-input-shell">
                 <input id="indicatorEndDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data final dos indicadores">
                 <button class="date-picker-button" type="button" data-date-picker-for="indicatorEndDate" aria-label="Abrir calendário da data final dos indicadores"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="indicatorEndDatePicker" class="native-date-picker" type="date" tabindex="-1" aria-hidden="true">
+                <input id="indicatorEndDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
               </div>
               <small class="date-field-error" id="indicatorEndDateError" aria-live="polite"></small>
             </div>
@@ -1152,7 +1152,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.48.10</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.48.11</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1576,20 +1576,20 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.48.10"></script>
-  <script src="js/finance-rules.js?v=2.48.10"></script>
-  <script src="js/finance-advanced.js?v=2.48.10"></script>
-  <script src="js/tv-engine.js?v=2.48.10"></script>
-  <script src="js/presentation.js?v=2.48.10"></script>
-  <script src="js/chart-engine.js?v=2.48.10"></script>
-  <script src="js/import-engine.js?v=2.48.10"></script>
-  <script src="js/predictive-engine.js?v=2.48.10"></script>
-  <script src="js/alert-engine.js?v=2.48.10"></script>
-  <script src="js/settings-engine.js?v=2.48.10"></script>
-  <script src="js/performance-engine.js?v=2.48.10"></script>
-  <script src="js/navigation-engine.js?v=2.48.10"></script>
-  <script src="js/workspace-engine.js?v=2.48.10"></script>
-  <script src="js/design-system.js?v=2.48.10"></script>
-  <script src="js/app.js?v=2.48.10"></script>
+  <script src="js/business-calendar.js?v=2.48.11"></script>
+  <script src="js/finance-rules.js?v=2.48.11"></script>
+  <script src="js/finance-advanced.js?v=2.48.11"></script>
+  <script src="js/tv-engine.js?v=2.48.11"></script>
+  <script src="js/presentation.js?v=2.48.11"></script>
+  <script src="js/chart-engine.js?v=2.48.11"></script>
+  <script src="js/import-engine.js?v=2.48.11"></script>
+  <script src="js/predictive-engine.js?v=2.48.11"></script>
+  <script src="js/alert-engine.js?v=2.48.11"></script>
+  <script src="js/settings-engine.js?v=2.48.11"></script>
+  <script src="js/performance-engine.js?v=2.48.11"></script>
+  <script src="js/navigation-engine.js?v=2.48.11"></script>
+  <script src="js/workspace-engine.js?v=2.48.11"></script>
+  <script src="js/design-system.js?v=2.48.11"></script>
+  <script src="js/app.js?v=2.48.11"></script>
 </body>
 </html>

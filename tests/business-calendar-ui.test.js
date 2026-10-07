@@ -11,7 +11,7 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.48.7
 test('V2.48.7 publica o calendário operacional na área de bonificação',()=>{
   assert.ok(index.includes('id="configBusinessCalendarCard"'));
   for(const id of ['businessCalendarYearSelect','businessCalendarRows','businessCalendarDateInput','businessCalendarAddBtn','businessCalendarSaveBtn']) assert.ok(index.includes(`id="${id}"`));
-  assert.ok(index.includes('js/business-calendar.js?v=2.48.10'));
+  assert.ok(index.includes('js/business-calendar.js?v=2.48.11'));
   assert.ok(existsSync(join(root,'js','business-calendar.js')));
 });
 

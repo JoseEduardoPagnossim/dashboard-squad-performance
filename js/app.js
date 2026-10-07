@@ -46,7 +46,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.48.10';
+  const APP_VERSION = '2.48.11';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -1201,9 +1201,49 @@
   function maskBrDate(value){const digits=String(value||'').replace(/\D/g,'').slice(0,8);if(digits.length<=2)return digits;if(digits.length<=4)return `${digits.slice(0,2)}/${digits.slice(2)}`;return `${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`}
   function brDateToIso(value){const m=String(value||'').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return null;const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(year,month-1,day);if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;return isoDateParts(year,month,day)}
   function setDateFieldError(textId,message=''){const field=$(`[data-date-field="${textId}"]`),error=$('#'+textId+'Error'),input=$('#'+textId);if(field)field.classList.toggle('invalid',!!message);if(input)input.setAttribute('aria-invalid',message?'true':'false');if(error)error.textContent=message}
-  function openNativeDatePicker(picker){if(!picker)return;try{if(typeof picker.showPicker==='function')picker.showPicker();else picker.click();}catch(err){try{picker.click()}catch(_){}}}
+
+  // V2.48.11 — calendário próprio do Design System. O valor continua passando
+  // por handleAnalysisDateInput(), preservando a mesma lógica, URL e filtros.
+  const analysisCalendarUi={root:null,textId:'',which:'',anchor:null,viewYear:0,viewMonth:0,min:'',max:''};
+  const analysisCalendarMonths=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const analysisCalendarWeekdays=['D','S','T','Q','Q','S','S'];
+  function calendarMonthIntersectsBounds(year,month,min,max){const first=isoDateParts(year,month,1),last=isoDateParts(year,month,new Date(year,month,0).getDate());return(!min||last>=min)&&(!max||first<=max)}
+  function ensureAnalysisCalendar(){
+    if(analysisCalendarUi.root?.isConnected)return analysisCalendarUi.root;
+    const root=document.createElement('div');root.id='analysisDateCalendar';root.className='ds-calendar-popover hidden';root.setAttribute('role','dialog');root.setAttribute('aria-modal','false');root.setAttribute('aria-label','Selecionar data');document.body.appendChild(root);analysisCalendarUi.root=root;
+    root.addEventListener('click',event=>{
+      const nav=event.target.closest('[data-calendar-nav]');if(nav){event.preventDefault();const delta=nav.dataset.calendarNav==='prev'?-1:1;let y=analysisCalendarUi.viewYear,m=analysisCalendarUi.viewMonth+delta;if(m<1){m=12;y--}if(m>12){m=1;y++}if(calendarMonthIntersectsBounds(y,m,analysisCalendarUi.min,analysisCalendarUi.max)){analysisCalendarUi.viewYear=y;analysisCalendarUi.viewMonth=m;renderAnalysisCalendar();}return}
+      const day=event.target.closest('[data-calendar-date]');if(day&&!day.disabled){event.preventDefault();const value=day.dataset.calendarDate;closeAnalysisCalendar();setDateFieldError(analysisCalendarUi.textId);handleAnalysisDateInput(analysisCalendarUi.which,value);return}
+      const today=event.target.closest('[data-calendar-today]');if(today&&!today.disabled){event.preventDefault();const value=today.dataset.calendarToday;closeAnalysisCalendar();setDateFieldError(analysisCalendarUi.textId);handleAnalysisDateInput(analysisCalendarUi.which,value);return}
+      if(event.target.closest('[data-calendar-close]')){event.preventDefault();closeAnalysisCalendar();analysisCalendarUi.anchor?.focus();}
+    });
+    document.addEventListener('pointerdown',event=>{if(root.classList.contains('hidden'))return;if(root.contains(event.target)||analysisCalendarUi.anchor?.contains?.(event.target))return;closeAnalysisCalendar();},true);
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!root.classList.contains('hidden')){event.preventDefault();const anchor=analysisCalendarUi.anchor;closeAnalysisCalendar();anchor?.focus();}},true);
+    window.addEventListener('resize',()=>{if(!root.classList.contains('hidden'))positionAnalysisCalendar()},{passive:true});
+    window.addEventListener('scroll',()=>{if(!root.classList.contains('hidden'))closeAnalysisCalendar()},{passive:true,capture:true});
+    return root;
+  }
+  function closeAnalysisCalendar(){const root=analysisCalendarUi.root;if(root)root.classList.add('hidden');if(analysisCalendarUi.anchor)analysisCalendarUi.anchor.setAttribute('aria-expanded','false');}
+  function positionAnalysisCalendar(){const root=analysisCalendarUi.root,anchor=analysisCalendarUi.anchor;if(!root||!anchor)return;const rect=anchor.getBoundingClientRect(),margin=10,width=Math.min(310,window.innerWidth-margin*2);root.style.width=`${width}px`;root.style.left='0px';root.style.top='0px';const height=Math.max(330,root.offsetHeight||0),below=window.innerHeight-rect.bottom-margin,above=rect.top-margin,openUp=below<Math.min(height,360)&&above>below;let top=openUp?Math.max(margin,rect.top-height-8):Math.min(window.innerHeight-height-margin,rect.bottom+8);top=Math.max(margin,top);let left=Math.min(Math.max(margin,rect.right-width),Math.max(margin,window.innerWidth-width-margin));root.style.left=`${left}px`;root.style.top=`${top}px`;root.classList.toggle('open-up',openUp);}
+  function renderAnalysisCalendar(){
+    const root=ensureAnalysisCalendar(),y=analysisCalendarUi.viewYear,m=analysisCalendarUi.viewMonth,min=analysisCalendarUi.min,max=analysisCalendarUi.max;
+    const selected=analysisCalendarUi.which==='start'?state.analysisStartDate:state.analysisEndDate,rangeStart=state.analysisStartDate||'',rangeEnd=state.analysisEndDate||'',today=localIsoDate(new Date()),days=new Date(y,m,0).getDate(),firstDow=new Date(y,m-1,1).getDay();
+    const prevM=m===1?12:m-1,prevY=m===1?y-1:y,nextM=m===12?1:m+1,nextY=m===12?y+1:y;
+    const prevDisabled=!calendarMonthIntersectsBounds(prevY,prevM,min,max),nextDisabled=!calendarMonthIntersectsBounds(nextY,nextM,min,max);
+    const title=analysisCalendarUi.which==='start'?'Data inicial':'Data final';
+    let cells='';for(let i=0;i<firstDow;i++)cells+='<span class="ds-calendar-empty" aria-hidden="true"></span>';
+    for(let day=1;day<=days;day++){const iso=isoDateParts(y,m,day),disabled=(min&&iso<min)||(max&&iso>max),classes=['ds-calendar-day'];if(iso===selected)classes.push('selected');if(iso===today)classes.push('today');if(rangeStart&&rangeEnd&&iso>=rangeStart&&iso<=rangeEnd)classes.push('in-range');if(iso===rangeStart)classes.push('range-start');if(iso===rangeEnd)classes.push('range-end');const label=new Date(y,m-1,day).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});cells+=`<button type="button" class="${classes.join(' ')}" data-calendar-date="${iso}" ${disabled?'disabled':''} aria-label="${label}" ${iso===selected?'aria-current="date"':''}>${day}</button>`;}
+    const todayAllowed=(!min||today>=min)&&(!max||today<=max);
+    root.innerHTML=`<div class="ds-calendar-head"><div><small>${title}</small><strong>${analysisCalendarMonths[m-1]} ${y}</strong></div><div class="ds-calendar-nav"><button type="button" data-calendar-nav="prev" ${prevDisabled?'disabled':''} aria-label="Mês anterior">‹</button><button type="button" data-calendar-nav="next" ${nextDisabled?'disabled':''} aria-label="Próximo mês">›</button></div></div><div class="ds-calendar-weekdays">${analysisCalendarWeekdays.map(x=>`<span>${x}</span>`).join('')}</div><div class="ds-calendar-grid">${cells}</div><div class="ds-calendar-foot"><button type="button" class="ds-calendar-link" data-calendar-today="${today}" ${todayAllowed?'':'disabled'}>Hoje</button><button type="button" class="ds-calendar-link" data-calendar-close>Fechar</button></div>`;
+    requestAnimationFrame(positionAnalysisCalendar);
+  }
+  function openAnalysisCalendar(textId,which,anchor){
+    const bounds=importedDateBounds(),current=which==='start'?state.analysisStartDate:state.analysisEndDate;let focus=current||bounds.max||localIsoDate(new Date());if(bounds.min&&focus<bounds.min)focus=bounds.min;if(bounds.max&&focus>bounds.max)focus=bounds.max;const d=parseIsoAnalysisDate(focus)||new Date();
+    analysisCalendarUi.textId=textId;analysisCalendarUi.which=which;analysisCalendarUi.anchor=anchor;analysisCalendarUi.viewYear=d.getFullYear();analysisCalendarUi.viewMonth=d.getMonth()+1;analysisCalendarUi.min=bounds.min||'';analysisCalendarUi.max=bounds.max||'';
+    const root=ensureAnalysisCalendar();root.classList.remove('hidden');anchor?.setAttribute('aria-expanded','true');renderAnalysisCalendar();
+  }
   function commitAnalysisTextDate(textId,which){const input=$('#'+textId);if(!input)return false;const iso=brDateToIso(input.value);if(!iso){setDateFieldError(textId,'Informe uma data válida.');return false}setDateFieldError(textId);handleAnalysisDateInput(which,iso);return true}
-  function bindAnalysisDateField(textId,pickerId,which){const input=$('#'+textId),picker=$('#'+pickerId),button=$(`[data-date-picker-for="${textId}"]`);if(!input||!picker)return;input.addEventListener('input',()=>{input.value=maskBrDate(input.value);setDateFieldError(textId)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitAnalysisTextDate(textId,which)}else if(e.key==='Escape'){e.preventDefault();syncAnalysisDateControls();input.blur()}});input.addEventListener('blur',()=>{if(input.value.trim())commitAnalysisTextDate(textId,which);else syncAnalysisDateControls()});picker.addEventListener('change',()=>{if(!picker.value)return;setDateFieldError(textId);handleAnalysisDateInput(which,picker.value)});if(button)button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const current=which==='start'?state.analysisStartDate:state.analysisEndDate;picker.value=current||'';openNativeDatePicker(picker)});}
+  function bindAnalysisDateField(textId,pickerId,which){const input=$('#'+textId),picker=$('#'+pickerId),button=$(`[data-date-picker-for="${textId}"]`);if(!input)return;input.addEventListener('input',()=>{input.value=maskBrDate(input.value);setDateFieldError(textId)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitAnalysisTextDate(textId,which)}else if(e.key==='Escape'){e.preventDefault();closeAnalysisCalendar();syncAnalysisDateControls();input.blur()}});input.addEventListener('blur',()=>{if(input.value.trim())commitAnalysisTextDate(textId,which);else syncAnalysisDateControls()});if(picker)picker.value=which==='start'?(state.analysisStartDate||''):(state.analysisEndDate||'');if(button){button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-expanded','false');button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openAnalysisCalendar(textId,which,button)});}}
   function localIsoDate(d){return isoDateParts(d.getFullYear(),d.getMonth()+1,d.getDate())}
   function monthIdForDate(value){const d=parseIsoAnalysisDate(value);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:null}
   function addCalendarDays(value,delta){const d=parseIsoAnalysisDate(value);if(!d)return value;d.setDate(d.getDate()+delta);return localIsoDate(d)}
@@ -1232,8 +1272,8 @@
   }
   function syncAnalysisDateControls(){
     const bounds=importedDateBounds();
-    [['analysisStartDate','analysisStartDatePicker'],['indicatorStartDate','indicatorStartDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisStartDate);if(picker){picker.value=state.analysisStartDate||'';picker.min=bounds.min||'';picker.max=bounds.max||'';}setDateFieldError(textId);});
-    [['analysisEndDate','analysisEndDatePicker'],['indicatorEndDate','indicatorEndDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisEndDate);if(picker){picker.value=state.analysisEndDate||'';picker.min=bounds.min||'';picker.max=bounds.max||'';}setDateFieldError(textId);});
+    [['analysisStartDate','analysisStartDatePicker'],['indicatorStartDate','indicatorStartDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisStartDate);if(picker){picker.value=state.analysisStartDate||'';picker.dataset.min=bounds.min||'';picker.dataset.max=bounds.max||'';}setDateFieldError(textId);});
+    [['analysisEndDate','analysisEndDatePicker'],['indicatorEndDate','indicatorEndDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisEndDate);if(picker){picker.value=state.analysisEndDate||'';picker.dataset.min=bounds.min||'';picker.dataset.max=bounds.max||'';}setDateFieldError(textId);});
     $$('[data-analysis-preset]').forEach(b=>b.classList.toggle('active',b.dataset.analysisPreset===state.analysisPreset));
   }
   function handleAnalysisDateInput(which,value){
