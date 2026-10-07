@@ -1,3 +1,13 @@
+## V2.48.7 — Calendário operacional da bonificação e topbar legível
+
+- Corrige o divisor de dias da bonificação: Base do Squad e modelo Individual passam a usar dias úteis operacionais (segunda a sexta menos exceções ativas).
+- Novo calendário anual por organização com feriados nacionais fixos padrão e exceções estaduais, municipais ou de empresa.
+- Auditoria financeira passa a exibir dias seg–sex, dias não úteis descontados, dias úteis finais e datas consideradas.
+- A versão da regra financeira passa a `FR-2.48.7-1`; o snapshot de fechamento sobe para versão 10 e congela o calendário financeiro usado na competência.
+- Relatório Excel inclui a memória dos dias úteis.
+- Filtros superiores ganham largura maior e tratamento visual restrito à topbar, preservando sidebar e lógica de seleção.
+- Nova migration `MIGRACAO_V2.48.7.sql` cria `business_calendar_exceptions` com RLS por organização.
+
 ## V2.48.6 — Hotfix de overflow horizontal e integridade do Design System
 
 - Corrige regressão em que os selects-fonte invisíveis de Squad, mês, técnico e outros filtros herdavam `width:100%!important` de regras legadas.

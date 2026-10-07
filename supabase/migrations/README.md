@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.46.0.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.48.7.
 
 Depois:
 
@@ -51,6 +51,9 @@ V2.43.0
 V2.43.1
 V2.43.2
 V2.46.0
+V2.48.2
+V2.48.3
+V2.48.7
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -107,3 +110,8 @@ Depois da migration, republique as Edge Functions `create-user` e `manage-user`,
 ## V2.48.2 — Identidade visual pública do boot/login
 
 `MIGRACAO_V2.48.2.sql` cria a RPC `get_public_theme_bootstrap(text)`. Ela permite que a tela de entrada recupere somente a identidade visual antes da autenticação, sem conceder `SELECT` anônimo nas tabelas do sistema. Após o login, o frontend continua carregando o tema autenticado exato do Squad.
+
+
+## V2.48.7 — Calendário operacional
+
+`MIGRACAO_V2.48.7.sql` cria `business_calendar_exceptions`, com leitura limitada à própria organização e manutenção restrita a Administradores. O frontend combina essas exceções com os feriados nacionais fixos padrão e usa o resultado apenas no cálculo financeiro por dias úteis. Competências fechadas preservam a memória usada no snapshot.

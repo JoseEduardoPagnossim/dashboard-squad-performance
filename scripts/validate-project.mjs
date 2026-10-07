@@ -19,6 +19,7 @@ const indexPath = join(root, 'index.html');
 const index = readFileSync(indexPath, 'utf8');
 for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) assertLocalRef(root, match[1], 'index.html');
 
+const businessCalendarScriptPosition = index.indexOf('js/business-calendar.js');
 const financeScriptPosition = index.indexOf('js/finance-rules.js');
 const financeAdvancedScriptPosition = index.indexOf('js/finance-advanced.js');
 const auditScriptPosition = index.indexOf('js/audit-utils.js');
@@ -33,6 +34,7 @@ const navigationEngineScriptPosition = index.indexOf('js/navigation-engine.js');
 const workspaceEngineScriptPosition = index.indexOf('js/workspace-engine.js');
 const designSystemScriptPosition = index.indexOf('js/design-system.js');
 const appScriptPosition = index.indexOf('js/app.js');
+if (businessCalendarScriptPosition < 0) errors.push('index.html não carrega js/business-calendar.js.');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
 if (financeAdvancedScriptPosition < 0) errors.push('index.html não carrega js/finance-advanced.js.');
 if (auditScriptPosition < 0) errors.push('index.html não carrega js/audit-utils.js.');
@@ -46,6 +48,8 @@ if (performanceEngineScriptPosition < 0) errors.push('index.html não carrega js
 if (navigationEngineScriptPosition < 0) errors.push('index.html não carrega js/navigation-engine.js.');
 if (workspaceEngineScriptPosition < 0) errors.push('index.html não carrega js/workspace-engine.js.');
 if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
+if (appScriptPosition >= 0 && businessCalendarScriptPosition > appScriptPosition) errors.push('js/business-calendar.js deve ser carregado antes de js/app.js.');
+if (financeScriptPosition >= 0 && businessCalendarScriptPosition >= 0 && businessCalendarScriptPosition > financeScriptPosition) errors.push('js/business-calendar.js deve carregar antes de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
 if (financeAdvancedScriptPosition >= 0 && financeScriptPosition >= 0 && financeAdvancedScriptPosition < financeScriptPosition) errors.push('js/finance-advanced.js deve carregar depois de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeAdvancedScriptPosition > appScriptPosition) errors.push('js/finance-advanced.js deve ser carregado antes de js/app.js.');
@@ -85,6 +89,8 @@ for (const required of [
   'tests/workspace-engine.test.js',
   'tests/theme-bootstrap.test.js',
   'tests/design-system.test.js',
+  'tests/business-calendar.test.js',
+  'tests/business-calendar-ui.test.js',
   'js/chart-engine.js',
   'js/import-engine.js',
   'js/predictive-engine.js',
@@ -95,6 +101,7 @@ for (const required of [
   'js/navigation-engine.js',
   'js/workspace-engine.js',
   'js/design-system.js',
+  'js/business-calendar.js',
   'css/design-system.css',
   'js/finance-rules.js',
   'js/finance-advanced.js',
@@ -120,6 +127,7 @@ for (const required of [
   'docs/VISOES_FAVORITOS_V2.48.0.md',
   'docs/SIDEBAR_RESPONSIVA_V2.48.1.md',
   'docs/TEMA_BOOTSTRAP_V2.48.2.md',
+  'docs/CALENDARIO_OPERACIONAL_V2.48.7.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -131,7 +139,9 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.43.1.sql',
   'supabase/migrations/MIGRACAO_V2.43.2.sql',
   'supabase/migrations/MIGRACAO_V2.46.0.sql',
-  'supabase/migrations/MIGRACAO_V2.48.2.sql'
+  'supabase/migrations/MIGRACAO_V2.48.2.sql',
+  'supabase/migrations/MIGRACAO_V2.48.3.sql',
+  'supabase/migrations/MIGRACAO_V2.48.7.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }

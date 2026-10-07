@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.6`<br>
+**Versão atual:** `2.48.7`<br>
 
 
 
@@ -18,6 +18,19 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.7 — Calendário operacional e filtros legíveis
+
+- Adiciona **Configurações → Bonificação → Calendário operacional**, compartilhado por todos os Squads da organização.
+- A Base do Squad passa a calcular dias úteis como **segunda a sexta − dias não úteis ativos**.
+- Inclui feriados nacionais fixos como padrão e permite cadastrar/desativar feriados estaduais, municipais e recessos da empresa.
+- A memória da bonificação mostra dias seg–sex, datas descontadas, dias úteis válidos, técnicos considerados e a fórmula da média do grupo.
+- Meses fechados congelam a memória do calendário; mudanças posteriores não alteram comissão já fechada.
+- Ajusta apenas a largura visual dos filtros da topbar para melhorar a leitura de Squad, mês e técnico, sem trocar elementos, listeners ou lógica.
+- Exige `MIGRACAO_V2.48.7.sql`.
+
+Detalhes: `docs/CALENDARIO_OPERACIONAL_V2.48.7.md`.
 
 ## V2.48.6 — Hotfix de layout e selects invisíveis
 

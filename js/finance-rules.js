@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const FINANCE_RULE_VERSION = 'FR-2.39.0-1';
+  const FINANCE_RULE_VERSION = 'FR-2.48.7-1';
   const safe = value => Number.isFinite(Number(value)) ? Number(value) : 0;
   const clone = value => JSON.parse(JSON.stringify(value));
 

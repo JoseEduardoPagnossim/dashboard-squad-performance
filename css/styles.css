@@ -2092,3 +2092,51 @@ html[data-color-mode="light"] .workspace-popover{box-shadow:0 24px 62px rgba(15,
   .sidebar.sidebar-collapsed .sidebar-footer{font-size:0!important;overflow:visible!important;text-overflow:clip!important}
   .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.6";font-size:7px;letter-spacing:.02em;color:var(--muted)}
 }
+
+/* ============================================================
+   V2.48.7 - FILTROS DO TOPO LEGIVEIS (ESCOPO SOMENTE TOPBAR)
+   Nao altera select, eventos, sidebar nem filtros internos.
+   ============================================================ */
+@media(min-width:981px){
+  :root{
+    --top-squad-w:160px;
+    --top-month-w:160px;
+    --top-tech-w:220px;
+  }
+  .topbar .top-actions>.select-wrap .ds-select-proxy{min-width:0!important;max-width:none!important;width:100%!important;flex:1 1 auto!important}
+  .topbar .top-actions>.select-wrap .ds-select-trigger{min-width:0!important;width:100%!important;padding-right:20px!important}
+  .topbar .top-actions>.select-wrap .ds-select-value{font-size:11px!important;font-weight:760;letter-spacing:-.01em}
+}
+@media(max-width:1450px) and (min-width:1161px){
+  :root{--top-squad-w:150px;--top-month-w:150px;--top-tech-w:198px}
+}
+@media(max-width:1160px) and (min-width:981px){
+  :root{--top-squad-w:144px;--top-month-w:144px;--top-tech-w:184px}
+  .topbar .top-actions>.select-wrap>span{display:none!important}
+}
+
+/* ============================================================
+   V2.48.7 - CALENDARIO OPERACIONAL DA BONIFICACAO
+   ============================================================ */
+.business-calendar-card{overflow:visible!important}
+.business-calendar-toolbar{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;margin:18px 0 14px}
+.business-calendar-toolbar>label{display:grid;gap:6px;min-width:150px}
+.business-calendar-toolbar>label>span,.business-calendar-add label>span{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.business-calendar-toolbar select,.business-calendar-add input,.business-calendar-add select{width:100%}
+.business-calendar-kpis{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:8px;flex:1;min-width:min(100%,520px)}
+.business-calendar-kpi{border:1px solid var(--premium-border);border-radius:12px;background:color-mix(in srgb,var(--panel2) 75%,transparent);padding:10px 12px;display:grid;gap:3px;min-width:0}
+.business-calendar-kpi span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}.business-calendar-kpi strong{font-size:18px}.business-calendar-kpi small{font-size:9px;color:var(--muted);line-height:1.35}
+.business-calendar-list{display:grid;gap:7px;margin:10px 0 14px}
+.business-calendar-row{display:grid;grid-template-columns:42px 112px minmax(220px,1fr) 150px 96px;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--premium-border);border-radius:12px;background:color-mix(in srgb,var(--panel) 82%,transparent)}
+.business-calendar-row.is-inactive{opacity:.58}.business-calendar-row.is-past{background:color-mix(in srgb,var(--panel) 68%,transparent)}
+.business-calendar-row-date{font-variant-numeric:tabular-nums;font-size:11px;font-weight:800;white-space:nowrap}.business-calendar-row input[type="text"]{width:100%;min-width:0}.business-calendar-row .ds-select-proxy{width:100%!important;max-width:none!important}.business-calendar-row .btn{min-height:34px!important;padding:7px 9px!important}
+.business-calendar-origin{font-size:8px;color:var(--muted);display:block;margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+.business-calendar-add{display:grid;grid-template-columns:170px minmax(260px,1fr) 180px auto;align-items:end;gap:9px;padding:13px;border:1px dashed color-mix(in srgb,var(--accent) 24%,var(--premium-border));border-radius:13px;background:color-mix(in srgb,var(--accent) 3%,transparent)}
+.business-calendar-add label{display:grid;gap:6px;min-width:0}.business-calendar-actions{margin-top:12px}.business-calendar-actions .muted{margin-right:auto}
+.business-calendar-holiday-list{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.business-calendar-holiday-chip{display:inline-flex;padding:4px 7px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--premium-border));font-size:8px;color:var(--muted);background:color-mix(in srgb,var(--accent) 4%,transparent)}
+@media(max-width:1050px){.business-calendar-row{grid-template-columns:42px 104px minmax(180px,1fr) 145px}.business-calendar-row .calendar-remove-cell{grid-column:2/-1;justify-self:end}.business-calendar-add{grid-template-columns:1fr 1fr}.business-calendar-description{grid-column:1/-1}.business-calendar-add .btn{width:100%}}
+@media(max-width:720px){.business-calendar-kpis{grid-template-columns:1fr}.business-calendar-row{grid-template-columns:42px 1fr}.business-calendar-row-date{grid-column:2}.business-calendar-row .calendar-description-cell,.business-calendar-row .calendar-type-cell,.business-calendar-row .calendar-remove-cell{grid-column:2}.business-calendar-add{grid-template-columns:1fr}.business-calendar-description{grid-column:1}.business-calendar-actions{align-items:stretch}.business-calendar-actions .muted{width:100%;margin:0 0 5px}.business-calendar-actions .btn{width:100%}}
+
+@media(min-width:981px){
+  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.7"}
+}
