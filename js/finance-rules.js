@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const FINANCE_RULE_VERSION = 'FR-2.48.7-1';
+  const FINANCE_RULE_VERSION = 'FR-2.48.8-1';
   const safe = value => Number.isFinite(Number(value)) ? Number(value) : 0;
   const clone = value => JSON.parse(JSON.stringify(value));
 
@@ -110,23 +110,34 @@
   }
 
   function financialAdjustmentSummary(entries, belowDiscount) {
-    const list = (entries || [])
-      .filter(entry => !(entry && typeof entry === 'object') || entry.eligible !== false)
-      .map(entry => String(entry && typeof entry === 'object' ? entry.status : entry || '').toUpperCase());
-    const belowCount = list.filter(status => status === 'ABAIXO').length;
-    const aboveCount = list.filter(status => status === 'ACIMA').length;
+    const list = (entries || []).map(entry => {
+      if (!(entry && typeof entry === 'object')) {
+        return { status: String(entry || '').toUpperCase(), discountEligible: true, redistributionEligible: true };
+      }
+      const baseEligible = entry.eligible !== false;
+      return {
+        status: String(entry.status || '').toUpperCase(),
+        discountEligible: baseEligible && entry.discountEligible !== false,
+        redistributionEligible: baseEligible && entry.redistributionEligible !== false
+      };
+    });
+    const belowCount = list.filter(entry => entry.status === 'ABAIXO' && entry.discountEligible).length;
+    const aboveCount = list.filter(entry => entry.status === 'ACIMA' && entry.redistributionEligible).length;
     const pool = belowCount * safe(belowDiscount);
     const redistributionEach = aboveCount ? pool / aboveCount : 0;
     return { belowCount, aboveCount, pool, redistributionEach };
   }
 
-  function buildFinanceModelData({ mode, hasProduction, days, avgPerDay, notes5Pct, eligibleAtt, evaluationExcludedAtt, commissionAtt, commissionNotes5, cancelRate, cancelTier, rawMult, effectiveMult, financeStatus, financialAdjustmentEligible, topAttBonus, topNotes5Bonus, manualBonus, sales, discount, redistributed, vacation, pool }) {
+  function buildFinanceModelData({ mode, hasProduction, days, avgPerDay, notes5Pct, eligibleAtt, evaluationExcludedAtt, commissionAtt, commissionNotes5, cancelRate, cancelTier, rawMult, effectiveMult, financeStatus, financialAdjustmentEligible, discountEligible, redistributionEligible, discountWaived, discountWaiverReason, topAttBonus, topNotes5Bonus, manualBonus, sales, discount, redistributed, vacation, pool }) {
     const base = hasProduction ? safe(commissionAtt) + safe(commissionNotes5) : 0;
     const afterCancel = hasProduction ? base * safe(effectiveMult) : 0;
-    const extras = hasProduction ? safe(manualBonus) + safe(topAttBonus) + safe(topNotes5Bonus) + safe(sales) - safe(discount) + safe(redistributed) : 0;
+    const resolvedDiscountEligible = financialAdjustmentEligible !== false && discountEligible !== false && !vacation;
+    const appliedDiscount = resolvedDiscountEligible ? safe(discount) : 0;
+    const extras = hasProduction ? safe(manualBonus) + safe(topAttBonus) + safe(topNotes5Bonus) + safe(sales) - appliedDiscount + safe(redistributed) : 0;
     const rawBeforeVacation = hasProduction ? afterCancel + extras : 0;
     // Férias reduzem somente a comissão-base já ajustada pelo cancelamento.
-    // Bônus, prêmios, comissão de vendas, desconto e redistribuição permanecem integrais.
+    // Bônus, prêmios, comissão de vendas e redistribuição permanecem integrais.
+    // A partir da V2.48.8, férias também isentam o desconto por status ABAIXO.
     const afterVacationBase = vacation ? afterCancel * .5 : afterCancel;
     const vacationBaseAdjustment = vacation ? afterVacationBase - afterCancel : 0;
     const rawAfterVacationBase = hasProduction ? afterVacationBase + extras : 0;
@@ -154,11 +165,15 @@
       afterCancel,
       financeStatus: financeStatus || '',
       financialAdjustmentEligible: financialAdjustmentEligible !== false,
+      discountEligible: resolvedDiscountEligible,
+      redistributionEligible: redistributionEligible !== false,
+      discountWaived: !!discountWaived,
+      discountWaiverReason: String(discountWaiverReason || ''),
       topAttBonus: safe(topAttBonus),
       topNotes5Bonus: safe(topNotes5Bonus),
       manualBonus: safe(manualBonus),
       salesCommission: safe(sales),
-      discount: safe(discount),
+      discount: appliedDiscount,
       redistribution: safe(redistributed),
       rawBeforeVacation,
       beforeVacation,

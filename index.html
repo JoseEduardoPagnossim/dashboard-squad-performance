@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.48.7" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.48.7" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.48.7" />
+  <link rel="stylesheet" href="css/styles.css?v=2.48.8" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.48.8" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.48.8" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.48.7 • Layout estável</small>
+        <small class="login-version">V2.48.8 • Bonificação refinada</small>
       </section>
     </div>
   </section>
@@ -164,7 +164,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.48.7 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.48.8 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1154,7 +1154,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.48.7</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.48.8</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1368,7 +1368,7 @@
             <div class="admin-actions"><span id="financeMemoryStatus" class="muted">Selecione uma competência.</span><button class="btn secondary" id="refreshFinanceMemoryBtn" type="button" data-permission="finance.view">↻ Atualizar histórico</button><button class="btn secondary" id="recordFinanceMemoryBtn" type="button" data-permission="finance.manage">Registrar memória agora</button></div>
             <div id="financeMemoryRows" class="finance-memory-list"><div class="muted finance-empty">Selecione uma competência.</div></div>
           </article>
-          <article class="card admin-card full finance-admin-card admin-section admin-finance"><span class="eyebrow">FECHAMENTO FINANCEIRO</span><h2>Técnicos do Squad</h2><p>Layout responsivo sem rolagem horizontal. <b>Atend. sem avaliação</b> desconta apenas atendimentos que não geram e-mail da base usada nas taxas; a produção continua integral. O checkbox <b>Desconsiderar na quantidade de técnicos do grupo</b> continua controlando somente o divisor das referências e da Base do Squad. Abra <b>Detalhes</b> para auditar os modelos.</p><div id="financeTechnicianRows" class="finance-tech-list"></div><div class="admin-actions finance-report-actions"><span class="muted" id="financeAdminHint">Selecione um mês.</span><button class="btn secondary" id="exportFinanceExcelBtn">↓ Relatório Excel</button><button class="btn secondary" id="exportFinancePdfBtn">↓ Relatório PDF</button><button class="btn primary" id="saveFinanceTechniciansBtn">Salvar valores individuais</button></div></article>
+          <article class="card admin-card full finance-admin-card admin-section admin-finance"><span class="eyebrow">FECHAMENTO FINANCEIRO</span><h2>Técnicos do Squad</h2><p>Visão compacta por técnico. <b>Férias</b> paga 50% da comissão-base e isenta o desconto por status ABAIXO. <b>Isentar desconto ABAIXO</b> permite exceções pontuais sem retirar o técnico da média do Squad; <b>Fora da quantidade do Squad</b> continua reservado à competência parcial. Abra <b>Detalhes</b> para auditar os modelos.</p><div id="financeTechnicianRows" class="finance-tech-list"></div><div class="admin-actions finance-report-actions"><span class="muted" id="financeAdminHint">Selecione um mês.</span><button class="btn secondary" id="exportFinanceExcelBtn">↓ Relatório Excel</button><button class="btn secondary" id="exportFinancePdfBtn">↓ Relatório PDF</button><button class="btn primary" id="saveFinanceTechniciansBtn">Salvar valores individuais</button></div></article>
           <article class="card admin-card super-only finance-super-card admin-section admin-finance"><span class="eyebrow">ADMINISTRADOR</span><h2>Minha comissão do mês</h2><p>A comissão de Administrador é informada manualmente como valor total e não participa das regras dos Squads.</p><div class="admin-form"><label><span>Comissão final (R$)</span><input id="superAdminCommissionInput" type="number" min="0" step="0.01"></label><label><span>Observação</span><input id="superAdminCommissionNotes" type="text" placeholder="Opcional"></label></div><div class="admin-actions"><span class="muted" id="superAdminCommissionPeriod">Selecione um mês.</span><button class="btn primary" id="saveSuperAdminCommissionBtn">Salvar minha comissão</button></div></article>
 
           <article class="card admin-card full admin-section admin-costs support-cost-hero super-only">
@@ -1561,20 +1561,20 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.48.7"></script>
-  <script src="js/finance-rules.js?v=2.48.7"></script>
-  <script src="js/finance-advanced.js?v=2.48.7"></script>
-  <script src="js/tv-engine.js?v=2.48.7"></script>
-  <script src="js/presentation.js?v=2.48.7"></script>
-  <script src="js/chart-engine.js?v=2.48.7"></script>
-  <script src="js/import-engine.js?v=2.48.7"></script>
-  <script src="js/predictive-engine.js?v=2.48.7"></script>
-  <script src="js/alert-engine.js?v=2.48.7"></script>
-  <script src="js/settings-engine.js?v=2.48.7"></script>
-  <script src="js/performance-engine.js?v=2.48.7"></script>
-  <script src="js/navigation-engine.js?v=2.48.7"></script>
-  <script src="js/workspace-engine.js?v=2.48.7"></script>
-  <script src="js/design-system.js?v=2.48.7"></script>
-  <script src="js/app.js?v=2.48.7"></script>
+  <script src="js/business-calendar.js?v=2.48.8"></script>
+  <script src="js/finance-rules.js?v=2.48.8"></script>
+  <script src="js/finance-advanced.js?v=2.48.8"></script>
+  <script src="js/tv-engine.js?v=2.48.8"></script>
+  <script src="js/presentation.js?v=2.48.8"></script>
+  <script src="js/chart-engine.js?v=2.48.8"></script>
+  <script src="js/import-engine.js?v=2.48.8"></script>
+  <script src="js/predictive-engine.js?v=2.48.8"></script>
+  <script src="js/alert-engine.js?v=2.48.8"></script>
+  <script src="js/settings-engine.js?v=2.48.8"></script>
+  <script src="js/performance-engine.js?v=2.48.8"></script>
+  <script src="js/navigation-engine.js?v=2.48.8"></script>
+  <script src="js/workspace-engine.js?v=2.48.8"></script>
+  <script src="js/design-system.js?v=2.48.8"></script>
+  <script src="js/app.js?v=2.48.8"></script>
 </body>
 </html>

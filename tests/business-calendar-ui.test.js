@@ -11,14 +11,14 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.48.7
 test('V2.48.7 publica o calendário operacional na área de bonificação',()=>{
   assert.ok(index.includes('id="configBusinessCalendarCard"'));
   for(const id of ['businessCalendarYearSelect','businessCalendarRows','businessCalendarDateInput','businessCalendarAddBtn','businessCalendarSaveBtn']) assert.ok(index.includes(`id="${id}"`));
-  assert.ok(index.includes('js/business-calendar.js?v=2.48.7'));
+  assert.ok(index.includes('js/business-calendar.js?v=2.48.8'));
   assert.ok(existsSync(join(root,'js','business-calendar.js')));
 });
 
 test('bonificação usa os dias úteis do calendário e preserva memória no fechamento',()=>{
   assert.match(app,/calendarSummary=financeBusinessCalendarSummary\(m\),days=Math\.max\(1,safe\(calendarSummary\.businessDays\)\)/);
-  assert.match(app,/financeComparison=\{version:7[\s\S]*?businessCalendar:clone\(calendarSummary\)/);
-  assert.match(app,/closedSnapshot=\{version:10[\s\S]*?businessCalendar:clone/);
+  assert.match(app,/financeComparison=\{version:8[\s\S]*?businessCalendar:clone\(calendarSummary\)/);
+  assert.match(app,/closedSnapshot=\{version:11[\s\S]*?businessCalendar:clone/);
   assert.match(app,/Dias úteis considerados/);
   assert.match(app,/Atendimentos ÷ dias úteis ÷ técnicos considerados/);
   assert.match(app,/performanceScope\(\)\{return `\$\{state\.user\?\.organizationId\|\|'org'\}:\$\{state\.user\?\.userId\|\|'user'\}:v\$\{APP_VERSION\}`\}/);

@@ -124,7 +124,9 @@
         value: -safe(data.discount),
         result: afterDiscount,
         tone: safe(data.discount) ? 'negative' : 'neutral',
-        note: data.financialAdjustmentEligible === false ? 'Competência parcial: isento do ajuste.' : String(data.financeStatus || '')
+        note: data.discountEligible === false
+          ? ({ vacation: 'Férias: desconto ABAIXO isento.', manual: 'Exceção manual: desconto ABAIXO isento.', partial: 'Competência parcial: desconto ABAIXO isento.' }[String(data.discountWaiverReason || '')] || 'Desconto ABAIXO isento.')
+          : String(data.financeStatus || '')
       },
       {
         id: 'redistribution',
@@ -194,6 +196,7 @@
       manualBonus: safe(t.financeManualBonus),
       salesCommission: safe(t.salesCommission),
       vacation: !!t.vacation,
+      waiveBelowDiscount: !!t.waiveBelowDiscount,
       excludeFromGroupCount: !!t.excludeFromGroupCount,
       finance: clone(t.financeData || {})
     }));

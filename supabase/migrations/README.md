@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.48.7.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.48.8.
 
 Depois:
 
@@ -54,6 +54,7 @@ V2.46.0
 V2.48.2
 V2.48.3
 V2.48.7
+V2.48.8
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -115,3 +116,8 @@ Depois da migration, republique as Edge Functions `create-user` e `manage-user`,
 ## V2.48.7 — Calendário operacional
 
 `MIGRACAO_V2.48.7.sql` cria `business_calendar_exceptions`, com leitura limitada à própria organização e manutenção restrita a Administradores. O frontend combina essas exceções com os feriados nacionais fixos padrão e usa o resultado apenas no cálculo financeiro por dias úteis. Competências fechadas preservam a memória usada no snapshot.
+
+## V2.48.8 — Isenção individual do desconto ABAIXO
+
+`MIGRACAO_V2.48.8.sql` adiciona `technician_finance_monthly.waive_below_discount`. A flag é específica por técnico e competência: mantém o profissional na Base do Squad e na redistribuição quando `ACIMA`, mas impede o desconto financeiro quando `ABAIXO` e não adiciona esse valor ao pool. Férias recebem a mesma isenção automaticamente pelo motor financeiro, sem depender da flag manual.
+

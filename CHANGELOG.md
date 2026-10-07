@@ -1,3 +1,12 @@
+## V2.48.8 — Exceções de desconto e tela compacta de bonificação
+
+- Férias continuam aplicando 50% somente sobre a comissão-base após cancelamento e passam a isentar automaticamente o desconto por status `ABAIXO`.
+- Novo campo `waive_below_discount` permite isentar pontualmente um técnico do desconto sem removê-lo da quantidade do Squad; quando ABAIXO, ele também deixa de alimentar o pool de redistribuição.
+- Técnicos isentos ou em férias continuam aptos a receber redistribuição quando estiverem `ACIMA`, salvo quando `exclude_from_group_count` estiver marcado.
+- Memória, auditoria, relatório Excel, reimportação e snapshot de fechamento preservam a nova flag; a versão da regra financeira passa a `FR-2.48.8-1` e o snapshot sobe para versão 11.
+- A listagem de técnicos na Bonificação foi compactada em grade/tabela responsiva, sem alterar sidebar, topbar ou layouts de outros módulos.
+- Nova migration `MIGRACAO_V2.48.8.sql` adiciona `technician_finance_monthly.waive_below_discount`.
+
 ## V2.48.7 — Calendário operacional da bonificação e topbar legível
 
 - Corrige o divisor de dias da bonificação: Base do Squad e modelo Individual passam a usar dias úteis operacionais (segunda a sexta menos exceções ativas).

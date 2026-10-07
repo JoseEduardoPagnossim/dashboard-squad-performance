@@ -113,6 +113,15 @@ test('desconto dos ABAIXO forma pool e redistribui apenas entre ACIMA', () => {
     { status: 'ACIMA', eligible: false }
   ], 200);
   assert.deepEqual(competenciaParcial, { belowCount: 1, aboveCount: 1, pool: 200, redistributionEach: 200 });
+
+  const isencoes = finance.financialAdjustmentSummary([
+    { status: 'ABAIXO', discountEligible: false, redistributionEligible: true }, // férias
+    { status: 'ABAIXO', discountEligible: false, redistributionEligible: true }, // exceção manual
+    { status: 'ABAIXO', discountEligible: true, redistributionEligible: true },
+    { status: 'ACIMA', discountEligible: false, redistributionEligible: true },
+    { status: 'ACIMA', eligible: false }
+  ], 200);
+  assert.deepEqual(isencoes, { belowCount: 1, aboveCount: 1, pool: 200, redistributionEach: 200 });
 });
 
 test('modelo individual aplica piso zero quando descontos superam a bonificação', () => {
@@ -161,18 +170,39 @@ test('férias reduzem 50% somente da comissão-base após cancelamento', () => {
   assert.equal(result.vacationScope, 'base_after_cancel');
 });
 
-test('férias não reduzem bônus, prêmios, vendas nem redistribuição', () => {
+test('férias preservam bônus, prêmios, vendas e redistribuição, mas isentam desconto', () => {
   const result = finance.buildFinanceModelData({
     mode: 'squad', hasProduction: true, days: 20, avgPerDay: 10, notes5Pct: .5,
     eligibleAtt: 200, evaluationExcludedAtt: 0, commissionAtt: 400, commissionNotes5: 200,
     cancelRate: 0, cancelTier: { max: .004 }, rawMult: 1, effectiveMult: 1,
-    financeStatus: 'ACIMA', financialAdjustmentEligible: true, topAttBonus: 100,
-    topNotes5Bonus: 80, manualBonus: 120, sales: 50, discount: 30,
+    financeStatus: 'ABAIXO', financialAdjustmentEligible: true, discountEligible: true,
+    redistributionEligible: true, topAttBonus: 100,
+    topNotes5Bonus: 80, manualBonus: 120, sales: 50, discount: 200,
     redistributed: 200, vacation: true, pool: 200
   });
   assert.equal(result.afterCancel, 600);
   assert.equal(result.afterVacationBase, 300);
-  assert.equal(result.final, 820);
+  assert.equal(result.discountEligible, false);
+  assert.equal(result.discount, 0);
+  assert.equal(result.final, 850);
+});
+
+ test('exceção manual do desconto mantém redistribuição elegível', () => {
+  const result = finance.buildFinanceModelData({
+    mode: 'squad', hasProduction: true, days: 20, avgPerDay: 10, notes5Pct: .5,
+    eligibleAtt: 200, evaluationExcludedAtt: 0, commissionAtt: 400, commissionNotes5: 200,
+    cancelRate: 0, cancelTier: { max: .004 }, rawMult: 1, effectiveMult: 1,
+    financeStatus: 'ABAIXO', financialAdjustmentEligible: true, discountEligible: false,
+    redistributionEligible: true, discountWaived: true, discountWaiverReason: 'manual',
+    topAttBonus: 0, topNotes5Bonus: 0, manualBonus: 0, sales: 0, discount: 200,
+    redistributed: 0, vacation: false, pool: 0
+  });
+  assert.equal(result.discountEligible, false);
+  assert.equal(result.redistributionEligible, true);
+  assert.equal(result.discount, 0);
+  assert.equal(result.discountWaived, true);
+  assert.equal(result.discountWaiverReason, 'manual');
+  assert.equal(result.final, 600);
 });
 
 test('teto individual não altera valores quando total está abaixo do limite', () => {
@@ -209,8 +239,8 @@ test('teto zero zera integralmente o modelo individual', () => {
   assert.deepEqual(records.map(r => r.data.final), [0, 0]);
 });
 
-test('financial engine exposes the V2.48.7 rule version in calculated data', () => {
-  assert.equal(finance.FINANCE_RULE_VERSION, 'FR-2.48.7-1');
+test('financial engine exposes the V2.48.8 rule version in calculated data', () => {
+  assert.equal(finance.FINANCE_RULE_VERSION, 'FR-2.48.8-1');
   const result = finance.buildFinanceModelData({
     mode: 'squad', hasProduction: true, days: 20, avgPerDay: 10, notes5Pct: .5,
     eligibleAtt: 100, evaluationExcludedAtt: 0, commissionAtt: 400, commissionNotes5: 200,
@@ -219,5 +249,5 @@ test('financial engine exposes the V2.48.7 rule version in calculated data', () 
     topNotes5Bonus: 0, manualBonus: 0, sales: 0, discount: 0,
     redistributed: 0, vacation: false, pool: 0
   });
-  assert.equal(result.ruleVersion, 'FR-2.48.7-1');
+  assert.equal(result.ruleVersion, 'FR-2.48.8-1');
 });

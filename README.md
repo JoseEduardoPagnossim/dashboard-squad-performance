@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.7`<br>
+**Versão atual:** `2.48.8`<br>
 
 
 
@@ -19,6 +19,16 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.48.8 — Exceções de desconto e bonificação compacta
+
+- Técnicos marcados como **Férias** continuam recebendo 50% da comissão-base e agora ficam automaticamente isentos do desconto financeiro por status `ABAIXO`.
+- Novo checkbox **Isentar desconto ABAIXO** por técnico/competência, sem retirar o profissional da média do Squad; a isenção também impede que o valor alimente o pool de redistribuição.
+- A redistribuição para técnicos `ACIMA` continua normal, inclusive para quem tem a isenção manual ou férias, desde que não esteja marcado como competência parcial.
+- A tela **Gestão → Bonificação → Técnicos do Squad** foi reorganizada em grade compacta, com resumo financeiro e controles em duas faixas, mantendo detalhes e auditoria recolhíveis.
+- Exige `MIGRACAO_V2.48.8.sql`.
+
+Detalhes: `docs/BONIFICACAO_EXCECOES_V2.48.8.md`.
 
 ## V2.48.7 — Calendário operacional e filtros legíveis
 

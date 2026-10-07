@@ -128,6 +128,7 @@ for (const required of [
   'docs/SIDEBAR_RESPONSIVA_V2.48.1.md',
   'docs/TEMA_BOOTSTRAP_V2.48.2.md',
   'docs/CALENDARIO_OPERACIONAL_V2.48.7.md',
+  'docs/BONIFICACAO_EXCECOES_V2.48.8.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -141,7 +142,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.46.0.sql',
   'supabase/migrations/MIGRACAO_V2.48.2.sql',
   'supabase/migrations/MIGRACAO_V2.48.3.sql',
-  'supabase/migrations/MIGRACAO_V2.48.7.sql'
+  'supabase/migrations/MIGRACAO_V2.48.7.sql',
+  'supabase/migrations/MIGRACAO_V2.48.8.sql'
 ]) {
   if (!existsSync(join(root, required))) errors.push(`Arquivo obrigatório ausente: ${required}`);
 }

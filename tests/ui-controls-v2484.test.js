@@ -79,9 +79,10 @@ test('sidebar continua com grade estável e recuperação de estado legado',()=>
   assert.match(app,/version:5/);
 });
 
-test('V2.48.7 mantém o hotfix de controles e adiciona somente a migration do calendário',()=>{
+test('V2.48.8 mantém o hotfix de controles e as migrations posteriores',()=>{
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.6.sql')),false);
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.7.sql')),true);
-  assert.ok(index.includes('V2.48.7'));
-  assert.ok(app.includes("APP_VERSION = '2.48.7'"));
+  assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.8.sql')),true);
+  assert.ok(index.includes('V2.48.8'));
+  assert.ok(app.includes("APP_VERSION = '2.48.8'"));
 });
