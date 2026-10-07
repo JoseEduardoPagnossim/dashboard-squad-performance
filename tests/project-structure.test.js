@@ -113,8 +113,8 @@ test('V2.38.1 centraliza configurações por módulo sem duplicar telas operacio
   assert.match(app, /prepareCentralSettings/);
   assert.match(app, /openSettingsModule/);
   assert.match(app, /applySettingsModuleFilter/);
-  assert.ok(index.includes('data-open-settings-module="finance"'), 'Bonificação deve apontar para Configurações > Bonificação');
-  assert.ok(index.includes('data-open-settings-module="operation"'), 'Operação deve apontar para Configurações > Operação e metas');
+  assert.ok(index.includes('data-settings-module-filter="finance"'), 'Central de Configurações deve manter Bonificação');
+  assert.ok(index.includes('data-settings-module-filter="operation"'), 'Central de Configurações deve manter Operação e metas');
 });
 
 test('configuração da apresentação pode ser sincronizada fora da tela de TV', () => {
@@ -135,7 +135,7 @@ test('finance-advanced carrega entre regras financeiras e app principal', () => 
 });
 
 test('V2.39 possui simulador, memoria e explicacao financeira completa', () => {
-  for (const id of ['financeSelfExplanation','financeSimulatorCard','financeSimulatorTech','runFinanceSimulationBtn','financeSimulationResult','financeMemoryCard','financeMemoryRows','recordFinanceMemoryBtn','financeRuleVersion','financeRuleFingerprint','configFinanceRuleVersion','configFinanceRuleFingerprint']) {
+  for (const id of ['financeSelfExplanation','financeSimulatorCard','financeSimulatorTech','runFinanceSimulationBtn','financeSimulationResult','financeMemoryCard','financeMemoryRows','recordFinanceMemoryBtn']) {
     assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
   }
   assert.match(app, /window\.SoftenFinanceAdvanced/);
@@ -408,7 +408,7 @@ test('V2.47 não conflita rota normal com modo TV da Apresentação', () => {
 test('V2.47 é frontend-only e não exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.47.0.sql')), false);
-  assert.ok(index.includes('V2.48.8'));
+  assert.ok(index.includes('V2.48.10'));
 });
 
 
@@ -443,7 +443,7 @@ test('V2.48 reutiliza ui_preferences e não exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.0.sql')),false);
   assert.match(app,/save_my_ui_preferences/);
-  assert.ok(index.includes('V2.48.8'));
+  assert.ok(index.includes('V2.48.10'));
 });
 
 
@@ -458,5 +458,5 @@ test('V2.48.1 preserva rodape e campanha com scroll apenas na navegacao lateral'
 test('V2.48.1 e frontend-only e nao exige migration nova', () => {
   const { existsSync } = require('node:fs');
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.1.sql')),false);
-  assert.ok(index.includes('V2.48.8'));
+  assert.ok(index.includes('V2.48.10'));
 });

@@ -1,3 +1,19 @@
+## V2.48.10 — Bonificação orientada ao fechamento e limpeza de atalhos
+
+- Remove avisos intermediários que redirecionavam Operação, Bonificação e Apresentação/TV para a Central de Configurações.
+- Coloca o Fechamento Financeiro no topo do módulo de Bonificação.
+- Exibe KPIs do mesmo consolidado usado no cálculo: média diária do Squad, % Notas 5 e cancelados/taxa/multiplicador.
+- Histórico financeiro e simulador passam para o final e ficam recolhidos por padrão.
+- Nenhuma regra financeira foi alterada; `FR-2.48.8-1` permanece vigente.
+- Sem migration.
+
+## V2.48.9 — Limpeza visual da governança financeira
+
+- Remove os identificadores técnicos `FR-*` e a assinatura da configuração da interface da Bonificação/Configurações.
+- Mantém esses identificadores internamente em memória, auditoria, snapshot e relatórios para rastreabilidade.
+- A regra financeira permanece `FR-2.48.8-1`, pois não houve alteração de cálculo.
+- Não exige migration.
+
 ## V2.48.8 — Exceções de desconto e tela compacta de bonificação
 
 - Férias continuam aplicando 50% somente sobre a comissão-base após cancelamento e passam a isentar automaticamente o desconto por status `ABAIXO`.

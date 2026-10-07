@@ -129,6 +129,8 @@ for (const required of [
   'docs/TEMA_BOOTSTRAP_V2.48.2.md',
   'docs/CALENDARIO_OPERACIONAL_V2.48.7.md',
   'docs/BONIFICACAO_EXCECOES_V2.48.8.md',
+  'docs/BONIFICACAO_LIMPEZA_VISUAL_V2.48.9.md',
+  'docs/BONIFICACAO_FECHAMENTO_V2.48.10.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',

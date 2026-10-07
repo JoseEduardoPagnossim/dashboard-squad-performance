@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.8`<br>
+**Versão atual:** `2.48.10`<br>
 
 
 
@@ -19,6 +19,25 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.10 — Bonificação orientada ao fechamento
+
+- Remove os três cards-legado de redirecionamento para Configurações em Operação, Bonificação e Apresentação/TV. As rotas continuam disponíveis pelo menu, Central de Configurações e busca global.
+- Reorganiza **Gestão → Bonificação** para abrir pelo **Fechamento Financeiro / Técnicos do Squad**, priorizando o valor real da competência.
+- Adiciona três KPIs diretamente ligados ao mesmo consolidado usado pelo motor financeiro: **média de atendimentos/técnico/dia do Squad**, **taxa de Notas 5 do Squad** e **cancelados da competência**.
+- Cada KPI mostra faixa atual e efeito financeiro correspondente; o cabeçalho informa competência, modelo oficial, dias úteis e técnicos considerados.
+- Move **Histórico de cálculo e auditoria** e **Simulador de bonificação** para o final do módulo, recolhidos por padrão.
+- Mantém regras financeiras, filtros, sidebar, topbar, fechamento e persistência sem alterações. Não exige migration.
+
+Detalhes: `docs/BONIFICACAO_FECHAMENTO_V2.48.10.md`.
+
+## V2.48.9 — Limpeza visual da governança financeira
+
+- Remove da interface da Bonificação os códigos técnicos de versão da regra financeira e assinatura da configuração.
+- Mantém versão e fingerprint preservados internamente em memória de cálculo, auditoria, snapshots e relatórios.
+- Simplifica a identificação visual da memória de cálculo sem alterar nenhuma regra financeira.
+- Não exige migration.
 
 ## V2.48.8 — Exceções de desconto e bonificação compacta
 
