@@ -74,3 +74,9 @@ test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
   assert.match(app,/insideCompetencePortal/);
   assert.match(app,/SoftenDesignSystem\?\.syncSelects\?\.\(\{rebuild:true\}\)/);
 });
+
+test('R3 mantém menus customizados acima do Período de análise',()=>{
+  assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
+  assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
+  assert.ok(index.includes('css/styles.css?v=2.49.1-r3'));
+});

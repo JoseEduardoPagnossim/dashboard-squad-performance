@@ -2717,3 +2717,6 @@ html.modal-open,body.modal-open{overflow:hidden!important}
   .period-picker-calendar-v2491{padding:10px 12px 12px}
 }
 @media(max-width:480px){.period-picker-mode-switch{grid-template-columns:1fr}.period-picker-cuts{grid-template-columns:1fr 1fr}.period-picker-context-copy>small,.period-picker-free-copy small{font-size:8px}}
+
+/* V2.49.1 R3 - menus do Design System renderizados em portal precisam ficar acima de popovers/drawers. */
+.ds-select-menu.ds-select-portal{z-index:1800!important}
