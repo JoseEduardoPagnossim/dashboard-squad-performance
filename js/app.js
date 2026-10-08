@@ -46,7 +46,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.48.12';
+  const APP_VERSION = '2.48.13';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -909,6 +909,9 @@
     $('#csvInput').addEventListener('change',handleCsvFile);
     $('#confirmCsvImportBtn').addEventListener('click',confirmCsvImport);
     if($('#csvMonthSelect'))$('#csvMonthSelect').addEventListener('change',renderImportPreview);
+    if($('#csvScopeSelect'))$('#csvScopeSelect').addEventListener('change',refreshPendingCsvForScope);
+    bindImportDropzone($('#importDropzone'),{openFirst:false});
+    bindImportDropzone($('#importCenterDropzone'),{openFirst:true});
     if($('#refreshImportHistoryBtn'))$('#refreshImportHistoryBtn').addEventListener('click',()=>ensureImportHistoryLoaded(true));
     if($('#undoLastImportBtn'))$('#undoLastImportBtn').addEventListener('click',undoLastImport);
     $('#saveMonthlyMetricsBtn').addEventListener('click',saveMonthlyMetrics);
@@ -3853,15 +3856,48 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){console.error(err);toast('Não foi possível reverter completamente a importação. Confira o histórico e o banco antes de tentar novamente.')}
   }
 
+  function importScopeChoices(){
+    const codes=Object.keys(state.squads||{}).sort((a,b)=>a.localeCompare(b));
+    if(isSuperAdmin())return{codes,allowAll:true};
+    const own=state.user?.squadCode&&state.squads?.[state.user.squadCode]?[state.user.squadCode]:[];
+    return{codes:own,allowAll:false};
+  }
+  function populateImportScopeSelect(){
+    const el=$('#csvScopeSelect');if(!el)return;
+    const {codes,allowAll}=importScopeChoices();
+    el.innerHTML=(allowAll?'<option value="all">Todos os Squads</option>':'')+codes.map(code=>`<option value="${escapeHtml(code)}">Squad ${escapeHtml(code)}</option>`).join('');
+    const preferred=allowAll?'all':(codes[0]||'');if(preferred)el.value=preferred;el.disabled=!allowAll&&codes.length<=1;
+  }
+  function selectedImportScope(){
+    const {codes,allowAll}=importScopeChoices();let value=String($('#csvScopeSelect')?.value||'').toUpperCase();
+    if(value==='ALL'&&allowAll)return{value:'all',scopeAll:true,codes:[...codes]};
+    if(!codes.includes(value))value=codes[0]||'';
+    return{value,scopeAll:false,codes:value?[value]:[]};
+  }
+  function importScopeLabel(scope=selectedImportScope()){return scope.scopeAll?'Todos os Squads':scope.codes.length?`Squad ${scope.codes[0]}`:'Nenhum Squad'}
+  function updateImportDropzoneFile(source=null){
+    const el=$('#importDropzoneFile');if(!el)return;el.textContent=source?.fileName?`${source.fileName} • ${Math.max(1,Math.round(safe(source.fileSize)/1024)).toLocaleString('pt-BR')} KB`:'Nenhum arquivo selecionado';
+  }
+  function resetImportPreviewUi(){
+    state.pendingCsv=null;state.importPreview=null;$('#confirmCsvImportBtn')?.classList.add('hidden');if($('#confirmCsvImportBtn'))$('#confirmCsvImportBtn').disabled=false;$('#csvPeriodBlock')?.classList.add('hidden');$('#importPreviewBlock')?.classList.add('hidden');
+  }
+  function importUiError(err){
+    state.pendingCsv=null;state.importPreview=null;$('#importMessage').textContent='Não foi possível preparar esta importação.';$('#importDetails').textContent=err?.message||String(err);$('#importProgress').style.width='100%';$('#confirmCsvImportBtn').classList.add('hidden');$('#csvPeriodBlock').classList.add('hidden');$('#importPreviewBlock')?.classList.add('hidden');
+  }
+  function bindImportDropzone(el,{openFirst=false}={}){
+    if(!el)return;const choose=()=>{if(openFirst)openImport(null);$('#csvInput')?.click();};
+    el.addEventListener('click',choose);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+    for(const type of ['dragenter','dragover'])el.addEventListener(type,e=>{e.preventDefault();e.stopPropagation();el.classList.add('is-dragover');if(e.dataTransfer)e.dataTransfer.dropEffect='copy';});
+    for(const type of ['dragleave','dragend'])el.addEventListener(type,e=>{e.preventDefault();e.stopPropagation();el.classList.remove('is-dragover');});
+    el.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();el.classList.remove('is-dragover');const file=e.dataTransfer?.files?.[0];if(!file)return;if(openFirst)openImport(null);handleCsvSelection(file);});
+  }
   function openImport(expectedKind=null){
-    if(!isAdmin())return;if(state.squadCode==='all'&&!isSuperAdmin())return;
-    const scope=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;
-    state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=expectedKind;
+    if(!isAdmin())return;
+    state.pendingCsv=null;state.pendingCsvSource=null;state.importPreview=null;state.expectedCsvKind=expectedKind;populateImportScopeSelect();updateImportDropzoneFile(null);
     const quality=expectedKind==='quality',service=expectedKind==='service';
-    $('#importMessage').textContent=quality?`Selecione o CSV de Produto/Empresa para ${scope}.`:service?`Selecione o CSV operacional de atendimentos para ${scope}.`:`Selecione o CSV para atualizar ${scope}.`;
+    $('#importMessage').textContent=quality?'Selecione o CSV de Produto/Empresa.':service?'Selecione o CSV operacional de atendimentos.':'Selecione ou arraste um CSV. O tipo será identificado automaticamente.';
     $('#importDetails').innerHTML=quality?'<b>CSV Produto/Empresa:</b> Time ou DataAvaliacao, nomeApresentativo, NotaProduto e NotaEmpresa. Cada linha representa uma avaliação. <b>NotaServico é ignorada</b> e cliente não é necessário.':service?'<b>CSV Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.':'<b>Operacional/Serviço:</b> time, Tecnico, grupoAtendimento, Quantidade e Nota 1 a 5.<br><b>Qualidade Produto/Empresa:</b> Time, nomeApresentativo, NotaProduto e NotaEmpresa. <b>NotaServico é ignorada</b> neste segundo arquivo.';
-    if($('#csvPeriodHint'))$('#csvPeriodHint').textContent=quality?'Produto/Empresa exige que a competência operacional já esteja importada. Ao confirmar um mês, as demais competências existentes no mesmo CSV e já cadastradas no escopo também são sincronizadas.':service?'A reimportação substitui Serviço/atendimentos do mês e preserva Produto/Empresa.':'O tipo do CSV é identificado automaticamente.';
-    $('#importProgress').style.width='0%';$('#chooseFileBtn').disabled=false;$('#confirmCsvImportBtn').classList.add('hidden');$('#confirmCsvImportBtn').disabled=false;$('#csvPeriodBlock').classList.add('hidden');$('#importPreviewBlock')?.classList.add('hidden');openModal('importModal');
+    $('#importProgress').style.width='0%';$('#chooseFileBtn').disabled=false;resetImportPreviewUi();openModal('importModal');const body=$('#importModalBody');if(body)body.scrollTop=0;
   }
   let confirmDialogResolver=null;
   let confirmDialogRequirement='';
@@ -3880,45 +3916,53 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return new Promise(resolve=>{confirmDialogResolver=resolve});
   }
   function settleConfirmDialog(value){if(value&&confirmDialogRequirement&&!confirmationMatches($('#confirmDialogPhraseInput')?.value,confirmDialogRequirement))return;const resolve=confirmDialogResolver;confirmDialogResolver=null;confirmDialogRequirement='';closeModal('confirmDialog');if(resolve)resolve(!!value)}
-  function openModal(id){$('#'+id).classList.add('open');$('#'+id).setAttribute('aria-hidden','false')}
-  function closeModal(id){$('#'+id).classList.remove('open');$('#'+id).setAttribute('aria-hidden','true')}
+  function syncModalScrollLock(){const locked=!!document.querySelector('.modal.open');document.body.classList.toggle('modal-open',locked);document.documentElement.classList.toggle('modal-open',locked)}
+  function openModal(id){const modal=$('#'+id);if(!modal)return;modal.classList.add('open');modal.setAttribute('aria-hidden','false');syncModalScrollLock()}
+  function closeModal(id){const modal=$('#'+id);if(!modal)return;modal.classList.remove('open');modal.setAttribute('aria-hidden','true');syncModalScrollLock()}
   function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2800)}
 
-  async function handleCsvFile(e){
-    if(!isAdmin())return;const file=e.target.files?.[0];if(!file)return;openModal('importModal');$('#chooseFileBtn').disabled=true;$('#importMessage').textContent='Lendo CSV...';$('#importProgress').style.width='25%';
-    try{
-      const text=await file.text(),checksum=importChecksum(text),kind=detectCsvKind(text);$('#importProgress').style.width='45%';
-      if(state.expectedCsvKind&&kind!==state.expectedCsvKind)throw new Error(state.expectedCsvKind==='quality'?'Este botão é exclusivo para o CSV de Produto/Empresa. Selecione o arquivo com Time, nomeApresentativo, NotaProduto e NotaEmpresa.':'Este botão é exclusivo para o CSV operacional de atendimentos.');
-      if(!state.userDirectoryLoaded)await loadUserDirectory();
-      const scopeAll=isSuperAdmin()&&state.squadCode==='all',codes=scopeAll?Object.keys(state.squads):[state.squadCode];
-      if(kind==='quality'){
-        const parsed=parseQualityCsv(text),mapped=mapQualityCsvRows(parsed.rows,codes),months=[...new Set(mapped.rows.map(r=>r.id))].sort().reverse();
-        if(!months.length)throw new Error(scopeAll?'Nenhuma avaliação de Produto/Empresa pôde ser vinculada. Importe primeiro o CSV operacional das competências e confira os nomes dos técnicos.':`Nenhuma avaliação de Produto/Empresa pôde ser vinculada ao Squad ${state.squadCode}. Importe primeiro a competência operacional e confira o nome do técnico.`);
-        state.pendingCsv={kind:'quality',fileName:file.name,fileSize:file.size,checksum,rows:mapped.rows,ignored:parsed.ignored,total:parsed.total,months,unmatched:mapped.unmatched,ambiguous:mapped.ambiguous,scopeAll,codes};
-        $('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar qualidade';$('#importMessage').textContent='CSV de Produto/Empresa reconhecido.';
-        if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='Cada linha é uma avaliação individual. A importação consolida NotaProduto e NotaEmpresa por técnico + dia. NotaServico é ignorada. As outras competências presentes no mesmo CSV também serão sincronizadas quando já existirem no monitor.';
-        const un=mapped.unmatched.length?` • <strong>${mapped.unmatched.length} técnico(s) sem vínculo</strong>: ${escapeHtml(mapped.unmatched.slice(0,6).join(', '))}${mapped.unmatched.length>6?'…':''}`:'',amb=mapped.ambiguous.length?` • <strong>${mapped.ambiguous.length} vínculo(s) ambíguo(s)</strong>`:'';
-        const hist=safe(mapped.sourceCounts?.['histórico anterior'])+safe(mapped.sourceCounts?.['histórico posterior']),directory=safe(mapped.sourceCounts?.['cadastro de usuário']);
-        $('#importDetails').innerHTML=`<strong>${fmtInt(mapped.rows.length)} avaliações vinculadas</strong> • <strong>${months.length} meses disponíveis</strong>${un}${amb} • ${fmtInt(parsed.ignored)} linha(s) inválida(s)/sem nota de Produto ou Empresa. <span class="muted">Vínculos recuperados pelo histórico: ${fmtInt(hist)} • pelo cadastro: ${fmtInt(directory)}. Técnicos desligados podem permanecer na qualidade mesmo sem linha operacional na competência. Clientes, Resolve, comentário e NotaServico não entram nos cálculos.</span>`;$('#importProgress').style.width='100%';renderImportPreview();return;
-      }
-      const parsed=parseServiceCsv(text),aliasBy=serviceTechnicianAliases(codes);
-      // O status de login (ativo/inativo) não interfere no reconhecimento do histórico.
-      // O vínculo operacional aceita tanto "Nome do técnico" quanto "Nome completo" do usuário,
-      // além dos nomes que já existam no histórico do próprio Squad.
-      if(!codes.some(code=>aliasBy[code]?.size))throw new Error(scopeAll?'Cadastre técnicos nos Squads antes de importar o CSV.':`Cadastre os técnicos do Squad ${state.squadCode} em Usuários antes de importar o CSV.`);
-      const scopeRows=parsed.rows.filter(r=>codes.includes(r.group)),unmatchedSet=new Set(),rows=[];
-      for(const r of scopeRows){const canonical=aliasBy[r.group]?.get(nameLinkKey(r.name));if(canonical)rows.push({...r,name:canonical});else unmatchedSet.add(`${r.group}: ${r.name}`)}
-      const unmatched=[...unmatchedSet].sort(),months=[...new Set(rows.map(r=>r.id))].sort().reverse();if(!months.length)throw new Error(scopeAll?'O CSV não possui registros que correspondam aos técnicos cadastrados. Confira os vínculos em Usuários.':`O CSV não possui registros que correspondam aos técnicos cadastrados do Squad ${state.squadCode}. Confira Nome do técnico, Nome completo e Squad do usuário.`);
-      state.pendingCsv={kind:'service',fileName:file.name,fileSize:file.size,checksum,rows,ignored:parsed.ignored,total:parsed.total,months,unmatched,scopeAll,codes};$('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar mês';$('#importMessage').textContent=scopeAll?'CSV operacional reconhecido para importação geral.':`CSV operacional reconhecido para o Squad ${state.squadCode}.`;if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='A reimportação operacional substitui Serviço/atendimentos do mês, preserva dados financeiros manuais e qualidade Produto/Empresa e sincroniza o detalhamento diário de notas dos meses históricos já importados no mesmo escopo.';
-      const unmatchedText=unmatched.length?` • <strong>${unmatched.length} vínculo(s) não encontrado(s) ignorado(s)</strong>: ${escapeHtml(unmatched.slice(0,5).join(', '))}${unmatched.length>5?'…':''}`:'';$('#importDetails').innerHTML=`<strong>${fmtInt(rows.length)} linhas vinculadas</strong> aos técnicos cadastrados • <strong>${months.length} meses disponíveis</strong>${unmatchedText} • ${fmtInt(parsed.ignored)} linhas inválidas/fora dos Squads A, B, D e E. <span class="muted">O vínculo considera Nome do técnico, Nome completo e histórico do Squad. Ativar ou inativar o login não remove nem bloqueia a importação do desempenho histórico.</span>`;$('#importProgress').style.width='100%';renderImportPreview();
-    }catch(err){console.error(err);state.pendingCsv=null;$('#importMessage').textContent='Não foi possível ler este CSV.';$('#importDetails').textContent=err.message||String(err);$('#importProgress').style.width='100%';$('#confirmCsvImportBtn').classList.add('hidden');$('#csvPeriodBlock').classList.add('hidden');$('#importPreviewBlock')?.classList.add('hidden')}
-    finally{$('#chooseFileBtn').disabled=false;e.target.value=''}
+  async function preparePendingCsvSource(source){
+    if(!source?.text)throw new Error('Arquivo CSV não carregado.');if(!state.userDirectoryLoaded)await loadUserDirectory();
+    const scope=selectedImportScope(),{scopeAll,codes}=scope;if(!codes.length)throw new Error('Nenhum Squad disponível para esta importação.');const previousMonth=$('#csvMonthSelect')?.value||'';
+    $('#importMessage').textContent=`Preparando ${importScopeLabel(scope)}...`;$('#importProgress').style.width='55%';
+    if(source.kind==='quality'){
+      const parsed=parseQualityCsv(source.text),mapped=mapQualityCsvRows(parsed.rows,codes),months=[...new Set(mapped.rows.map(r=>r.id))].sort().reverse();
+      if(!months.length)throw new Error(scopeAll?'Nenhuma avaliação de Produto/Empresa pôde ser vinculada aos Squads selecionados. Importe primeiro o CSV operacional das competências e confira os nomes dos técnicos.':`Nenhuma avaliação de Produto/Empresa pôde ser vinculada ao Squad ${codes[0]}. Importe primeiro a competência operacional e confira o nome do técnico.`);
+      state.pendingCsv={kind:'quality',fileName:source.fileName,fileSize:source.fileSize,checksum:source.checksum,rows:mapped.rows,ignored:parsed.ignored,total:parsed.total,months,unmatched:mapped.unmatched,ambiguous:mapped.ambiguous,scopeAll,codes};
+      $('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');if(previousMonth&&months.includes(previousMonth))$('#csvMonthSelect').value=previousMonth;$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar qualidade';$('#importMessage').textContent=`CSV de Produto/Empresa reconhecido • ${importScopeLabel(scope)}.`;
+      if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='Cada linha é uma avaliação individual. A importação consolida NotaProduto e NotaEmpresa por técnico + dia. As demais competências existentes no mesmo CSV também são sincronizadas somente no escopo escolhido acima.';
+      const un=mapped.unmatched.length?` • <strong>${mapped.unmatched.length} técnico(s) sem vínculo</strong>: ${escapeHtml(mapped.unmatched.slice(0,6).join(', '))}${mapped.unmatched.length>6?'…':''}`:'',amb=mapped.ambiguous.length?` • <strong>${mapped.ambiguous.length} vínculo(s) ambíguo(s)</strong>`:'';
+      const hist=safe(mapped.sourceCounts?.['histórico anterior'])+safe(mapped.sourceCounts?.['histórico posterior']),directory=safe(mapped.sourceCounts?.['cadastro de usuário']);
+      $('#importDetails').innerHTML=`<strong>${fmtInt(mapped.rows.length)} avaliações vinculadas</strong> • <strong>${months.length} meses disponíveis</strong>${un}${amb} • ${fmtInt(parsed.ignored)} linha(s) inválida(s)/sem nota de Produto ou Empresa. <span class="muted">Escopo: ${escapeHtml(importScopeLabel(scope))}. Vínculos recuperados pelo histórico: ${fmtInt(hist)} • pelo cadastro: ${fmtInt(directory)}. Técnicos desligados podem permanecer na qualidade mesmo sem linha operacional na competência.</span>`;
+    }else{
+      const parsed=parseServiceCsv(source.text),aliasBy=serviceTechnicianAliases(codes);if(!codes.some(code=>aliasBy[code]?.size))throw new Error(scopeAll?'Cadastre técnicos nos Squads antes de importar o CSV.':`Cadastre os técnicos do Squad ${codes[0]} em Usuários antes de importar o CSV.`);
+      const scopeRows=parsed.rows.filter(r=>codes.includes(r.group)),unmatchedSet=new Set(),rows=[];for(const r of scopeRows){const canonical=aliasBy[r.group]?.get(nameLinkKey(r.name));if(canonical)rows.push({...r,name:canonical});else unmatchedSet.add(`${r.group}: ${r.name}`)}
+      const unmatched=[...unmatchedSet].sort(),months=[...new Set(rows.map(r=>r.id))].sort().reverse();if(!months.length)throw new Error(scopeAll?'O CSV não possui registros que correspondam aos técnicos cadastrados nos Squads selecionados. Confira os vínculos em Usuários.':`O CSV não possui registros que correspondam aos técnicos cadastrados do Squad ${codes[0]}. Confira Nome do técnico, Nome completo e Squad do usuário.`);
+      state.pendingCsv={kind:'service',fileName:source.fileName,fileSize:source.fileSize,checksum:source.checksum,rows,ignored:parsed.ignored,total:parsed.total,months,unmatched,scopeAll,codes};
+      $('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');if(previousMonth&&months.includes(previousMonth))$('#csvMonthSelect').value=previousMonth;$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar mês';$('#importMessage').textContent=`CSV operacional reconhecido • ${importScopeLabel(scope)}.`;
+      if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='A reimportação operacional substitui Serviço/atendimentos do mês, preserva dados financeiros manuais e qualidade Produto/Empresa e sincroniza o detalhamento diário somente no escopo escolhido acima.';
+      const unmatchedText=unmatched.length?` • <strong>${unmatched.length} vínculo(s) não encontrado(s) ignorado(s)</strong>: ${escapeHtml(unmatched.slice(0,5).join(', '))}${unmatched.length>5?'…':''}`:'';$('#importDetails').innerHTML=`<strong>${fmtInt(rows.length)} linhas vinculadas</strong> aos técnicos cadastrados • <strong>${months.length} meses disponíveis</strong>${unmatchedText} • ${fmtInt(parsed.ignored)} linhas inválidas/fora dos Squads A, B, D e E. <span class="muted">Escopo: ${escapeHtml(importScopeLabel(scope))}. O vínculo considera Nome do técnico, Nome completo e histórico do Squad.</span>`;
+    }
+    $('#importProgress').style.width='100%';renderImportPreview();const body=$('#importModalBody');if(body)body.scrollTop=0;
   }
+  async function refreshPendingCsvForScope(){
+    if(!state.pendingCsvSource){state.pendingCsv=null;state.importPreview=null;$('#csvPeriodBlock')?.classList.add('hidden');$('#importPreviewBlock')?.classList.add('hidden');return}
+    $('#confirmCsvImportBtn').disabled=true;try{await preparePendingCsvSource(state.pendingCsvSource)}catch(err){console.error(err);importUiError(err)}finally{$('#confirmCsvImportBtn').disabled=!!state.importPreview?.validation?.blocked}
+  }
+  async function handleCsvSelection(file){
+    if(!isAdmin()||!file)return;openModal('importModal');$('#chooseFileBtn').disabled=true;$('#importMessage').textContent='Lendo CSV...';$('#importProgress').style.width='20%';resetImportPreviewUi();
+    try{
+      if(!/\.csv$/i.test(String(file.name||'')))throw new Error('Selecione um arquivo no formato CSV.');const text=await file.text(),checksum=importChecksum(text),kind=detectCsvKind(text);$('#importProgress').style.width='40%';
+      if(state.expectedCsvKind&&kind!==state.expectedCsvKind)throw new Error(state.expectedCsvKind==='quality'?'Este botão é exclusivo para o CSV de Produto/Empresa. Selecione o arquivo com Time, nomeApresentativo, NotaProduto e NotaEmpresa.':'Este botão é exclusivo para o CSV operacional de atendimentos.');
+      state.pendingCsvSource={fileName:file.name,fileSize:file.size,checksum,text,kind};updateImportDropzoneFile(state.pendingCsvSource);await preparePendingCsvSource(state.pendingCsvSource);
+    }catch(err){console.error(err);importUiError(err)}finally{$('#chooseFileBtn').disabled=false}
+  }
+  async function handleCsvFile(e){const file=e.target.files?.[0];try{if(file)await handleCsvSelection(file)}finally{e.target.value=''}}
 
   async function confirmCsvImport(){
     if(!isAdmin()||!state.pendingCsv)return;const id=$('#csvMonthSelect').value;if(!id)return;const pending=state.pendingCsv,preview=buildImportPreview(pending,id);state.importPreview=preview;renderImportPreview();if(preview?.validation?.blocked)return toast('A importação possui erros críticos. Corrija o arquivo antes de continuar.');
     if(preview?.validation?.requiresConfirmation){const issues=(preview.validation.issues||[]).filter(i=>i.severity==='warning').map(i=>`• ${i.message}`).join('\n');const ok=await confirmDialog(`A prévia encontrou diferenças relevantes:\n\n${issues}\n\nDeseja gravar mesmo assim?`,{title:'Confirmar importação com alertas',confirmText:'Importar mesmo assim',tone:'warning',requireText:'IMPORTAR'});if(!ok)return}
-    const btn=$('#confirmCsvImportBtn');btn.disabled=true;btn.textContent='Importando...';const snapshot=captureImportSnapshot(pending,id),[year,month]=id.split('-').map(Number);
+    const btn=$('#confirmCsvImportBtn'),scopeSelect=$('#csvScopeSelect'),monthSelect=$('#csvMonthSelect');btn.disabled=true;btn.textContent='Importando...';if(scopeSelect)scopeSelect.disabled=true;if(monthSelect)monthSelect.disabled=true;const snapshot=captureImportSnapshot(pending,id),[year,month]=id.split('-').map(Number);
     try{
       $('#importProgress').style.width='35%';
       if(pending.kind==='quality'){
@@ -3933,13 +3977,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         const candidates=pending.codes.filter(code=>pending.rows.some(r=>r.group===code&&r.id===id));if(!candidates.length)throw new Error('Nenhum Squad possui registros vinculados para este mês.');const closedCodes=candidates.filter(code=>state.squads[code]?.months?.[id]?.isClosed);if(closedCodes.length)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no(s) Squad(s) ${closedCodes.join(', ')}. Reabra o mês antes de importar.`);
         for(const code of candidates){const s=state.squads[code],previous=s.months[id],data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,code);s.months[id]=data;importedSquads++;importedTechs+=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${code}...`;$('#importProgress').style.width=(55+Math.round(importedSquads/Math.max(1,candidates.length)*34))+'%';await persistImportedMonth(data,s)}}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}for(const code of candidates){const squad=state.squads[code],m=squad?.months?.[id];if(!m)continue;await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:m.dbId||id,squadId:squad?.dbId||null,description:`Importação operacional de ${MONTHS_PT[month-1]} ${year} no Squad ${code}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(m.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===code&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched)}})}
       }else{
-        const s=currentSquad(),previous=s.months[id];if(previous?.isClosed)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no Squad ${state.squadCode}. Reabra o mês antes de importar.`);const data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,state.squadCode);s.months[id]=data;state.currentId=id;state.techName=data.technicians[0]?.name||'';importedSquads=1;importedTechs=data.technicians.length;if(state.supabase){$('#importMessage').textContent='Gravando no banco de dados...';$('#importProgress').style.width='70%';await persistImportedMonth(data,s)}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:data.dbId||id,squadId:s?.dbId||null,description:`Importação operacional de ${data.monthName} ${data.year} no Squad ${state.squadCode}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(data.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===state.squadCode&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched)}});
+        const targetCode=pending.codes?.[0],s=state.squads?.[targetCode];if(!targetCode||!s)throw new Error('Squad selecionado não está disponível.');const previous=s.months[id];if(previous?.isClosed)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no Squad ${targetCode}. Reabra o mês antes de importar.`);const data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,targetCode);s.months[id]=data;importedSquads=1;importedTechs=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${targetCode}...`;$('#importProgress').style.width='70%';await persistImportedMonth(data,s)}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:data.dbId||id,squadId:s?.dbId||null,description:`Importação operacional de ${data.monthName} ${data.year} no Squad ${targetCode}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(data.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===targetCode&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched)}});
       }
       saveDemoSquads();state.financeRankingCache={};if(state.analysisPreset==='month')resetAnalysisRange(true);refreshSelectors();await recordCompletedImport(pending,id,snapshot,{importedSquads,importedTechnicians:importedTechs,historicalMonthsPatched:safe(historySync?.monthsPatched)});render();state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${importedSquads} Squad(s) e ${importedTechs} técnico(s) atualizados.${historySync?.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
     }catch(err){
       console.error(err);let rollbackError=null;try{await restoreImportSnapshot(snapshot)}catch(re){rollbackError=re;console.error('Falha ao restaurar snapshot após erro de importação.',re)}$('#importMessage').textContent=rollbackError?'Importação interrompida e a restauração automática precisa de conferência.':'Importação cancelada e estado anterior restaurado.';$('#importDetails').textContent=(err.message||String(err))+(rollbackError?` | Falha na restauração: ${rollbackError.message||rollbackError}`:'')+((state.pendingCsv?.kind==='quality'&&state.supabase)?' Se a tabela de qualidade ainda não existir, execute supabase/migrations/MIGRACAO_V2.27.0.sql no Supabase.':'');$('#importProgress').style.width='100%';
       const failed=normalizeImportHistory({batchKey:makeImportBatchKey(),kind:pending.kind,period:id,fileName:pending.fileName,checksum:pending.checksum,scope:preview?.codes||pending.codes||[],rows:preview?.summary?.rows||0,ignored:safe(pending.ignored),unmatched:(pending.unmatched||[]).length,status:'failed',createdAt:new Date().toISOString(),createdBy:state.user?.fullName||state.user?.email||'',risk:'error',details:{error:err.message||String(err),autoRollback:!rollbackError,rollbackError:rollbackError?.message||null}});await persistImportHistory(failed);
-    }finally{btn.disabled=!!state.importPreview?.validation?.blocked;btn.textContent=state.pendingCsv?.kind==='quality'?'Importar qualidade':'Importar mês'}
+    }finally{btn.disabled=!!state.importPreview?.validation?.blocked;btn.textContent=state.pendingCsv?.kind==='quality'?'Importar qualidade':'Importar mês';if(scopeSelect)scopeSelect.disabled=false;if(monthSelect)monthSelect.disabled=false}
   }
 
   function detectCsvKind(text){

@@ -134,6 +134,7 @@ for (const required of [
   'docs/BONIFICACAO_FECHAMENTO_V2.48.10.md',
   'docs/TOPBAR_CALENDARIO_V2.48.11.md',
   'docs/TOPBAR_ESTABILIDADE_V2.48.12.md',
+  'docs/IMPORTACAO_V2.48.13.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',

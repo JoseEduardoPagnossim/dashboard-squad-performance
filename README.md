@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.12`<br>
+**Versão atual:** `2.48.13`<br>
 
 
 
@@ -20,6 +20,18 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.13 — Central de Importação responsiva
+
+- A dialog de importação agora possui cabeçalho, corpo com rolagem própria e rodapé fixo, mantendo o botão de importação acessível em 100% de zoom.
+- O fundo do painel fica bloqueado enquanto uma modal está aberta.
+- O escopo da importação é escolhido dentro da própria dialog: Todos os Squads ou um Squad específico, sem depender nem alterar o filtro externo.
+- Trocar o Squad reaproveita o mesmo CSV e recalcula vínculos, competência, prévia e validações.
+- A Central de Importação aceita arrastar e soltar CSVs tanto na tela de Operação quanto dentro da dialog; o botão Escolher CSV continua disponível.
+- Nenhuma regra financeira, de pontuação ou de importação foi alterada.
+
+Detalhes: `docs/IMPORTACAO_V2.48.13.md`.
 
 ## V2.48.12 — Estabilização visual da Topbar
 

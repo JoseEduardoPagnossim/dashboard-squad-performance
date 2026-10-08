@@ -1,3 +1,13 @@
+## V2.48.13 — Central de Importação responsiva, escopo próprio e drag-and-drop
+
+- Central de Importação recebe header/body/footer próprios; somente o corpo rola e as ações permanecem sempre acessíveis.
+- Enquanto qualquer modal estiver aberta, o scroll do documento de fundo fica bloqueado, inclusive durante confirmações aninhadas.
+- Novo seletor de escopo dentro da importação permite Todos os Squads ou um Squad específico sem depender do filtro externo do painel.
+- Troca de escopo reprocessa o CSV já carregado e atualiza prévia, riscos, vínculos e comparação sem exigir novo upload.
+- Upload operacional e Produto/Empresa aceita drag-and-drop na tela de Operação e na própria dialog, preservando o seletor de arquivo tradicional.
+- Fluxos de validação, confirmação crítica, mês fechado, rollback, histórico e persistência permanecem inalterados.
+- Versão frontend `2.48.13`; sem migration nova e sem mudança na regra financeira `FR-2.48.8-1`.
+
 ## V2.48.12 — Estabilização visual da Topbar
 
 - Corrige valores de Squad, Mês e Técnico recortados verticalmente após a V2.48.11.
