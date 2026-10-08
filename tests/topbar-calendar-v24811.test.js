@@ -39,6 +39,6 @@ test('V2.48.11 topbar libera a largura do valor sem trocar os selects', () => {
 test('V2.48.11 e somente frontend e nao altera regra financeira', () => {
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.48.11.sql')), false);
   assert.match(finance, /FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
-  assert.match(app, /APP_VERSION = '2\.49\.0'/);
-  assert.ok(index.includes('V2.49.0'));
+  assert.match(app, /APP_VERSION = '2\.49\.1'/);
+  assert.ok(index.includes('V2.49.1'));
 });

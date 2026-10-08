@@ -41,14 +41,14 @@ test('V2.49 respeita perfil e escopo no que pode ser exibido',()=>{
   assert.deepEqual(tech,{squad:false,competence:true,period:true,technician:false});
   const allTeam=filters.visibility({view:'team',isSuperAdmin:true,isTechnician:false,squadCode:'all'});
   assert.deepEqual(allTeam,{squad:true,competence:false,period:true,technician:false});
-  assert.equal(filters.activeCount({view:'individual',isSuperAdmin:true,isTechnician:false,squadCode:'D'}),4);
+  assert.equal(filters.visibleKeys({view:'individual',isSuperAdmin:true,isTechnician:false,squadCode:'D'}).length,4);
 });
 
 test('topbar mantém os três selects oficiais e consolida datas em um PeriodPicker',()=>{
   const top=topbarHtml();
   for(const id of ['squadSelect','monthSelect','techSelect']) assert.equal((top.match(new RegExp(`id="${id}"`,'g'))||[]).length,1,`${id} deve continuar único`);
   assert.match(top,/id="competenceControl"[\s\S]*?<span>Competência<\/span>/);
-  assert.match(top,/id="analysisPeriodTrigger"[\s\S]*?<span>Período<\/span>/);
+  assert.match(top,/id="analysisPeriodTrigger"[\s\S]*?<span>Período de análise<\/span>/);
   assert.match(top,/id="analysisStartDate"[^>]*type="hidden"/);
   assert.match(top,/id="analysisEndDate"[^>]*type="hidden"/);
   assert.doesNotMatch(top,/data-analysis-preset/);
@@ -56,18 +56,17 @@ test('topbar mantém os três selects oficiais e consolida datas em um PeriodPic
 });
 
 test('PeriodPicker reúne atalhos, intervalo e aplicação explícita',()=>{
-  for(const preset of ['today','7d','15d','month','prev-month']) assert.ok(index.includes(`data-period-preset="${preset}"`));
   for(const id of ['periodPickerStart','periodPickerEnd','periodPickerCancel','periodPickerApply']) assert.ok(index.includes(`id="${id}"`));
   assert.match(app,/function applyAnalysisPeriodPicker\(\)/);
-  assert.match(app,/commitAnalysisRange\(payload\.start,payload\.end,payload\.preset\)/);
-  assert.match(app,/analysisPresetRange\(preset\.dataset\.periodPreset/);
+  assert.match(app,/commitAnalysisRange\(payload\.start,payload\.end,payload\.preset/);
+  assert.match(app,/function analysisPresetRange\(preset,/);
   assert.match(css,/\.analysis-period-popover\{/);
 });
 
 test('drawer mobile trabalha em rascunho e só aplica filtros visíveis',()=>{
   for(const id of ['filterDrawerTrigger','filterDrawer','mobileSquadSelect','mobileMonthSelect','mobilePeriodTrigger','mobileTechSelect','filterDrawerApply']) assert.ok(index.includes(`id="${id}"`));
   assert.match(index,/id="filterDrawerReset"[^>]*>Limpar filtros<\/button>/);
-  assert.match(app,/filterDrawerUi\.draft=\{squad:state\.squadCode,month:state\.currentId,tech:state\.techName,start:state\.analysisStartDate,end:state\.analysisEndDate,preset:state\.analysisPreset\}/);
+  assert.match(app,/filterDrawerUi\.draft=\{squad:state\.squadCode,month:state\.currentId,tech:state\.techName,start:state\.analysisStartDate,end:state\.analysisEndDate,preset:state\.analysisPreset,mode:state\.analysisMode,competenceId:state\.analysisCompetenceId\|\|state\.currentId\}/);
   assert.match(app,/const visible=topFilterVisibility\(\);state\.routeApplying=true/);
   assert.match(app,/visible\.competence&&d\.month/);
   assert.match(app,/visible\.period&&d\.start&&d\.end/);
@@ -100,6 +99,6 @@ test('Indicadores não duplicam mais filtros visíveis de data',()=>{
 test('V2.49 é frontend-only e preserva a regra financeira',()=>{
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.49.0.sql')),false);
   assert.match(finance,/FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
-  assert.match(app,/APP_VERSION = '2\.49\.0'/);
-  assert.ok(index.includes('V2.49.0'));
+  assert.match(app,/APP_VERSION = '2\.49\.1'/);
+  assert.ok(index.includes('V2.49.1'));
 });

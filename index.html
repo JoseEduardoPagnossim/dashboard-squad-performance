@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.49.0" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.49.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.49.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.49.1" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.49.1" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.49.1" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.49.0 • Ritmo mensal claro</small>
+        <small class="login-version">V2.49.1 • Período de análise unificado</small>
       </section>
     </div>
   </section>
@@ -164,7 +164,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.49.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.49.1 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -186,7 +186,7 @@
           </label>
           <div class="analysis-period-control hidden" id="analysisDateControl">
             <button class="analysis-period-trigger" id="analysisPeriodTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="analysisPeriodPopover">
-              <span>Período</span><strong id="analysisPeriodValue">Sem período</strong><i aria-hidden="true">⌄</i>
+              <span>Período de análise</span><strong id="analysisPeriodValue">Sem período</strong><i aria-hidden="true">⌄</i>
             </button>
             <input id="analysisStartDate" class="filter-state-input" type="hidden" aria-hidden="true">
             <input id="analysisEndDate" class="filter-state-input" type="hidden" aria-hidden="true">
@@ -230,7 +230,7 @@
         <div class="filter-drawer-body">
           <label class="filter-drawer-field" id="mobileSquadControl"><span>Squad</span><select id="mobileSquadSelect"></select></label>
           <label class="filter-drawer-field" id="mobileCompetenceControl"><span>Competência</span><select id="mobileMonthSelect"></select></label>
-          <button class="filter-drawer-field filter-drawer-period" id="mobilePeriodTrigger" type="button"><span>Período</span><strong id="mobilePeriodValue">Sem período</strong><i>›</i></button>
+          <button class="filter-drawer-field filter-drawer-period" id="mobilePeriodTrigger" type="button"><span>Período de análise</span><strong id="mobilePeriodValue">Sem período</strong><i>›</i></button>
           <label class="filter-drawer-field" id="mobileTechnicianControl"><span>Técnico</span><select id="mobileTechSelect"></select></label>
         </div>
         <div class="filter-drawer-foot"><button class="btn secondary" id="filterDrawerReset" type="button">Limpar filtros</button><button class="btn primary" id="filterDrawerApply" type="button">Aplicar</button></div>
@@ -406,7 +406,7 @@
             <article class="kpi card">
               <div class="kpi-head"><span>% avaliado no período</span><span class="icon-chip">%</span></div>
               <div class="kpi-value"><strong id="kpiEvalPct">0%</strong></div>
-              <div class="kpi-context-line">Meta do mês: <strong id="kpiEvalMonthlyGoal">—</strong></div>
+              <div class="kpi-context-line">Meta ponderada do período: <strong id="kpiEvalMonthlyGoal">—</strong></div>
               <div class="progress"><i id="evalPeriodBar"></i></div>
               <div class="kpi-foot"><span id="evalQuality">Diferença: —</span><small id="avgRating">Média 0,00</small></div>
               <div class="kpi-monthly-foot single"><span id="evalCount">0 avaliações no período</span></div>
@@ -1175,7 +1175,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.49.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.49.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1596,44 +1596,55 @@
   <div class="toast" id="toast"></div>
   <script src="js/config.js"></script>
   <script src="js/core-utils.js"></script>
-  <div class="analysis-period-popover hidden" id="analysisPeriodPopover" role="dialog" aria-modal="false" aria-label="Selecionar período">
-    <div class="period-picker-head"><div><span class="eyebrow">PERÍODO</span><strong id="periodPickerSummary">Selecione um intervalo</strong></div><button type="button" id="periodPickerClose" aria-label="Fechar">×</button></div>
-    <div class="period-picker-layout">
-      <div class="period-picker-presets" aria-label="Atalhos de período">
-        <button type="button" data-period-preset="today">Hoje</button>
-        <button type="button" data-period-preset="7d">Últimos 7 dias</button>
-        <button type="button" data-period-preset="15d">Últimos 15 dias</button>
-        <button type="button" data-period-preset="month">Este mês</button>
-        <button type="button" data-period-preset="prev-month">Mês anterior</button>
-      </div>
-      <div class="period-picker-calendar">
-        <div class="period-picker-nav"><button type="button" data-period-nav="prev" aria-label="Mês anterior">‹</button><strong id="periodPickerMonth">—</strong><button type="button" data-period-nav="next" aria-label="Próximo mês">›</button></div>
-        <div class="period-picker-weekdays" aria-hidden="true"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
-        <div class="period-picker-grid" id="periodPickerGrid"></div>
-        <div class="period-picker-selection"><div><span>De</span><strong id="periodPickerStart">—</strong></div><i>→</i><div><span>Até</span><strong id="periodPickerEnd">—</strong></div></div>
-      </div>
+  <div class="analysis-period-popover hidden" id="analysisPeriodPopover" role="dialog" aria-modal="false" aria-label="Selecionar período de análise">
+    <div class="period-picker-head"><div><span class="eyebrow">PERÍODO DE ANÁLISE</span><strong id="periodPickerSummary">Selecione como deseja analisar</strong></div><button type="button" id="periodPickerClose" aria-label="Fechar">×</button></div>
+    <div class="period-picker-mode-switch" role="tablist" aria-label="Modo do período de análise">
+      <button type="button" id="periodModeCompetence" data-period-mode="competence" role="tab" aria-selected="true">Por competência</button>
+      <button type="button" id="periodModeFree" data-period-mode="free" role="tab" aria-selected="false">Intervalo livre</button>
     </div>
-    <div class="period-picker-foot"><button class="btn secondary compact" id="periodPickerCancel" type="button">Cancelar</button><button class="btn primary compact" id="periodPickerApply" type="button">Aplicar período</button></div>
+    <div class="period-picker-context" id="periodCompetencePanel">
+      <label class="period-picker-competence-field"><span>Competência</span><select id="periodCompetenceSelect"></select></label>
+      <div class="period-picker-context-copy"><span id="periodCompetenceStatus">—</span><small>O calendário fica limitado à competência escolhida.</small></div>
+    </div>
+    <div class="period-picker-context period-picker-free-copy hidden" id="periodFreePanel">
+      <div><strong>Intervalo livre</strong><small>Escolha datas de competências diferentes. O período continuará sendo a fonte oficial dos cálculos.</small></div>
+      <span class="period-scope-chip" id="periodFreeScope">—</span>
+    </div>
+    <div class="period-picker-cuts" id="periodCompetenceCuts" aria-label="Recorte da competência">
+      <button type="button" data-competence-cut="month">Mês completo</button>
+      <button type="button" data-competence-cut="to-date">Até hoje</button>
+      <button type="button" data-competence-cut="first-half">1ª quinzena</button>
+      <button type="button" data-competence-cut="second-half">2ª quinzena</button>
+      <button type="button" data-competence-cut="custom">Personalizado</button>
+    </div>
+    <div class="period-picker-calendar period-picker-calendar-v2491">
+      <div class="period-picker-nav"><button type="button" data-period-nav="prev" aria-label="Mês anterior">‹</button><strong id="periodPickerMonth">—</strong><button type="button" data-period-nav="next" aria-label="Próximo mês">›</button></div>
+      <div class="period-picker-weekdays" aria-hidden="true"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+      <div class="period-picker-grid" id="periodPickerGrid"></div>
+      <div class="period-picker-selection"><div><span>De</span><strong id="periodPickerStart">—</strong></div><i>→</i><div><span>Até</span><strong id="periodPickerEnd">—</strong></div></div>
+      <div class="period-picker-selection-note" id="periodPickerSelectionNote">—</div>
+    </div>
+    <div class="period-picker-foot"><button class="btn secondary compact" id="periodPickerCancel" type="button">Cancelar</button><button class="btn primary compact" id="periodPickerApply" type="button">Aplicar análise</button></div>
   </div>
 
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.49.0"></script>
-  <script src="js/finance-rules.js?v=2.49.0"></script>
-  <script src="js/finance-advanced.js?v=2.49.0"></script>
-  <script src="js/tv-engine.js?v=2.49.0"></script>
-  <script src="js/presentation.js?v=2.49.0"></script>
-  <script src="js/chart-engine.js?v=2.49.0"></script>
-  <script src="js/import-engine.js?v=2.49.0"></script>
-  <script src="js/predictive-engine.js?v=2.49.0"></script>
-  <script src="js/alert-engine.js?v=2.49.0"></script>
-  <script src="js/settings-engine.js?v=2.49.0"></script>
-  <script src="js/performance-engine.js?v=2.49.0"></script>
-  <script src="js/navigation-engine.js?v=2.49.0"></script>
-  <script src="js/workspace-engine.js?v=2.49.0"></script>
-  <script src="js/filter-system.js?v=2.49.0"></script>
-  <script src="js/design-system.js?v=2.49.0"></script>
-  <script src="js/app.js?v=2.49.0"></script>
+  <script src="js/business-calendar.js?v=2.49.1"></script>
+  <script src="js/finance-rules.js?v=2.49.1"></script>
+  <script src="js/finance-advanced.js?v=2.49.1"></script>
+  <script src="js/tv-engine.js?v=2.49.1"></script>
+  <script src="js/presentation.js?v=2.49.1"></script>
+  <script src="js/chart-engine.js?v=2.49.1"></script>
+  <script src="js/import-engine.js?v=2.49.1"></script>
+  <script src="js/predictive-engine.js?v=2.49.1"></script>
+  <script src="js/alert-engine.js?v=2.49.1"></script>
+  <script src="js/settings-engine.js?v=2.49.1"></script>
+  <script src="js/performance-engine.js?v=2.49.1"></script>
+  <script src="js/navigation-engine.js?v=2.49.1"></script>
+  <script src="js/workspace-engine.js?v=2.49.1"></script>
+  <script src="js/filter-system.js?v=2.49.1"></script>
+  <script src="js/design-system.js?v=2.49.1"></script>
+  <script src="js/app.js?v=2.49.1"></script>
 </body>
 </html>

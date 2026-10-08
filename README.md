@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.49.0`<br>
+**Versão atual:** `2.49.1`<br>
 
 
 
@@ -22,6 +22,18 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.49.1 — Período de análise unificado
+
+- **Competência + Período** viram um único controle visual **Período de análise** nas telas que trabalham com recorte de datas.
+- O seletor possui dois modos: **Por competência** e **Intervalo livre**.
+- Em **Por competência**, a competência define o calendário e permite **Mês completo**, **Até hoje**, **1ª quinzena**, **2ª quinzena** ou **Personalizado**.
+- Em **Intervalo livre**, o usuário pode atravessar duas ou mais competências sem perder os cálculos por `analysisStartDate` / `analysisEndDate`.
+- Metas de atendimento e notas 5 continuam proporcionais por competência quando o período atravessa meses.
+- URLs, Visões e parâmetros `month`, `from` e `to` permanecem compatíveis.
+- Sem migration; alteração concentrada em UX e normalização do estado analítico.
+
+Detalhes: `docs/PERIODO_ANALISE_UNIFICADO_V2.49.1.md`.
 
 ## V2.49.0 — Sistema unificado de filtros
 

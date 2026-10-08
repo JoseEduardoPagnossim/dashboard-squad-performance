@@ -57,7 +57,17 @@
     return rule;
   }
   function visibleKeys(context={}){const rule=visibility(context);return Object.keys(EMPTY).filter(key=>rule[key]);}
-  function activeCount(context={}){return visibleKeys(context).length;}
+  function controlKeys(context={}){
+    const rule=visibility(context),keys=[];
+    if(rule.squad)keys.push('squad');
+    // V2.49.1: quando há período, competência passa a morar dentro do mesmo
+    // controle visual "Período de análise" e não conta como um filtro separado.
+    if(rule.period)keys.push('analysis');
+    else if(rule.competence)keys.push('competence');
+    if(rule.technician)keys.push('technician');
+    return keys;
+  }
+  function activeCount(context={}){return controlKeys(context).length;}
 
-  return{BASE_MATRIX,ADMIN_MATRIX,SETTINGS_MATRIX,contextRule,visibility,visibleKeys,activeCount};
+  return{BASE_MATRIX,ADMIN_MATRIX,SETTINGS_MATRIX,contextRule,visibility,visibleKeys,controlKeys,activeCount};
 });

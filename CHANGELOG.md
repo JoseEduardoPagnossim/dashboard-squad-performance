@@ -1,3 +1,14 @@
+## V2.49.1 — Período de análise unificado
+
+- Unifica Competência e Período em **Período de análise** quando a tela utiliza recorte temporal.
+- Adiciona os modos **Por competência** e **Intervalo livre**.
+- Por competência: Mês completo, Até hoje, 1ª quinzena, 2ª quinzena e Personalizado, com calendário limitado ao mês escolhido.
+- Intervalo livre: mantém análise entre múltiplas competências e preserva `analysisStartDate` / `analysisEndDate` como fonte oficial dos cálculos.
+- Mantém a proporcionalização mensal de metas em períodos que cruzam competências.
+- Drawer mobile passa a exibir o mesmo controle unificado e deixa de contar Competência + Período como dois filtros separados.
+- Compatibilidade mantida com URLs e Visões antigas (`month`, `from`, `to`).
+- Frontend-only; sem migration e sem alteração da regra financeira `FR-2.48.8-1`.
+
 ## V2.49.0 — Sistema unificado de filtros
 
 - Topbar normalizada em Squad, Competência, Período e Técnico, com matriz contextual por módulo.
