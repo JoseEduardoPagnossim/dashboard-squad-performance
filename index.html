@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.48.14" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.48.14" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.48.14" />
+  <link rel="stylesheet" href="css/styles.css?v=2.49.0" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.49.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.49.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.48.14 • Ritmo mensal claro</small>
+        <small class="login-version">V2.49.0 • Ritmo mensal claro</small>
       </section>
     </div>
   </section>
@@ -164,7 +164,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.48.14 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.49.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -180,42 +180,24 @@
             <span>Squad</span>
             <select id="squadSelect"></select>
           </label>
-          <label class="control select-wrap month-control">
-            <span>Mês</span>
+          <label class="control select-wrap month-control" id="competenceControl">
+            <span>Competência</span>
             <select id="monthSelect"></select>
           </label>
-          <div class="analysis-date-control hidden" id="analysisDateControl">
-            <div class="control date-control date-field" data-date-field="analysisStartDate">
-              <span>De</span>
-              <div class="date-input-shell">
-                <input id="analysisStartDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data inicial">
-                <button class="date-picker-button" type="button" data-date-picker-for="analysisStartDate" aria-label="Abrir calendário da data inicial"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="analysisStartDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
-              </div>
-              <small class="date-field-error" id="analysisStartDateError" aria-live="polite"></small>
-            </div>
-            <span class="date-range-arrow">→</span>
-            <div class="control date-control date-field" data-date-field="analysisEndDate">
-              <span>Até</span>
-              <div class="date-input-shell">
-                <input id="analysisEndDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data final">
-                <button class="date-picker-button" type="button" data-date-picker-for="analysisEndDate" aria-label="Abrir calendário da data final"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="analysisEndDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
-              </div>
-              <small class="date-field-error" id="analysisEndDateError" aria-live="polite"></small>
-            </div>
-            <div class="date-quick compact" aria-label="Atalhos de período">
-              <button type="button" data-analysis-preset="today">Hoje</button>
-              <button type="button" data-analysis-preset="7d">7 dias</button>
-              <button type="button" data-analysis-preset="15d">15 dias</button>
-              <button type="button" data-analysis-preset="month">Este mês</button>
-              <button type="button" data-analysis-preset="prev-month">Mês anterior</button>
-            </div>
+          <div class="analysis-period-control hidden" id="analysisDateControl">
+            <button class="analysis-period-trigger" id="analysisPeriodTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="analysisPeriodPopover">
+              <span>Período</span><strong id="analysisPeriodValue">Sem período</strong><i aria-hidden="true">⌄</i>
+            </button>
+            <input id="analysisStartDate" class="filter-state-input" type="hidden" aria-hidden="true">
+            <input id="analysisEndDate" class="filter-state-input" type="hidden" aria-hidden="true">
+            <input id="analysisStartDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
+            <input id="analysisEndDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
           </div>
           <label class="control select-wrap technician-control">
             <span>Técnico</span>
             <select id="techSelect"></select>
           </label>
+          <button class="filter-drawer-trigger" id="filterDrawerTrigger" type="button" aria-controls="filterDrawer" aria-expanded="false"><span aria-hidden="true">☷</span><strong>Filtros</strong><b id="filterDrawerCount">0</b></button>
           <button class="global-search-trigger" id="globalSearchTrigger" type="button" aria-label="Abrir busca global" title="Busca global (Ctrl+K)">
             <span class="global-search-trigger-icon" aria-hidden="true">⌕</span><span class="global-search-trigger-label">Buscar</span><kbd>Ctrl K</kbd>
           </button>
@@ -242,6 +224,17 @@
           <div class="top-user profile-shortcut" id="topUserProfileBtn" role="button" tabindex="0" title="Abrir meu perfil"><span class="user-avatar" id="topAvatar">A</span><div><b id="topUserName">Usuário</b><small id="topUserScope">Squad</small></div></div>
         </div>
       </header>
+      <div class="filter-drawer-backdrop hidden" id="filterDrawerBackdrop" aria-hidden="true"></div>
+      <aside class="filter-drawer hidden" id="filterDrawer" aria-hidden="true" aria-label="Filtros da tela">
+        <div class="filter-drawer-head"><div><span class="eyebrow">FILTROS</span><h3>Contexto da tela</h3></div><button id="filterDrawerClose" type="button" aria-label="Fechar filtros">×</button></div>
+        <div class="filter-drawer-body">
+          <label class="filter-drawer-field" id="mobileSquadControl"><span>Squad</span><select id="mobileSquadSelect"></select></label>
+          <label class="filter-drawer-field" id="mobileCompetenceControl"><span>Competência</span><select id="mobileMonthSelect"></select></label>
+          <button class="filter-drawer-field filter-drawer-period" id="mobilePeriodTrigger" type="button"><span>Período</span><strong id="mobilePeriodValue">Sem período</strong><i>›</i></button>
+          <label class="filter-drawer-field" id="mobileTechnicianControl"><span>Técnico</span><select id="mobileTechSelect"></select></label>
+        </div>
+        <div class="filter-drawer-foot"><button class="btn secondary" id="filterDrawerReset" type="button">Limpar filtros</button><button class="btn primary" id="filterDrawerApply" type="button">Aplicar</button></div>
+      </aside>
       <div id="dataLoadIndicator" class="data-load-indicator hidden" aria-live="polite" aria-atomic="true"><i aria-hidden="true"></i><span>Carregando dados...</span></div>
       <nav class="app-breadcrumbs" id="appBreadcrumbs" aria-label="Navegação estrutural"></nav>
 
@@ -699,38 +692,15 @@
         </div>
 
         <article class="card indicator-toolbar" id="indicatorGlobalToolbar">
-          <div class="section-title"><div><span class="eyebrow">FILTROS</span><h3>Período analisado</h3></div><span class="muted" id="indicatorPeriodLabel">Carregando período...</span></div>
-          <div class="indicator-filters">
-            <div class="control date-control date-field" data-date-field="indicatorStartDate">
-              <span>De</span>
-              <div class="date-input-shell">
-                <input id="indicatorStartDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data inicial dos indicadores">
-                <button class="date-picker-button" type="button" data-date-picker-for="indicatorStartDate" aria-label="Abrir calendário da data inicial dos indicadores"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="indicatorStartDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
-              </div>
-              <small class="date-field-error" id="indicatorStartDateError" aria-live="polite"></small>
-            </div>
-            <div class="control date-control date-field" data-date-field="indicatorEndDate">
-              <span>Até</span>
-              <div class="date-input-shell">
-                <input id="indicatorEndDate" class="date-text-input" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD/MM/AAAA" aria-label="Data final dos indicadores">
-                <button class="date-picker-button" type="button" data-date-picker-for="indicatorEndDate" aria-label="Abrir calendário da data final dos indicadores"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg></button>
-                <input id="indicatorEndDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
-              </div>
-              <small class="date-field-error" id="indicatorEndDateError" aria-live="polite"></small>
-            </div>
-            <div class="date-quick indicator-date-quick" aria-label="Atalhos de período">
-              <button type="button" data-analysis-preset="today">Hoje</button>
-              <button type="button" data-analysis-preset="7d">7 dias</button>
-              <button type="button" data-analysis-preset="15d">15 dias</button>
-              <button type="button" data-analysis-preset="month">Este mês</button>
-              <button type="button" data-analysis-preset="prev-month">Mês anterior</button>
-            </div>
-            <div class="indicator-action-group" id="indicatorPerformanceActions">
-              <button class="btn secondary indicator-fullscreen-btn" id="openDailyTechniciansChartBtn" type="button">↗ Evolução diária dos técnicos</button>
-              <button class="btn primary indicator-fullscreen-btn" id="openAllTechniciansChartBtn" type="button">⛶ Todos os técnicos por competência</button>
-            </div>
+          <div class="section-title"><div><span class="eyebrow">CONTEXTO DA ANÁLISE</span><h3>Período analisado</h3><p>O período agora é controlado pelo filtro único no topo da página.</p></div><span class="period-chip" id="indicatorPeriodLabel">Carregando período...</span></div>
+          <div class="indicator-toolbar-actions" id="indicatorPerformanceActions">
+            <button class="btn secondary indicator-fullscreen-btn" id="openDailyTechniciansChartBtn" type="button">↗ Evolução diária dos técnicos</button>
+            <button class="btn primary indicator-fullscreen-btn" id="openAllTechniciansChartBtn" type="button">⛶ Todos os técnicos por competência</button>
           </div>
+          <input id="indicatorStartDate" class="filter-state-input" type="hidden" aria-hidden="true">
+          <input id="indicatorEndDate" class="filter-state-input" type="hidden" aria-hidden="true">
+          <input id="indicatorStartDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
+          <input id="indicatorEndDatePicker" class="date-picker-state" type="hidden" aria-hidden="true">
         </article>
 
         <div id="indicatorPerformancePanel">
@@ -1205,7 +1175,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.48.14</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.49.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1626,23 +1596,44 @@
   <div class="toast" id="toast"></div>
   <script src="js/config.js"></script>
   <script src="js/core-utils.js"></script>
+  <div class="analysis-period-popover hidden" id="analysisPeriodPopover" role="dialog" aria-modal="false" aria-label="Selecionar período">
+    <div class="period-picker-head"><div><span class="eyebrow">PERÍODO</span><strong id="periodPickerSummary">Selecione um intervalo</strong></div><button type="button" id="periodPickerClose" aria-label="Fechar">×</button></div>
+    <div class="period-picker-layout">
+      <div class="period-picker-presets" aria-label="Atalhos de período">
+        <button type="button" data-period-preset="today">Hoje</button>
+        <button type="button" data-period-preset="7d">Últimos 7 dias</button>
+        <button type="button" data-period-preset="15d">Últimos 15 dias</button>
+        <button type="button" data-period-preset="month">Este mês</button>
+        <button type="button" data-period-preset="prev-month">Mês anterior</button>
+      </div>
+      <div class="period-picker-calendar">
+        <div class="period-picker-nav"><button type="button" data-period-nav="prev" aria-label="Mês anterior">‹</button><strong id="periodPickerMonth">—</strong><button type="button" data-period-nav="next" aria-label="Próximo mês">›</button></div>
+        <div class="period-picker-weekdays" aria-hidden="true"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="period-picker-grid" id="periodPickerGrid"></div>
+        <div class="period-picker-selection"><div><span>De</span><strong id="periodPickerStart">—</strong></div><i>→</i><div><span>Até</span><strong id="periodPickerEnd">—</strong></div></div>
+      </div>
+    </div>
+    <div class="period-picker-foot"><button class="btn secondary compact" id="periodPickerCancel" type="button">Cancelar</button><button class="btn primary compact" id="periodPickerApply" type="button">Aplicar período</button></div>
+  </div>
+
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.48.14"></script>
-  <script src="js/finance-rules.js?v=2.48.14"></script>
-  <script src="js/finance-advanced.js?v=2.48.14"></script>
-  <script src="js/tv-engine.js?v=2.48.14"></script>
-  <script src="js/presentation.js?v=2.48.14"></script>
-  <script src="js/chart-engine.js?v=2.48.14"></script>
-  <script src="js/import-engine.js?v=2.48.14"></script>
-  <script src="js/predictive-engine.js?v=2.48.14"></script>
-  <script src="js/alert-engine.js?v=2.48.14"></script>
-  <script src="js/settings-engine.js?v=2.48.14"></script>
-  <script src="js/performance-engine.js?v=2.48.14"></script>
-  <script src="js/navigation-engine.js?v=2.48.14"></script>
-  <script src="js/workspace-engine.js?v=2.48.14"></script>
-  <script src="js/design-system.js?v=2.48.14"></script>
-  <script src="js/app.js?v=2.48.14"></script>
+  <script src="js/business-calendar.js?v=2.49.0"></script>
+  <script src="js/finance-rules.js?v=2.49.0"></script>
+  <script src="js/finance-advanced.js?v=2.49.0"></script>
+  <script src="js/tv-engine.js?v=2.49.0"></script>
+  <script src="js/presentation.js?v=2.49.0"></script>
+  <script src="js/chart-engine.js?v=2.49.0"></script>
+  <script src="js/import-engine.js?v=2.49.0"></script>
+  <script src="js/predictive-engine.js?v=2.49.0"></script>
+  <script src="js/alert-engine.js?v=2.49.0"></script>
+  <script src="js/settings-engine.js?v=2.49.0"></script>
+  <script src="js/performance-engine.js?v=2.49.0"></script>
+  <script src="js/navigation-engine.js?v=2.49.0"></script>
+  <script src="js/workspace-engine.js?v=2.49.0"></script>
+  <script src="js/filter-system.js?v=2.49.0"></script>
+  <script src="js/design-system.js?v=2.49.0"></script>
+  <script src="js/app.js?v=2.49.0"></script>
 </body>
 </html>

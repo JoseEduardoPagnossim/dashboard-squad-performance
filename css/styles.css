@@ -2613,3 +2613,72 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 @media(max-width:1500px){#view-individual .individual-period-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1100px){#view-individual .monthly-rhythm-grid{grid-template-columns:1fr 1fr}#view-individual .monthly-rhythm-needed{grid-column:1/-1;border-right:0;border-top:1px solid color-mix(in srgb,var(--accent) 18%,var(--border));padding:14px 0 0;margin-top:14px}#view-individual .individual-period-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){#view-individual .monthly-rhythm-card{padding:16px}#view-individual .monthly-rhythm-head{display:grid}#view-individual .monthly-rhythm-status{white-space:normal;width:fit-content}#view-individual .monthly-rhythm-grid{grid-template-columns:1fr}#view-individual .monthly-rhythm-metric{border-right:0;border-bottom:1px solid color-mix(in srgb,var(--accent) 18%,var(--border));padding:13px 0}#view-individual .monthly-rhythm-metric:first-child{padding-top:0}#view-individual .monthly-rhythm-metric:last-child{border-bottom:0;padding-bottom:0}#view-individual .monthly-rhythm-needed{grid-column:auto;border-top:0;margin-top:0}#view-individual .monthly-needed-caption{margin-left:40px}#view-individual .individual-period-kpis{grid-template-columns:1fr}#view-individual .individual-period-heading h2{font-size:17px}}
+
+/* ============================================================
+   V2.49.0 - SISTEMA UNIFICADO DE FILTROS
+   Squad | Competencia | Periodo | Tecnico. A logica continua
+   usando os mesmos estados, URLs, Visões e selects originais.
+   ============================================================ */
+:root{
+  --top-squad-w:146px;
+  --top-month-w:174px;
+  --top-tech-w:224px;
+  --top-period-w:246px;
+}
+.analysis-period-control{width:var(--top-period-w);min-width:var(--top-period-w);max-width:var(--top-period-w);height:var(--top-control-h);flex:0 0 var(--top-period-w);box-sizing:border-box}
+.analysis-period-trigger{width:100%;height:var(--top-control-h);min-height:var(--top-control-h);display:grid;grid-template-columns:minmax(0,1fr) 14px;grid-template-rows:10px 20px;align-content:center;column-gap:5px;row-gap:1px;padding:4px 10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025);color:var(--text);font:inherit;text-align:left;cursor:pointer;box-sizing:border-box;transition:.16s ease}
+.analysis-period-trigger:hover,.analysis-period-trigger[aria-expanded="true"]{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+.analysis-period-trigger>span{grid-column:1;grid-row:1;height:10px;line-height:10px;font-size:7.5px;font-weight:820;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.analysis-period-trigger>strong{grid-column:1;grid-row:2;display:block;height:20px;line-height:20px;font-size:10.5px;font-weight:780;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.analysis-period-trigger>i{grid-column:2;grid-row:1/3;align-self:center;justify-self:center;color:var(--muted);font-style:normal;font-size:13px}
+.filter-state-input{display:none!important}
+
+/* PeriodPicker unificado */
+.analysis-period-popover{position:fixed;z-index:1650;width:650px;max-width:calc(100vw - 20px);padding:0;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border));border-radius:16px;background:linear-gradient(145deg,color-mix(in srgb,var(--panel2) 98%,var(--bg)),color-mix(in srgb,var(--panel) 98%,var(--bg2)));box-shadow:0 28px 80px rgba(0,0,0,.52);backdrop-filter:blur(24px) saturate(1.1);overflow:hidden;box-sizing:border-box}
+.analysis-period-popover.hidden{display:none!important}
+.period-picker-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--border)}
+.period-picker-head>div{display:grid;gap:3px}.period-picker-head strong{font-size:12px}.period-picker-head button{width:30px;height:30px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:20px;cursor:pointer}.period-picker-head button:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.period-picker-layout{display:grid;grid-template-columns:156px minmax(0,1fr);min-height:330px}
+.period-picker-presets{display:flex;flex-direction:column;gap:6px;padding:14px;border-right:1px solid var(--border);background:rgba(255,255,255,.015)}
+.period-picker-presets button{min-height:34px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.02);color:var(--muted);font:inherit;font-size:9px;font-weight:800;text-align:left;cursor:pointer;transition:.15s}
+.period-picker-presets button:hover,.period-picker-presets button.active{color:var(--text);border-color:color-mix(in srgb,var(--accent) 38%,var(--border));background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.period-picker-calendar{padding:14px 16px 12px;min-width:0}
+.period-picker-nav{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;align-items:center;gap:8px;margin-bottom:8px}.period-picker-nav strong{text-align:center;font-size:13px;text-transform:capitalize}.period-picker-nav button{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:rgba(255,255,255,.02);color:var(--text);font-size:20px;cursor:pointer}.period-picker-nav button:disabled{opacity:.25;cursor:not-allowed}
+.period-picker-weekdays,.period-picker-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.period-picker-weekdays{margin-bottom:4px}.period-picker-weekdays span{height:20px;display:grid;place-items:center;font-size:8px;font-weight:850;color:var(--muted)}
+.period-picker-empty{height:34px}.period-picker-day{position:relative;height:34px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:10px;font-weight:750;cursor:pointer;transition:.14s}.period-picker-day:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 28%,var(--border));background:color-mix(in srgb,var(--accent) 7%,transparent)}.period-picker-day.in-range{background:color-mix(in srgb,var(--accent) 7%,transparent)}.period-picker-day.range-start,.period-picker-day.range-end{border-color:color-mix(in srgb,var(--accent) 45%,var(--border))}.period-picker-day.selected{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#111;border-color:var(--accent);box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 16%,transparent)}.period-picker-day.today:not(.selected)::after{content:"";position:absolute;left:50%;bottom:3px;width:3px;height:3px;border-radius:50%;background:var(--accent);transform:translateX(-50%)}.period-picker-day:disabled{opacity:.2;cursor:not-allowed}
+.period-picker-selection{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:9px;margin-top:12px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)}.period-picker-selection>div{display:grid;gap:2px}.period-picker-selection span{font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.period-picker-selection strong{font-size:10px}.period-picker-selection i{font-style:normal;color:var(--muted)}
+.period-picker-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:11px 14px;border-top:1px solid var(--border)}
+
+/* Indicadores: período vem da topbar; nada duplicado dentro do módulo. */
+.indicator-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.indicator-toolbar .section-title{flex:1 1 420px;margin:0}.indicator-toolbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto}
+
+/* Drawer de filtros: único padrão para viewport estreita. */
+.filter-drawer-trigger{display:none;height:var(--top-control-h);min-height:var(--top-control-h);align-items:center;gap:7px;padding:0 11px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025);color:var(--text);font:inherit;font-weight:800;cursor:pointer}.filter-drawer-trigger>b{display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--accent);color:#111;font-size:8px}.filter-drawer-trigger.no-filters{display:none!important}
+.filter-drawer-backdrop{position:fixed;inset:0;z-index:1690;background:rgba(0,0,0,.48);backdrop-filter:blur(3px)}.filter-drawer{position:fixed;z-index:1700;right:0;top:0;bottom:0;width:min(390px,92vw);display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:color-mix(in srgb,var(--panel2) 99%,var(--bg));border-left:1px solid var(--border);box-shadow:-24px 0 70px rgba(0,0,0,.45)}.filter-drawer.hidden,.filter-drawer-backdrop.hidden{display:none!important}.filter-drawer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px;border-bottom:1px solid var(--border)}.filter-drawer-head h3{margin:3px 0 0}.filter-drawer-head button{width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:22px;cursor:pointer}.filter-drawer-body{overflow:auto;padding:14px 18px;display:grid;align-content:start;gap:10px}.filter-drawer-field{width:100%;min-width:0;min-height:58px;display:grid;grid-template-columns:minmax(0,1fr);gap:5px;padding:9px 11px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.025);box-sizing:border-box;color:var(--text);text-align:left}.filter-drawer-field>span{font-size:8px;font-weight:820;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.filter-drawer-field select{width:100%;min-width:0}.filter-drawer-period{grid-template-columns:minmax(0,1fr) 16px;grid-template-rows:11px 22px;cursor:pointer;font:inherit}.filter-drawer-period>span{grid-column:1;grid-row:1}.filter-drawer-period>strong{grid-column:1;grid-row:2;line-height:22px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.filter-drawer-period>i{grid-column:2;grid-row:1/3;align-self:center;font-style:normal;color:var(--muted)}.filter-drawer-foot{display:flex;justify-content:space-between;gap:8px;padding:14px 18px;border-top:1px solid var(--border)}body.filter-drawer-open{overflow:hidden!important}
+
+/* Desktop com sidebar expandida: quebra controlada antes de qualquer overflow. */
+@media(max-width:1760px) and (min-width:981px){
+  :root{--top-squad-w:140px;--top-month-w:164px;--top-tech-w:206px;--top-period-w:226px}
+  .topbar{min-width:0!important;align-items:flex-start!important;padding-top:8px!important;padding-bottom:8px!important}
+  .topbar .top-title{flex:0 1 190px;min-width:135px}
+  .topbar .top-actions{flex:1 1 0;min-width:0;max-width:calc(100% - 150px);flex-wrap:wrap!important;row-gap:7px!important;justify-content:flex-end!important}
+}
+@media(max-width:1280px) and (min-width:981px){
+  :root{--top-squad-w:132px;--top-month-w:154px;--top-tech-w:190px;--top-period-w:214px}
+  .topbar .top-title{flex-basis:150px;min-width:120px}
+  .topbar .top-actions{max-width:calc(100% - 120px)}
+}
+@media(max-width:980px) and (min-width:761px){
+  .top-actions{display:flex!important;flex-wrap:wrap!important;width:calc(100% - 50px)!important;justify-content:flex-end!important;align-items:center!important;gap:7px!important}
+  #squadControl,.month-control,.technician-control{width:auto!important;min-width:0!important;max-width:none!important;flex:1 1 180px!important}.analysis-period-control{width:auto!important;min-width:210px!important;max-width:none!important;flex:1 1 230px!important}
+  .top-actions>.color-mode-toggle,.top-actions>.top-user{justify-self:auto!important}
+}
+@media(max-width:760px){
+  .topbar{align-items:flex-start!important}.top-actions{display:flex!important;flex-wrap:wrap!important;width:calc(100% - 48px)!important;justify-content:flex-end!important;gap:6px!important}
+  .topbar .top-actions>#squadControl,.topbar .top-actions>.month-control,.topbar .top-actions>#analysisDateControl,.topbar .top-actions>.technician-control{display:none!important}
+  .filter-drawer-trigger{display:inline-flex}.global-search-trigger-label,.global-search-trigger>kbd,.workspace-menu-label{display:none!important}
+  .workspace-menu-btn{width:var(--top-control-h);padding:0!important}.top-actions>.top-user{display:none!important}
+  .analysis-period-popover{left:10px!important;right:10px!important;top:auto!important;bottom:10px!important;width:auto!important;max-width:none!important;max-height:calc(100dvh - 20px);overflow:auto;border-radius:16px}.period-picker-layout{grid-template-columns:1fr;min-height:0}.period-picker-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-right:0;border-bottom:1px solid var(--border)}.period-picker-presets button:last-child{grid-column:1/-1}.period-picker-calendar{padding:12px}.period-picker-day,.period-picker-empty{height:38px}.period-picker-foot{position:sticky;bottom:0;background:color-mix(in srgb,var(--panel2) 98%,var(--bg))}
+  .indicator-toolbar-actions{width:100%;display:grid;grid-template-columns:1fr}.indicator-toolbar-actions .btn{width:100%}
+}
+@media(max-width:480px){.filter-drawer{width:100vw}.period-picker-presets{grid-template-columns:1fr 1fr}.period-picker-head{padding:12px}.period-picker-selection{gap:5px;padding:8px}.period-picker-selection strong{font-size:9px}}

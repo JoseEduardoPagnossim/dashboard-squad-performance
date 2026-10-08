@@ -15,7 +15,7 @@ function individualHtml(){
   return index.slice(start,end);
 }
 
-test('V2.48.14 coloca Ritmo do mês antes dos KPIs do período',()=>{
+test('V2.49.0 coloca Ritmo do mês antes dos KPIs do período',()=>{
   const html=individualHtml();
   const monthly=html.indexOf('id="monthlyRhythmCard"');
   const period=html.indexOf('id="individualPeriodLabel"');
@@ -27,7 +27,7 @@ test('V2.48.14 coloca Ritmo do mês antes dos KPIs do período',()=>{
   assert.match(html,/Desempenho no período selecionado/);
 });
 
-test('V2.48.14 separa valores mensais dos valores do recorte',()=>{
+test('V2.49.0 separa valores mensais dos valores do recorte',()=>{
   assert.match(app,/monthlyAttCurrent'\)\.textContent=fmtInt\(t\.att\)/);
   assert.match(app,/monthlyNotesCurrent'\)\.textContent=fmtInt\(t\.notes5\)/);
   assert.match(app,/kpiAtt'\)\.textContent=fmtInt\(period\.att\)/);
@@ -37,7 +37,7 @@ test('V2.48.14 separa valores mensais dos valores do recorte',()=>{
   assert.match(index,/Pontuação oficial do mês/);
 });
 
-test('V2.48.14 remove redundâncias do período e o card mensal antigo',()=>{
+test('V2.49.0 remove redundâncias do período e o card mensal antigo',()=>{
   const html=individualHtml();
   assert.equal(html.includes('Como está o seu ritmo?'),false);
   assert.equal(html.includes('Meta mensal completa'),false);
@@ -53,14 +53,16 @@ test('V2.48.14 mantém layout responsivo sem mexer no shell global',()=>{
   assert.match(styles,/V2\.48\.14 — Ritmo mensal no topo/);
   assert.match(styles,/\.individual-period-kpis\{margin-top:0;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)\}/);
   assert.match(styles,/@media\(max-width:720px\)[\s\S]*?\.individual-period-kpis\{grid-template-columns:1fr\}/);
-  const v24814=styles.slice(styles.indexOf('V2.48.14 — Ritmo mensal no topo'));
+  const start=styles.indexOf('V2.48.14 — Ritmo mensal no topo');
+  const end=styles.indexOf('V2.49.0 - SISTEMA UNIFICADO DE FILTROS',start);
+  const v24814=styles.slice(start,end>start?end:undefined);
   assert.doesNotMatch(v24814,/\.sidebar\s*\{/);
   assert.doesNotMatch(v24814,/\.topbar\s*\{/);
 });
 
 test('V2.48.14 é frontend-only e preserva regra financeira',()=>{
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.14.sql')),false);
-  assert.match(app,/APP_VERSION = '2\.48\.14'/);
-  assert.match(index,/V2\.48\.14/);
+  assert.match(app,/APP_VERSION = '2\.49\.0'/);
+  assert.match(index,/V2\.49\.0/);
   assert.match(finance,/FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
 });

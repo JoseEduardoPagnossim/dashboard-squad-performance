@@ -109,13 +109,11 @@ test('V2.45.1 diferencia widget oculto em edicao e fora da edicao', () => {
   assert.match(app, /state\.homeLayoutEditMode\?homeLayoutDraft\(\):savedHomeLayout\(\)/);
 });
 
-test('V2.45.2 mapeia os filtros superiores conforme o modulo que realmente os consome', () => {
+test('V2.49 centraliza o mapeamento dos filtros superiores em um motor contextual', () => {
   const filterBlock = blockBetween(app, 'function topFilterVisibility(', 'function syncTopFiltersForView(');
-  assert.match(filterBlock, /\['individual','team','presentation','feedbacks','settings'\]\.includes\(name\)/);
-  assert.match(filterBlock, /state\.indicatorSection!=='financial-impact'/);
-  assert.match(filterBlock, /\['operation','finance','appearance'\]/);
-  assert.match(filterBlock, /month:name==='feedbacks'/);
-  assert.match(filterBlock, /\['individual','team','presentation'\]\.includes\(name\)/);
+  assert.match(filterBlock, /filterSystem\.visibility/);
+  assert.match(filterBlock, /settingsModule:state\.settingsModule/);
+  assert.match(filterBlock, /indicatorSection:state\.indicatorSection/);
   assert.match(app, /syncTopFiltersForView\('indicators',state\.adminSection\)/);
   assert.match(app, /SUPORTE TÉCNICO COMPLETO/);
 });

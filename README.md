@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.14`<br>
+**Versão atual:** `2.49.0`<br>
 
 
 
@@ -22,6 +22,18 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.49.0 — Sistema unificado de filtros
+
+- Normaliza a topbar em **Squad | Competência | Período | Técnico**, exibindo somente filtros que alteram o contexto da tela atual.
+- Consolida `De`, `Até`, `Hoje`, `7 dias`, `15 dias` e `Este mês` em um único **PeriodPicker** do Design System e acrescenta o atalho **Mês anterior**.
+- Mantém `squad`, `month`, `tech`, `from` e `to` como estados/parametros oficiais, preservando URLs, Visões salvas, favoritos e filtros persistentes existentes.
+- Indicadores deixam de duplicar filtros de data; submódulos com filtros próprios não exibem controles globais redundantes.
+- Em telas estreitas, um drawer **Filtros** trabalha em rascunho e só altera o painel ao clicar em **Aplicar**.
+- A Home passa a respeitar explicitamente Squad e Competência selecionados, inclusive no consolidado de Todos os Squads.
+- Nenhuma migration ou regra financeira foi alterada; `FR-2.48.8-1` permanece vigente.
+
+Detalhes: `docs/FILTROS_UNIFICADOS_V2.49.0.md`.
 
 ## V2.48.14 — Ritmo do mês e leitura clara do período
 

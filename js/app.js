@@ -36,6 +36,8 @@
   const {routeFromLocation:readNavigationRoute,routeUrl:buildNavigationUrl,searchCommands:searchNavigationCommands,normalizeText:normalizeNavigationText}=navigationEngine;
   const workspaceEngine = window.SoftenWorkspaceEngine;
   if(!workspaceEngine) throw new Error('SoftenWorkspaceEngine não carregado. Verifique js/workspace-engine.js.');
+  const filterSystem = window.SoftenFilterSystem;
+  if(!filterSystem) throw new Error('SoftenFilterSystem não carregado. Verifique js/filter-system.js.');
   const {normalizeWorkspace,routeSignature:workspaceRouteSignature,mergeRememberedFilters:mergeWorkspaceRememberedFilters,rememberFilters:rememberWorkspaceFilters,createSavedView:createWorkspaceSavedView,renameSavedView:renameWorkspaceSavedView,deleteSavedView:deleteWorkspaceSavedView,favoriteForRoute:workspaceFavoriteForRoute,toggleFavorite:toggleWorkspaceFavorite,setPersistentFilters:setWorkspacePersistentFilters,clearFilterMemory:clearWorkspaceFilterMemory}=workspaceEngine;
   const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeBaseUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,setBlockSize:setUiBlockSize,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups,normalizeRole:normalizeAccessRole}=settingsEngine;
   function normalizeUiPreferences(preferences){const raw=preferences&&typeof preferences==='object'?preferences:{},base=normalizeBaseUiPreferences(raw),legacy=Number(raw.version||0)<5,navigation=legacy?normalizeUiNavigation({sidebarCollapsed:base.navigation?.sidebarCollapsed===true}):base.navigation;return{...base,version:5,navigation,workspace:normalizeWorkspace(raw.workspace)}}
@@ -46,7 +48,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.48.14';
+  const APP_VERSION = '2.49.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -275,10 +277,11 @@
     if(page==='admin')route.section=state.adminSection||'operation';
     if(page==='settings'&&state.settingsModule&&state.settingsModule!=='all')route.module=state.settingsModule;
     if(page==='indicators')route.indicator=state.indicatorSection||'performance';
-    if(state.squadCode)route.squad=state.squadCode;
-    if(state.squadCode!=='all'&&state.currentId)route.month=state.currentId;
-    if(page==='individual'&&state.techName)route.tech=state.techName;
-    if(['individual','team','indicators','presentation'].includes(page)){if(state.analysisStartDate)route.from=state.analysisStartDate;if(state.analysisEndDate)route.to=state.analysisEndDate;}
+    const visible=topFilterVisibility(page,state.adminSection);
+    if(visible.squad&&state.squadCode)route.squad=state.squadCode;
+    if(visible.competence&&state.currentId)route.month=state.currentId;
+    if(visible.technician&&state.techName)route.tech=state.techName;
+    if(visible.period){if(state.analysisStartDate)route.from=state.analysisStartDate;if(state.analysisEndDate)route.to=state.analysisEndDate;}
     return route;
   }
   function syncPersistentUrl({replace=false}={}){
@@ -294,7 +297,7 @@
     try{
       const rawTarget=routeAccessible(route)?route:{page:'home'},target=rawTarget.page==='home'?rawTarget:rememberedRoute(rawTarget);
       if(isSuperAdmin()&&target.squad){const code=target.squad==='all'?'all':String(target.squad).toUpperCase();if((code==='all'||state.squads?.[code])&&code!==state.squadCode)await selectSquad(code,{history:'none'});}
-      if(state.squadCode!=='all'&&target.month&&currentMonths()?.[target.month]){state.currentId=target.month;if(state.supabase&&!isPerformanceFullMonth(currentMonths()[target.month]))ensureMonthLoaded(state.squadCode,target.month,{silent:true}).catch(()=>{});chooseDefaultTech();}
+      if(target.month&&competenceIdsForSquad().includes(target.month)){state.currentId=target.month;if(state.squadCode!=='all'&&state.supabase&&!isPerformanceFullMonth(currentMonths()[target.month]))ensureMonthLoaded(state.squadCode,target.month,{silent:true}).catch(()=>{});if(state.squadCode!=='all')chooseDefaultTech();}
       if(target.from||target.to){const range=clampAnalysisRange(target.from||state.analysisStartDate,target.to||state.analysisEndDate);if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();}}
       if(target.page==='indicators'&&target.indicator&&INDICATOR_SECTION_META[target.indicator])state.indicatorSection=target.indicator;
       if(target.page==='settings')state.settingsModule=target.module&&SETTINGS_MODULES[target.module]&&settingsModuleAllowed(target.module)?target.module:'all';
@@ -408,7 +411,7 @@
   function openSettingsModule(module='all',{scroll=true,history='push'}={}){
     const requested=SETTINGS_MODULES[module]?module:'all';state.settingsModule=requested;
     if(state.currentView!=='settings')showView('settings',null,{history:'none'});else renderSettings();
-    applySettingsModuleFilter({scroll});updateBreadcrumbs();
+    syncTopFiltersForView('settings',state.adminSection);applySettingsModuleFilter({scroll});updateBreadcrumbs();
     if(history!=='none')syncPersistentUrl({replace:history==='replace'});
   }
 
@@ -1005,6 +1008,8 @@
       ['indicatorEndDate','indicatorEndDatePicker','end']
     ].forEach(([textId,pickerId,which])=>bindAnalysisDateField(textId,pickerId,which));
     $$('[data-analysis-preset]').forEach(btn=>btn.addEventListener('click',()=>setAnalysisPreset(btn.dataset.analysisPreset)));
+    bindAnalysisPeriodPicker();
+    bindFilterDrawer();
     if($('#openAllTechniciansChartBtn'))$('#openAllTechniciansChartBtn').addEventListener('click',()=>openAllTechniciansChart('indicator'));
     if($('#openAllTechniciansChartTeamBtn'))$('#openAllTechniciansChartTeamBtn').addEventListener('click',()=>openAllTechniciansChart('team'));
     if($('#openDailyTechniciansChartBtn'))$('#openDailyTechniciansChartBtn').addEventListener('click',openDailyTechniciansChart);
@@ -1208,6 +1213,8 @@
   // V2.48.11 — calendário próprio do Design System. O valor continua passando
   // por handleAnalysisDateInput(), preservando a mesma lógica, URL e filtros.
   const analysisCalendarUi={root:null,textId:'',which:'',anchor:null,viewYear:0,viewMonth:0,min:'',max:''};
+  const analysisPeriodUi={open:false,anchor:null,target:'state',draftStart:null,draftEnd:null,draftPreset:'custom',viewYear:0,viewMonth:0,min:'',max:''};
+  const filterDrawerUi={open:false,draft:null};
   const analysisCalendarMonths=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const analysisCalendarWeekdays=['D','S','T','Q','Q','S','S'];
   function calendarMonthIntersectsBounds(year,month,min,max){const first=isoDateParts(year,month,1),last=isoDateParts(year,month,new Date(year,month,0).getDate());return(!min||last>=min)&&(!max||first<=max)}
@@ -1267,31 +1274,105 @@
     if(!force&&state.analysisStartDate&&state.analysisEndDate)return;
     const end=currentCalendarMonthLatest(bounds)||bounds.max,dt=parseIsoAnalysisDate(end);state.analysisEndDate=end;state.analysisStartDate=isoDateParts(dt.getFullYear(),dt.getMonth()+1,1);state.analysisPreset='month';syncCurrentMonthToAnalysisEnd();syncAnalysisDateControls();
   }
-  function clampAnalysisRange(start,end){
-    const bounds=importedDateBounds();if(!bounds.max)return{start:null,end:null};let s=start||bounds.min,e=end||bounds.max;if(s<bounds.min)s=bounds.min;if(e>bounds.max)e=bounds.max;if(s>e)s=e;return{start:s,end:e};
+  function clampRangeToBounds(start,end,bounds=importedDateBounds()){
+    if(!bounds.max)return{start:null,end:null};let s=start||bounds.min,e=end||bounds.max;if(s<bounds.min)s=bounds.min;if(e>bounds.max)e=bounds.max;if(s>e)s=e;return{start:s,end:e};
   }
+  function clampAnalysisRange(start,end){return clampRangeToBounds(start,end,importedDateBounds());}
   function syncCurrentMonthToAnalysisEnd(){
     if(state.squadCode==='all'||!state.analysisEndDate)return;const id=monthIdForDate(state.analysisEndDate);if(id&&currentMonths()[id]){state.currentId=id;chooseDefaultTech();}
+  }
+  function analysisRangeCompactLabel(start=state.analysisStartDate,end=state.analysisEndDate){
+    if(!start||!end)return'Sem período';
+    const a=isoToBrDate(start),b=isoToBrDate(end);return start===end?a:`${a} — ${b}`;
   }
   function syncAnalysisDateControls(){
     const bounds=importedDateBounds();
     [['analysisStartDate','analysisStartDatePicker'],['indicatorStartDate','indicatorStartDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisStartDate);if(picker){picker.value=state.analysisStartDate||'';picker.dataset.min=bounds.min||'';picker.dataset.max=bounds.max||'';}setDateFieldError(textId);});
     [['analysisEndDate','analysisEndDatePicker'],['indicatorEndDate','indicatorEndDatePicker']].forEach(([textId,pickerId])=>{const text=$('#'+textId),picker=$('#'+pickerId);if(text)text.value=isoToBrDate(state.analysisEndDate);if(picker){picker.value=state.analysisEndDate||'';picker.dataset.min=bounds.min||'';picker.dataset.max=bounds.max||'';}setDateFieldError(textId);});
+    const label=analysisRangeCompactLabel();if($('#analysisPeriodValue'))$('#analysisPeriodValue').textContent=label;if($('#mobilePeriodValue')&&!filterDrawerUi.open)$('#mobilePeriodValue').textContent=label;
     $$('[data-analysis-preset]').forEach(b=>b.classList.toggle('active',b.dataset.analysisPreset===state.analysisPreset));
+    if(analysisPeriodUi.open&&analysisPeriodUi.target==='state')renderAnalysisPeriodPicker();
+  }
+  function commitAnalysisRange(start,end,preset='custom'){
+    const next=clampAnalysisRange(start,end);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset=preset||'custom';syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();syncPersistentUrl({replace:true});
   }
   function handleAnalysisDateInput(which,value){
-    const next=clampAnalysisRange(which==='start'?value:state.analysisStartDate,which==='end'?value:state.analysisEndDate);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset='custom';syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();syncPersistentUrl({replace:true});
+    const next=clampAnalysisRange(which==='start'?value:state.analysisStartDate,which==='end'?value:state.analysisEndDate);commitAnalysisRange(next.start,next.end,'custom');
   }
-  function setAnalysisPreset(preset){
-    const bounds=importedDateBounds();if(!bounds.max)return;let end=currentCalendarMonthLatest(bounds)||bounds.max,start=end;
+  function analysisPresetRange(preset,bounds=importedDateBounds(),scopeSquads=analysisScopeSquads()){
+    if(!bounds.max)return{start:null,end:null,preset};let end=bounds.max,start=end,resolved=preset;
     if(preset==='today'){const today=localIsoDate(new Date());end=today<bounds.min?bounds.min:today>bounds.max?bounds.max:today;start=end;}
     else if(preset==='7d'){start=addCalendarDays(end,-6);}
     else if(preset==='15d'){start=addCalendarDays(end,-14);}
-    else if(preset==='prev-month'){const d=parseIsoAnalysisDate(end);d.setDate(1);d.setMonth(d.getMonth()-1);const y=d.getFullYear(),m=d.getMonth()+1,id=`${y}-${String(m).padStart(2,'0')}`;let last=new Date(y,m,0).getDate();const latestDays=analysisScopeSquads().map(s=>safe(s.months?.[id]?.latestDay)).filter(Boolean);if(latestDays.length)last=Math.max(...latestDays);start=isoDateParts(y,m,1);end=isoDateParts(y,m,last);}
-    else {const d=parseIsoAnalysisDate(end);start=isoDateParts(d.getFullYear(),d.getMonth()+1,1);preset='month';}
-    const next=clampAnalysisRange(start,end);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset=preset;syncCurrentMonthToAnalysisEnd();refreshSelectors();syncAnalysisDateControls();render();syncPersistentUrl({replace:true});
+    else if(preset==='prev-month'){const d=parseIsoAnalysisDate(end);d.setDate(1);d.setMonth(d.getMonth()-1);const y=d.getFullYear(),m=d.getMonth()+1,id=`${y}-${String(m).padStart(2,'0')}`;let last=new Date(y,m,0).getDate();const latestDays=(scopeSquads||[]).map(s=>safe(s.months?.[id]?.latestDay)).filter(Boolean);if(latestDays.length)last=Math.max(...latestDays);start=isoDateParts(y,m,1);end=isoDateParts(y,m,last);}
+    else {const d=parseIsoAnalysisDate(end);start=isoDateParts(d.getFullYear(),d.getMonth()+1,1);resolved='month';}
+    const next=clampRangeToBounds(start,end,bounds);return{start:next.start,end:next.end,preset:resolved};
   }
+  function setAnalysisPreset(preset){const next=analysisPresetRange(preset);if(next.start&&next.end)commitAnalysisRange(next.start,next.end,next.preset);}
+
   function analysisRangeLabel(){if(!state.analysisStartDate||!state.analysisEndDate)return'Sem período';const a=parseIsoAnalysisDate(state.analysisStartDate),b=parseIsoAnalysisDate(state.analysisEndDate),fmt=d=>d.toLocaleDateString('pt-BR');return state.analysisStartDate===state.analysisEndDate?fmt(a):`${fmt(a)} até ${fmt(b)}`}
+
+  function periodScopeSquads(target='state'){if(target==='drawer'&&filterDrawerUi.draft?.squad){const code=filterDrawerUi.draft.squad;return code==='all'?Object.values(state.squads||{}):[state.squads?.[code]].filter(Boolean);}return analysisScopeSquads();}
+  function periodBoundsForTarget(target='state'){return importedDateBounds(periodScopeSquads(target));}
+  function closeAnalysisPeriodPicker({restoreFocus=false}={}){
+    const root=$('#analysisPeriodPopover');if(root)root.classList.add('hidden');analysisPeriodUi.open=false;analysisPeriodUi.anchor?.setAttribute('aria-expanded','false');if(restoreFocus)analysisPeriodUi.anchor?.focus?.();
+  }
+  function positionAnalysisPeriodPicker(){const root=$('#analysisPeriodPopover'),anchor=analysisPeriodUi.anchor;if(!root||!anchor||root.classList.contains('hidden'))return;const margin=10,rect=anchor.getBoundingClientRect();root.style.left='0px';root.style.top='0px';const width=Math.min(650,window.innerWidth-margin*2);root.style.width=`${width}px`;const height=Math.max(390,root.offsetHeight||0),below=window.innerHeight-rect.bottom-margin,above=rect.top-margin,openUp=below<Math.min(height,450)&&above>below;let top=openUp?Math.max(margin,rect.top-height-8):Math.min(window.innerHeight-height-margin,rect.bottom+8);let left=Math.min(Math.max(margin,rect.left),Math.max(margin,window.innerWidth-width-margin));root.style.left=`${left}px`;root.style.top=`${Math.max(margin,top)}px`;root.classList.toggle('open-up',openUp);}
+  function openAnalysisPeriodPicker(anchor,target='state'){
+    const bounds=periodBoundsForTarget(target),source=target==='drawer'&&filterDrawerUi.draft?filterDrawerUi.draft:{start:state.analysisStartDate,end:state.analysisEndDate,preset:state.analysisPreset};if(!bounds.max)return toast('Não há datas importadas para este escopo.');
+    analysisPeriodUi.open=true;analysisPeriodUi.anchor=anchor;analysisPeriodUi.target=target;analysisPeriodUi.min=bounds.min||'';analysisPeriodUi.max=bounds.max||'';analysisPeriodUi.draftStart=source.start||bounds.min;analysisPeriodUi.draftEnd=source.end||bounds.max;analysisPeriodUi.draftPreset=source.preset||'custom';const focus=parseIsoAnalysisDate(analysisPeriodUi.draftEnd||analysisPeriodUi.draftStart||bounds.max);analysisPeriodUi.viewYear=focus.getFullYear();analysisPeriodUi.viewMonth=focus.getMonth()+1;$('#analysisPeriodPopover')?.classList.remove('hidden');anchor?.setAttribute('aria-expanded','true');renderAnalysisPeriodPicker();requestAnimationFrame(positionAnalysisPeriodPicker);
+  }
+  function periodDraftContains(iso){const s=analysisPeriodUi.draftStart,e=analysisPeriodUi.draftEnd;return!!(s&&e&&iso>=s&&iso<=e)}
+  function renderAnalysisPeriodPicker(){
+    const root=$('#analysisPeriodPopover');if(!root||!analysisPeriodUi.open)return;const y=analysisPeriodUi.viewYear,m=analysisPeriodUi.viewMonth,days=new Date(y,m,0).getDate(),firstDow=new Date(y,m-1,1).getDay(),today=localIsoDate(new Date());
+    if($('#periodPickerMonth'))$('#periodPickerMonth').textContent=`${analysisCalendarMonths[m-1]} ${y}`;
+    if($('#periodPickerStart'))$('#periodPickerStart').textContent=analysisPeriodUi.draftStart?isoToBrDate(analysisPeriodUi.draftStart):'Selecione';
+    if($('#periodPickerEnd'))$('#periodPickerEnd').textContent=analysisPeriodUi.draftEnd?isoToBrDate(analysisPeriodUi.draftEnd):'Selecione';
+    if($('#periodPickerSummary'))$('#periodPickerSummary').textContent=analysisPeriodUi.draftStart&&analysisPeriodUi.draftEnd?analysisRangeCompactLabel(analysisPeriodUi.draftStart,analysisPeriodUi.draftEnd):'Escolha a data final';
+    let html='';for(let i=0;i<firstDow;i++)html+='<span class="period-picker-empty" aria-hidden="true"></span>';
+    for(let d=1;d<=days;d++){const iso=isoDateParts(y,m,d),disabled=(analysisPeriodUi.min&&iso<analysisPeriodUi.min)||(analysisPeriodUi.max&&iso>analysisPeriodUi.max),selected=iso===analysisPeriodUi.draftStart||iso===analysisPeriodUi.draftEnd,cls=['period-picker-day'];if(periodDraftContains(iso))cls.push('in-range');if(iso===analysisPeriodUi.draftStart)cls.push('range-start');if(iso===analysisPeriodUi.draftEnd)cls.push('range-end');if(selected)cls.push('selected');if(iso===today)cls.push('today');html+=`<button type="button" class="${cls.join(' ')}" data-period-date="${iso}" ${disabled?'disabled':''}>${d}</button>`;}
+    if($('#periodPickerGrid'))$('#periodPickerGrid').innerHTML=html;
+    $$('[data-period-preset]').forEach(b=>b.classList.toggle('active',b.dataset.periodPreset===analysisPeriodUi.draftPreset));
+    if($('#periodPickerApply'))$('#periodPickerApply').disabled=!(analysisPeriodUi.draftStart&&analysisPeriodUi.draftEnd);
+    const prevM=m===1?12:m-1,prevY=m===1?y-1:y,nextM=m===12?1:m+1,nextY=m===12?y+1:y;const prev=$('[data-period-nav="prev"]'),next=$('[data-period-nav="next"]');if(prev)prev.disabled=!calendarMonthIntersectsBounds(prevY,prevM,analysisPeriodUi.min,analysisPeriodUi.max);if(next)next.disabled=!calendarMonthIntersectsBounds(nextY,nextM,analysisPeriodUi.min,analysisPeriodUi.max);
+  }
+  function choosePeriodDraftDate(iso){
+    if(!analysisPeriodUi.draftStart||analysisPeriodUi.draftEnd){analysisPeriodUi.draftStart=iso;analysisPeriodUi.draftEnd=null;}else if(iso<analysisPeriodUi.draftStart){analysisPeriodUi.draftStart=iso;}else{analysisPeriodUi.draftEnd=iso;}analysisPeriodUi.draftPreset='custom';renderAnalysisPeriodPicker();
+  }
+  function applyAnalysisPeriodPicker(){
+    if(!analysisPeriodUi.draftStart||!analysisPeriodUi.draftEnd)return;const payload={start:analysisPeriodUi.draftStart,end:analysisPeriodUi.draftEnd,preset:analysisPeriodUi.draftPreset||'custom'},target=analysisPeriodUi.target;closeAnalysisPeriodPicker();if(target==='drawer'&&filterDrawerUi.draft){Object.assign(filterDrawerUi.draft,payload);if($('#mobilePeriodValue'))$('#mobilePeriodValue').textContent=analysisRangeCompactLabel(payload.start,payload.end);return;}commitAnalysisRange(payload.start,payload.end,payload.preset);
+  }
+  function bindAnalysisPeriodPicker(){
+    $('#analysisPeriodTrigger')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();analysisPeriodUi.open?closeAnalysisPeriodPicker():openAnalysisPeriodPicker(e.currentTarget,'state')});
+    $('#mobilePeriodTrigger')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openAnalysisPeriodPicker(e.currentTarget,'drawer')});
+    $('#periodPickerClose')?.addEventListener('click',()=>closeAnalysisPeriodPicker({restoreFocus:true}));$('#periodPickerCancel')?.addEventListener('click',()=>closeAnalysisPeriodPicker({restoreFocus:true}));$('#periodPickerApply')?.addEventListener('click',applyAnalysisPeriodPicker);
+    $('#analysisPeriodPopover')?.addEventListener('click',e=>{const nav=e.target.closest('[data-period-nav]');if(nav){let y=analysisPeriodUi.viewYear,m=analysisPeriodUi.viewMonth+(nav.dataset.periodNav==='prev'?-1:1);if(m<1){m=12;y--}if(m>12){m=1;y++}analysisPeriodUi.viewYear=y;analysisPeriodUi.viewMonth=m;renderAnalysisPeriodPicker();return;}const preset=e.target.closest('[data-period-preset]');if(preset){const next=analysisPresetRange(preset.dataset.periodPreset,periodBoundsForTarget(analysisPeriodUi.target),periodScopeSquads(analysisPeriodUi.target));analysisPeriodUi.draftStart=next.start;analysisPeriodUi.draftEnd=next.end;analysisPeriodUi.draftPreset=next.preset;const focus=parseIsoAnalysisDate(next.end||next.start);if(focus){analysisPeriodUi.viewYear=focus.getFullYear();analysisPeriodUi.viewMonth=focus.getMonth()+1;}renderAnalysisPeriodPicker();return;}const day=e.target.closest('[data-period-date]');if(day&&!day.disabled)choosePeriodDraftDate(day.dataset.periodDate);});
+    document.addEventListener('pointerdown',e=>{const root=$('#analysisPeriodPopover');if(!analysisPeriodUi.open||!root||root.contains(e.target)||analysisPeriodUi.anchor?.contains?.(e.target))return;closeAnalysisPeriodPicker();},true);
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&analysisPeriodUi.open){e.preventDefault();closeAnalysisPeriodPicker({restoreFocus:true});}},true);window.addEventListener('resize',()=>{if(analysisPeriodUi.open)positionAnalysisPeriodPicker()},{passive:true});
+  }
+  function cloneSelectOptions(source,target,value){if(!source||!target)return;target.innerHTML=source.innerHTML;target.disabled=source.disabled;if(value!=null)target.value=value;}
+  function draftTechnicianOptions(code,month){const m=code&&code!=='all'?state.squads?.[code]?.months?.[month]:null;return(m?.technicians||[]).map(t=>t.name);}
+  function syncFilterDrawer(visibility=topFilterVisibility()){
+    const count=filterSystem.activeCount({view:state.currentView,adminSection:state.adminSection,settingsModule:state.settingsModule,indicatorSection:state.indicatorSection,isSuperAdmin:isSuperAdmin(),isTechnician:isTechnician(),squadCode:state.squadCode});if($('#filterDrawerCount'))$('#filterDrawerCount').textContent=count;$('#filterDrawerTrigger')?.classList.toggle('no-filters',count===0);
+    const map={squad:'#mobileSquadControl',competence:'#mobileCompetenceControl',period:'#mobilePeriodTrigger',technician:'#mobileTechnicianControl'};for(const[key,sel]of Object.entries(map))$(sel)?.classList.toggle('hidden',!visibility[key]);if(!filterDrawerUi.open){cloneSelectOptions($('#squadSelect'),$('#mobileSquadSelect'),state.squadCode);cloneSelectOptions($('#monthSelect'),$('#mobileMonthSelect'),state.currentId);cloneSelectOptions($('#techSelect'),$('#mobileTechSelect'),state.techName);if($('#mobilePeriodValue'))$('#mobilePeriodValue').textContent=analysisRangeCompactLabel();}
+  }
+  function refreshFilterDrawerDraftOptions(){
+    const d=filterDrawerUi.draft;if(!d)return;const squad=$('#mobileSquadSelect'),month=$('#mobileMonthSelect'),tech=$('#mobileTechSelect');if(squad)squad.value=d.squad;const ids=competenceIdsForSquad(d.squad);if(!ids.includes(d.month))d.month=ids[0]||null;if(month){month.innerHTML=ids.length?ids.map(id=>{const mm=competenceMeta(id,d.squad);return`<option value="${id}">${escapeHtml(mm?.monthName||monthLabelFromId(id).split(' ')[0])} ${escapeHtml(mm?.year||id.slice(0,4))}</option>`}).join(''):'<option>Sem dados</option>';month.value=d.month||'';month.disabled=!ids.length;}const names=draftTechnicianOptions(d.squad,d.month);if(!names.some(n=>samePersonName(n,d.tech)))d.tech=names[0]||'';if(tech){tech.innerHTML=names.length?names.map(n=>`<option>${escapeHtml(n)}</option>`).join(''):'<option>Sem dados</option>';tech.value=d.tech||'';tech.disabled=!names.length;}if($('#mobilePeriodValue'))$('#mobilePeriodValue').textContent=analysisRangeCompactLabel(d.start,d.end);
+  }
+  function openFilterDrawer(){
+    filterDrawerUi.open=true;filterDrawerUi.draft={squad:state.squadCode,month:state.currentId,tech:state.techName,start:state.analysisStartDate,end:state.analysisEndDate,preset:state.analysisPreset};$('#filterDrawer')?.classList.remove('hidden');$('#filterDrawerBackdrop')?.classList.remove('hidden');$('#filterDrawer')?.setAttribute('aria-hidden','false');$('#filterDrawerTrigger')?.setAttribute('aria-expanded','true');document.body.classList.add('filter-drawer-open');syncFilterDrawer();refreshFilterDrawerDraftOptions();
+  }
+  function closeFilterDrawer(){filterDrawerUi.open=false;filterDrawerUi.draft=null;$('#filterDrawer')?.classList.add('hidden');$('#filterDrawerBackdrop')?.classList.add('hidden');$('#filterDrawer')?.setAttribute('aria-hidden','true');$('#filterDrawerTrigger')?.setAttribute('aria-expanded','false');document.body.classList.remove('filter-drawer-open');syncFilterDrawer();}
+  async function applyFilterDrawer(){
+    const d=filterDrawerUi.draft;if(!d)return closeFilterDrawer();const visible=topFilterVisibility();state.routeApplying=true;try{if(visible.squad&&isSuperAdmin()&&d.squad&&d.squad!==state.squadCode)await selectSquad(d.squad,{history:'none'});if(visible.competence&&d.month&&competenceIdsForSquad().includes(d.month)){state.currentId=d.month;if(state.supabase&&state.squadCode!=='all'){try{await ensureMonthLoaded(state.squadCode,d.month,{silent:true});}catch(e){}}if(state.squadCode!=='all')chooseDefaultTech();}if(visible.period&&d.start&&d.end){const next=clampAnalysisRange(d.start,d.end);state.analysisStartDate=next.start;state.analysisEndDate=next.end;state.analysisPreset=d.preset||'custom';syncCurrentMonthToAnalysisEnd();}if(visible.technician&&d.tech&&currentMonth()?.technicians?.some(t=>samePersonName(t.name,d.tech)))state.techName=currentMonth().technicians.find(t=>samePersonName(t.name,d.tech)).name;refreshSelectors();render();syncPersistentUrl({replace:true});}finally{state.routeApplying=false;}closeFilterDrawer();
+  }
+  function clearFilterDrawerDraft(){
+    const d=filterDrawerUi.draft;if(!d)return;const visible=topFilterVisibility();if(visible.squad)d.squad=isSuperAdmin()?'all':state.squadCode;const ids=competenceIdsForSquad(d.squad);if(visible.competence)d.month=ids[0]||null;if(visible.technician)d.tech='';if(visible.period){const bounds=periodBoundsForTarget('drawer');if(bounds.max){const end=bounds.max,dt=parseIsoAnalysisDate(end);d.start=isoDateParts(dt.getFullYear(),dt.getMonth()+1,1);d.end=end;d.preset='month';}}refreshFilterDrawerDraftOptions();
+  }
+  function bindFilterDrawer(){
+    $('#filterDrawerTrigger')?.addEventListener('click',openFilterDrawer);$('#filterDrawerClose')?.addEventListener('click',closeFilterDrawer);$('#filterDrawerBackdrop')?.addEventListener('click',closeFilterDrawer);$('#filterDrawerApply')?.addEventListener('click',applyFilterDrawer);$('#filterDrawerReset')?.addEventListener('click',clearFilterDrawerDraft);
+    $('#mobileSquadSelect')?.addEventListener('change',e=>{if(!filterDrawerUi.draft)return;filterDrawerUi.draft.squad=e.target.value;refreshFilterDrawerDraftOptions();});$('#mobileMonthSelect')?.addEventListener('change',e=>{if(!filterDrawerUi.draft)return;filterDrawerUi.draft.month=e.target.value;refreshFilterDrawerDraftOptions();});$('#mobileTechSelect')?.addEventListener('change',e=>{if(filterDrawerUi.draft)filterDrawerUi.draft.tech=e.target.value;});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&filterDrawerUi.open&&!analysisPeriodUi.open)closeFilterDrawer();});window.addEventListener('resize',()=>{if(window.innerWidth>760&&filterDrawerUi.open)closeFilterDrawer()},{passive:true});
+  }
   function analysisMonthIds(){
     if(!state.analysisStartDate||!state.analysisEndDate)return[];const start=parseIsoAnalysisDate(state.analysisStartDate),end=parseIsoAnalysisDate(state.analysisEndDate),ids=[];const d=new Date(start.getFullYear(),start.getMonth(),1);while(d<=end){ids.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);d.setMonth(d.getMonth()+1);}return ids;
   }
@@ -1408,29 +1489,26 @@
   }
 
   function topFilterVisibility(name=state.currentView,adminSection=state.adminSection){
-    const adminSquadSections=['operation','finance','appearance'];
-    const adminMonthSections=['operation','finance'];
-    const indicatorUsesSquad=name==='indicators'&&state.indicatorSection!=='financial-impact';
-    const squadVisible=isSuperAdmin()&&(
-      ['individual','team','presentation','feedbacks','settings'].includes(name)||
-      indicatorUsesSquad||
-      (name==='admin'&&adminSquadSections.includes(adminSection))
-    );
-    return{
-      squad:squadVisible,
-      month:name==='feedbacks'||(name==='admin'&&adminMonthSections.includes(adminSection)),
-      dates:['individual','team','presentation'].includes(name),
-      technician:name==='individual'&&!isTechnician()&&state.squadCode!=='all'
-    };
+    return filterSystem.visibility({
+      view:name,
+      adminSection,
+      settingsModule:state.settingsModule,
+      indicatorSection:state.indicatorSection,
+      isSuperAdmin:isSuperAdmin(),
+      isTechnician:isTechnician(),
+      squadCode:state.squadCode
+    });
   }
   function syncTopFiltersForView(name=state.currentView,adminSection=state.adminSection){
     const visibility=topFilterVisibility(name,adminSection);
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',!visibility.squad);
-    const monthControl=$('.month-control');if(monthControl)monthControl.classList.toggle('hidden',!visibility.month);
-    if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!visibility.dates);
+    const monthControl=$('.month-control');if(monthControl)monthControl.classList.toggle('hidden',!visibility.competence);
+    if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!visibility.period);
     const technicianControl=$('.technician-control');if(technicianControl)technicianControl.classList.toggle('hidden',!visibility.technician);
+    if(!visibility.period&&analysisPeriodUi.open&&analysisPeriodUi.target==='state')closeAnalysisPeriodPicker();
     const eyebrow=$('#squadEyebrow');
     if(eyebrow&&name!=='home')eyebrow.textContent=(name==='indicators'&&state.indicatorSection==='financial-impact')?'SUPORTE TÉCNICO COMPLETO':(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`);
+    syncFilterDrawer(visibility);
     return visibility;
   }
 
@@ -1469,13 +1547,24 @@
     resetViewScroll();
   }
 
+  function competenceIdsForSquad(code=state.squadCode){
+    if(code&&code!=='all')return Object.keys(state.squads?.[code]?.months||{}).sort().reverse();
+    return [...new Set(Object.values(state.squads||{}).flatMap(s=>Object.keys(s?.months||{})))].sort().reverse();
+  }
+  function competenceMeta(id,code=state.squadCode){
+    if(code&&code!=='all')return state.squads?.[code]?.months?.[id]||null;
+    for(const squad of Object.values(state.squads||{})){const m=squad?.months?.[id];if(m)return m;}
+    return null;
+  }
   function refreshSelectors(){
     if(isSuperAdmin()) $('#squadSelect').innerHTML=`<option value="all" ${state.squadCode==='all'?'selected':''}>Todos os Squads</option>`+Object.values(state.squads).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${s.code}" ${s.code===state.squadCode?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
-    const m=currentMonth(), ids=Object.keys(currentMonths()).sort().reverse();
-    $('#monthSelect').disabled=!ids.length||state.squadCode==='all';
-    $('#monthSelect').innerHTML=ids.length?ids.map(id=>{const mm=currentMonths()[id];return `<option value="${id}" ${id===state.currentId?'selected':''}>${mm.monthName} ${mm.year}${mm.isClosed?' • Fechado':''}</option>`}).join(''):'<option>Sem dados</option>';
-    if(m){chooseDefaultTech();$('#techSelect').innerHTML=m.technicians.map(t=>`<option ${t.name===state.techName?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}else $('#techSelect').innerHTML='<option>Sem dados</option>';
-    const label=state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`;$('#squadEyebrow').textContent=label;syncAnalysisDateControls();syncTopFiltersForView(state.currentView,state.adminSection);
+    const m=currentMonth(),ids=competenceIdsForSquad();
+    if(ids.length&&!ids.includes(state.currentId)){state.currentId=ids[0];if(state.squadCode!=='all')chooseDefaultTech();}
+    $('#monthSelect').disabled=!ids.length;
+    $('#monthSelect').innerHTML=ids.length?ids.map(id=>{const mm=competenceMeta(id);const closed=state.squadCode!=='all'&&mm?.isClosed?' • Fechado':'';return `<option value="${id}" ${id===state.currentId?'selected':''}>${escapeHtml(mm?.monthName||monthLabelFromId(id).split(' ')[0])} ${escapeHtml(mm?.year||id.slice(0,4))}${closed}</option>`}).join(''):'<option>Sem dados</option>';
+    const selectedMonth=currentMonth();
+    if(selectedMonth){chooseDefaultTech();$('#techSelect').innerHTML=selectedMonth.technicians.map(t=>`<option ${samePersonName(t.name,state.techName)?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}else $('#techSelect').innerHTML='<option>Sem dados</option>';
+    const label=state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`;$('#squadEyebrow').textContent=label;syncAnalysisDateControls();syncTopFiltersForView(state.currentView,state.adminSection);syncFilterDrawer();
   }
 
   function render(){
@@ -1502,15 +1591,13 @@
 
 
   function homeLatestPeriodId(){
-    const ids=[...new Set(Object.values(state.squads||{}).flatMap(s=>Object.keys(s?.months||{})))].sort().reverse();
-    if(isSuperAdmin())return ids[0]||null;
-    const own=state.currentId;
-    if(own&&Object.values(state.squads||{}).some(s=>s?.months?.[own]))return own;
+    const scope=state.squadCode&&state.squadCode!=='all'?[state.squads?.[state.squadCode]].filter(Boolean):Object.values(state.squads||{}),ids=[...new Set(scope.flatMap(s=>Object.keys(s?.months||{})))].sort().reverse();
+    if(state.currentId&&ids.includes(state.currentId))return state.currentId;
     return ids[0]||null;
   }
   function homePeriodMonths(id=homeLatestPeriodId()){
     if(!id)return[];
-    const squads=isSuperAdmin()?Object.values(state.squads||{}):(state.squadCode!=='all'&&state.squads?.[state.squadCode]?[state.squads[state.squadCode]]:[]);
+    const squads=state.squadCode&&state.squadCode!=='all'?[state.squads?.[state.squadCode]].filter(Boolean):(isSuperAdmin()?Object.values(state.squads||{}):[]);
     return squads.map(s=>({squad:s,month:s?.months?.[id]||null})).filter(x=>x.month);
   }
   function homeGreetingText(){const h=new Date().getHours();return h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}
@@ -2001,7 +2088,7 @@ function renderIndicatorSafely(label,renderFn,targetIds=[]){
 function setIndicatorSection(section,{history='push'}={}){
   const allowed=new Set(['performance','quality','financial-impact','business-days','detail']);
   state.indicatorSection=allowed.has(section)?section:'performance';
-  if(state.currentView==='indicators')renderIndicators();
+  if(state.currentView==='indicators'){syncTopFiltersForView('indicators',state.adminSection);renderIndicators();}
   updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});
 }
 function syncIndicatorSectionUi(){

@@ -1,3 +1,13 @@
+## V2.49.0 — Sistema unificado de filtros
+
+- Topbar normalizada em Squad, Competência, Período e Técnico, com matriz contextual por módulo.
+- Novo PeriodPicker unifica intervalo e atalhos sem alterar `analysisStartDate`/`analysisEndDate`.
+- Drawer responsivo para filtros em telas estreitas, com rascunho e aplicação explícita.
+- URLs, Visões salvas e filtros persistentes continuam compatíveis com os parâmetros já existentes.
+- Indicadores deixam de duplicar controles de período; contextos com filtros locais ocultam filtros globais sem utilidade.
+- Home passa a consumir a competência escolhida no consolidado organizacional.
+- Frontend-only; sem migration e sem alteração da regra financeira `FR-2.48.8-1`.
+
 ## V2.48.14 — Ritmo mensal e clareza entre mês e período
 
 - Novo bloco horizontal **Ritmo do mês** no topo de Meu desempenho, antes dos KPIs do recorte diário.
