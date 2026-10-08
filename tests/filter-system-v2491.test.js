@@ -18,7 +18,7 @@ function topbarHtml(){
 
 test('V2.49.1 identifica a versão correta',()=>{
   assert.equal(pkg.version,'2.49.1');
-  assert.ok(index.includes('js/app.js?v=2.49.1'));
+  assert.ok(index.includes('js/app.js?v=2.49.1-r1'));
 });
 
 test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
@@ -62,4 +62,12 @@ test('drawer mobile também funde competência e período',()=>{
   assert.match(index,/id="mobilePeriodTrigger"[\s\S]*?<span>Período de análise<\/span>/);
   assert.match(app,/mobileCompetenceControl'\)\?\.classList\.toggle\('hidden',!visibility\.competence\|\|visibility\.period\)/);
   assert.match(app,/mode:state\.analysisMode,competenceId:state\.analysisCompetenceId\|\|state\.currentId/);
+});
+
+test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
+  assert.match(app,/select\.dataset\.optionsKey!==optionsKey/);
+  assert.match(app,/select\.value=analysisPeriodUi\.draftCompetenceId/);
+  assert.match(app,/competenceSelect\?\.addEventListener\('input',handleCompetenceSelection\)/);
+  assert.match(app,/competenceSelect\?\.addEventListener\('change',handleCompetenceSelection\)/);
+  assert.match(app,/setPickerDraftFromCompetence\(id\);renderAnalysisPeriodPicker\(\)/);
 });

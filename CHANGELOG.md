@@ -1,3 +1,11 @@
+## V2.49.1 — Hotfix do seletor de competência no Período de análise
+
+- Corrige a troca de competência dentro da dialog **Período de análise** no modo **Por competência**.
+- O seletor passa a reagir imediatamente ao evento `input` e mantém `change` como fallback.
+- As opções da competência deixam de ser reconstruídas a cada renderização do calendário, evitando que a seleção ativa seja sobrescrita durante a interação.
+- Mantém temporariamente o campo **Competência** da topbar para validação; sua remoção será feita somente após confirmação do teste.
+- Cache-bust específico de `app.js` alterado para `2.49.1-r1`, mantendo a versão funcional em `2.49.1`.
+
 ## V2.49.1 — Período de análise unificado
 
 - Unifica Competência e Período em **Período de análise** quando a tela utiliza recorte temporal.
