@@ -1,3 +1,11 @@
+### V2.49.1 R5 — Sincronização da Apresentação
+
+- Corrige a atualização manual e automática da **Apresentação**, que ainda chamava `loadSupabaseData()` removido na refatoração de carregamento sob demanda.
+- A sincronização passa a recarregar diretamente no Supabase as competências usadas pelo período exibido, com `force: true`, sem reconstruir todo o estado do dashboard.
+- Períodos com mais de uma competência passam a carregar todas as competências necessárias também ao abrir a Apresentação.
+- Em falha de rede/consulta, restaura apenas as competências afetadas e mantém a última apresentação válida.
+- Cache-bust de `app.js` atualizado para `2.49.1-r5`.
+
 ### V2.49.1 R4 — Competência sem duplicidade na topbar
 
 - Remove visualmente o campo **Competência** da topbar sempre que **Período de análise** estiver ativo.

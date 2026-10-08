@@ -18,7 +18,7 @@ function topbarHtml(){
 
 test('V2.49.1 identifica a versão correta',()=>{
   assert.equal(pkg.version,'2.49.1');
-  assert.ok(index.includes('js/app.js?v=2.49.1-r4'));
+  assert.ok(index.includes('js/app.js?v=2.49.1-r5'));
   assert.ok(index.includes('css/styles.css?v=2.49.1-r4'));
 });
 

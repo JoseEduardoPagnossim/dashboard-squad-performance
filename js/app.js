@@ -1987,23 +1987,26 @@
     if(!state.user)throw new Error('Sessão indisponível.');
     await refreshPresentationRouteConfig();
     if(!state.supabase){state.presentationLastSyncAt=new Date().toISOString();renderPresentation();return {updated:true,source:'local'}}
-    const backup={squads:state.squads,orgOverview:state.orgOverview,orgTechnicianOverview:state.orgTechnicianOverview,orgDailyOverview:state.orgDailyOverview,orgTechnicianDailyOverview:state.orgTechnicianDailyOverview,theme:state.theme,currentId:state.currentId,techName:state.techName};
+    const ids=analysisMonthIds().filter(Boolean),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),backup={currentId:state.currentId,techName:state.techName,theme:clone(state.theme),months:{}};
+    for(const code of codes)for(const id of ids){const month=state.squads?.[code]?.months?.[id];if(month)backup.months[`${code}:${id}`]=clone(month)}
     try{
-      await loadSupabaseData();
+      const jobs=[];for(const code of codes)for(const id of ids)if(state.squads?.[code]?.months?.[id])jobs.push(ensureMonthLoaded(code,id,{force:true,silent:true}));
+      if(jobs.length)await Promise.all(jobs);
       if(state.squadCode!=='all'){
         const squad=state.squads[state.squadCode];
         if(!squad)throw new Error(`Squad ${state.squadCode} não está mais disponível.`);
-        const ids=Object.keys(squad.months||{}).sort().reverse();
-        if(!ids.includes(state.currentId))state.currentId=ids[0]||null;
+        const available=Object.keys(squad.months||{}).sort().reverse();
+        if(!available.includes(state.currentId))state.currentId=available[0]||null;
         const month=state.currentId?squad.months[state.currentId]:null;
         if(month&&!month.technicians.some(t=>samePersonName(t.name,state.techName)))state.techName=month.technicians[0]?.name||'';
         const refreshedTheme=resolveLegacyTheme(squad.theme||loadThemeForSquad(state.squadCode));
         if(refreshedTheme){state.theme=refreshedTheme;applyTheme(state.theme)}
       }
       state.presentationLastSyncAt=new Date().toISOString();refreshSelectors();renderPresentation();
-      return {updated:true,at:state.presentationLastSyncAt};
+      return {updated:true,at:state.presentationLastSyncAt,months:jobs.length};
     }catch(err){
-      state.squads=backup.squads;state.orgOverview=backup.orgOverview;state.orgTechnicianOverview=backup.orgTechnicianOverview;state.orgDailyOverview=backup.orgDailyOverview;state.orgTechnicianDailyOverview=backup.orgTechnicianDailyOverview;state.theme=backup.theme;state.currentId=backup.currentId;state.techName=backup.techName;
+      for(const [key,month] of Object.entries(backup.months)){const split=key.indexOf(':'),code=key.slice(0,split),id=key.slice(split+1);if(state.squads?.[code])state.squads[code].months[id]=month}
+      state.theme=backup.theme;state.currentId=backup.currentId;state.techName=backup.techName;applyTheme(state.theme);console.error('Falha ao sincronizar dados da apresentação.',err);
       throw err;
     }
   }
@@ -4671,7 +4674,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function viewNeedsFullMonth(name,section){return['individual','team','indicators','presentation','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
   async function ensureViewData(name=state.currentView,section=state.adminSection){
     if(!state.supabase||name==='home'||['alerts','users','audit','settings','profile','my-feedbacks','help'].includes(name))return;
-    const ids=(name==='indicators'||name==='team'||name==='individual')?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
+    const ids=(['indicators','team','individual','presentation'].includes(name))?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
     if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true}));
     if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
     if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());
