@@ -18,13 +18,16 @@ function topbarHtml(){
 
 test('V2.49.1 identifica a versão correta',()=>{
   assert.equal(pkg.version,'2.49.1');
-  assert.ok(index.includes('js/app.js?v=2.49.1-r2'));
+  assert.ok(index.includes('js/app.js?v=2.49.1-r4'));
+  assert.ok(index.includes('css/styles.css?v=2.49.1-r4'));
 });
 
 test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
   const top=topbarHtml();
   assert.match(top,/id="analysisPeriodTrigger"[\s\S]*?<span>Período de análise<\/span>/);
-  assert.match(app,/monthControl\.classList\.toggle\('hidden',!visibility\.competence\|\|visibility\.period\)/);
+  assert.match(app,/const monthControl=\$\('#competenceControl'\)\|\|\$\('\.month-control'\)/);
+  assert.match(app,/showStandaloneCompetence=Boolean\(visibility\.competence&&!visibility\.period\)/);
+  assert.match(css,/\.topbar:has\(#analysisDateControl:not\(\.hidden\)\) #competenceControl\{display:none!important\}/);
   assert.deepEqual(filters.controlKeys({view:'individual',isSuperAdmin:true,isTechnician:false,squadCode:'D'}),['squad','analysis','technician']);
   assert.equal(filters.activeCount({view:'individual',isSuperAdmin:true,isTechnician:false,squadCode:'D'}),3);
 });
@@ -78,5 +81,5 @@ test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
 test('R3 mantém menus customizados acima do Período de análise',()=>{
   assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
   assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
-  assert.ok(index.includes('css/styles.css?v=2.49.1-r3'));
+  assert.ok(index.includes('css/styles.css?v=2.49.1-r4'));
 });

@@ -1589,7 +1589,12 @@
   function syncTopFiltersForView(name=state.currentView,adminSection=state.adminSection){
     const visibility=topFilterVisibility(name,adminSection);
     if($('#squadControl'))$('#squadControl').classList.toggle('hidden',!visibility.squad);
-    const monthControl=$('.month-control');if(monthControl)monthControl.classList.toggle('hidden',!visibility.competence||visibility.period);
+    const monthControl=$('#competenceControl')||$('.month-control');
+    if(monthControl){
+      const showStandaloneCompetence=Boolean(visibility.competence&&!visibility.period);
+      monthControl.classList.toggle('hidden',!showStandaloneCompetence);
+      monthControl.setAttribute('aria-hidden',showStandaloneCompetence?'false':'true');
+    }
     if($('#analysisDateControl'))$('#analysisDateControl').classList.toggle('hidden',!visibility.period);
     const technicianControl=$('.technician-control');if(technicianControl)technicianControl.classList.toggle('hidden',!visibility.technician);
     if(!visibility.period&&analysisPeriodUi.open&&analysisPeriodUi.target==='state')closeAnalysisPeriodPicker();

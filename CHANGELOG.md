@@ -1,3 +1,9 @@
+### V2.49.1 R4 — Competência sem duplicidade na topbar
+
+- Remove visualmente o campo **Competência** da topbar sempre que **Período de análise** estiver ativo.
+- Mantém a competência disponível dentro da dialog do Período de análise e preserva o seletor mensal nas telas que não usam período analítico.
+- Adiciona proteção em JavaScript e CSS para impedir a regressão do campo duplicado.
+
 ## V2.49.1 — Hotfix R2 do seletor de competência no Período de análise
 
 - Corrige a causa real da troca de competência não responder dentro da dialog.
