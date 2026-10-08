@@ -2086,7 +2086,7 @@ html[data-color-mode="light"] .workspace-popover{box-shadow:0 24px 62px rgba(15,
 }
 @media(min-width:981px){
   .sidebar.sidebar-collapsed .sidebar-footer{font-size:0!important;overflow:visible!important;text-overflow:clip!important}
-  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.11";font-size:7px;letter-spacing:.02em;color:var(--muted)}
+  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.12";font-size:7px;letter-spacing:.02em;color:var(--muted)}
 }
 
 /* ============================================================
@@ -2134,7 +2134,7 @@ html[data-color-mode="light"] .workspace-popover{box-shadow:0 24px 62px rgba(15,
 @media(max-width:720px){.business-calendar-kpis{grid-template-columns:1fr}.business-calendar-row{grid-template-columns:42px 1fr}.business-calendar-row-date{grid-column:2}.business-calendar-row .calendar-description-cell,.business-calendar-row .calendar-type-cell,.business-calendar-row .calendar-remove-cell{grid-column:2}.business-calendar-add{grid-template-columns:1fr}.business-calendar-description{grid-column:1}.business-calendar-actions{align-items:stretch}.business-calendar-actions .muted{width:100%;margin:0 0 5px}.business-calendar-actions .btn{width:100%}}
 
 @media(min-width:981px){
-  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.11"}
+  .sidebar.sidebar-collapsed .sidebar-footer::after{content:"V2.48.12"}
 }
 
 /* =========================================================
@@ -2483,4 +2483,99 @@ html[data-color-mode="light"] .workspace-popover{box-shadow:0 24px 62px rgba(15,
 @media(max-width:720px){
   .ds-calendar-popover{left:10px!important;right:10px!important;top:auto!important;bottom:10px!important;width:auto!important;max-width:none;border-radius:16px;padding:13px}
   .ds-calendar-day{height:38px;font-size:11px}.ds-calendar-empty{height:38px}
+}
+
+/* ============================================================
+   V2.48.12 - TOPBAR ESTAVEL / VALORES SEM RECORTE
+   Corrige somente a composicao visual interna dos tres selects
+   principais. O controle externo continua com 44px e os selects,
+   eventos, estado, URL, calendario e shell permanecem intactos.
+   ============================================================ */
+@media(min-width:981px){
+  .topbar .top-actions>.select-wrap{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
+    gap:1px!important;
+    height:var(--top-control-h)!important;
+    min-height:var(--top-control-h)!important;
+    max-height:var(--top-control-h)!important;
+    padding:4px 10px!important;
+    overflow:visible!important;
+  }
+  .topbar .top-actions>.select-wrap>span{
+    display:block!important;
+    flex:0 0 9px!important;
+    width:100%!important;
+    min-width:0!important;
+    height:9px!important;
+    min-height:9px!important;
+    max-height:9px!important;
+    line-height:9px!important;
+    margin:0!important;
+    padding:0!important;
+    font-size:7.5px!important;
+    font-weight:820!important;
+    letter-spacing:.07em!important;
+    text-transform:uppercase!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .topbar .top-actions>.select-wrap .ds-select-proxy{
+    display:block!important;
+    position:relative!important;
+    flex:0 0 20px!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:20px!important;
+    min-height:20px!important;
+    max-height:20px!important;
+    margin:0!important;
+    padding:0!important;
+    line-height:20px!important;
+    overflow:visible!important;
+  }
+  .topbar .top-actions>.select-wrap .ds-select-trigger{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 14px!important;
+    align-items:center!important;
+    gap:4px!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:20px!important;
+    min-height:20px!important;
+    max-height:20px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    line-height:20px!important;
+    overflow:visible!important;
+  }
+  .topbar .top-actions>.select-wrap .ds-select-value{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    height:20px!important;
+    min-height:20px!important;
+    max-height:20px!important;
+    margin:0!important;
+    padding:0!important;
+    font-size:11px!important;
+    font-weight:780!important;
+    line-height:20px!important;
+    letter-spacing:-.01em!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .topbar .top-actions>.select-wrap .ds-select-chevron{
+    align-self:center!important;
+    justify-self:center!important;
+    margin:0!important;
+  }
 }

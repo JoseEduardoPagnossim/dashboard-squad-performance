@@ -1,3 +1,10 @@
+## V2.48.12 — Estabilização visual da Topbar
+
+- Corrige valores de Squad, Mês e Técnico recortados verticalmente após a V2.48.11.
+- O layout interno do filtro deixa de depender de grid comprimido e passa a usar coluna flexível com linha de valor de 20 px, preservando a altura externa de 44 px.
+- Mantém calendário próprio, IDs, listeners e lógica dos filtros sem alterações.
+- Nenhuma migration e nenhuma mudança na regra financeira.
+
 ## V2.48.11 — Topbar legível e calendário próprio
 
 - Squad, mês e técnico passam a usar rótulo superior e valor em linha própria na topbar, reduzindo truncamentos sem alterar a lógica dos filtros.

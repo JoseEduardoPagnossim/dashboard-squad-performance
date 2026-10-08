@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.11`<br>
+**Versão atual:** `2.48.12`<br>
 
 
 
@@ -20,6 +20,15 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.48.12 — Estabilização visual da Topbar
+
+- Corrige o recorte vertical dos valores de Squad, Mês e Técnico introduzido pela V2.48.11 em alguns navegadores/níveis de zoom.
+- Mantém a caixa externa dos filtros em 44 px e reorganiza somente o conteúdo visual interno em coluna flexível, com alturas explícitas para rótulo e valor.
+- Não altera os `<select>` originais, listeners, estado, URL persistente, calendário, sidebar ou regras financeiras.
+- Adiciona teste estrutural contra regressão de overflow/recorte vertical dos filtros do topo.
+
+Detalhes: `docs/TOPBAR_ESTABILIDADE_V2.48.12.md`.
 
 ## V2.48.11 — Topbar legível e calendário do Design System
 
