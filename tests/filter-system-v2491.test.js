@@ -18,7 +18,7 @@ function topbarHtml(){
 
 test('V2.49.1 identifica a versão correta',()=>{
   assert.equal(pkg.version,'2.49.1');
-  assert.ok(index.includes('js/app.js?v=2.49.1-r1'));
+  assert.ok(index.includes('js/app.js?v=2.49.1-r2'));
 });
 
 test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
@@ -70,4 +70,7 @@ test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
   assert.match(app,/competenceSelect\?\.addEventListener\('input',handleCompetenceSelection\)/);
   assert.match(app,/competenceSelect\?\.addEventListener\('change',handleCompetenceSelection\)/);
   assert.match(app,/setPickerDraftFromCompetence\(id\);renderAnalysisPeriodPicker\(\)/);
+  assert.match(app,/ds-select-proxy\[data-for-select=\"periodCompetenceSelect\"\]/);
+  assert.match(app,/insideCompetencePortal/);
+  assert.match(app,/SoftenDesignSystem\?\.syncSelects\?\.\(\{rebuild:true\}\)/);
 });

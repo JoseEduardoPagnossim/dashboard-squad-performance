@@ -1397,7 +1397,7 @@
     const ids=competenceIdsForPeriodTarget(analysisPeriodUi.target),select=$('#periodCompetenceSelect');if(select){
       const squadKey=analysisPeriodUi.target==='drawer'?(filterDrawerUi.draft?.squad||''):(state.squadCode||''),optionsKey=`${analysisPeriodUi.target}|${squadKey}|${ids.join(',')}`;
       if(select.dataset.optionsKey!==optionsKey){select.innerHTML=ids.map(id=>{const meta=competenceMeta(id,analysisPeriodUi.target==='drawer'?filterDrawerUi.draft?.squad:state.squadCode),cb=competenceBounds(id,analysisPeriodUi.target),closed=cb.isClosed?' • Fechado':'';return`<option value="${id}">${escapeHtml(meta?.monthName||monthLabelFromId(id).split(' ')[0])} ${escapeHtml(meta?.year||id.slice(0,4))}${closed}</option>`;}).join('');select.dataset.optionsKey=optionsKey;}
-      select.disabled=!ids.length;if(ids.includes(analysisPeriodUi.draftCompetenceId))select.value=analysisPeriodUi.draftCompetenceId;
+      select.disabled=!ids.length;if(ids.includes(analysisPeriodUi.draftCompetenceId))select.value=analysisPeriodUi.draftCompetenceId;window.SoftenDesignSystem?.syncSelects?.({rebuild:true});
     }
     if(mode==='competence'){
       const cb=competenceBounds(analysisPeriodUi.draftCompetenceId,analysisPeriodUi.target);if($('#periodCompetenceStatus'))$('#periodCompetenceStatus').textContent=cb.isClosed?'Competência fechada':'Competência em andamento';
@@ -1434,7 +1434,7 @@
       const nav=e.target.closest('[data-period-nav]');if(nav){let y=analysisPeriodUi.viewYear,m=analysisPeriodUi.viewMonth+(nav.dataset.periodNav==='prev'?-1:1);if(m<1){m=12;y--;}if(m>12){m=1;y++;}if(calendarMonthIntersectsBounds(y,m,analysisPeriodUi.min,analysisPeriodUi.max)){analysisPeriodUi.viewYear=y;analysisPeriodUi.viewMonth=m;renderAnalysisPeriodPicker();}return;}
       const day=e.target.closest('[data-period-date]');if(day&&!day.disabled)choosePeriodDraftDate(day.dataset.periodDate);
     });
-    document.addEventListener('pointerdown',e=>{const root=$('#analysisPeriodPopover');if(!analysisPeriodUi.open||!root||root.contains(e.target)||analysisPeriodUi.anchor?.contains?.(e.target))return;closeAnalysisPeriodPicker();},true);
+    document.addEventListener('pointerdown',e=>{const root=$('#analysisPeriodPopover');if(!analysisPeriodUi.open||!root)return;const competenceProxy=document.querySelector('.ds-select-proxy[data-for-select="periodCompetenceSelect"]'),insideCompetencePortal=!!e.target?.closest?.('.ds-select-menu.ds-select-portal')&&!!competenceProxy?.classList.contains('open');if(root.contains(e.target)||analysisPeriodUi.anchor?.contains?.(e.target)||insideCompetencePortal)return;closeAnalysisPeriodPicker();},true);
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&analysisPeriodUi.open){e.preventDefault();closeAnalysisPeriodPicker({restoreFocus:true});}},true);window.addEventListener('resize',()=>{if(analysisPeriodUi.open)positionAnalysisPeriodPicker();},{passive:true});
   }
   function cloneSelectOptions(source,target,value){if(!source||!target)return;target.innerHTML=source.innerHTML;target.disabled=source.disabled;if(value!=null)target.value=value;}

@@ -1,3 +1,12 @@
+## V2.49.1 — Hotfix R2 do seletor de competência no Período de análise
+
+- Corrige a causa real da troca de competência não responder dentro da dialog.
+- O Design System renderiza as opções do `select` em um portal fora da dialog; o clique nesse portal era interpretado como clique externo e fechava o **Período de análise** antes da seleção ser concluída.
+- O fechamento por clique externo agora reconhece o portal do seletor de competência como parte da dialog.
+- Força sincronização imediata do proxy visual do Design System após atualizar opções/valor da competência.
+- Mantém o campo **Competência** da topbar sem removê-lo nesta etapa; a retirada continua pendente até a validação funcional.
+- Cache-bust de `app.js` atualizado para `2.49.1-r2`, mantendo a versão funcional em `2.49.1`.
+
 ## V2.49.1 — Hotfix do seletor de competência no Período de análise
 
 - Corrige a troca de competência dentro da dialog **Período de análise** no modo **Por competência**.
