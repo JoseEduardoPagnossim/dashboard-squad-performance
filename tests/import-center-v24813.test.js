@@ -48,8 +48,8 @@ test('Central de Importação aceita arrastar e soltar sem remover o seletor tra
 
 test('V2.48.13 é frontend-only e preserva regra financeira e schema', () => {
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.13.sql')), false);
-  assert.match(app, /APP_VERSION = '2\.48\.13'/);
-  assert.match(index, /V2\.48\.13/);
+  assert.match(app, /APP_VERSION = '2\.48\.14'/);
+  assert.match(index, /V2\.48\.14/);
   const finance = readFileSync(join(root, 'js', 'finance-rules.js'), 'utf8');
   assert.match(finance, /FR-2\.48\.8-1/);
 });

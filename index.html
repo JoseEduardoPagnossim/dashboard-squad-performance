@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.48.13" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.48.13" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.48.13" />
+  <link rel="stylesheet" href="css/styles.css?v=2.48.14" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.48.14" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.48.14" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.48.13 • Topbar estabilizada</small>
+        <small class="login-version">V2.48.14 • Ritmo mensal claro</small>
       </section>
     </div>
   </section>
@@ -164,7 +164,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.48.13 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.48.14 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -360,18 +360,76 @@
             <div class="hero-copy">
               <span class="pill" id="heroStatus">EM EVOLUÇÃO</span>
               <h2>Olá, <span id="heroName">Técnico</span>.</h2>
-              <p id="heroMessage">Seu painel está pronto para acompanhar o ritmo do mês.</p>
-              <div class="hero-meta"><span id="lastUpdate">Atualizado</span><span>•</span><span id="sourceFile">Arquivo de origem</span></div>
+              <p id="heroMessage">Acompanhe seu ritmo mensal e os resultados do período selecionado.</p>
+              <div class="hero-meta"><span id="sourceFile">Competência oficial</span></div>
             </div>
             <div class="hero-rank"><span>RANKING</span><strong id="rankNumber">#1</strong><small id="rankContext">no Squad</small></div>
           </div>
 
-          <div class="kpi-grid">
-            <article class="kpi card"><div class="kpi-head"><span>Atendimentos</span><span class="icon-chip">☎</span></div><div class="kpi-value"><strong id="kpiAtt">0</strong><span id="kpiAttGoal">/ 0</span></div><div class="progress"><i id="attBar"></i></div><div class="kpi-monthly-target"><span>Meta mensal completa</span><strong id="kpiAttMonthlyGoal">0</strong></div><div class="kpi-foot"><span id="attProgress">0%</span><small id="attRemaining">Faltam 0</small></div></article>
-            <article class="kpi card"><div class="kpi-head"><span>Notas 5</span><span class="icon-chip">★</span></div><div class="kpi-value"><strong id="kpiNotes">0</strong><span id="kpiNotesGoal">/ 0</span></div><div class="progress"><i id="noteBar"></i></div><div class="kpi-monthly-target"><span>Meta mensal completa</span><strong id="kpiNotesMonthlyGoal">0</strong></div><div class="kpi-foot"><span id="noteProgress">0%</span><small id="noteRemaining">Faltam 0</small></div></article>
-            <article class="kpi card"><div class="kpi-head"><span>% Avaliado</span><span class="icon-chip">%</span></div><div class="kpi-value"><strong id="kpiEvalPct">0%</strong></div><div class="mini-line"><span id="evalQuality">Meta de qualidade</span></div><div class="kpi-monthly-target"><span>Meta mensal completa</span><strong id="kpiEvalMonthlyGoal">0%</strong></div><div class="kpi-foot"><span id="evalCount">0 avaliações</span><small id="avgRating">Média 0,00</small></div></article>
-            <article class="kpi card quality-kpi"><div class="kpi-head"><span>Nota média</span><span class="icon-chip">★</span></div><div class="kpi-value"><strong id="kpiAvgRating">0,00</strong><span>/ 5,00</span></div><div class="progress quality-progress"><i id="avgRatingBar"></i></div><div class="kpi-foot"><span id="avgRatingStatus">Comparativo</span><small id="avgRatingReference">Ref. —</small></div></article>
-            <article class="kpi card"><div class="kpi-head"><span>Pontuação</span><span class="icon-chip">◆</span></div><div class="kpi-value"><strong id="kpiPoints">0</strong></div><div class="mini-line"><span id="goalsHit">0 critérios atendidos</span></div><div class="kpi-foot"><span id="pointsStatusFoot">Status —</span><small id="pointsRankFoot">Ranking —</small></div></article>
+          <article class="card monthly-rhythm-card" id="monthlyRhythmCard">
+            <div class="monthly-rhythm-head">
+              <div class="monthly-rhythm-title"><span class="monthly-rhythm-icon">🎯</span><div><span class="eyebrow">RITMO DO MÊS — <b id="monthlyRhythmPeriod">COMPETÊNCIA</b></span><h3>Acompanhe seu progresso até a meta mensal</h3><p>Os valores abaixo usam a competência completa e não mudam quando você altera o período diário.</p></div></div>
+              <span class="monthly-rhythm-status" id="monthlyRhythmStatus"><i id="goalOrb"></i><span>Carregando situação do mês</span></span>
+            </div>
+            <div class="monthly-rhythm-grid">
+              <div class="monthly-rhythm-metric">
+                <div class="monthly-rhythm-metric-head"><span class="icon-chip">☎</span><div><small>ATENDIMENTOS</small><div class="monthly-rhythm-value"><strong id="monthlyAttCurrent">0</strong><span>de</span><b id="monthlyAttGoal">0</b></div></div></div>
+                <div class="progress"><i id="monthlyAttBar"></i></div>
+                <div class="monthly-rhythm-foot"><strong id="attGoalPct">0%</strong><span id="attGoalText">Carregando...</span></div>
+              </div>
+              <div class="monthly-rhythm-metric">
+                <div class="monthly-rhythm-metric-head"><span class="icon-chip">★</span><div><small>NOTAS 5</small><div class="monthly-rhythm-value"><strong id="monthlyNotesCurrent">0</strong><span>de</span><b id="monthlyNotesGoal">0</b></div></div></div>
+                <div class="progress"><i id="monthlyNotesBar"></i></div>
+                <div class="monthly-rhythm-foot"><strong id="noteGoalPct">0%</strong><span id="noteGoalText">Carregando...</span></div>
+              </div>
+              <div class="monthly-rhythm-metric monthly-rhythm-needed">
+                <div class="monthly-rhythm-metric-head"><span class="icon-chip">▥</span><div><small>RITMO NECESSÁRIO</small><div class="monthly-needed-values"><strong><b id="monthlyAttDailyNeed">0</b> atend./dia</strong><i></i><strong><b id="monthlyNotesDailyNeed">0</b> notas 5/dia</strong></div></div></div>
+                <div class="monthly-needed-caption"><strong id="coachTitle">Próximo passo</strong><span id="coachText">Continue acompanhando o painel diariamente.</span></div>
+              </div>
+            </div>
+          </article>
+
+          <div class="individual-period-heading">
+            <div><span class="eyebrow">RECORTE ATUAL</span><h2>Desempenho no período selecionado</h2><p id="individualPeriodLabel">—</p></div>
+          </div>
+
+          <div class="kpi-grid individual-period-kpis">
+            <article class="kpi card">
+              <div class="kpi-head"><span>Atendimentos no período</span><span class="icon-chip">☎</span></div>
+              <div class="kpi-value"><strong id="kpiAtt">0</strong></div>
+              <div class="kpi-context-line">Meta proporcional do período: <strong id="kpiAttGoal">—</strong></div>
+              <div class="progress"><i id="attBar"></i></div>
+              <div class="kpi-foot"><span id="attProgress">0%</span><small id="attRemaining">Faltam 0 no período</small></div>
+              <div class="kpi-monthly-foot"><span>Meta mensal: <strong id="kpiAttMonthlyGoal">0</strong></span><span>Progresso do mês: <b id="kpiAttMonthProgress">—</b></span></div>
+            </article>
+            <article class="kpi card">
+              <div class="kpi-head"><span>Notas 5 no período</span><span class="icon-chip">★</span></div>
+              <div class="kpi-value"><strong id="kpiNotes">0</strong></div>
+              <div class="kpi-context-line">Meta proporcional do período: <strong id="kpiNotesGoal">—</strong></div>
+              <div class="progress"><i id="noteBar"></i></div>
+              <div class="kpi-foot"><span id="noteProgress">0%</span><small id="noteRemaining">Faltam 0 no período</small></div>
+              <div class="kpi-monthly-foot"><span>Meta mensal: <strong id="kpiNotesMonthlyGoal">0</strong></span><span>Progresso do mês: <b id="kpiNotesMonthProgress">—</b></span></div>
+            </article>
+            <article class="kpi card">
+              <div class="kpi-head"><span>% avaliado no período</span><span class="icon-chip">%</span></div>
+              <div class="kpi-value"><strong id="kpiEvalPct">0%</strong></div>
+              <div class="kpi-context-line">Meta do mês: <strong id="kpiEvalMonthlyGoal">—</strong></div>
+              <div class="progress"><i id="evalPeriodBar"></i></div>
+              <div class="kpi-foot"><span id="evalQuality">Diferença: —</span><small id="avgRating">Média 0,00</small></div>
+              <div class="kpi-monthly-foot single"><span id="evalCount">0 avaliações no período</span></div>
+            </article>
+            <article class="kpi card quality-kpi">
+              <div class="kpi-head"><span>Nota média no período</span><span class="icon-chip">★</span></div>
+              <div class="kpi-value"><strong id="kpiAvgRating">0,00</strong><span>/ 5,00</span></div>
+              <div class="progress quality-progress"><i id="avgRatingBar"></i></div>
+              <div class="kpi-foot"><span id="avgRatingStatus">Comparativo</span><small id="avgRatingReference">Ref. —</small></div>
+            </article>
+            <article class="kpi card monthly-context-kpi">
+              <div class="kpi-head"><span>Pontuação oficial do mês</span><span class="icon-chip">◆</span></div>
+              <div class="kpi-value"><strong id="kpiPoints">0</strong></div>
+              <div class="mini-line"><span id="goalsHit">0 critérios atendidos</span></div>
+              <div class="kpi-foot"><span id="pointsStatusFoot">Status —</span><small id="pointsRankFoot">Ranking —</small></div>
+            </article>
           </div>
 
           <article class="card status-audit-card">
@@ -398,12 +456,7 @@
             </div>
           </article>
 
-          <div class="content-grid">
-            <article class="card goal-card">
-              <div class="section-title"><div><span class="eyebrow">META MENSAL</span><h3>Como está o seu ritmo?</h3></div><span class="status-orb" id="goalOrb"></span></div>
-              <div class="goal-lines"><div class="goal-row"><div><strong>Atendimentos</strong><small id="attGoalText">Carregando...</small></div><span id="attGoalPct">0%</span></div><div class="goal-row"><div><strong>Notas 5</strong><small id="noteGoalText">Carregando...</small></div><span id="noteGoalPct">0%</span></div></div>
-              <div class="coach-box"><span>🎯</span><div><strong id="coachTitle">Próximo passo</strong><p id="coachText">Continue acompanhando o painel diariamente.</p></div></div>
-            </article>
+          <div class="content-grid individual-chart-grid">
             <article class="card chart-card"><div class="section-title"><div><span class="eyebrow">EVOLUÇÃO DIÁRIA</span><h3>Atendimentos e notas 5</h3></div><div class="legend"><span><i class="dot att"></i>Atend.</span><span><i class="dot note"></i>Notas 5</span></div></div><div id="dailyChart" class="chart"></div></article>
           </div>
 
@@ -1152,7 +1205,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.48.13</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.48.14</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1576,20 +1629,20 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.48.13"></script>
-  <script src="js/finance-rules.js?v=2.48.13"></script>
-  <script src="js/finance-advanced.js?v=2.48.13"></script>
-  <script src="js/tv-engine.js?v=2.48.13"></script>
-  <script src="js/presentation.js?v=2.48.13"></script>
-  <script src="js/chart-engine.js?v=2.48.13"></script>
-  <script src="js/import-engine.js?v=2.48.13"></script>
-  <script src="js/predictive-engine.js?v=2.48.13"></script>
-  <script src="js/alert-engine.js?v=2.48.13"></script>
-  <script src="js/settings-engine.js?v=2.48.13"></script>
-  <script src="js/performance-engine.js?v=2.48.13"></script>
-  <script src="js/navigation-engine.js?v=2.48.13"></script>
-  <script src="js/workspace-engine.js?v=2.48.13"></script>
-  <script src="js/design-system.js?v=2.48.13"></script>
-  <script src="js/app.js?v=2.48.13"></script>
+  <script src="js/business-calendar.js?v=2.48.14"></script>
+  <script src="js/finance-rules.js?v=2.48.14"></script>
+  <script src="js/finance-advanced.js?v=2.48.14"></script>
+  <script src="js/tv-engine.js?v=2.48.14"></script>
+  <script src="js/presentation.js?v=2.48.14"></script>
+  <script src="js/chart-engine.js?v=2.48.14"></script>
+  <script src="js/import-engine.js?v=2.48.14"></script>
+  <script src="js/predictive-engine.js?v=2.48.14"></script>
+  <script src="js/alert-engine.js?v=2.48.14"></script>
+  <script src="js/settings-engine.js?v=2.48.14"></script>
+  <script src="js/performance-engine.js?v=2.48.14"></script>
+  <script src="js/navigation-engine.js?v=2.48.14"></script>
+  <script src="js/workspace-engine.js?v=2.48.14"></script>
+  <script src="js/design-system.js?v=2.48.14"></script>
+  <script src="js/app.js?v=2.48.14"></script>
 </body>
 </html>

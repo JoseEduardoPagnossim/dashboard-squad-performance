@@ -1,3 +1,13 @@
+## V2.48.14 — Ritmo mensal e clareza entre mês e período
+
+- Novo bloco horizontal **Ritmo do mês** no topo de Meu desempenho, antes dos KPIs do recorte diário.
+- Atendimentos e Notas 5 mensais usam os mesmos totais/metas oficiais já existentes; o ritmo necessário reutiliza a lógica diária vigente.
+- KPIs do recorte passam a informar **Meta proporcional do período** e um rodapé compacto com o progresso mensal, reduzindo a chance de confundir 110% do recorte com meta mensal concluída.
+- `% Avaliado` mostra meta mensal e diferença em pontos percentuais; Nota média fica explicitamente marcada como indicador do período.
+- Pontuação é rotulada como **oficial do mês**.
+- Removido o card mensal duplicado da parte inferior e eliminada a repetição do intervalo exato no hero e no resumo diário.
+- Frontend-only; sem migration e sem alteração da regra financeira `FR-2.48.8-1`.
+
 ## V2.48.13 — Central de Importação responsiva, escopo próprio e drag-and-drop
 
 - Central de Importação recebe header/body/footer próprios; somente o corpo rola e as ações permanecem sempre acessíveis.

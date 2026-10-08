@@ -135,6 +135,7 @@ for (const required of [
   'docs/TOPBAR_CALENDARIO_V2.48.11.md',
   'docs/TOPBAR_ESTABILIDADE_V2.48.12.md',
   'docs/IMPORTACAO_V2.48.13.md',
+  'docs/MEU_DESEMPENHO_V2.48.14.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',

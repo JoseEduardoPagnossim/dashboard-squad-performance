@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.48.13`<br>
+**Versão atual:** `2.48.14`<br>
 
 
 
@@ -21,6 +21,18 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.48.14 — Ritmo do mês e leitura clara do período
+
+- **Meu desempenho** passa a abrir com um resumo horizontal de **Ritmo do mês**, separado do recorte diário.
+- Atendimentos e Notas 5 mostram progresso mensal, faltante e ritmo diário necessário usando as metas oficiais da competência.
+- Os KPIs abaixo são rotulados explicitamente como **no período** e exibem a meta proporcional do recorte sem sugerir que a meta mensal já foi atingida.
+- `% Avaliado` diferencia a taxa do período da meta mensal em pontos percentuais.
+- O card antigo **Como está o seu ritmo?** foi removido para evitar informação mensal duplicada.
+- A data exata do recorte aparece uma única vez no cabeçalho **Desempenho no período selecionado**; hero e histórico diário deixam de repetir o intervalo.
+- Pontuação permanece identificada como **oficial do mês**, pois não é recalculada pelo recorte diário.
+- Mudança somente de frontend/UX; nenhuma regra financeira, importação, filtro, sidebar ou migration foi alterada.
 
 ## V2.48.13 — Central de Importação responsiva
 
