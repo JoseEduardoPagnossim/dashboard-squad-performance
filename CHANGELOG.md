@@ -1,3 +1,11 @@
+### V2.49.1 R6 — Alertas centralizados na topbar
+
+- Remove o atalho **Alertas** e seu contador duplicado da sidebar.
+- Mantém o sino da topbar como superfície única de notificações e itens não lidos.
+- Preserva a **Central de Alertas** completa, acessível pelo popover do sino, busca global, Home e guia de ajuda.
+- Simplifica a atualização do badge para trabalhar somente com `notificationBadge` na topbar.
+- Cache-bust de `styles.css` e `app.js` atualizado para `2.49.1-r6`.
+
 ### V2.49.1 R5 — Sincronização da Apresentação
 
 - Corrige a atualização manual e automática da **Apresentação**, que ainda chamava `loadSupabaseData()` removido na refatoração de carregamento sob demanda.

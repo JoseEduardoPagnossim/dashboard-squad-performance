@@ -355,6 +355,12 @@ test('V2.46 possui sino, Central de Alertas e compositor interno', () => {
   for (const id of ['notificationBellBtn','notificationBadge','notificationPopover','view-alerts','alertCenterRows','alertKpiUnread','alertKpiCritical','newNotificationBtn','notificationComposerModal','notificationComposerForm','publishedNotificationRows']) {
     assert.ok(index.includes(`id="${id}"`), `index.html deve conter ${id}`);
   }
+  const sidebarStart=index.indexOf('<nav class="sidebar-nav"');
+  const sidebarEnd=index.indexOf('</nav>',sidebarStart);
+  const sidebar=sidebarStart>=0&&sidebarEnd>sidebarStart?index.slice(sidebarStart,sidebarEnd):'';
+  assert.doesNotMatch(sidebar,/data-view="alerts"/,'Alertas não deve duplicar acesso na sidebar');
+  assert.doesNotMatch(index,/id="navNotificationBadge"/,'contador de alertas deve existir somente no sino da topbar');
+  assert.match(index,/id="openAlertCenterBtn"/,'popover do sino deve manter acesso à Central de Alertas');
   assert.match(app, /ensureNotificationsLoaded/);
   assert.match(app, /markAllNotificationsRead/);
   assert.match(app, /publishInternalNotification/);

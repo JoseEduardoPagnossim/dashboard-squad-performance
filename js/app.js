@@ -1805,8 +1805,8 @@
   function notificationFeedCounts(){return alertEngine.counts(personalNotificationFeed())}
   function refreshNotificationBadges(){
     if(!state.user||!hasPermission('notifications.view'))return;
-    const count=notificationFeedCounts().unread,badge=$('#notificationBadge'),nav=$('#navNotificationBadge');
-    for(const el of [badge,nav])if(el){el.textContent=count>99?'99+':String(count);el.classList.toggle('hidden',count<=0);}
+    const count=notificationFeedCounts().unread,badge=$('#notificationBadge');
+    if(badge){badge.textContent=count>99?'99+':String(count);badge.classList.toggle('hidden',count<=0);}
     if($('#notificationBellBtn'))$('#notificationBellBtn').setAttribute('aria-label',count?`Abrir notificações: ${count} não lida(s)`:'Abrir notificações');
   }
   async function ensureNotificationsLoaded(force=false){
