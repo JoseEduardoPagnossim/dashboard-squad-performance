@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.49.1-r6" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.49.1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.49.1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.50.0" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.50.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.50.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.49.1 • Período de análise unificado</small>
+        <small class="login-version">V2.50.0 • Análise comparativa e transparência</small>
       </section>
     </div>
   </section>
@@ -163,7 +163,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.49.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.50.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -383,44 +383,57 @@
 
           <div class="individual-period-heading">
             <div><span class="eyebrow">RECORTE ATUAL</span><h2>Desempenho no período selecionado</h2><p id="individualPeriodLabel">—</p></div>
+            <div class="individual-compare-control">
+              <label><span>COMPARAR COM</span><select id="individualCompareMode" aria-label="Comparar período atual"><option value="none">Sem comparação</option><option value="previous-month">Mês anterior · mesmo recorte</option><option value="previous-period">Período anterior equivalente</option></select></label>
+              <small id="individualCompareRange">Ative para ver a evolução em cada indicador.</small>
+            </div>
           </div>
 
           <div class="kpi-grid individual-period-kpis">
             <article class="kpi card">
               <div class="kpi-head"><span>Atendimentos no período</span><span class="icon-chip">☎</span></div>
               <div class="kpi-value"><strong id="kpiAtt">0</strong></div>
+              <div class="kpi-comparison hidden" id="kpiAttCompare"></div>
               <div class="kpi-context-line">Meta proporcional do período: <strong id="kpiAttGoal">—</strong></div>
               <div class="progress"><i id="attBar"></i></div>
               <div class="kpi-foot"><span id="attProgress">0%</span><small id="attRemaining">Faltam 0 no período</small></div>
               <div class="kpi-monthly-foot"><span>Meta mensal: <strong id="kpiAttMonthlyGoal">0</strong></span><span>Progresso do mês: <b id="kpiAttMonthProgress">—</b></span></div>
+              <button class="kpi-explain-btn" type="button" data-kpi-explain="att">ⓘ Entenda este número</button>
             </article>
             <article class="kpi card">
               <div class="kpi-head"><span>Notas 5 no período</span><span class="icon-chip">★</span></div>
               <div class="kpi-value"><strong id="kpiNotes">0</strong></div>
+              <div class="kpi-comparison hidden" id="kpiNotesCompare"></div>
               <div class="kpi-context-line">Meta proporcional do período: <strong id="kpiNotesGoal">—</strong></div>
               <div class="progress"><i id="noteBar"></i></div>
               <div class="kpi-foot"><span id="noteProgress">0%</span><small id="noteRemaining">Faltam 0 no período</small></div>
               <div class="kpi-monthly-foot"><span>Meta mensal: <strong id="kpiNotesMonthlyGoal">0</strong></span><span>Progresso do mês: <b id="kpiNotesMonthProgress">—</b></span></div>
+              <button class="kpi-explain-btn" type="button" data-kpi-explain="notes5">ⓘ Entenda este número</button>
             </article>
             <article class="kpi card">
               <div class="kpi-head"><span>% avaliado no período</span><span class="icon-chip">%</span></div>
               <div class="kpi-value"><strong id="kpiEvalPct">0%</strong></div>
+              <div class="kpi-comparison hidden" id="kpiEvalCompare"></div>
               <div class="kpi-context-line">Meta ponderada do período: <strong id="kpiEvalMonthlyGoal">—</strong></div>
               <div class="progress"><i id="evalPeriodBar"></i></div>
               <div class="kpi-foot"><span id="evalQuality">Diferença: —</span><small id="avgRating">Média 0,00</small></div>
               <div class="kpi-monthly-foot single"><span id="evalCount">0 avaliações no período</span></div>
+              <button class="kpi-explain-btn" type="button" data-kpi-explain="evalPct">ⓘ Entenda este número</button>
             </article>
             <article class="kpi card quality-kpi">
               <div class="kpi-head"><span>Nota média no período</span><span class="icon-chip">★</span></div>
               <div class="kpi-value"><strong id="kpiAvgRating">0,00</strong><span>/ 5,00</span></div>
+              <div class="kpi-comparison hidden" id="kpiAvgCompare"></div>
               <div class="progress quality-progress"><i id="avgRatingBar"></i></div>
               <div class="kpi-foot"><span id="avgRatingStatus">Comparativo</span><small id="avgRatingReference">Ref. —</small></div>
+              <button class="kpi-explain-btn" type="button" data-kpi-explain="avg">ⓘ Entenda este número</button>
             </article>
             <article class="kpi card monthly-context-kpi">
               <div class="kpi-head"><span>Pontuação oficial do mês</span><span class="icon-chip">◆</span></div>
               <div class="kpi-value"><strong id="kpiPoints">0</strong></div>
               <div class="mini-line"><span id="goalsHit">0 critérios atendidos</span></div>
               <div class="kpi-foot"><span id="pointsStatusFoot">Status —</span><small id="pointsRankFoot">Ranking —</small></div>
+              <button class="kpi-explain-btn" type="button" data-kpi-explain="points">ⓘ Entenda este número</button>
             </article>
           </div>
 
@@ -1174,7 +1187,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.49.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.50.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1186,7 +1199,7 @@
 
         <div class="help-quick-actions">
           <button class="help-route" type="button" data-help-view="home"><span>⌂</span><b>Início</b><small>Resumo, alertas e atalhos</small></button>
-          <button class="help-route" type="button" data-help-view="individual"><span>◈</span><b>Meu desempenho</b><small>Meu resultado, ranking e bonificação</small></button>
+          <button class="help-route" type="button" data-help-view="individual"><span>◈</span><b>Meu desempenho</b><small>Resultado, comparação e explicação dos KPIs</small></button>
           <button class="help-route" type="button" data-help-view="team"><span>♛</span><b>Visão do Squad</b><small>Equipe, histórico e comparativos</small></button>
           <button class="help-route super-help" type="button" data-help-view="indicators" data-permission="indicators.view"><span>◔</span><b>Indicadores</b><small>Projeção, alertas e qualidade</small></button>
           <button class="help-route" type="button" data-help-view="presentation"><span>▣</span><b>Apresentação</b><small>Exibir o painel na TV</small></button>
@@ -1224,7 +1237,7 @@
           </article>
           <article class="card how-primary blue help-searchable" data-help-search="acompanhar desempenho squad indicadores ranking projeção alerta gestão preditiva">
             <div class="how-primary-title"><b>02</b><div><h3>Acompanhe e aja</h3><p>Use as telas analíticas conforme a pergunta que deseja responder.</p></div></div>
-            <ol class="how-steps"><li><b>Início</b>: é a primeira tela após o login e resume a situação mais importante do seu perfil, com alertas e atalhos.</li><li><b>Meu desempenho</b>: resultado individual, status, metas, ranking e valor financeiro.</li><li><b>Visão do Squad</b>: evolução da equipe, ranking completo e comparação entre Squads.</li><li><b>Indicadores</b>: gestão executiva, qualidade, dias úteis, impacto financeiro e gestão preditiva.</li><li>Na gestão preditiva, leia <b>Realizado × Meta × Projeção</b>, confiança, comparação equivalente e alertas antes de tomar ação.</li></ol>
+            <ol class="how-steps"><li><b>Início</b>: é a primeira tela após o login e resume a situação mais importante do seu perfil, com alertas e atalhos.</li><li><b>Meu desempenho</b>: resultado individual, status, metas, ranking e valor financeiro. Use <b>Comparar com</b> para medir evolução e <b>Entenda este número</b> para auditar os KPIs.</li><li><b>Visão do Squad</b>: evolução da equipe, ranking completo e comparação entre Squads.</li><li><b>Indicadores</b>: gestão executiva, qualidade, dias úteis, impacto financeiro e gestão preditiva.</li><li>Na gestão preditiva, leia <b>Realizado × Meta × Projeção</b>, confiança, comparação equivalente e alertas antes de tomar ação.</li></ol>
             <div class="how-tip">💡 Em gráficos históricos, use filtros de período, tooltip compartilhado, destaque de séries e tela cheia para aprofundar a análise sem alterar os dados.</div>
           </article>
           <article class="card how-primary purple admin-help help-searchable" data-help-search="configurar configurações central metas regras bonificação aparência gráficos apresentação tv permissões layout">
@@ -1243,7 +1256,7 @@
         <div class="help-module-grid">
           <article class="card help-module-card help-searchable" data-help-search="início home resumo alertas atalhos primeira tela login"><div class="help-module-top"><span class="how-icon blue">⌂</span><div><b>Início</b><small>Todos os perfis</small></div></div><p>É a primeira tela após o login. Resume os números mais relevantes para o perfil conectado, aponta alertas automáticos, mostra origem/competência e oferece atalhos para a próxima ação.</p><div class="help-do"><b>Use quando:</b><span>quiser entender rapidamente como está o mês antes de entrar em uma análise detalhada.</span></div><button class="btn secondary compact" type="button" data-help-view="home">Abrir Início</button></article>
           <article class="card help-module-card help-searchable" data-help-search="central alertas notificações sino comunicado prioridade lido automático interno"><div class="help-module-top"><span class="how-icon red">!</span><div><b>Central de Alertas</b><small>Todos os perfis</small></div></div><p>Reúne sinais automáticos da operação e notificações internas publicadas pelos Administradores. O sino mostra o total individual de itens não lidos.</p><div class="help-do"><b>Use quando:</b><span>quiser priorizar o que exige ação agora, consultar comunicados ou marcar itens como lidos.</span></div><button class="btn secondary compact" type="button" data-help-view="alerts">Abrir Central de Alertas</button></article>
-          <article class="card help-module-card help-searchable" data-help-search="meu desempenho técnico individual ranking meta status bonificação feedback"><div class="help-module-top"><span class="how-icon orange">◈</span><div><b>Meu desempenho</b><small>Todos os perfis</small></div></div><p>Mostra o resultado do técnico selecionado: atendimentos, avaliações, Nota 5, status auditável, metas, pontuação, ranking do período, ranking financeiro, histórico e bonificação estimada/oficial.</p><div class="help-do"><b>Use quando:</b><span>quiser entender o desempenho de uma pessoa e o motivo do status ou do valor recebido.</span></div><button class="btn secondary compact" type="button" data-help-view="individual">Abrir Meu desempenho</button></article>
+          <article class="card help-module-card help-searchable" data-help-search="meu desempenho técnico individual ranking meta status bonificação feedback comparação entender numero calculo"><div class="help-module-top"><span class="how-icon orange">◈</span><div><b>Meu desempenho</b><small>Todos os perfis</small></div></div><p>Mostra o resultado do técnico selecionado: atendimentos, avaliações, Nota 5, status auditável, metas, pontuação, ranking, histórico e bonificação. Também permite comparar o recorte com um período anterior e abrir a explicação detalhada de cada KPI.</p><div class="help-do"><b>Use quando:</b><span>quiser entender o desempenho de uma pessoa e o motivo do status ou do valor recebido.</span></div><button class="btn secondary compact" type="button" data-help-view="individual">Abrir Meu desempenho</button></article>
           <article class="card help-module-card help-searchable" data-help-search="visão squad equipe ranking histórico consolidado comparativo setor"><div class="help-module-top"><span class="how-icon blue">♛</span><div><b>Visão do Squad</b><small>Visão consolidada</small></div></div><p>Reúne KPIs do grupo, ranking completo, histórico mensal por técnico, comparação consolidada dos Squads e evolução diária do setor.</p><div class="help-do"><b>Use quando:</b><span>precisar conduzir alinhamentos de equipe ou comparar comportamento entre grupos.</span></div><button class="btn secondary compact" type="button" data-help-view="team">Abrir Visão do Squad</button></article>
           <article class="card help-module-card super-help help-searchable" data-help-search="indicadores gestão preditiva projeção meta alertas qualidade serviço produto empresa dias úteis impacto financeiro"><div class="help-module-top"><span class="how-icon red">◔</span><div><b>Indicadores</b><small>Administrador</small></div></div><p>Central executiva com Realizado × Meta × Projeção, alertas automáticos, risco por técnico, comparativos, qualidade de Serviço/Produto/Empresa, dias úteis e impacto financeiro estimado.</p><div class="help-do"><b>Use quando:</b><span>quiser priorizar ações, antecipar risco de fechamento ou investigar tendência de qualidade.</span></div><button class="btn secondary compact" type="button" data-help-view="indicators" data-permission="indicators.view">Abrir Indicadores</button></article>
           <article class="card help-module-card help-searchable" data-help-search="apresentação tv ranking carrossel fullscreen playlist"><div class="help-module-top"><span class="how-icon purple">▣</span><div><b>Apresentação</b><small>Exibição / TV</small></div></div><p>Exibe rankings e KPIs em formato de apresentação. O modo direto de TV remove a navegação, roda o carrossel e ajusta a escala à resolução.</p><div class="help-do"><b>Use quando:</b><span>quiser apresentar o desempenho continuamente em uma TV ou monitor.</span></div><button class="btn secondary compact" type="button" data-help-view="presentation">Abrir Apresentação</button></article>
@@ -1434,6 +1447,20 @@
 
   <input id="csvInput" type="file" accept=".csv,text/csv" hidden>
   <input id="themeJsonInput" type="file" accept=".json,application/json" hidden>
+
+  <div id="metricExplainModal" class="modal" aria-hidden="true">
+    <div class="modal-card metric-explain-modal" role="dialog" aria-modal="true" aria-labelledby="metricExplainTitle">
+      <button class="modal-close" data-close="metricExplainModal" aria-label="Fechar explicação">×</button>
+      <span class="eyebrow">TRANSPARÊNCIA DO INDICADOR</span>
+      <h2 id="metricExplainTitle">Entenda este número</h2>
+      <p id="metricExplainSubtitle">Veja de onde o valor vem e qual regra foi aplicada.</p>
+      <div class="metric-explain-result"><span>RESULTADO EXIBIDO</span><strong id="metricExplainValue">—</strong><small id="metricExplainPeriod">—</small></div>
+      <div class="metric-explain-grid" id="metricExplainGrid"></div>
+      <div class="metric-explain-formula"><span>COMO É CALCULADO</span><p id="metricExplainFormula">—</p></div>
+      <div class="metric-explain-note" id="metricExplainNote"></div>
+      <div class="modal-actions"><button class="btn secondary" type="button" data-close="metricExplainModal">Fechar</button></div>
+    </div>
+  </div>
 
   <div id="notificationComposerModal" class="modal" aria-hidden="true" data-static-backdrop="true">
     <div class="modal-card notification-composer-modal">
@@ -1629,21 +1656,22 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.49.1"></script>
-  <script src="js/finance-rules.js?v=2.49.1"></script>
-  <script src="js/finance-advanced.js?v=2.49.1"></script>
-  <script src="js/tv-engine.js?v=2.49.1"></script>
-  <script src="js/presentation.js?v=2.49.1"></script>
-  <script src="js/chart-engine.js?v=2.49.1"></script>
-  <script src="js/import-engine.js?v=2.49.1"></script>
-  <script src="js/predictive-engine.js?v=2.49.1"></script>
-  <script src="js/alert-engine.js?v=2.49.1"></script>
-  <script src="js/settings-engine.js?v=2.49.1"></script>
-  <script src="js/performance-engine.js?v=2.49.1"></script>
-  <script src="js/navigation-engine.js?v=2.49.1"></script>
-  <script src="js/workspace-engine.js?v=2.49.1"></script>
-  <script src="js/filter-system.js?v=2.49.1"></script>
-  <script src="js/design-system.js?v=2.49.1"></script>
-  <script src="js/app.js?v=2.49.1-r6"></script>
+  <script src="js/business-calendar.js?v=2.50.0"></script>
+  <script src="js/finance-rules.js?v=2.50.0"></script>
+  <script src="js/finance-advanced.js?v=2.50.0"></script>
+  <script src="js/tv-engine.js?v=2.50.0"></script>
+  <script src="js/presentation.js?v=2.50.0"></script>
+  <script src="js/chart-engine.js?v=2.50.0"></script>
+  <script src="js/import-engine.js?v=2.50.0"></script>
+  <script src="js/predictive-engine.js?v=2.50.0"></script>
+  <script src="js/alert-engine.js?v=2.50.0"></script>
+  <script src="js/settings-engine.js?v=2.50.0"></script>
+  <script src="js/performance-engine.js?v=2.50.0"></script>
+  <script src="js/navigation-engine.js?v=2.50.0"></script>
+  <script src="js/workspace-engine.js?v=2.50.0"></script>
+  <script src="js/filter-system.js?v=2.50.0"></script>
+  <script src="js/comparison-engine.js?v=2.50.0"></script>
+  <script src="js/design-system.js?v=2.50.0"></script>
+  <script src="js/app.js?v=2.50.0"></script>
 </body>
 </html>

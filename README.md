@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.49.1`<br>
+**Versão atual:** `2.50.0`<br>
 
 
 
@@ -22,6 +22,19 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.50.0 — Análise comparativa e transparência
+
+- **Meu desempenho** ganha comparação opcional com **Mês anterior · mesmo recorte** ou **Período anterior equivalente**.
+- Os KPIs de Atendimentos, Notas 5, % avaliado e Nota média mostram a variação contra o período de referência sem alterar o período oficial da análise.
+- Comparações carregam sob demanda apenas as competências adicionais necessárias, preservando o modelo de performance introduzido nas versões anteriores.
+- Cada KPI passa a oferecer **Entenda este número**, com componentes, fórmula aplicada, metas/referências e observações da regra.
+- A agregação por período passa a aceitar explicitamente intervalos arbitrários, permitindo comparar recortes que atravessam competências sem reutilizar acidentalmente o período global.
+- Pontuação continua identificada como **oficial do mês** e sua explicação deixa claro que não é recalculada pelo recorte diário.
+- Frontend-only; sem migration e sem alteração das regras financeiras existentes.
+
+Detalhes: `docs/ANALISE_COMPARATIVA_V2.50.0.md`.
 
 ## V2.49.1 — Período de análise unificado
 

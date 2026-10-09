@@ -38,6 +38,8 @@
   if(!workspaceEngine) throw new Error('SoftenWorkspaceEngine não carregado. Verifique js/workspace-engine.js.');
   const filterSystem = window.SoftenFilterSystem;
   if(!filterSystem) throw new Error('SoftenFilterSystem não carregado. Verifique js/filter-system.js.');
+  const comparisonEngine = window.SoftenComparisonEngine;
+  if(!comparisonEngine) throw new Error('SoftenComparisonEngine não carregado. Verifique js/comparison-engine.js.');
   const {normalizeWorkspace,routeSignature:workspaceRouteSignature,mergeRememberedFilters:mergeWorkspaceRememberedFilters,rememberFilters:rememberWorkspaceFilters,createSavedView:createWorkspaceSavedView,renameSavedView:renameWorkspaceSavedView,deleteSavedView:deleteWorkspaceSavedView,favoriteForRoute:workspaceFavoriteForRoute,toggleFavorite:toggleWorkspaceFavorite,setPersistentFilters:setWorkspacePersistentFilters,clearFilterMemory:clearWorkspaceFilterMemory}=workspaceEngine;
   const {PERMISSIONS:PERMISSION_DEFS,defaultPreferences:defaultUiPreferences,normalizePreferences:normalizeBaseUiPreferences,layoutDefinition:settingsLayoutDefinition,normalizeLayout:normalizeUiLayout,moveBlock:moveUiBlock,toggleBlock:toggleUiBlock,setBlockSize:setUiBlockSize,normalizeNavigation:normalizeUiNavigation,effectivePermissions:settingsEffectivePermissions,permissionGroups:settingsPermissionGroups,normalizeRole:normalizeAccessRole}=settingsEngine;
   function normalizeUiPreferences(preferences){const raw=preferences&&typeof preferences==='object'?preferences:{},base=normalizeBaseUiPreferences(raw),legacy=Number(raw.version||0)<5,navigation=legacy?normalizeUiNavigation({sidebarCollapsed:base.navigation?.sidebarCollapsed===true}):base.navigation;return{...base,version:5,navigation,workspace:normalizeWorkspace(raw.workspace)}}
@@ -48,7 +50,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.49.1';
+  const APP_VERSION = '2.50.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -130,6 +132,10 @@
     analysisPreset:'month',
     analysisMode:'competence',
     analysisCompetenceId:null,
+    individualCompareMode:'none',
+    individualCompareLoading:false,
+    individualCompareError:'',
+    individualCompareErrorKey:'',
     orgOverview:[],
     orgTechnicianOverview:[],
     orgDailyOverview:[],
@@ -880,6 +886,8 @@
     $('#squadSelect').addEventListener('change',async e=>{await selectSquad(e.target.value,{history:'replace'});});
     $('#monthSelect').addEventListener('change',async e=>{state.currentId=e.target.value;if(state.supabase&&state.squadCode!=='all'){try{await ensureMonthLoaded(state.squadCode,state.currentId);}catch(err){toast('Nao foi possivel carregar esta competencia.');}}chooseDefaultTech();refreshSelectors();render();syncPersistentUrl({replace:true});});
     $('#techSelect').addEventListener('change',e=>{state.techName=e.target.value;renderIndividual();syncPersistentUrl({replace:true});});
+    $('#individualCompareMode')?.addEventListener('change',e=>{state.individualCompareMode=['previous-month','previous-period'].includes(e.target.value)?e.target.value:'none';state.individualCompareError='';state.individualCompareErrorKey='';renderIndividual();});
+    $('#view-individual')?.addEventListener('click',e=>{const btn=e.target.closest('[data-kpi-explain]');if(btn)openMetricExplanation(btn.dataset.kpiExplain);});
     $('#adminImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('service')});
     if($('#adminQualityImportBtn'))$('#adminQualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
     if($('#qualityImportBtn'))$('#qualityImportBtn').addEventListener('click',()=>{if(requirePermission('data.import'))openImport('quality')});
@@ -1460,9 +1468,10 @@
     $('#filterDrawerTrigger')?.addEventListener('click',openFilterDrawer);$('#filterDrawerClose')?.addEventListener('click',closeFilterDrawer);$('#filterDrawerBackdrop')?.addEventListener('click',closeFilterDrawer);$('#filterDrawerApply')?.addEventListener('click',applyFilterDrawer);$('#filterDrawerReset')?.addEventListener('click',clearFilterDrawerDraft);
     $('#mobileSquadSelect')?.addEventListener('change',e=>{if(!filterDrawerUi.draft)return;const d=filterDrawerUi.draft;d.squad=e.target.value;const ids=competenceIdsForSquad(d.squad);d.month=ids[0]||null;if(topFilterVisibility().period){d.mode='competence';d.competenceId=d.month;const preset=defaultCompetencePreset(d.competenceId,'drawer'),range=competencePresetRange(d.competenceId,preset,'drawer');d.start=range.start;d.end=range.end;d.preset=range.preset;}refreshFilterDrawerDraftOptions();});$('#mobileMonthSelect')?.addEventListener('change',e=>{if(!filterDrawerUi.draft)return;filterDrawerUi.draft.month=e.target.value;if(filterDrawerUi.draft.mode==='competence')filterDrawerUi.draft.competenceId=e.target.value;refreshFilterDrawerDraftOptions();});$('#mobileTechSelect')?.addEventListener('change',e=>{if(filterDrawerUi.draft)filterDrawerUi.draft.tech=e.target.value;});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&filterDrawerUi.open&&!analysisPeriodUi.open)closeFilterDrawer();});window.addEventListener('resize',()=>{if(window.innerWidth>760&&filterDrawerUi.open)closeFilterDrawer()},{passive:true});
   }
-  function analysisMonthIds(){
-    if(!state.analysisStartDate||!state.analysisEndDate)return[];const start=parseIsoAnalysisDate(state.analysisStartDate),end=parseIsoAnalysisDate(state.analysisEndDate),ids=[];const d=new Date(start.getFullYear(),start.getMonth(),1);while(d<=end){ids.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);d.setMonth(d.getMonth()+1);}return ids;
+  function monthIdsForRange(start=state.analysisStartDate,end=state.analysisEndDate){
+    if(!start||!end)return[];const startDate=parseIsoAnalysisDate(start),endDate=parseIsoAnalysisDate(end);if(!startDate||!endDate||startDate>endDate)return[];const ids=[],d=new Date(startDate.getFullYear(),startDate.getMonth(),1);while(d<=endDate){ids.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);d.setMonth(d.getMonth()+1);}return ids;
   }
+  function analysisMonthIds(){return monthIdsForRange(state.analysisStartDate,state.analysisEndDate);}
   function isBusinessDateIso(value){const d=parseIsoAnalysisDate(value),dow=d?.getDay();return dow>=1&&dow<=5}
   function dailyRowsForTechnician(squad,techName,start=state.analysisStartDate,end=state.analysisEndDate){
     const out=[];if(!squad||!techName)return out;for(const id of Object.keys(squad.months||{}).sort()){const m=squad.months[id];if(!m)continue;const t=(m.technicians||[]).find(x=>samePersonName(x.name,techName));if(!t)continue;for(const d of t.daily||[]){if(safe(d.day)>safe(m.latestDay))continue;const date=isoDateParts(m.year,m.month,safe(d.day));if(!dateBetween(date,start,end))continue;out.push({date,year:m.year,month:m.month,day:safe(d.day),off:!!d.off,att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1)});}}
@@ -1474,7 +1483,7 @@
   function technicianPeriodAggregate(squad,techName,start=state.analysisStartDate,end=state.analysisEndDate){
     const result={att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,totalEval:0,avg:0,evalPct:0,evaluationExcludedAtt:0,eligibleAtt:0,daily:[],excludeFromGroupCount:false,excludedMonths:[],countedMonths:[]};
     let activeSegments=0,countedSegments=0;
-    for(const id of analysisMonthIds()){
+    for(const id of monthIdsForRange(start,end)){
       const m=squad?.months?.[id];if(!m)continue;const t=(m.technicians||[]).find(x=>samePersonName(x.name,techName));if(!t)continue;
       const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay)||1));
       const from=!start||start<monthStart?monthStart:start,to=!end||end>monthEnd?monthEnd:end;if(from>to)continue;
@@ -1520,7 +1529,7 @@
     return `<span class="group-count-badge${compact?' compact':''}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${compact?'Ø':'FORA DA MÉDIA'}</span>`;
   }
   function periodTechniciansForSquad(squad,start=state.analysisStartDate,end=state.analysisEndDate){
-    const ids=analysisMonthIds();
+    const ids=monthIdsForRange(start,end);
     const names=new Map();for(const id of ids){const m=squad?.months?.[id];for(const t of m?.technicians||[]){const key=nameLinkKey(t.name);if(!names.has(key))names.set(key,t.name);}}
     const rows=[...names.values()].map(name=>{const agg=technicianPeriodAggregate(squad,name,start,end),vacationMonths=technicianVacationMonths(squad,name,ids);return{name,...agg,vacationMonths,vacation:vacationMonths.length>0};}).filter(t=>safe(t.att)>0||safe(t.totalEval)>0);
     if(!rows.length)return[];const refs={...scoreRefsFromRows(rows),bonusAtt:20,bonusTotalEval:30,bonusAvg:40,bonusEvalPct:35};for(const t of rows){const scored=calculateScore(t,refs);t.periodPoints=scored.points;t.periodStatus=scored.status;t.periodGoalsHit=scored.goalsHit;t.points=scored.points;t.status=scored.status;}rows.sort((a,b)=>safe(b.periodPoints)-safe(a.periodPoints)||safe(b.att)-safe(a.att)||String(a.name).localeCompare(String(b.name),'pt-BR'));rows.forEach((t,i)=>t.periodRank=i+1);return rows;
@@ -1543,8 +1552,8 @@
   }
   function periodTechnicianForCurrent(){const squad=currentSquad(),name=state.techName||currentTech()?.name;return periodTechniciansForSquad(squad).find(t=>samePersonName(t.name,name))||null}
   function selectedBusinessDays(){let c=0;if(!state.analysisStartDate||!state.analysisEndDate)return 0;for(let d=state.analysisStartDate;d<=state.analysisEndDate;d=addCalendarDays(d,1))if(isBusinessDateIso(d))c++;return c}
-  function periodGoalForTechnician(t,squad=currentSquad()){
-    if(!t||!squad)return{att:0,notes5:0,evalPct:0};let att=0,notes5=0,evalWeighted=0,evalWeight=0;for(const id of analysisMonthIds()){const m=squad.months?.[id];if(!m)continue;const mt=(m.technicians||[]).find(x=>samePersonName(x.name,t.name));if(!mt)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;const totalDays=Math.max(1,businessDaysMonFri(m.year,m.month));att+=safe(mt.goalAtt)*(days/totalDays);notes5+=safe(mt.goalEval)*(days/totalDays);if(days>0){evalWeighted+=safe(teamSettings(m).teamGoalEvalPct)*days;evalWeight+=days;}}return{att,notes5,evalPct:evalWeight?evalWeighted/evalWeight:0};
+  function periodGoalForTechnician(t,squad=currentSquad(),start=state.analysisStartDate,end=state.analysisEndDate){
+    if(!t||!squad||!start||!end)return{att:0,notes5:0,evalPct:0};let att=0,notes5=0,evalWeighted=0,evalWeight=0;for(const id of monthIdsForRange(start,end)){const m=squad.months?.[id];if(!m)continue;const mt=(m.technicians||[]).find(x=>samePersonName(x.name,t.name));if(!mt)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=start>monthStart?start:monthStart,to=end<monthEnd?end:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;const totalDays=Math.max(1,businessDaysMonFri(m.year,m.month));att+=safe(mt.goalAtt)*(days/totalDays);notes5+=safe(mt.goalEval)*(days/totalDays);if(days>0){evalWeighted+=safe(teamSettings(m).teamGoalEvalPct)*days;evalWeight+=days;}}return{att,notes5,evalPct:evalWeight?evalWeighted/evalWeight:0};
   }
   function periodTeamGoal(squad){let total=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;total+=safe(teamSettings(m).teamGoalAtt)*(days/Math.max(1,businessDaysMonFri(m.year,m.month)));}return total;}
 
@@ -2018,6 +2027,58 @@
   async function togglePresentationFullscreen(){try{if(document.fullscreenElement)await window.SoftenPresentation?.exitFullscreen();else await window.SoftenPresentation?.requestFullscreen();}catch(e){toast('O navegador bloqueou o modo tela cheia.')}}
   function exitDirectPresentation(){window.location.href=window.SoftenPresentation?.normalUrl()||window.location.pathname;}
 
+  function rangeLabel(start,end){
+    if(!start||!end)return'Sem período';const a=parseIsoAnalysisDate(start),b=parseIsoAnalysisDate(end),fmt=d=>d?.toLocaleDateString('pt-BR')||'—';return start===end?fmt(a):`${fmt(a)} até ${fmt(b)}`;
+  }
+  function selectedBusinessDaysForRange(start,end){let c=0;if(!start||!end)return 0;for(let d=start;d<=end;d=addCalendarDays(d,1))if(isBusinessDateIso(d))c++;return c}
+  function individualComparisonRange(){return state.individualCompareMode==='none'?null:comparisonEngine.range(state.analysisStartDate,state.analysisEndDate,state.individualCompareMode)}
+  function individualComparisonPendingIds(range=individualComparisonRange()){
+    if(!range||!state.supabase||state.squadCode==='all')return[];const squad=currentSquad();return monthIdsForRange(range.start,range.end).filter(id=>squad?.months?.[id]&&!isPerformanceFullMonth(squad.months[id]));
+  }
+  async function ensureIndividualComparisonData(range=individualComparisonRange()){
+    if(!range||state.individualCompareLoading||state.squadCode==='all')return;const ids=individualComparisonPendingIds(range),rangeKey=`${range.start}|${range.end}|${state.individualCompareMode}`;if(!ids.length)return;state.individualCompareLoading=true;state.individualCompareError='';state.individualCompareErrorKey='';renderIndividualComparison(null,currentTech(),{loading:true});
+    try{await ensureMonthsLoaded([state.squadCode],ids,{silent:true});const unresolved=individualComparisonPendingIds(range);if(unresolved.length){state.individualCompareError='Não foi possível carregar todos os dados do período de comparação.';state.individualCompareErrorKey=rangeKey;}}
+    catch(err){state.individualCompareError='Não foi possível carregar o período de comparação.';state.individualCompareErrorKey=rangeKey;console.warn('Falha ao carregar comparação individual.',err)}
+    finally{state.individualCompareLoading=false;if(state.currentView==='individual')renderIndividual();}
+  }
+  function individualComparisonSnapshot(t,range=individualComparisonRange()){
+    if(!range||!t)return null;const squad=currentSquad(),ids=monthIdsForRange(range.start,range.end),available=ids.filter(id=>squad?.months?.[id]);if(!available.length)return{range,hasData:false,period:null,goal:null};const period=technicianPeriodAggregate(squad,t.name,range.start,range.end),goal=periodGoalForTechnician(t,squad,range.start,range.end);return{range,hasData:safe(period.att)>0||safe(period.totalEval)>0,period,goal};
+  }
+  function comparisonDeltaText(current,previous,type='count'){
+    const rate=type==='rate',result=comparisonEngine.delta(current,previous,{rate}),tone=comparisonEngine.tone(result.difference),arrow=tone==='positive'?'↑':tone==='negative'?'↓':'→';let change;
+    if(rate)change=`${result.difference>=0?'+':''}${(result.difference*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`;
+    else if(type==='avg')change=`${result.difference>=0?'+':''}${result.difference.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    else if(result.percentage!=null)change=`${result.percentage>=0?'+':''}${(result.percentage*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`;
+    else change=`${result.difference>=0?'+':''}${fmtInt(result.difference)}`;
+    const previousText=type==='rate'?fmtPct(previous):type==='avg'?safe(previous).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):fmtInt(previous);return{tone,html:`<span class="comparison-badge">${arrow} ${escapeHtml(change)}</span><span>antes ${escapeHtml(previousText)}</span>`};
+  }
+  function hideIndividualComparisonDeltas(){for(const id of ['kpiAttCompare','kpiNotesCompare','kpiEvalCompare','kpiAvgCompare']){const el=$('#'+id);if(el){el.className='kpi-comparison hidden';el.innerHTML='';}}}
+  function renderIndividualComparison(currentPeriod,t,{loading=false}={}){
+    const select=$('#individualCompareMode'),label=$('#individualCompareRange');if(select&&select.value!==state.individualCompareMode)select.value=state.individualCompareMode;
+    if(state.individualCompareMode==='none'){hideIndividualComparisonDeltas();if(label){label.className='';label.textContent='Ative para ver a evolução em cada indicador.';}return null;}
+    const range=individualComparisonRange();if(!range){hideIndividualComparisonDeltas();if(label){label.className='error';label.textContent='Não foi possível montar o período de comparação.';}return null;}const rangeKey=`${range.start}|${range.end}|${state.individualCompareMode}`;if(state.individualCompareErrorKey&&state.individualCompareErrorKey!==rangeKey){state.individualCompareError='';state.individualCompareErrorKey='';}
+    if(state.individualCompareError&&state.individualCompareErrorKey===rangeKey){hideIndividualComparisonDeltas();if(label){label.className='error';label.textContent=state.individualCompareError;}return null;}
+    const pending=individualComparisonPendingIds(range);if(loading||state.individualCompareLoading||pending.length){hideIndividualComparisonDeltas();if(label){label.className='loading';label.textContent=`Carregando ${rangeLabel(range.start,range.end)}...`;}if(pending.length&&!state.individualCompareLoading)ensureIndividualComparisonData(range);return null;}
+    const snapshot=individualComparisonSnapshot(t,range);if(!snapshot?.hasData){hideIndividualComparisonDeltas();if(label){label.className='error';label.textContent=`Sem dados importados para ${rangeLabel(range.start,range.end)}.`;}return snapshot;}
+    if(label){label.className='';label.textContent=`Comparando com ${rangeLabel(range.start,range.end)}.`;}
+    const mappings=[['kpiAttCompare',currentPeriod?.att,snapshot.period.att,'count'],['kpiNotesCompare',currentPeriod?.notes5,snapshot.period.notes5,'count'],['kpiEvalCompare',currentPeriod?.evalPct,snapshot.period.evalPct,'rate'],['kpiAvgCompare',currentPeriod?.avg,snapshot.period.avg,'avg']];
+    for(const [id,current,previous,type] of mappings){const el=$('#'+id);if(!el)continue;const delta=comparisonDeltaText(safe(current),safe(previous),type);el.className=`kpi-comparison ${delta.tone}`;el.innerHTML=delta.html;}
+    return snapshot;
+  }
+  function metricExplanationData(key,t,m,period,periodGoal,comparison){
+    const days=selectedBusinessDaysForRange(state.analysisStartDate,state.analysisEndDate),periodLabel=rangeLabel(state.analysisStartDate,state.analysisEndDate),evalTarget=periodGoal.evalPct||teamSettings(m).teamGoalEvalPct,refs=gameRankingRowsForCurrentPeriod(),periodRefs=refs.length?scoreRefsFromRows(refs):displayScoreRules(m),avgReference=safe(periodRefs.refAvg)||safe(displayScoreRules(m).refAvg),comparisonItem=(value,type)=>{if(!comparison?.hasData)return null;const previous=type==='att'?comparison.period.att:type==='notes5'?comparison.period.notes5:type==='evalPct'?comparison.period.evalPct:comparison.period.avg;const d=comparisonDeltaText(value,previous,type==='evalPct'?'rate':type==='avg'?'avg':'count');return{label:'Comparação',value:`${d.tone==='positive'?'↑':d.tone==='negative'?'↓':'→'} ${d.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()} · ${rangeLabel(comparison.range.start,comparison.range.end)}`};};
+    const common={period:periodLabel};
+    if(key==='att')return{title:'Atendimentos no período',value:fmtInt(period.att),period:periodLabel,items:[{label:'Realizado',value:fmtInt(period.att)},{label:'Meta proporcional',value:periodGoal.att?fmtInt(periodGoal.att):'Sem meta'},{label:'Dias úteis considerados',value:fmtInt(days)},{label:'Meta da competência oficial',value:safe(t.goalAtt)>0?fmtInt(t.goalAtt):'Sem meta'},comparisonItem(period.att,'att')].filter(Boolean),formula:'Soma os atendimentos do técnico dentro do recorte. A meta proporcional soma, competência por competência, a meta mensal × dias úteis usados ÷ dias úteis do mês.',note:'Quando o recorte atravessa competências, cada mês contribui apenas com sua parte proporcional. Em competência completa, o consolidado mensal é a fonte oficial.'};
+    if(key==='notes5')return{title:'Notas 5 no período',value:fmtInt(period.notes5),period:periodLabel,items:[{label:'Notas 5',value:fmtInt(period.notes5)},{label:'Meta proporcional',value:periodGoal.notes5?fmtInt(periodGoal.notes5):'Sem meta'},{label:'Total de avaliações',value:fmtInt(period.totalEval)},{label:'Meta mensal oficial',value:safe(t.goalEval)>0?fmtInt(t.goalEval):'Sem meta'},comparisonItem(period.notes5,'notes5')].filter(Boolean),formula:'Soma todas as avaliações de nota 5 dentro do recorte. A meta proporcional segue a mesma regra de dias úteis usada nos atendimentos.',note:'O total de avaliações inclui notas 1 a 5; este indicador mostra somente a quantidade de notas 5.'};
+    if(key==='evalPct')return{title:'% avaliado no período',value:fmtPct(period.evalPct),period:periodLabel,items:[{label:'Avaliações recebidas',value:fmtInt(period.totalEval)},{label:'Atendimentos elegíveis',value:fmtInt(period.eligibleAtt)},{label:'Atend. excluídos da base',value:fmtInt(period.evaluationExcludedAtt)},{label:'Meta ponderada',value:evalTarget?fmtPct(evalTarget):'Sem meta'},comparisonItem(period.evalPct,'evalPct')].filter(Boolean),formula:'% avaliado = total de avaliações ÷ atendimentos elegíveis. Em competências completas, atendimentos marcados como sem disparo de avaliação são retirados da base; em recortes parciais a taxa usa o detalhe diário bruto.',note:`Diferença atual para a meta: ${((safe(period.evalPct)-safe(evalTarget))*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`};
+    if(key==='avg')return{title:'Nota média no período',value:safe(period.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),period:periodLabel,items:[{label:'Notas 5',value:fmtInt(period.notes5)},{label:'Notas 4',value:fmtInt(period.notes4)},{label:'Notas 3 / 2 / 1',value:`${fmtInt(period.notes3)} / ${fmtInt(period.notes2)} / ${fmtInt(period.notes1)}`},{label:'Referência do período',value:avgReference.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})},comparisonItem(period.avg,'avg')].filter(Boolean),formula:'Nota média = (N5×5 + N4×4 + N3×3 + N2×2 + N1×1) ÷ total de avaliações. O resultado operacional é truncado em 2 casas conforme a regra atual.',note:'A referência exibida é calculada a partir do conjunto do Squad no mesmo período, preservando o critério usado no ranking.'};
+    const rules=displayScoreRules(m);return{title:'Pontuação oficial do mês',value:fmtNum(t.points),period:`${m.monthName} ${m.year}`,items:[{label:'Atendimentos',value:`${fmtInt(t.att)} vs ref. ${fmtInt(rules.refAtt)}`},{label:'Total avaliações',value:`${fmtInt(t.totalEval)} vs ref. ${fmtInt(rules.refTotalEval)}`},{label:'Nota média',value:`${safe(t.avg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} vs ref. ${safe(rules.refAvg).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`},{label:'% avaliado',value:`${fmtPct(t.evalPct)} vs ref. ${fmtPct(rules.refEvalPct)}`},{label:'Critérios atingidos',value:`${fmtInt(t.goalsHit)}/4 · ${t.status||'—'}`},{label:'Ranking mensal',value:t.rank?`#${t.rank}`:'—'}],formula:`Pontuação = atendimentos × nota média + ajustes dos 4 critérios. Cada critério atingido soma seu peso; cada critério não atingido subtrai o mesmo peso. Pesos atuais: ${fmtInt(rules.bonusAtt)} / ${fmtInt(rules.bonusTotalEval)} / ${fmtInt(rules.bonusAvg)} / ${fmtInt(rules.bonusEvalPct)}.`,note:'Este card é mensal e não muda com o recorte diário. Com 2 ou mais critérios atendidos, o status oficial é ACIMA; com 0 ou 1, ABAIXO.'};
+  }
+  function openMetricExplanation(key){
+    const m=currentMonth(),t=currentTech();if(!m||!t)return;const period=periodTechnicianForCurrent()||{att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,totalEval:0,avg:0,evalPct:0,evaluationExcludedAtt:0,eligibleAtt:0},goal=periodGoalForTechnician(t),comparison=state.individualCompareMode==='none'?null:individualComparisonSnapshot(t),data=metricExplanationData(key,t,m,period,goal,comparison);if(!data)return;
+    $('#metricExplainTitle').textContent=data.title;$('#metricExplainSubtitle').textContent='Veja os componentes usados pelo painel e a regra aplicada.';$('#metricExplainValue').textContent=data.value;$('#metricExplainPeriod').textContent=data.period;$('#metricExplainGrid').innerHTML=(data.items||[]).map(item=>`<div class="metric-explain-item"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join('');$('#metricExplainFormula').textContent=data.formula||'—';$('#metricExplainNote').textContent=data.note||'';openModal('metricExplainModal');
+  }
+
   function renderIndividual(){
     const m=currentMonth(),t=currentTech();if(!m||!t)return;const periodRows=gameRankingRowsForCurrentPeriod(),periodFromRanking=periodRows.find(r=>samePersonName(r.name,t.name)),localPeriod=periodTechnicianForCurrent(),period={...(periodFromRanking||localPeriod||{name:t.name,att:0,notes5:0,totalEval:0,avg:0,evalPct:0}),evaluationExcludedAtt:safe(localPeriod?.evaluationExcludedAtt),eligibleAtt:safe(localPeriod?.eligibleAtt)||safe(periodFromRanking?.att),daily:localPeriod?.daily||[]},periodGoal=periodGoalForTechnician(t);
     const attPct=t.goalAtt?safe(t.att)/t.goalAtt:0,notePct=t.goalEval?safe(t.notes5)/t.goalEval:0,hasGoals=safe(t.goalAtt)>0&&safe(t.goalEval)>0;
@@ -2034,6 +2095,7 @@
     $('#kpiPoints').textContent=fmtNum(t.points);$('#goalsHit').textContent=`${fmtInt(t.goalsHit)}/4 critérios • acumulado ${fmtNum(cumulativePointsForTech(t))} pts`;if($('#pointsStatusFoot')){$('#pointsStatusFoot').textContent=`Status oficial ${t.status||'—'}`;$('#pointsStatusFoot').style.color=String(t.status).toUpperCase()==='ACIMA'?'var(--success)':String(t.status).toUpperCase()==='ABAIXO'?'var(--danger)':'var(--muted)'}if($('#pointsRankFoot'))$('#pointsRankFoot').textContent=t.rank?`Ranking mensal #${t.rank}`:'Ranking mensal —';
     $('#attGoalPct').textContent=fmtPct(attPct);$('#noteGoalPct').textContent=fmtPct(notePct);$('#attGoalText').textContent=goalLine('atendimentos',t.att,t.goalAtt);$('#noteGoalText').textContent=goalLine('notas',t.notes5,t.goalEval);
     $('#goalOrb').style.background=overallColor(attPct,notePct);$('#goalOrb').style.boxShadow=`0 0 18px ${overallColor(attPct,notePct)}`;const coach=coachText(t,m,attPct,notePct);$('#coachTitle').textContent=coach.title;$('#coachText').textContent=coach.text;
+    renderIndividualComparison(period,t);
     renderStatusAudit(t,m,audit);renderFinanceSummary(t,m);renderGamification(t,m,attPct,notePct);renderChart(period,m,true);renderDaily(period,m,true);renderMiniRankingPeriod(periodRows,t.name);renderFinanceRanking(m,t.name);
   }
 

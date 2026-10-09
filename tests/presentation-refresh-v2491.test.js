@@ -20,5 +20,5 @@ test('V2.49.1 R5 sincroniza todas as competências do período da apresentação
 test('V2.49.1 R5 preserva a última apresentação válida se a sincronização falhar',()=>{
   assert.match(app,/backup=\{currentId:state\.currentId,techName:state\.techName,theme:clone\(state\.theme\),months:\{\}\}/);
   assert.match(app,/Falha ao sincronizar dados da apresentação\./);
-  assert.ok(index.includes('js/app.js?v=2.49.1-r6'));
+  assert.ok(index.includes('js/app.js?v=2.50.0'));
 });

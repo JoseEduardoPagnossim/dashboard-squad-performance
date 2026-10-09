@@ -33,6 +33,7 @@ const performanceEngineScriptPosition = index.indexOf('js/performance-engine.js'
 const navigationEngineScriptPosition = index.indexOf('js/navigation-engine.js');
 const workspaceEngineScriptPosition = index.indexOf('js/workspace-engine.js');
 const filterSystemScriptPosition = index.indexOf('js/filter-system.js');
+const comparisonEngineScriptPosition = index.indexOf('js/comparison-engine.js');
 const designSystemScriptPosition = index.indexOf('js/design-system.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (businessCalendarScriptPosition < 0) errors.push('index.html não carrega js/business-calendar.js.');
@@ -49,6 +50,7 @@ if (performanceEngineScriptPosition < 0) errors.push('index.html não carrega js
 if (navigationEngineScriptPosition < 0) errors.push('index.html não carrega js/navigation-engine.js.');
 if (workspaceEngineScriptPosition < 0) errors.push('index.html não carrega js/workspace-engine.js.');
 if (filterSystemScriptPosition < 0) errors.push('index.html não carrega js/filter-system.js.');
+if (comparisonEngineScriptPosition < 0) errors.push('index.html não carrega js/comparison-engine.js.');
 if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
 if (appScriptPosition >= 0 && businessCalendarScriptPosition > appScriptPosition) errors.push('js/business-calendar.js deve ser carregado antes de js/app.js.');
 if (financeScriptPosition >= 0 && businessCalendarScriptPosition >= 0 && businessCalendarScriptPosition > financeScriptPosition) errors.push('js/business-calendar.js deve carregar antes de js/finance-rules.js.');
@@ -67,9 +69,12 @@ if (appScriptPosition >= 0 && navigationEngineScriptPosition > appScriptPosition
 if (appScriptPosition >= 0 && workspaceEngineScriptPosition > appScriptPosition) errors.push('js/workspace-engine.js deve ser carregado antes de js/app.js.');
 if (workspaceEngineScriptPosition >= 0 && navigationEngineScriptPosition >= 0 && workspaceEngineScriptPosition < navigationEngineScriptPosition) errors.push('js/workspace-engine.js deve carregar depois de js/navigation-engine.js.');
 if (appScriptPosition >= 0 && filterSystemScriptPosition > appScriptPosition) errors.push('js/filter-system.js deve ser carregado antes de js/app.js.');
+if (appScriptPosition >= 0 && comparisonEngineScriptPosition > appScriptPosition) errors.push('js/comparison-engine.js deve ser carregado antes de js/app.js.');
+if (filterSystemScriptPosition >= 0 && comparisonEngineScriptPosition >= 0 && filterSystemScriptPosition > comparisonEngineScriptPosition) errors.push('js/filter-system.js deve carregar antes de js/comparison-engine.js.');
+if (comparisonEngineScriptPosition >= 0 && designSystemScriptPosition >= 0 && comparisonEngineScriptPosition > designSystemScriptPosition) errors.push('js/comparison-engine.js deve carregar antes de js/design-system.js.');
 if (filterSystemScriptPosition >= 0 && designSystemScriptPosition >= 0 && filterSystemScriptPosition > designSystemScriptPosition) errors.push('js/filter-system.js deve carregar antes de js/design-system.js.');
 if (appScriptPosition >= 0 && designSystemScriptPosition > appScriptPosition) errors.push('js/design-system.js deve ser carregado antes de js/app.js.');
-for (const id of ['view-audit','auditRows','confirmDialogPhraseInput','view-alerts','notificationBellBtn','notificationPopover','alertCenterRows','notificationComposerModal','globalSearchTrigger','globalSearchPalette','globalSearchInput','globalSearchResults','appBreadcrumbs','workspaceShell','currentFavoriteBtn','workspaceMenuBtn','workspacePopover','savedViewModal','savedViewForm']) {
+for (const id of ['view-audit','auditRows','confirmDialogPhraseInput','view-alerts','notificationBellBtn','notificationPopover','alertCenterRows','notificationComposerModal','globalSearchTrigger','globalSearchPalette','globalSearchInput','globalSearchResults','appBreadcrumbs','workspaceShell','currentFavoriteBtn','workspaceMenuBtn','workspacePopover','savedViewModal','savedViewForm','individualCompareMode','metricExplainModal','metricExplainGrid']) {
   if (!index.includes(`id="${id}"`)) errors.push(`index.html não contém o elemento obrigatório ${id}.`);
 }
 
@@ -93,6 +98,8 @@ for (const required of [
   'tests/workspace-engine.test.js',
   'tests/filter-system-v2490.test.js',
   'tests/filter-system-v2491.test.js',
+  'tests/comparison-engine.test.js',
+  'tests/individual-comparison-v2500.test.js',
   'tests/theme-bootstrap.test.js',
   'tests/design-system.test.js',
   'tests/business-calendar.test.js',
@@ -108,6 +115,7 @@ for (const required of [
   'js/navigation-engine.js',
   'js/workspace-engine.js',
   'js/filter-system.js',
+  'js/comparison-engine.js',
   'js/design-system.js',
   'js/business-calendar.js',
   'css/design-system.css',
@@ -145,6 +153,7 @@ for (const required of [
   'docs/MEU_DESEMPENHO_V2.48.14.md',
   'docs/FILTROS_UNIFICADOS_V2.49.0.md',
   'docs/PERIODO_ANALISE_UNIFICADO_V2.49.1.md',
+  'docs/ANALISE_COMPARATIVA_V2.50.0.md',
   'supabase/migrations/MIGRACAO_V2.29.8.sql',
   'supabase/migrations/MIGRACAO_V2.29.9.sql',
   'supabase/migrations/MIGRACAO_V2.36.0.sql',
@@ -206,6 +215,7 @@ if (!appText.includes('window.SoftenPerformanceEngine')) errors.push('js/app.js 
 if (!appText.includes('window.SoftenNavigationEngine')) errors.push('js/app.js não depende explicitamente do motor de navegação.');
 if (!appText.includes('window.SoftenWorkspaceEngine')) errors.push('js/app.js não depende explicitamente do motor de visões e favoritos.');
 if (!appText.includes('window.SoftenFilterSystem')) errors.push('js/app.js não depende explicitamente do sistema contextual de filtros.');
+if (!appText.includes('window.SoftenComparisonEngine')) errors.push('js/app.js não depende explicitamente do motor de comparação de períodos.');
 if (appText.includes('async function loadSupabaseDataLegacy')) errors.push('js/app.js ainda contém o carregamento monolítico legado.');
 for (const duplicatedChartPrimitive of ['smoothSvgPath','smoothAreaPath','splitChartPointSegments','chartDataLabelSvg','chartValueText']) {
   if (appText.includes(`function ${duplicatedChartPrimitive}(`)) errors.push(`Primitiva de gráfico duplicada em js/app.js: ${duplicatedChartPrimitive}.`);

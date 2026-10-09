@@ -99,6 +99,6 @@ test('Indicadores não duplicam mais filtros visíveis de data',()=>{
 test('V2.49 é frontend-only e preserva a regra financeira',()=>{
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.49.0.sql')),false);
   assert.match(finance,/FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
-  assert.match(app,/APP_VERSION = '2\.49\.1'/);
-  assert.ok(index.includes('V2.49.1'));
+  assert.match(app,/APP_VERSION = '2\.50\.0'/);
+  assert.ok(index.includes('V2.50.0'));
 });

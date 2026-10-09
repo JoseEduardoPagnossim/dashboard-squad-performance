@@ -1,6 +1,6 @@
 {
   "name": "dashboard-squad-performance",
-  "version": "2.49.1",
+  "version": "2.50.0",
   "private": true,
   "description": "Soften Performance Hub - validação e testes automatizados do dashboard.",
   "scripts": {

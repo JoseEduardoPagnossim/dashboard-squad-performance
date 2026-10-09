@@ -2723,3 +2723,39 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 
 /* V2.49.1 R3 - menus do Design System renderizados em portal precisam ficar acima de popovers/drawers. */
 .ds-select-menu.ds-select-portal{z-index:1800!important}
+
+/* ============================================================
+   V2.50.0 - ANALISE COMPARATIVA + TRANSPARENCIA DOS INDICADORES
+   ============================================================ */
+#view-individual .individual-period-heading{align-items:flex-end}
+#view-individual .individual-compare-control{display:grid;justify-items:end;gap:5px;min-width:270px}
+#view-individual .individual-compare-control label{display:grid;grid-template-columns:auto minmax(190px,1fr);align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.02)}
+#view-individual .individual-compare-control label>span{font-size:7.5px;font-weight:850;letter-spacing:.07em;color:var(--muted)}
+#view-individual .individual-compare-control select{min-width:0;max-width:230px;font-size:9.5px}
+#view-individual .individual-compare-control small{font-size:8.5px;color:var(--muted);text-align:right;line-height:1.35;max-width:330px}
+#view-individual .individual-compare-control small.loading{color:var(--accent)}
+#view-individual .individual-compare-control small.error{color:var(--danger)}
+#view-individual .kpi-comparison{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 7px;font-size:8.8px;line-height:1.35}
+#view-individual .kpi-comparison.hidden{display:none!important}
+#view-individual .kpi-comparison .comparison-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 6px;border-radius:999px;border:1px solid var(--border);font-weight:900}
+#view-individual .kpi-comparison.positive .comparison-badge{color:var(--success);border-color:color-mix(in srgb,var(--success) 28%,var(--border));background:color-mix(in srgb,var(--success) 7%,transparent)}
+#view-individual .kpi-comparison.negative .comparison-badge{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 28%,var(--border));background:color-mix(in srgb,var(--danger) 7%,transparent)}
+#view-individual .kpi-comparison.neutral .comparison-badge{color:var(--muted)}
+#view-individual .kpi-comparison>span:last-child{color:var(--muted)}
+#view-individual .kpi-explain-btn{margin-top:9px;padding:6px 0 0;border:0;border-top:1px solid var(--border);background:transparent;color:var(--muted);font:inherit;font-size:8.5px;font-weight:760;text-align:left;cursor:pointer;transition:.14s}
+#view-individual .kpi-explain-btn:hover{color:var(--accent)}
+.metric-explain-modal{width:min(720px,100%)}
+.metric-explain-modal>p{margin:4px 0 14px;color:var(--muted);font-size:10px;line-height:1.5}
+.metric-explain-result{display:grid;gap:4px;padding:14px 15px;border:1px solid color-mix(in srgb,var(--accent) 25%,var(--border));border-radius:13px;background:color-mix(in srgb,var(--accent) 5%,var(--panel2));margin-bottom:12px}
+.metric-explain-result>span,.metric-explain-formula>span{font-size:7.5px;font-weight:900;letter-spacing:.08em;color:var(--muted)}
+.metric-explain-result>strong{font-size:28px;line-height:1;color:var(--text)}
+.metric-explain-result>small{font-size:9px;color:var(--muted)}
+.metric-explain-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.metric-explain-item{padding:10px 11px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.018)}
+.metric-explain-item span,.metric-explain-item strong{display:block}.metric-explain-item span{font-size:7.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.metric-explain-item strong{font-size:11px;margin-top:3px}
+.metric-explain-formula{padding:11px 12px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.018)}
+.metric-explain-formula p{margin:5px 0 0;color:var(--text);font-size:10px;line-height:1.55}
+.metric-explain-note{margin-top:10px;padding:9px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 5%,transparent);border:1px solid color-mix(in srgb,var(--accent) 16%,var(--border));color:var(--muted);font-size:8.8px;line-height:1.5}
+.metric-explain-note:empty{display:none}
+@media(max-width:900px){#view-individual .individual-period-heading{align-items:flex-start;flex-direction:column}#view-individual .individual-compare-control{width:100%;justify-items:stretch}#view-individual .individual-compare-control label{grid-template-columns:auto minmax(0,1fr)}#view-individual .individual-compare-control select{max-width:none}#view-individual .individual-compare-control small{text-align:left;max-width:none}}
+@media(max-width:560px){.metric-explain-grid{grid-template-columns:1fr}#view-individual .individual-compare-control label{grid-template-columns:1fr;gap:4px}}

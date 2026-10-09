@@ -1,3 +1,13 @@
+## V2.50.0 — Análise comparativa e transparência dos indicadores
+
+- Adiciona comparação opcional no **Meu desempenho** com o mesmo recorte do mês anterior ou período anterior de mesma duração.
+- Exibe deltas nos KPIs de Atendimentos, Notas 5, % avaliado e Nota média, sem criar um segundo filtro global.
+- Carrega competências adicionais de comparação sob demanda quando necessário.
+- Adiciona **Entenda este número** aos cinco KPIs principais, com fórmula, componentes, referência/meta e contexto do período.
+- Cria `comparison-engine.js` para cálculo determinístico de intervalos e deltas, com testes unitários.
+- Parametriza a agregação e a meta proporcional por `start/end`, evitando dependência indevida do período global em comparações.
+- Atualiza versão e cache-bust para `2.50.0`; sem migration.
+
 ### V2.49.1 R6 — Alertas centralizados na topbar
 
 - Remove o atalho **Alertas** e seu contador duplicado da sidebar.
