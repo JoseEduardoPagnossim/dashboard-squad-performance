@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.50.0`<br>
+**Versão atual:** `2.50.1`<br>
 
 
 
@@ -23,6 +23,21 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+
+## V2.50.1 — Relatório de bonificação personalizável
+
+- Adiciona **Configurar relatório** no fechamento financeiro.
+- Permite escolher quais colunas aparecem no PDF e definir a ordem por arrastar e soltar ou pelos botões de movimento.
+- Inclui presets **Enxuto**, **Completo** e **Minha configuração**, além de restauração do padrão.
+- Mantém **Técnico** como coluna obrigatória para preservar a identificação de cada linha.
+- Salva a preferência no perfil do usuário usando a infraestrutura existente de preferências, com fallback local.
+- O PDF usa exatamente as colunas visíveis e a ordem configurada; relatórios largos são quebrados horizontalmente mantendo o Técnico como referência.
+- O Excel continua completo por padrão e pode, opcionalmente, seguir a mesma seleção de colunas do PDF.
+- Cabeçalho financeiro, resumo e comissão de Administrador permanecem independentes da personalização da tabela.
+- Sem migration de banco.
+
+Detalhes: `docs/RELATORIO_BONIFICACAO_V2.50.1.md`.
 
 ## V2.50.0 — Análise comparativa e transparência
 

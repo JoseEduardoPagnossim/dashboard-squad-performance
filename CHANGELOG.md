@@ -1,3 +1,14 @@
+## V2.50.1 — Relatório de bonificação personalizável
+
+- Adiciona configurador de colunas no fechamento de Bonificação.
+- Colunas podem ser exibidas/ocultadas e reordenadas por drag-and-drop ou botões.
+- Presets Enxuto, Completo e Minha configuração, com prévia da ordem antes da exportação.
+- Preferência salva no perfil do usuário e reaproveitada nas próximas gerações.
+- PDF passa a usar catálogo dinâmico de colunas e quebra horizontal quando necessário.
+- Excel pode seguir a mesma configuração por opção; desmarcado, permanece completo.
+- Introduz `js/finance-report-engine.js` para normalização, presets, ordenação e colunas calculadas.
+- Sem migration.
+
 ## V2.50.0 — Análise comparativa e transparência dos indicadores
 
 - Adiciona comparação opcional no **Meu desempenho** com o mesmo recorte do mês anterior ou período anterior de mesma duração.

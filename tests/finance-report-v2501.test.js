@@ -1,0 +1,67 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
+
+const root = join(__dirname,'..');
+const engine = require(join(root,'js','finance-report-engine.js'));
+const index = readFileSync(join(root,'index.html'),'utf8');
+const app = readFileSync(join(root,'js','app.js'),'utf8');
+const css = readFileSync(join(root,'css','styles.css'),'utf8');
+const pkg = require(join(root,'package.json'));
+
+test('V2.50.1 carrega o configurador de relatório antes do app',()=>{
+  assert.equal(pkg.version,'2.50.1');
+  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.50.1');
+  const appPos=index.indexOf('js/app.js?v=2.50.1');
+  assert.ok(enginePos>=0 && appPos>enginePos);
+  assert.match(app,/window\.SoftenFinanceReportEngine/);
+  assert.match(app,/APP_VERSION = '2\.50\.1'/);
+});
+
+test('catálogo mantém Técnico obrigatório e padrão compatível com o PDF anterior',()=>{
+  const cfg=engine.defaultConfig();
+  assert.ok(cfg.visible.includes('technician'));
+  assert.deepEqual(engine.selectedColumns(cfg).map(c=>c.id),[
+    'technician','status','squadFinal','individualFinal','difference','officialModel','officialValue','bonusTotal','sales','discount','redistribution','vacation','countsSquadBase'
+  ]);
+  const hidden=engine.setVisible(cfg,'technician',false);
+  assert.ok(hidden.visible.includes('technician'));
+});
+
+test('presets Enxuto e Completo usam o mesmo catálogo e preservam ordem configurável',()=>{
+  const compact=engine.presetConfig('compact');
+  assert.deepEqual(engine.selectedColumns(compact).map(c=>c.id),['technician','status','attendance','officialValue','bonusTotal','discount','redistribution','vacation']);
+  const full=engine.presetConfig('full');
+  assert.equal(engine.selectedColumns(full).length,engine.COLUMNS.length);
+  const moved=engine.moveColumn(compact,'officialValue','status');
+  assert.ok(moved.order.indexOf('officialValue')<moved.order.indexOf('status'));
+  const stepped=engine.stepColumn(moved,'officialValue','down');
+  assert.equal(stepped.order.indexOf('status')+1,stepped.order.indexOf('officialValue'));
+});
+
+test('Bônus total é calculado sem alterar as colunas brutas do fechamento',()=>{
+  const col=engine.columnById('bonusTotal');
+  assert.equal(engine.computedValue({'Bônus manual':100,'Prêmio atendimento':80,'Prêmio Notas 5':20},col),200);
+});
+
+test('UI permite seleção, drag-and-drop, presets, prévia e aplicação opcional no Excel',()=>{
+  for(const id of ['configureFinanceReportBtn','financeReportConfigModal','financeReportColumnList','financeReportPreview','financeReportApplyExcel','financeReportPresetCompact','financeReportPresetFull','financeReportPresetMine','saveFinanceReportConfigBtn'])assert.ok(index.includes(`id="${id}"`),`faltando ${id}`);
+  assert.match(index,/Configurar relatório/);
+  assert.match(index,/Usar estas colunas também no Excel/);
+  assert.match(app,/function renderFinanceReportConfigurator\(/);
+  assert.match(app,/addEventListener\('dragstart'/);
+  assert.match(app,/moveFinanceReportDraft/);
+  assert.match(app,/persistMyUiPreferences\(\)/);
+  assert.match(css,/V2\.50\.1 - RELATORIO DE BONIFICACAO PERSONALIZAVEL/);
+  assert.match(css,/\.finance-report-column-row\.finance-report-drag-over/);
+});
+
+test('PDF usa colunas dinâmicas e Excel só personaliza quando a opção estiver ativa',()=>{
+  assert.match(app,/columns=financeReportSelectedColumns\(config\)/);
+  assert.match(app,/head:\[columns\.map\(c=>c\.shortLabel\|\|c\.label\)\]/);
+  assert.match(app,/body=rows\.map\(row=>columns\.map\(column=>financeReportDisplayValue\(row,column\)\)\)/);
+  assert.match(app,/horizontalPageBreak:columns\.length>13/);
+  assert.match(app,/excelRows=config\.applyToExcel\?financeReportProjectedRows\(rows,columns\):rows/);
+  assert.match(app,/financeReport:normalizeFinanceReportConfig\(raw\.financeReport\)/);
+});

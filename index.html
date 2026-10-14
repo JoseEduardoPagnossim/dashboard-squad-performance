@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.50.0" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.50.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.50.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.50.1" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.50.1" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.50.1" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.50.0 • Análise comparativa e transparência</small>
+        <small class="login-version">V2.50.1 • Relatório de bonificação personalizável</small>
       </section>
     </div>
   </section>
@@ -163,7 +163,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.50.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.50.1 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1187,7 +1187,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.50.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.50.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1387,7 +1387,7 @@
             </div>
             <div class="finance-closing-list-head"><div><strong>Fechamento por técnico</strong><small>Ajustes individuais, exceções e valor oficial da competência.</small></div></div>
             <div id="financeTechnicianRows" class="finance-tech-list"></div>
-            <div class="admin-actions finance-report-actions"><span class="muted" id="financeAdminHint">Selecione um mês.</span><button class="btn secondary" id="exportFinanceExcelBtn">↓ Relatório Excel</button><button class="btn secondary" id="exportFinancePdfBtn">↓ Relatório PDF</button><button class="btn primary" id="saveFinanceTechniciansBtn">Salvar valores individuais</button></div>
+            <div class="admin-actions finance-report-actions"><span class="muted" id="financeAdminHint">Selecione um mês.</span><button class="btn secondary" id="configureFinanceReportBtn" type="button">⚙ Configurar relatório</button><button class="btn secondary" id="exportFinanceExcelBtn">↓ Relatório Excel</button><button class="btn secondary" id="exportFinancePdfBtn">↓ Relatório PDF</button><button class="btn primary" id="saveFinanceTechniciansBtn">Salvar valores individuais</button></div>
           </article>
           <article class="card admin-card super-only finance-super-card admin-section admin-finance"><span class="eyebrow">ADMINISTRADOR</span><h2>Minha comissão do mês</h2><p>A comissão de Administrador é informada manualmente como valor total e não participa das regras dos Squads.</p><div class="admin-form"><label><span>Comissão final (R$)</span><input id="superAdminCommissionInput" type="number" min="0" step="0.01"></label><label><span>Observação</span><input id="superAdminCommissionNotes" type="text" placeholder="Opcional"></label></div><div class="admin-actions"><span class="muted" id="superAdminCommissionPeriod">Selecione um mês.</span><button class="btn primary" id="saveSuperAdminCommissionBtn">Salvar minha comissão</button></div></article>
 
@@ -1447,6 +1447,35 @@
 
   <input id="csvInput" type="file" accept=".csv,text/csv" hidden>
   <input id="themeJsonInput" type="file" accept=".json,application/json" hidden>
+
+
+  <div id="financeReportConfigModal" class="modal" aria-hidden="true" data-static-backdrop="true">
+    <div class="modal-card finance-report-config-modal" role="dialog" aria-modal="true" aria-labelledby="financeReportConfigTitle">
+      <button class="modal-close" data-close="financeReportConfigModal" aria-label="Fechar configuração do relatório">×</button>
+      <div class="finance-report-config-head">
+        <div><span class="eyebrow">BONIFICAÇÃO • RELATÓRIO</span><h2 id="financeReportConfigTitle">Configurar colunas do relatório</h2><p>Escolha o que aparece no PDF e arraste as colunas para definir a ordem. A sua configuração fica salva no perfil.</p></div>
+        <span class="finance-report-count" id="financeReportColumnCount">—</span>
+      </div>
+      <div class="finance-report-presets" aria-label="Modelos do relatório">
+        <button class="btn secondary compact" id="financeReportPresetCompact" type="button">Enxuto</button>
+        <button class="btn secondary compact" id="financeReportPresetFull" type="button">Completo</button>
+        <button class="btn secondary compact" id="financeReportPresetMine" type="button">Minha configuração</button>
+      </div>
+      <div class="finance-report-config-grid">
+        <section class="finance-report-column-panel">
+          <div class="finance-report-panel-head"><div><strong>Colunas</strong><small>Marque para exibir e arraste para reordenar.</small></div><button class="link-btn" id="financeReportRestoreDefault" type="button">Restaurar padrão</button></div>
+          <div class="finance-report-column-list" id="financeReportColumnList"></div>
+        </section>
+        <aside class="finance-report-preview-panel">
+          <span class="eyebrow">PRÉVIA DA ORDEM</span>
+          <div class="finance-report-preview" id="financeReportPreview"></div>
+          <label class="finance-report-excel-option"><input id="financeReportApplyExcel" type="checkbox"><span><strong>Usar estas colunas também no Excel</strong><small>Desmarcado, o Excel continua completo para auditoria e análise.</small></span></label>
+          <div class="finance-report-note"><strong>O cabeçalho financeiro continua fixo.</strong><span>Squad, competência, situação do mês, modelo oficial, regra e data de geração continuam no relatório independentemente das colunas escolhidas.</span></div>
+        </aside>
+      </div>
+      <div class="modal-actions finance-report-config-actions"><button class="btn secondary" type="button" data-close="financeReportConfigModal">Cancelar</button><button class="btn primary" id="saveFinanceReportConfigBtn" type="button">Salvar configuração</button></div>
+    </div>
+  </div>
 
   <div id="metricExplainModal" class="modal" aria-hidden="true">
     <div class="modal-card metric-explain-modal" role="dialog" aria-modal="true" aria-labelledby="metricExplainTitle">
@@ -1656,22 +1685,23 @@
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.50.0"></script>
-  <script src="js/finance-rules.js?v=2.50.0"></script>
-  <script src="js/finance-advanced.js?v=2.50.0"></script>
-  <script src="js/tv-engine.js?v=2.50.0"></script>
-  <script src="js/presentation.js?v=2.50.0"></script>
-  <script src="js/chart-engine.js?v=2.50.0"></script>
-  <script src="js/import-engine.js?v=2.50.0"></script>
-  <script src="js/predictive-engine.js?v=2.50.0"></script>
-  <script src="js/alert-engine.js?v=2.50.0"></script>
-  <script src="js/settings-engine.js?v=2.50.0"></script>
-  <script src="js/performance-engine.js?v=2.50.0"></script>
-  <script src="js/navigation-engine.js?v=2.50.0"></script>
-  <script src="js/workspace-engine.js?v=2.50.0"></script>
-  <script src="js/filter-system.js?v=2.50.0"></script>
-  <script src="js/comparison-engine.js?v=2.50.0"></script>
-  <script src="js/design-system.js?v=2.50.0"></script>
-  <script src="js/app.js?v=2.50.0"></script>
+  <script src="js/business-calendar.js?v=2.50.1"></script>
+  <script src="js/finance-rules.js?v=2.50.1"></script>
+  <script src="js/finance-advanced.js?v=2.50.1"></script>
+  <script src="js/tv-engine.js?v=2.50.1"></script>
+  <script src="js/presentation.js?v=2.50.1"></script>
+  <script src="js/chart-engine.js?v=2.50.1"></script>
+  <script src="js/import-engine.js?v=2.50.1"></script>
+  <script src="js/predictive-engine.js?v=2.50.1"></script>
+  <script src="js/alert-engine.js?v=2.50.1"></script>
+  <script src="js/settings-engine.js?v=2.50.1"></script>
+  <script src="js/performance-engine.js?v=2.50.1"></script>
+  <script src="js/navigation-engine.js?v=2.50.1"></script>
+  <script src="js/workspace-engine.js?v=2.50.1"></script>
+  <script src="js/filter-system.js?v=2.50.1"></script>
+  <script src="js/comparison-engine.js?v=2.50.1"></script>
+  <script src="js/finance-report-engine.js?v=2.50.1"></script>
+  <script src="js/design-system.js?v=2.50.1"></script>
+  <script src="js/app.js?v=2.50.1"></script>
 </body>
 </html>
