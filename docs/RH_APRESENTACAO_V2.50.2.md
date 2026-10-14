@@ -30,3 +30,17 @@ O usuário logado não reduz mais o ranking ao próprio técnico. A atualizaçã
 ## Segurança
 
 A alteração não abre dados entre organizações. O RPC organizacional existente filtra pelos perfis vinculados à mesma `organization_id` do usuário autenticado. A V2.50.2 não exige migration nova.
+
+
+## R2 — Correção da sincronização da Apresentação
+
+A primeira implementação da V2.50.2 reutilizava `ensureOrgOverviewData({ daily: true, technicians: true })`. Esse carregador dispara quatro RPCs organizacionais em conjunto. Para a Apresentação, somente o consolidado diário por técnico é necessário; se qualquer uma das outras RPCs estivesse ausente, desatualizada ou indisponível, o lote era descartado e a tela podia aparecer com **0 registros**.
+
+A R2 separa a dependência da Apresentação:
+
+- usa `get_presentation_technician_daily_overview()` como fonte dedicada;
+- mantém fallback temporário para `get_org_technician_daily_overview()`;
+- não usa os meses detalhados do usuário logado como fallback em produção, evitando mostrar apenas os dados do próprio técnico;
+- preserva o último conjunto válido se uma atualização remota falhar.
+
+A migration `MIGRACAO_V2.50.2_R2.sql` deve ser aplicada no Supabase para garantir a RPC dedicada em todos os ambientes.

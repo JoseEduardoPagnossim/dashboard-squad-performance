@@ -1988,6 +1988,22 @@
     const configured=String(window.SoftenPresentation?.getConfig?.()?.squad||PRESENTATION_ROUTE.squad||'all').toUpperCase();
     return configured==='ALL'?'all':(state.squads?.[configured]?configured:'all');
   }
+  function mapPresentationDailyOverview(rows=[]){return(rows||[]).map(r=>({squadCode:String(r.squad_code||r.squadCode||'').toUpperCase(),id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||r.technicianName||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval??r.totalEval),avg:safe(r.avg_rating??r.avg),evalPct:safe(r.eval_pct??r.evalPct)}));}
+  function presentationRpcUnavailable(err){const msg=String(err?.message||err||'');return /get_presentation_technician_daily_overview|schema cache|could not find the function|does not exist|PGRST202/i.test(msg)}
+  async function ensurePresentationDailyOverview({force=false,strict=false}={}){
+    if(!state.supabase)return orgTechnicianDailyRows();
+    if(!force&&(state.orgTechnicianDailyOverview||[]).length)return state.orgTechnicianDailyOverview;
+    const key='presentation:daily-overview';if(state.dataPromises[key])return state.dataPromises[key];
+    state.dataPromises[key]=(async()=>{
+      let response=await state.supabase.rpc('get_presentation_technician_daily_overview');
+      if(response.error&&presentationRpcUnavailable(response.error))response=await state.supabase.rpc('get_org_technician_daily_overview');
+      if(response.error)throw response.error;
+      state.orgTechnicianDailyOverview=mapPresentationDailyOverview(response.data||[]);
+      state.presentationLastSyncAt=new Date().toISOString();
+      return state.orgTechnicianDailyOverview;
+    })().catch(err=>{console.warn('Consolidado diário da Apresentação indisponível.',err);if(strict)throw err;return state.orgTechnicianDailyOverview||[];}).finally(()=>{delete state.dataPromises[key]});
+    return state.dataPromises[key];
+  }
   function presentationDailyRows(){
     const source=state.supabase?(state.orgTechnicianDailyOverview||[]):orgTechnicianDailyRows(),target=presentationTargetSquad();
     const rows=source.filter(r=>dateBetween(r.date||isoDateParts(r.year,r.month,r.day))&&(target==='all'||r.squadCode===target));
@@ -2011,13 +2027,13 @@
     if(!state.user)throw new Error('Sessão indisponível.');
     await refreshPresentationRouteConfig();
     if(!state.supabase){state.presentationLastSyncAt=new Date().toISOString();renderPresentation();return {updated:true,source:'local'}}
-    const backup={overview:clone(state.orgOverview),technicians:clone(state.orgTechnicianOverview),daily:clone(state.orgDailyOverview),technicianDaily:clone(state.orgTechnicianDailyOverview),loaded:state.orgOverviewLoaded};
+    const backup=clone(state.orgTechnicianDailyOverview||[]),lastSync=state.presentationLastSyncAt;
     try{
-      await ensureOrgOverviewData({daily:true,technicians:true,force:true,strict:true});
-      state.presentationLastSyncAt=new Date().toISOString();renderPresentation();
+      await ensurePresentationDailyOverview({force:true,strict:true});
+      renderPresentation();
       return {updated:true,at:state.presentationLastSyncAt,rows:state.orgTechnicianDailyOverview.length};
     }catch(err){
-      state.orgOverview=backup.overview;state.orgTechnicianOverview=backup.technicians;state.orgDailyOverview=backup.daily;state.orgTechnicianDailyOverview=backup.technicianDaily;state.orgOverviewLoaded=backup.loaded;console.error('Falha ao sincronizar dados da apresentação.',err);
+      state.orgTechnicianDailyOverview=backup;state.presentationLastSyncAt=lastSync;console.error('Falha ao sincronizar dados da apresentação.',err);renderPresentation();
       throw err;
     }
   }
@@ -4769,7 +4785,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!state.supabase||name==='home'||['alerts','users','audit','settings','profile','my-feedbacks','help'].includes(name))return;
     const ids=(['indicators','team','individual','presentation'].includes(name))?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
     if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true}));
-    if(name==='presentation')jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
+    if(name==='presentation')jobs.push(ensurePresentationDailyOverview());
     else if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
     if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());
     if(!jobs.length)return;const metricName=`view:${name}${section?`:${section}`:''}`,started=performance.now();setDataLoadIndicator(true,'Atualizando dados da tela...');try{const result=await Promise.all(jobs);recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,squad:state.squadCode||'',period:state.currentId||''},true,'lazy');return result;}catch(err){recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,message:String(err?.message||err||'').slice(0,180)},false,'lazy');throw err;}finally{setDataLoadIndicator(false);}

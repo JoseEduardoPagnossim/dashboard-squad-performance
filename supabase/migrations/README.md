@@ -121,3 +121,8 @@ Depois da migration, republique as Edge Functions `create-user` e `manage-user`,
 
 `MIGRACAO_V2.48.8.sql` adiciona `technician_finance_monthly.waive_below_discount`. A flag é específica por técnico e competência: mantém o profissional na Base do Squad e na redistribuição quando `ACIMA`, mas impede o desconto financeiro quando `ABAIXO` e não adiciona esse valor ao pool. Férias recebem a mesma isenção automaticamente pelo motor financeiro, sem depender da flag manual.
 
+
+
+## V2.50.2 R2 — Fonte dedicada da Apresentação
+
+`MIGRACAO_V2.50.2_R2.sql` cria `get_presentation_technician_daily_overview()`. A RPC entrega somente métricas diárias necessárias ao ranking da Apresentação, usa `SECURITY DEFINER`, exige usuário autenticado ativo e limita o resultado à mesma `organization_id`. Isso permite que técnicos vejam o ranking compartilhado sem expor dados financeiros nem depender do carregador organizacional completo.

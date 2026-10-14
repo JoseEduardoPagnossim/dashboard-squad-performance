@@ -1,3 +1,12 @@
+### V2.50.2 R2 — Correção da fonte de dados da Apresentação
+
+- Corrige regressão em que a Apresentação podia ficar com **0 registros** e status offline após a V2.50.2.
+- A tela deixa de depender do carregamento em lote de quatro RPCs organizacionais e passa a buscar somente o consolidado diário necessário ao ranking.
+- Adiciona a RPC dedicada `get_presentation_technician_daily_overview()`, restrita à organização do usuário autenticado e sem dados financeiros.
+- Mantém fallback para `get_org_technician_daily_overview()` enquanto a migration R2 ainda não tiver sido aplicada, evitando tela vazia em ambientes já compatíveis.
+- Preserva a última apresentação válida quando uma atualização falha e não substitui o ranking por um conjunto parcial do técnico logado.
+- Cache-bust de `app.js` atualizado para `2.50.2-r2`.
+
 ### V2.50.2 R1 — Preset RH corrigido para folha de pagamento
 
 - Ajusta o preset **RH / Pagamento** para as cinco colunas oficiais: **Grupo, Técnico, Comissão base do técnico, Comissão Venda e Comissão manual**.
