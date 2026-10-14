@@ -436,5 +436,5 @@
     bind();renderAll();emitHeartbeat('render');
   }
 
-  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,getConfig:()=>normalizeConfig(state.config),getFormConfig:()=>configFromForm(),loadAdminDraft,applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);if(state.payload)renderAll();else renderAdminConfig()},syncAdminConfig,getRuntimeStatus:runtimeStatus,emitHeartbeat,fit:()=>{scheduleDisplayFit()},__test:{calculate,normalizeRows,normalizeConfig}};
+  window.SoftenPresentation = {route,directUrl,normalUrl,setDirectMode,requestFullscreen,exitFullscreen,render,setMode,refresh:triggerRefresh,setConnectionState:(kind,title,text)=>connectionState(kind,title,text),getConfig:()=>normalizeConfig(state.config),getFormConfig:()=>configFromForm(),loadAdminDraft,applyConfig:(cfg)=>{applyRuntimeConfig(cfg,!route.direct);if(state.payload)renderAll();else renderAdminConfig()},syncAdminConfig,getRuntimeStatus:runtimeStatus,emitHeartbeat,fit:()=>{scheduleDisplayFit()},__test:{calculate,normalizeRows,normalizeConfig}};
 })();

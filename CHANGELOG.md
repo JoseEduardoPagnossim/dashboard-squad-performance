@@ -1,3 +1,14 @@
+### V2.50.2 R4 — Fonte organizacional definitiva da Apresentação
+
+- Corrige o caso em que a Apresentação ficava **Online com 0 registros**, mesmo havendo competência e dados importados.
+- Adiciona o RPC `get_presentation_daily_context_v2502`, baseado no mesmo padrão `current_profile`/organização usado pelo contexto de login já estável do projeto.
+- O novo RPC recebe período e Squad, retorna somente as métricas necessárias à Apresentação e não expõe dados financeiros.
+- Mantém os RPCs anteriores apenas como compatibilidade e o fallback detalhado somente para Administradores, evitando que um técnico veja por engano apenas os próprios dados.
+- A tela passa a sinalizar **Atenção** quando existe competência indexada, mas a fonte compartilhada retorna 0 registros, em vez de exibir `Online` como se a sincronização estivesse válida.
+- Adiciona diagnóstico em `window.SoftenPresentationDiagnostics` com fonte, quantidade carregada/exibida, período e estado da sincronização.
+- Preserva o preset **RH / Pagamento** do R3 com **Bônus total** como última coluna.
+- Cache-bust de `presentation.js` e `app.js` atualizado para `2.50.2-r4`.
+
 ### V2.50.2 R3 — Preset RH totalizador + robustez da Apresentação
 
 - O preset **RH / Pagamento** passa a usar: **Grupo, Técnico, Comissão base do técnico, Comissão Venda, Comissão manual e Bônus total**.

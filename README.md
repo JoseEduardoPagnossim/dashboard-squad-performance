@@ -1,5 +1,11 @@
 # Soften Performance Hub
 
+## V2.50.2 R4 — Apresentação organizacional
+
+- Fonte dedicada por período/Squad para a Apresentação, compartilhada entre Administradores e Técnicos.
+- Estado de atenção para fonte vazia inesperada e diagnóstico de carregamento.
+- Preserva o preset RH com Bônus total como última coluna.
+
 ## V2.50.2 R3 — RH e Apresentação
 
 - Preset RH: Grupo, Técnico, Comissão base, Comissão Venda, Comissão manual e Bônus total.

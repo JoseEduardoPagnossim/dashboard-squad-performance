@@ -50,3 +50,12 @@ A migration `MIGRACAO_V2.50.2_R2.sql` deve ser aplicada no Supabase para garanti
 O preset **RH / Pagamento** passa a exibir, nesta ordem: **Grupo, Técnico, Comissão base do técnico, Comissão Venda, Comissão manual e Bônus total**. A última coluna é calculada por linha como a soma das três parcelas de pagamento.
 
 Na Apresentação, o carregamento principal volta a usar `get_org_technician_daily_overview()` isoladamente, sem o `Promise.all` dos outros consolidados. O RPC dedicado criado na R2 permanece como fallback. Se ambos não entregarem dados, o dashboard tenta montar a visão a partir dos meses detalhados disponíveis, preservando a última visão válida em falhas.
+
+
+## R4 — Fonte organizacional definitiva
+
+A Apresentação passa a consumir `get_presentation_daily_context_v2502`, um contexto JSON dedicado que usa o mesmo padrão de identificação da organização do `get_initial_dashboard_context`. O RPC recebe o período e o Squad da própria Apresentação e retorna todas as métricas diárias dos técnicos da organização, independentemente de o usuário autenticado ser Administrador ou Técnico.
+
+Os RPCs `get_org_technician_daily_overview` e `get_presentation_technician_daily_overview` permanecem apenas como fallback. O fallback por carregamento detalhado é restrito a Administradores porque as políticas de RLS de um Técnico poderiam reduzir esse detalhamento apenas ao próprio usuário.
+
+Quando existe competência indexada para o período, mas nenhuma fonte compartilhada entrega linhas, a Apresentação deixa de considerar a sincronização saudável e informa estado de atenção. Para diagnóstico técnico, `window.SoftenPresentationDiagnostics` expõe somente metadados de carregamento, sem dados financeiros.

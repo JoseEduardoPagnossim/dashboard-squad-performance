@@ -143,6 +143,7 @@
     orgTechnicianOverview:[],
     orgDailyOverview:[],
     orgTechnicianDailyOverview:[],
+    presentationDataMeta:null,
     presentationLastSyncAt:null,
     presentationPlaylists:[],
     presentationDevices:[],
@@ -1985,10 +1986,26 @@
   async function persistPresentationHeartbeat(detail){const key=String(detail?.deviceKey||PRESENTATION_ROUTE.tv||'').trim();if(!key||!state.user)return;const payload=buildTvHeartbeatPayload({mode:detail.mode,lastRefreshAt:detail.lastRefreshAt,connectionState:detail.connectionState,viewport:detail.viewport,appVersion:'2.43.2',playlistId:detail.playlistId||PRESENTATION_ROUTE.playlist});payload.user_agent=navigator.userAgent||'';try{if(state.supabase){const {error}=await state.supabase.rpc('touch_presentation_device',{p_device_key:key,p_payload:{last_refresh_at:payload.last_refresh_at,last_mode:payload.last_mode,connection_state:payload.connection_state,viewport:payload.viewport,app_version:payload.app_version,user_agent:payload.user_agent}});if(error)throw error;}else{const rows=loadLocalTvRows(TV_DEVICE_LOCAL_KEY,normalizeTvDevice),ix=rows.findIndex(d=>d.deviceKey===key);if(ix>=0){rows[ix]=normalizeTvDevice({...rows[ix],lastSeenAt:new Date().toISOString(),lastRefreshAt:payload.last_refresh_at||rows[ix].lastRefreshAt,lastMode:payload.last_mode,connectionState:payload.connection_state,viewport:payload.viewport,appVersion:payload.app_version,userAgent:payload.user_agent});saveLocalTvRows(TV_DEVICE_LOCAL_KEY,rows);}}}catch(err){if(!tvOpsUnavailableMessage(err))console.warn('Heartbeat da TV não pôde ser registrado.',err)}}
 
   function presentationTargetSquad(){
-    const configured=String(window.SoftenPresentation?.getConfig?.()?.squad||PRESENTATION_ROUTE.squad||'all').toUpperCase();
-    return configured==='ALL'?'all':(state.squads?.[configured]?configured:'all');
+    const configured=String(window.SoftenPresentation?.getConfig?.()?.squad||PRESENTATION_ROUTE.squad||'all').trim().toUpperCase();
+    if(!configured||configured==='ALL')return'all';
+    return configured;
   }
   function mapPresentationDailyOverview(rows=[]){return(rows||[]).map(r=>({squadCode:String(r.squad_code||r.squadCode||'').toUpperCase(),id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||r.technicianName||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval??r.totalEval),avg:safe(r.avg_rating??r.avg),evalPct:safe(r.eval_pct??r.evalPct)}));}
+  function presentationHasIndexedPeriod(){
+    const ids=analysisMonthIds().filter(Boolean);if(!ids.length)return false;
+    return Object.values(state.squads||{}).some(s=>ids.some(id=>!!s?.months?.[id]));
+  }
+  function normalizePresentationContextPayload(data){
+    let payload=data;if(Array.isArray(payload)&&payload.length===1&&payload[0]&&typeof payload[0]==='object')payload=payload[0];
+    if(!payload||typeof payload!=='object'||Array.isArray(payload))payload={};
+    const rows=mapPresentationDailyOverview(Array.isArray(payload.rows)?payload.rows:[]);
+    return{rows,source:'get_presentation_daily_context_v2502',meta:{schema:String(payload.schema||'v2.50.2-r4'),source:'get_presentation_daily_context_v2502',sourceTotal:safe(payload.source_total),rowCount:safe(payload.row_count??rows.length),requestedSquad:String(payload.requested_squad||presentationTargetSquad()),requestedStart:String(payload.requested_start||state.analysisStartDate||''),requestedEnd:String(payload.requested_end||state.analysisEndDate||''),generatedAt:payload.generated_at||null}};
+  }
+  async function fetchPresentationDailyContextRpc(){
+    const target=presentationTargetSquad(),params={p_start_date:state.analysisStartDate||null,p_end_date:state.analysisEndDate||null,p_squad_code:target==='all'?null:target};
+    const response=await state.supabase.rpc('get_presentation_daily_context_v2502',params);if(response.error)throw response.error;
+    return normalizePresentationContextPayload(response.data);
+  }
   async function fetchPresentationDailyRpc(){
     const attempts=['get_org_technician_daily_overview','get_presentation_technician_daily_overview'];let lastError=null,emptyResult=null;
     for(const rpcName of attempts){
@@ -1996,15 +2013,18 @@
         const response=await state.supabase.rpc(rpcName);
         if(response.error){lastError=response.error;console.warn(`RPC ${rpcName} indisponível para a Apresentação.`,response.error);continue;}
         const mapped=mapPresentationDailyOverview(response.data||[]);
-        if(mapped.length)return{rows:mapped,source:rpcName};
-        emptyResult={rows:[],source:rpcName};
+        if(mapped.length)return{rows:mapped,source:rpcName,meta:{schema:'legacy',source:rpcName,sourceTotal:mapped.length,rowCount:mapped.length}};
+        emptyResult={rows:[],source:rpcName,meta:{schema:'legacy',source:rpcName,sourceTotal:0,rowCount:0}};
       }catch(err){lastError=err;console.warn(`Falha ao consultar ${rpcName} para a Apresentação.`,err)}
     }
     if(emptyResult)return emptyResult;
     if(lastError)throw lastError;
-    return{rows:[],source:'none'};
+    return{rows:[],source:'none',meta:{schema:'legacy',source:'none',sourceTotal:0,rowCount:0}};
   }
   async function presentationDetailedFallbackRows(){
+    // O detalhamento direto respeita RLS e, para técnico, poderia retornar somente ele mesmo.
+    // Portanto ele é seguro como fallback apenas para Administradores; técnicos dependem do contexto organizacional dedicado.
+    if(!isAdmin())return[];
     const ids=analysisMonthIds().filter(Boolean),codes=Object.keys(state.squads||{});
     if(ids.length&&codes.length)await ensureMonthsLoaded(codes,ids,{silent:true});
     return buildOrgTechnicianDailyOverviewFromState();
@@ -2014,19 +2034,24 @@
     if(!force&&(state.orgTechnicianDailyOverview||[]).length)return state.orgTechnicianDailyOverview;
     const key='presentation:daily-overview';if(state.dataPromises[key])return state.dataPromises[key];
     state.dataPromises[key]=(async()=>{
-      const remote=await fetchPresentationDailyRpc();let rows=remote.rows||[];
+      let rows=[],meta=null,contextError=null;
+      try{
+        const context=await fetchPresentationDailyContextRpc();rows=context.rows||[];meta=context.meta||null;
+      }catch(err){contextError=err;console.warn('Contexto dedicado da Apresentação indisponível; tentando compatibilidade.',err)}
       if(!rows.length){
-        const fallback=await presentationDetailedFallbackRows();
-        if(fallback.length){rows=fallback;console.warn('Apresentação usando fallback detalhado porque o consolidado organizacional retornou vazio.');}
+        try{const legacy=await fetchPresentationDailyRpc();if(legacy.rows?.length){rows=legacy.rows;meta=legacy.meta||{source:legacy.source};}else if(!meta)meta=legacy.meta||null;}catch(err){if(!contextError)contextError=err;console.warn('RPCs legadas da Apresentação também falharam.',err)}
       }
+      if(!rows.length){
+        try{const fallback=await presentationDetailedFallbackRows();if(fallback.length){rows=fallback;meta={schema:'detailed-fallback',source:'detailed-fallback',sourceTotal:fallback.length,rowCount:fallback.length};console.warn('Apresentação usando fallback detalhado do Administrador.');}}catch(fallbackErr){if(!contextError)contextError=fallbackErr;console.warn('Fallback detalhado da Apresentação também falhou.',fallbackErr)}
+      }
+      const unexpectedEmpty=!rows.length&&presentationHasIndexedPeriod();
+      state.presentationDataMeta={...(meta||{}),unexpectedEmpty,contextError:contextError?String(contextError?.message||contextError):''};
       state.orgTechnicianDailyOverview=rows;
       state.presentationLastSyncAt=new Date().toISOString();
+      if(unexpectedEmpty&&strict)throw new Error('A competência possui dados no dashboard, mas a fonte compartilhada da Apresentação retornou 0 registros.');
+      if(contextError&&strict&&!rows.length)throw contextError;
       return state.orgTechnicianDailyOverview;
-    })().catch(async err=>{
-      console.warn('Consolidado diário da Apresentação indisponível.',err);
-      try{const fallback=await presentationDetailedFallbackRows();if(fallback.length){state.orgTechnicianDailyOverview=fallback;state.presentationLastSyncAt=new Date().toISOString();return fallback;}}catch(fallbackErr){console.warn('Fallback detalhado da Apresentação também falhou.',fallbackErr)}
-      if(strict)throw err;return state.orgTechnicianDailyOverview||[];
-    }).finally(()=>{delete state.dataPromises[key]});
+    })().catch(err=>{if(strict)throw err;console.warn('Consolidado diário da Apresentação indisponível.',err);return state.orgTechnicianDailyOverview||[];}).finally(()=>{delete state.dataPromises[key]});
     return state.dataPromises[key];
   }
   function presentationDailyRows(){
@@ -2041,24 +2066,27 @@
     }));
   }
   function renderPresentation(){
-    const rows=presentationDailyRows(),target=presentationTargetSquad();
+    const rows=presentationDailyRows(),target=presentationTargetSquad(),meta=state.presentationDataMeta||{};
     const title=target==='all'?'Todos os Squads':`Squad ${target}`;
     const subtitle=target==='all'?'Ranking consolidado de todos os técnicos da organização no período.':'Ranking com todos os técnicos do Squad selecionado na configuração da Apresentação.';
     const syncDate=state.presentationLastSyncAt?new Date(state.presentationLastSyncAt):new Date(),time=syncDate.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    window.SoftenPresentationDiagnostics={source:meta.source||'pending',schema:meta.schema||'',sourceTotal:safe(meta.sourceTotal),loadedRows:(state.orgTechnicianDailyOverview||[]).length,displayedRows:rows.length,squad:target,start:state.analysisStartDate,end:state.analysisEndDate,unexpectedEmpty:!!meta.unexpectedEmpty,lastError:meta.contextError||''};
     window.SoftenPresentation?.render({rows,title,subtitle,periodLabel:analysisRangeLabel(),updatedLabel:`Fonte: Performance Hub • ${rows.length} registros diários • sincronizado ${time}`,refreshedAt:syncDate.toISOString(),refresh:refreshPresentationData});
+    if(meta.unexpectedEmpty)window.SoftenPresentation?.setConnectionState?.('degraded','Fonte sem registros','Existe competência carregada no dashboard, mas a fonte compartilhada da Apresentação retornou 0 registros para o período.');
     const direct=!!PRESENTATION_ROUTE.enabled;window.SoftenPresentation?.setDirectMode(direct);if($('#presentationExitDirectBtn'))$('#presentationExitDirectBtn').classList.toggle('hidden',!direct);
   }
   async function refreshPresentationData(){
     if(!state.user)throw new Error('Sessão indisponível.');
     await refreshPresentationRouteConfig();
     if(!state.supabase){state.presentationLastSyncAt=new Date().toISOString();renderPresentation();return {updated:true,source:'local'}}
-    const backup=clone(state.orgTechnicianDailyOverview||[]),lastSync=state.presentationLastSyncAt;
+    const backup=clone(state.orgTechnicianDailyOverview||[]),backupMeta=clone(state.presentationDataMeta||null),lastSync=state.presentationLastSyncAt;
     try{
+      state.orgTechnicianDailyOverview=[];state.presentationDataMeta=null;
       await ensurePresentationDailyOverview({force:true,strict:true});
       renderPresentation();
-      return {updated:true,at:state.presentationLastSyncAt,rows:state.orgTechnicianDailyOverview.length};
+      return {updated:true,at:state.presentationLastSyncAt,rows:state.orgTechnicianDailyOverview.length,source:state.presentationDataMeta?.source||'unknown'};
     }catch(err){
-      state.orgTechnicianDailyOverview=backup;state.presentationLastSyncAt=lastSync;console.error('Falha ao sincronizar dados da apresentação.',err);renderPresentation();
+      state.orgTechnicianDailyOverview=backup;state.presentationDataMeta=backupMeta;state.presentationLastSyncAt=lastSync;console.error('Falha ao sincronizar dados da apresentação.',err);renderPresentation();
       throw err;
     }
   }
@@ -4747,7 +4775,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return{userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name||profile.fullName||authUser.email,role:normalizeAccessRole(profile.role),organizationId:profile.organization_id||profile.organizationId||null,squadCode:profile.squad?.code||profile.squads?.code||profile.squadCode||null,techName:profile.technician_name?normalizeName(profile.technician_name):(profile.techName?normalizeName(profile.techName):null),permissions:profile.permissions||{},uiPreferences:profile.ui_preferences||profile.uiPreferences||null,avatarPath:profile.avatar_path||profile.avatarPath||null,avatarUrl:null};
   }
   function hydrateInitialContext(context,authUser){
-    const profile=context?.profile||{};state.user=buildUserFromInitialProfile(profile,authUser);state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissions=[];state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;
+    const profile=context?.profile||{};state.user=buildUserFromInitialProfile(profile,authUser);state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];state.presentationDataMeta=null;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissions=[];state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;
     const themeScope=`theme:${state.user.organizationId||'org'}`;
     for(const row of context?.squads||[]){const code=String(row.code||'').toUpperCase();if(!code)continue;const cachedTheme=readPerformanceCache(themeScope,performanceThemeCacheId(code));state.squads[code]={code,name:row.name||`Squad ${code}`,dbId:row.id,months:{},theme:cachedTheme?.value?normalizeThemePayload(cachedTheme.value):undefined};}
     const codeById=new Map(Object.values(state.squads).map(s=>[String(s.dbId),s.code]));
