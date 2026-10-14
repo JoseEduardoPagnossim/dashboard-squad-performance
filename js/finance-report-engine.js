@@ -4,6 +4,7 @@
   if(root)root.SoftenFinanceReportEngine=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   const COLUMNS=Object.freeze([
+    {id:'group',key:'Grupo',label:'Grupo',shortLabel:'Grupo',type:'text',group:'Identificação'},
     {id:'technician',key:'Técnico',label:'Técnico',shortLabel:'Técnico',type:'text',group:'Identificação',required:true},
     {id:'status',key:'Status financeiro',label:'Status financeiro',shortLabel:'Status',type:'text',group:'Identificação'},
     {id:'attendance',key:'Atendimentos',label:'Atendimentos',shortLabel:'Atend.',type:'integer',group:'Produção'},
@@ -23,6 +24,7 @@
     {id:'difference',key:'Diferença Individual x Squad',label:'Diferença Individual × Squad',shortLabel:'Dif.',type:'money',group:'Comparação'},
     {id:'officialModel',key:'Modelo oficial',label:'Modelo oficial',shortLabel:'Oficial',type:'text',group:'Fechamento'},
     {id:'officialValue',key:'Valor oficial',label:'Valor oficial',shortLabel:'Valor oficial',type:'money',group:'Fechamento'},
+    {id:'baseTechnicianCommission',key:'Comissão base do técnico',label:'Comissão base do técnico',shortLabel:'Comissão base',type:'money',group:'Fechamento'},
     {id:'cancelMultiplier',key:'Multiplicador cancelamento',label:'Multiplicador cancelamento',shortLabel:'Mult. canc.',type:'multiplier',group:'Cálculo'},
     {id:'afterCancel',key:'Base após cancelamento',label:'Base após cancelamento',shortLabel:'Após canc.',type:'money',group:'Cálculo'},
     {id:'afterVacation',key:'Base após férias',label:'Base após férias',shortLabel:'Após férias',type:'money',group:'Cálculo'},
@@ -31,7 +33,8 @@
     {id:'topAttendancePrize',key:'Prêmio atendimento',label:'Prêmio atendimento',shortLabel:'Prêmio atend.',type:'money',group:'Ajustes'},
     {id:'topNotesPrize',key:'Prêmio Notas 5',label:'Prêmio Notas 5',shortLabel:'Prêmio N5',type:'money',group:'Ajustes'},
     {id:'bonusTotal',key:null,label:'Bônus total',shortLabel:'Bônus',type:'money',group:'Ajustes',computed:'bonusTotal'},
-    {id:'sales',key:'Comissão vendas',label:'Comissão vendas',shortLabel:'Vendas',type:'money',group:'Ajustes'},
+    {id:'manualCommission',key:null,label:'Comissão manual',shortLabel:'Comissão manual',type:'money',group:'Ajustes',computed:'bonusTotal',presetOnly:true},
+    {id:'sales',key:'Comissão vendas',label:'Comissão Venda',shortLabel:'Comissão Venda',type:'money',group:'Ajustes'},
     {id:'discount',key:'Desconto',label:'Desconto',shortLabel:'Desc.',type:'money',group:'Ajustes'},
     {id:'redistribution',key:'Redistribuição',label:'Redistribuição',shortLabel:'Redistrib.',type:'money',group:'Ajustes'},
     {id:'vacation',key:'Férias',label:'Férias',shortLabel:'Férias',type:'text',group:'Exceções'},
@@ -47,7 +50,8 @@
   const REQUIRED_IDS=COLUMNS.filter(c=>c.required).map(c=>c.id);
   const DEFAULT_VISIBLE=Object.freeze(['technician','status','squadFinal','individualFinal','difference','officialModel','officialValue','bonusTotal','sales','discount','redistribution','vacation','countsSquadBase']);
   const COMPACT_VISIBLE=Object.freeze(['technician','status','attendance','officialValue','bonusTotal','discount','redistribution','vacation']);
-  const FULL_VISIBLE=Object.freeze([...IDS]);
+  const HR_VISIBLE=Object.freeze(['group','technician','baseTechnicianCommission','sales','manualCommission']);
+  const FULL_VISIBLE=Object.freeze(COLUMNS.filter(c=>!c.presetOnly).map(c=>c.id));
 
   function validId(id){return IDS.includes(id)}
   function uniqueValid(values){const out=[];for(const id of Array.isArray(values)?values:[])if(validId(id)&&!out.includes(id))out.push(id);return out}
@@ -61,6 +65,7 @@
   function presetConfig(name,current){
     const base=normalizeConfig(current);
     if(name==='compact')return normalizeConfig({order:[...COMPACT_VISIBLE,...IDS.filter(id=>!COMPACT_VISIBLE.includes(id))],visible:COMPACT_VISIBLE,applyToExcel:base.applyToExcel});
+    if(name==='hr')return normalizeConfig({order:[...HR_VISIBLE,...IDS.filter(id=>!HR_VISIBLE.includes(id))],visible:HR_VISIBLE,applyToExcel:true});
     if(name==='full')return normalizeConfig({order:IDS,visible:FULL_VISIBLE,applyToExcel:base.applyToExcel});
     if(name==='default')return defaultConfig();
     return base;
@@ -81,5 +86,5 @@
   function columnById(id){return COLUMNS.find(c=>c.id===id)||null}
   function computedValue(row,column){if(column?.computed==='bonusTotal')return Number(row?.['Bônus manual']||0)+Number(row?.['Prêmio atendimento']||0)+Number(row?.['Prêmio Notas 5']||0);return column?.key?row?.[column.key]:''}
 
-  return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue};
+  return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue};
 });

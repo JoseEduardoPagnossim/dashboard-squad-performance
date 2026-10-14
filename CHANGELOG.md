@@ -1,3 +1,20 @@
+### V2.50.2 R1 — Preset RH corrigido para folha de pagamento
+
+- Ajusta o preset **RH / Pagamento** para as cinco colunas oficiais: **Grupo, Técnico, Comissão base do técnico, Comissão Venda e Comissão manual**.
+- A **Comissão manual** consolida bônus manual + prêmios de atendimento/Notas 5. A **Comissão base do técnico** é a parcela automática restante do valor oficial após retirar Comissão Venda e Comissão manual, preservando a reconciliação do total a pagar.
+- O preset RH continua ativando automaticamente a aplicação das mesmas colunas ao Excel.
+- A configuração salva pelo usuário permanece persistente em **Minha configuração**; o preset RH sempre restaura o layout oficial acima.
+- Cache-bust de `finance-report-engine.js` e `app.js` atualizado para `2.50.2-r1`, sem alterar a versão funcional `2.50.2`.
+
+## V2.50.2 — Preset RH + Apresentação compartilhada
+
+- Adiciona preset **RH / Pagamento** com as colunas Técnico e Valor oficial.
+- O preset RH habilita a aplicação da mesma seleção no Excel, deixando o arquivo pronto para encaminhamento ao RH.
+- A Apresentação deixa de depender dos meses detalhados carregados para o usuário atual e usa o consolidado diário organizacional.
+- Técnicos autorizados a abrir a Apresentação passam a ver o mesmo ranking do escopo configurado, e não somente seus próprios números.
+- URLs/TVs da Apresentação passam a respeitar o Squad configurado para qualquer usuário autenticado da mesma organização.
+- Frontend-only; usa RPC organizacional já existente e não exige migration.
+
 ## V2.50.1 — Relatório de bonificação personalizável
 
 - Adiciona configurador de colunas no fechamento de Bonificação.

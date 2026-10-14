@@ -4,7 +4,7 @@
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.50.1`<br>
+**Versão atual:** `2.50.2`<br>
 
 
 
@@ -24,6 +24,20 @@ Dashboard interno para acompanhamento de performance, qualidade, metas, gamifica
 
 
 
+
+## V2.50.2 R1 — Ajuste do preset RH
+
+O preset **RH / Pagamento** passa a gerar exatamente: **Grupo | Técnico | Comissão base do técnico | Comissão Venda | Comissão manual**. A Comissão manual consolida bônus manual + prêmios; a Comissão base é reconciliada com o valor oficial retirando Venda e essa Comissão manual; o layout RH continua sendo aplicado automaticamente ao Excel. A configuração personalizada do usuário continua salva separadamente em **Minha configuração**.
+
+## V2.50.2 — Preset RH + Apresentação compartilhada
+
+- Adiciona o preset **RH / Pagamento** no relatório de bonificação, com **Técnico** e **Valor oficial**, pronto para envio ao RH e com aplicação automática ao Excel.
+- Mantém os presets Enxuto, Completo e Minha configuração.
+- A **Apresentação** passa a consumir o consolidado diário organizacional para qualquer usuário autorizado, em vez dos dados individuais carregados na sessão.
+- O escopo da Apresentação passa a seguir sua própria configuração de Squad (`Todos`, `A`, `B`, `D` ou `E`), independentemente do usuário logado.
+- Não altera regras financeiras, permissões de edição ou dados de outras organizações.
+
+Detalhes: `docs/RH_APRESENTACAO_V2.50.2.md`.
 
 ## V2.50.1 — Relatório de bonificação personalizável
 
