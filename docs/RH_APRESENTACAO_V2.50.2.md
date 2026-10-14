@@ -44,3 +44,9 @@ A R2 separa a dependência da Apresentação:
 - preserva o último conjunto válido se uma atualização remota falhar.
 
 A migration `MIGRACAO_V2.50.2_R2.sql` deve ser aplicada no Supabase para garantir a RPC dedicada em todos os ambientes.
+
+## R3 — Totalizador do RH e recuperação da Apresentação
+
+O preset **RH / Pagamento** passa a exibir, nesta ordem: **Grupo, Técnico, Comissão base do técnico, Comissão Venda, Comissão manual e Bônus total**. A última coluna é calculada por linha como a soma das três parcelas de pagamento.
+
+Na Apresentação, o carregamento principal volta a usar `get_org_technician_daily_overview()` isoladamente, sem o `Promise.all` dos outros consolidados. O RPC dedicado criado na R2 permanece como fallback. Se ambos não entregarem dados, o dashboard tenta montar a visão a partir dos meses detalhados disponíveis, preservando a última visão válida em falhas.

@@ -1,5 +1,12 @@
 # Soften Performance Hub
 
+## V2.50.2 R3 — RH e Apresentação
+
+- Preset RH: Grupo, Técnico, Comissão base, Comissão Venda, Comissão manual e Bônus total.
+- Bônus total soma as três parcelas de pagamento da linha.
+- Apresentação usa o consolidado organizacional histórico isoladamente e mantém fallbacks para evitar tela vazia.
+
+
 ![Quality Gate](https://github.com/JoseEduardoPagnossim/dashboard-squad-performance/actions/workflows/quality.yml/badge.svg)
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.

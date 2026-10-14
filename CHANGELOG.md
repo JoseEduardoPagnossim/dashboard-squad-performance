@@ -1,3 +1,13 @@
+### V2.50.2 R3 — Preset RH totalizador + robustez da Apresentação
+
+- O preset **RH / Pagamento** passa a usar: **Grupo, Técnico, Comissão base do técnico, Comissão Venda, Comissão manual e Bônus total**.
+- **Bônus total** fica sempre como última coluna e totaliza Comissão base + Comissão Venda + Comissão manual por técnico.
+- A Apresentação passa a consultar primeiro o RPC organizacional histórico `get_org_technician_daily_overview()` de forma isolada, removendo a dependência prática da migration R2 para o carregamento principal.
+- O RPC dedicado da R2 permanece como fallback de compatibilidade.
+- Se os RPCs não retornarem dados, Administradores ainda têm fallback pelos meses detalhados carregados, evitando tela vazia quando houver dados disponíveis no dashboard.
+- A última visão válida continua preservada em falhas de sincronização.
+- Cache-bust de `finance-report-engine.js` e `app.js` atualizado para `2.50.2-r3`.
+
 ### V2.50.2 R2 — Correção da fonte de dados da Apresentação
 
 - Corrige regressão em que a Apresentação podia ficar com **0 registros** e status offline após a V2.50.2.

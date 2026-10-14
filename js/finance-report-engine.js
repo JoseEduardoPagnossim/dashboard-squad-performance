@@ -34,6 +34,7 @@
     {id:'topNotesPrize',key:'Prêmio Notas 5',label:'Prêmio Notas 5',shortLabel:'Prêmio N5',type:'money',group:'Ajustes'},
     {id:'bonusTotal',key:null,label:'Bônus total',shortLabel:'Bônus',type:'money',group:'Ajustes',computed:'bonusTotal'},
     {id:'manualCommission',key:null,label:'Comissão manual',shortLabel:'Comissão manual',type:'money',group:'Ajustes',computed:'bonusTotal',presetOnly:true},
+    {id:'hrPaymentTotal',key:null,label:'Bônus total (RH)',shortLabel:'Bônus total',exportLabel:'Bônus total',type:'money',group:'Fechamento RH',computed:'hrPaymentTotal',presetOnly:true},
     {id:'sales',key:'Comissão vendas',label:'Comissão Venda',shortLabel:'Comissão Venda',type:'money',group:'Ajustes'},
     {id:'discount',key:'Desconto',label:'Desconto',shortLabel:'Desc.',type:'money',group:'Ajustes'},
     {id:'redistribution',key:'Redistribuição',label:'Redistribuição',shortLabel:'Redistrib.',type:'money',group:'Ajustes'},
@@ -50,7 +51,7 @@
   const REQUIRED_IDS=COLUMNS.filter(c=>c.required).map(c=>c.id);
   const DEFAULT_VISIBLE=Object.freeze(['technician','status','squadFinal','individualFinal','difference','officialModel','officialValue','bonusTotal','sales','discount','redistribution','vacation','countsSquadBase']);
   const COMPACT_VISIBLE=Object.freeze(['technician','status','attendance','officialValue','bonusTotal','discount','redistribution','vacation']);
-  const HR_VISIBLE=Object.freeze(['group','technician','baseTechnicianCommission','sales','manualCommission']);
+  const HR_VISIBLE=Object.freeze(['group','technician','baseTechnicianCommission','sales','manualCommission','hrPaymentTotal']);
   const FULL_VISIBLE=Object.freeze(COLUMNS.filter(c=>!c.presetOnly).map(c=>c.id));
 
   function validId(id){return IDS.includes(id)}
@@ -84,7 +85,7 @@
     const set=new Set(next.visible);if(visible||column.required)set.add(id);else set.delete(id);return normalizeConfig({...next,visible:[...set]});
   }
   function columnById(id){return COLUMNS.find(c=>c.id===id)||null}
-  function computedValue(row,column){if(column?.computed==='bonusTotal')return Number(row?.['Bônus manual']||0)+Number(row?.['Prêmio atendimento']||0)+Number(row?.['Prêmio Notas 5']||0);return column?.key?row?.[column.key]:''}
+  function computedValue(row,column){if(column?.computed==='bonusTotal')return Number(row?.['Bônus manual']||0)+Number(row?.['Prêmio atendimento']||0)+Number(row?.['Prêmio Notas 5']||0);if(column?.computed==='hrPaymentTotal')return Number(row?.['Comissão base do técnico']||0)+Number(row?.['Comissão vendas']||0)+Number(computedValue(row,columnById('manualCommission'))||0);return column?.key?row?.[column.key]:''}
 
   return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue};
 });

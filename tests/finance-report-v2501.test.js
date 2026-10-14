@@ -12,8 +12,8 @@ const pkg = require(join(root,'package.json'));
 
 test('V2.50.2 carrega o configurador de relatório antes do app',()=>{
   assert.equal(pkg.version,'2.50.2');
-  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.50.2-r1');
-  const appPos=index.indexOf('js/app.js?v=2.50.2-r2');
+  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.50.2-r3');
+  const appPos=index.indexOf('js/app.js?v=2.50.2-r3');
   assert.ok(enginePos>=0 && appPos>enginePos);
   assert.match(app,/window\.SoftenFinanceReportEngine/);
   assert.match(app,/APP_VERSION = '2\.50\.2'/);
@@ -33,8 +33,8 @@ test('presets Enxuto, RH e Completo usam o mesmo catálogo e preservam ordem con
   const compact=engine.presetConfig('compact');
   assert.deepEqual(engine.selectedColumns(compact).map(c=>c.id),['technician','status','attendance','officialValue','bonusTotal','discount','redistribution','vacation']);
   const hr=engine.presetConfig('hr');
-  assert.deepEqual(engine.selectedColumns(hr).map(c=>c.id),['group','technician','baseTechnicianCommission','sales','manualCommission']);
-  assert.deepEqual(engine.selectedColumns(hr).map(c=>c.label),['Grupo','Técnico','Comissão base do técnico','Comissão Venda','Comissão manual']);
+  assert.deepEqual(engine.selectedColumns(hr).map(c=>c.id),['group','technician','baseTechnicianCommission','sales','manualCommission','hrPaymentTotal']);
+  assert.deepEqual(engine.selectedColumns(hr).map(c=>c.label),['Grupo','Técnico','Comissão base do técnico','Comissão Venda','Comissão manual','Bônus total (RH)']);
   assert.equal(hr.applyToExcel,true);
   const full=engine.presetConfig('full');
   assert.equal(engine.selectedColumns(full).length,engine.COLUMNS.filter(c=>!c.presetOnly).length);
@@ -54,7 +54,9 @@ test('preset RH reconcilia comissão base + venda + manual com o valor oficial',
   assert.equal(engine.computedValue(row,engine.columnById('sales')),200);
   assert.equal(engine.computedValue(row,engine.columnById('manualCommission')),150);
   assert.equal(1100+200+150,row['Valor oficial']);
-  assert.deepEqual(cols.map(c=>c.shortLabel),['Grupo','Técnico','Comissão base','Comissão Venda','Comissão manual']);
+  assert.equal(engine.computedValue(row,engine.columnById('hrPaymentTotal')),1450);
+  assert.equal(engine.columnById('hrPaymentTotal').exportLabel,'Bônus total');
+  assert.deepEqual(cols.map(c=>c.shortLabel),['Grupo','Técnico','Comissão base','Comissão Venda','Comissão manual','Bônus total']);
 });
 
 test('Bônus total é calculado sem alterar as colunas brutas do fechamento',()=>{
@@ -80,6 +82,7 @@ test('PDF usa colunas dinâmicas e Excel só personaliza quando a opção estive
   assert.match(app,/body=rows\.map\(row=>columns\.map\(column=>financeReportDisplayValue\(row,column\)\)\)/);
   assert.match(app,/horizontalPageBreak:columns\.length>13/);
   assert.match(app,/excelRows=config\.applyToExcel\?financeReportProjectedRows\(rows,columns\):rows/);
+  assert.match(app,/column\.exportLabel\|\|column\.label/);
   assert.match(app,/financeReport:normalizeFinanceReportConfig\(raw\.financeReport\)/);
 });
 

@@ -9,15 +9,16 @@ const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.50.2_R2.sql'), 'utf8');
 const index = readFileSync(join(root, 'index.html'), 'utf8');
 
-test('V2.50.2 R2 apresentação carrega somente o consolidado diário necessário',()=>{
+test('V2.50.2 R3 apresentação usa o RPC organizacional estável de forma isolada',()=>{
   assert.match(app,/async function ensurePresentationDailyOverview\(/);
-  assert.match(app,/rpc\('get_presentation_technician_daily_overview'\)/);
-  assert.match(app,/if\(response\.error&&presentationRpcUnavailable\(response\.error\)\)response=await state\.supabase\.rpc\('get_org_technician_daily_overview'\)/);
+  assert.match(app,/const attempts=\['get_org_technician_daily_overview','get_presentation_technician_daily_overview'\]/);
+  assert.match(app,/for\(const rpcName of attempts\)/);
+  assert.match(app,/state\.supabase\.rpc\(rpcName\)/);
   assert.match(app,/if\(name==='presentation'\)jobs\.push\(ensurePresentationDailyOverview\(\)\)/);
   assert.doesNotMatch(app,/if\(name==='presentation'\)jobs\.push\(ensureOrgOverviewData/);
 });
 
-test('V2.50.2 R2 atualização manual usa a mesma fonte dedicada e preserva última visão válida',()=>{
+test('V2.50.2 R3 atualização manual usa a mesma fonte isolada e preserva última visão válida',()=>{
   const refresh=app.slice(app.indexOf('async function refreshPresentationData()'),app.indexOf('async function copyPresentationUrl()'));
   assert.match(refresh,/ensurePresentationDailyOverview\(\{force:true,strict:true\}\)/);
   assert.doesNotMatch(refresh,/ensureOrgOverviewData/);
@@ -43,6 +44,9 @@ test('RPC dedicada mantém isolamento por organization_id e não expõe campos f
   }
 });
 
-test('V2.50.2 R2 possui cache-bust do app',()=>{
-  assert.ok(index.includes('js/app.js?v=2.50.2-r2'));
+test('V2.50.2 R3 adiciona fallback detalhado e cache-bust do app',()=>{
+  assert.match(app,/async function presentationDetailedFallbackRows\(/);
+  assert.match(app,/buildOrgTechnicianDailyOverviewFromState\(\)/);
+  assert.match(app,/if\(!rows\.length\)/);
+  assert.ok(index.includes('js/app.js?v=2.50.2-r3'));
 });
