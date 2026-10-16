@@ -1,5 +1,16 @@
 # Soften Performance Hub
 
+## V2.51.0 — Identidade estável de técnicos
+
+- O técnico passa a ser identificado por `user_id`, e não somente pelo texto do nome vindo do CRM.
+- O cadastro permite manter nomes antigos/alternativos como **aliases do CSV**; trocar o nome atual preserva automaticamente o anterior.
+- A importação operacional consolida todos os aliases da mesma pessoa antes dos cálculos e bloqueia vínculos ambíguos.
+- Reimportar uma competência afetada reconstrói as métricas pelo CSV e reconcilia linhas duplicadas sem somar números potencialmente repetidos.
+- A importação de qualidade também reconhece aliases históricos.
+- Requer `supabase/migrations/MIGRACAO_V2.51.0.sql` em bases existentes.
+
+Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
+
 ## V2.50.2 R4 — Apresentação organizacional
 
 - Fonte dedicada por período/Squad para a Apresentação, compartilhada entre Administradores e Técnicos.
@@ -12,12 +23,11 @@
 - Bônus total soma as três parcelas de pagamento da linha.
 - Apresentação usa o consolidado organizacional histórico isoladamente e mantém fallbacks para evitar tela vazia.
 
-
 ![Quality Gate](https://github.com/JoseEduardoPagnossim/dashboard-squad-performance/actions/workflows/quality.yml/badge.svg)
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.50.2`<br>
+**Versão atual:** `2.51.0`<br>
 
 
 

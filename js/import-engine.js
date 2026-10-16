@@ -84,7 +84,7 @@
     const unmatchedRatio=totalRows?safe(unmatched)/safe(totalRows):0;
     if(unmatchedRatio>=.15)add('warning','many_unmatched',`${unmatched} vínculo(s) não foram reconhecidos; revise nomes e Squads antes de confirmar.`);
     else if(unmatched>0)add('info','unmatched',`${unmatched} vínculo(s) não reconhecido(s) serão ignorados.`);
-    if(ambiguous>0)add('warning','ambiguous',`${ambiguous} vínculo(s) ambíguo(s) foram detectados.`);
+    if(ambiguous>0)add('error','ambiguous',`${ambiguous} vínculo(s) ambíguo(s) foram detectados. Vincule cada nome a um único técnico antes de importar.`);
     for(const item of summary?.squads||[]){
       if(kind==='service'&&item.current?.attendance>0){
         if(item.attendanceDelta<=-.35)add('warning','attendance_drop',`Squad ${item.code}: atendimentos cairão ${Math.round(Math.abs(item.attendanceDelta)*100)}% em relação ao valor atual.`);

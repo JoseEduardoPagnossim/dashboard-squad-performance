@@ -4,7 +4,7 @@ Este diretório preserva o histórico de evolução do banco do Soften Performan
 
 ## Instalação nova
 
-Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.48.8.
+Para um projeto Supabase novo, use **`../schema.sql`**. Ele já reúne a estrutura necessária até a V2.51.0.
 
 Depois:
 
@@ -55,6 +55,9 @@ V2.48.2
 V2.48.3
 V2.48.7
 V2.48.8
+V2.50.2 R2
+V2.50.2 R4
+V2.51.0
 ```
 
 `MIGRACAO_V2.25.0.sql` foi preservada como histórico; para uma instalação que ainda não tenha feedbacks, prefira a revisão `V2.25.1`.
@@ -126,3 +129,13 @@ Depois da migration, republique as Edge Functions `create-user` e `manage-user`,
 ## V2.50.2 R2 — Fonte dedicada da Apresentação
 
 `MIGRACAO_V2.50.2_R2.sql` cria `get_presentation_technician_daily_overview()`. A RPC entrega somente métricas diárias necessárias ao ranking da Apresentação, usa `SECURITY DEFINER`, exige usuário autenticado ativo e limita o resultado à mesma `organization_id`. Isso permite que técnicos vejam o ranking compartilhado sem expor dados financeiros nem depender do carregador organizacional completo.
+
+## V2.50.2 R4 — Fonte organizacional da Apresentação
+
+`MIGRACAO_V2.50.2_R4.sql` cria `get_presentation_daily_context_v2502(date,date,text)` para entregar à Apresentação somente as métricas diárias do período/Squad solicitado, sempre dentro da organização do usuário autenticado. O RPC não expõe dados financeiros e força o recarregamento do schema do PostgREST após a criação.
+
+## V2.51.0 — Identidade estável de técnicos
+
+`MIGRACAO_V2.51.0.sql` cria `technician_aliases` para armazenar os nomes atuais e históricos usados pelo CRM/CSV e vinculá-los ao `user_id` real do técnico. A migration também semeia aliases a partir do cadastro, histórico de Squad, competências mensais já vinculadas e auditoria, além de adicionar índice de apoio em `technician_monthly(squad_month_id,user_id)`.
+
+A migration não soma nem apaga métricas mensais existentes. Se uma competência já tiver dois registros da mesma pessoa por mudança de nome, confirme o alias em **Usuários** e reimporte o CSV operacional daquele mês; a aplicação reconcilia as linhas usando o CSV como fonte de verdade. Não é necessário republicar Edge Functions.

@@ -53,7 +53,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.50.2';
+  const APP_VERSION = '2.51.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -103,6 +103,7 @@
     settingsModule:'all',
     userDirectory:[],
     userDirectoryLoaded:false,
+    technicianAliasesAvailable:null,
     auditLogs:[],
     auditLoaded:false,
     auditLoading:false,
@@ -3228,6 +3229,24 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     applyHelpSearch();
   }
 
+  function normalizedAliasValues(values){
+    const seen=new Set(),out=[];for(const value of values||[]){const name=normalizeName(value);const key=nameLinkKey(name);if(!key||seen.has(key))continue;seen.add(key);out.push(name)}return out;
+  }
+  function technicianUserAliases(u){return normalizedAliasValues([u?.techName,u?.fullName,...(u?.aliases||[])]);}
+  function parseTechnicianAliasesInput(value){return normalizedAliasValues(String(value||'').split(/[\n;,]+/g));}
+  function aliasesInputForUser(u){const required=new Set([nameLinkKey(u?.techName),nameLinkKey(u?.fullName)].filter(Boolean));return technicianUserAliases(u).filter(a=>!required.has(nameLinkKey(a))).join('\n');}
+  async function persistTechnicianAliasesForUser({userId,oldTechName,oldFullName,newTechName,newFullName,manualAliases=[]}={}){
+    if(!state.supabase||!userId)return;
+    if(state.technicianAliasesAvailable===false)throw new Error('Aliases de técnico ainda não estão disponíveis. Execute a migração V2.51.0 no Supabase.');
+    const automatic=normalizedAliasValues([oldTechName,oldFullName,newTechName,newFullName]),manual=normalizedAliasValues(manualAliases),rows=[];
+    const manualKeys=new Set(manual.map(nameLinkKey));
+    for(const aliasName of normalizedAliasValues([...automatic,...manual]))rows.push({organization_id:state.user.organizationId,user_id:userId,alias_name:aliasName,alias_key:nameLinkKey(aliasName),source:manualKeys.has(nameLinkKey(aliasName))?'manual':'automatic',active:true,created_by:state.user.userId,updated_at:new Date().toISOString()});
+    if(!rows.length)return;
+    const {error}=await state.supabase.from('technician_aliases').upsert(rows,{onConflict:'user_id,alias_key'});if(error){state.technicianAliasesAvailable=false;throw new Error(`Não foi possível salvar os nomes históricos do técnico. Execute a migração V2.51.0. ${error.message||''}`.trim())}
+    state.technicianAliasesAvailable=true;
+  }
+  function technicianDirectoryByUserId(userId){return (state.userDirectory||[]).find(u=>String(u.userId)===String(userId))||null;}
+
   async function renderUsers(){
     if(!isAdmin())return;
     $('#usersScopeText').textContent=state.squadCode==='all'?'Você está vendo usuários de toda a organização.':'Você está filtrando a listagem pelo Squad '+state.squadCode+'. Administradores continuam com acesso global.';
@@ -3246,9 +3265,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         let q=state.supabase.from('profiles').select('user_id,email,full_name,role,squad_id,technician_name,active,squads(code,name)').order('full_name');
         const {data,error}=await q;if(error)throw error;rows=data||[];
       }
-      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:normalizeAccessRole(p.role),squadCode:normalizeAccessRole(p.role)==='super_admin'?null:(p.squads?.code||null),techName:p.technician_name||'',active:p.active!==false,permissions:p.permissions||{}}));
+      const aliasesByUser=new Map();
+      try{
+        const {data:aliasRows,error:aliasError}=await state.supabase.from('technician_aliases').select('user_id,alias_name,alias_key,source,active').eq('organization_id',state.user.organizationId).eq('active',true).order('alias_name');if(aliasError)throw aliasError;
+        for(const a of aliasRows||[]){const list=aliasesByUser.get(a.user_id)||[];list.push(a.alias_name);aliasesByUser.set(a.user_id,list)}state.technicianAliasesAvailable=true;
+      }catch(err){state.technicianAliasesAvailable=false;console.warn('Aliases de técnico indisponíveis; execute a migração V2.51.0 para preservar nomes históricos do CSV.',err)}
+      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:normalizeAccessRole(p.role),squadCode:normalizeAccessRole(p.role)==='super_admin'?null:(p.squads?.code||null),techName:p.technician_name||'',aliases:normalizedAliasValues(aliasesByUser.get(p.user_id)||[]),active:p.active!==false,permissions:p.permissions||{}}));
     }else{
-      state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:normalizeAccessRole(u.role),squadCode:normalizeAccessRole(u.role)==='super_admin'?null:(u.squadCode||null),techName:u.techName||'',active:u.active!==false,permissions:u.permissions||{}}));
+      state.technicianAliasesAvailable=true;state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:normalizeAccessRole(u.role),squadCode:normalizeAccessRole(u.role)==='super_admin'?null:(u.squadCode||null),techName:u.techName||'',aliases:normalizedAliasValues(u.aliases||[]),active:u.active!==false,permissions:u.permissions||{}}));
     }
     state.userDirectoryLoaded=true;
   }
@@ -3291,14 +3315,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     roleSel.value=u.role;
     const allowed=Object.values(state.squads);
     squadSel.innerHTML='<option value="">Sem Squad</option>'+allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
-    squadSel.value=u.squadCode||'';squadSel.dataset.originalSquad=u.squadCode||'';$('#editUserTechName').value=u.techName||'';
+    squadSel.value=u.squadCode||'';squadSel.dataset.originalSquad=u.squadCode||'';$('#editUserTechName').value=u.techName||'';if($('#editUserAliases'))$('#editUserAliases').value=aliasesInputForUser(u);
     const now=new Date(),year=now.getFullYear(),month=now.getMonth()+1;$('#editUserEffectiveMonth').value=`${year}-${String(month).padStart(2,'0')}`;
     state.editPermissionDraft={...(u.permissions||{})};syncEditUserFields();renderPermissionEditor(u.role);openModal('editUserModal');
   }
   function syncEditUserFields(){
     const role=$('#editUserRole').value,isSuper=role==='super_admin';
     $('#editUserSquad').disabled=isSuper||!isSuperAdmin();if(isSuper)$('#editUserSquad').value='';
-    $('#editTechnicianNameField').classList.toggle('hidden',role!=='technician');$('#editUserTechName').required=role==='technician';
+    $('#editTechnicianNameField').classList.toggle('hidden',role!=='technician');$('#editTechnicianAliasesField')?.classList.toggle('hidden',role!=='technician');$('#editUserTechName').required=role==='technician';
     $('#editUserRole').disabled=false;
     const moved=isSuperAdmin()&&role==='technician'&&$('#editUserSquad').value&&$('#editUserSquad').value!==($('#editUserSquad').dataset.originalSquad||'');
     $('#editMovementPeriodField')?.classList.toggle('hidden',!moved);$('#editUserEffectiveMonth').required=moved;
@@ -3310,10 +3334,16 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const role=$('#editUserRole').value,squadCode=role==='super_admin'?null:$('#editUserSquad').value,techName=role==='technician'?normalizeName($('#editUserTechName').value):null;
       const period=$('#editUserEffectiveMonth').value||'',parts=period.split('-').map(Number);
       const permissions=role==='technician'&&hasPermission('permissions.manage')?collectPermissionOverrides():{};
-      const payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null,permissions};
+      const manualAliases=role==='technician'?parseTechnicianAliasesInput($('#editUserAliases')?.value||''):[],payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null,permissions};
       if(!payload.fullName)throw new Error('Informe o nome completo.');if(role!=='super_admin'&&!state.squads[squadCode])throw new Error('Selecione um Squad válido.');if(role==='technician'&&!techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
-      if(state.supabase)await manageSupabaseUser('update',payload);else updateDemoUser({...payload,active:u.active});
-      state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('editUserModal');toast(`Usuário ${payload.fullName} atualizado${u.squadCode!==squadCode?` e movimentado para o Squad ${squadCode}`:''}.`);
+      const csvNameChanged=role==='technician'&&u.role==='technician'&&!samePersonName(u.techName,techName);if(state.supabase&&csvNameChanged&&state.technicianAliasesAvailable===false)throw new Error('Antes de alterar o nome do técnico no CSV, execute a migração V2.51.0. Ela preserva o nome anterior como alias e evita duplicidade no histórico.');
+      if(state.supabase){
+        // Preserva o nome anterior antes de alterar o perfil. Se a estrutura de aliases estiver
+        // indisponível, a troca é interrompida antes de mudar a identidade visível do técnico.
+        if(role==='technician')await persistTechnicianAliasesForUser({userId:u.userId,oldTechName:u.techName,oldFullName:u.fullName,newTechName:techName,newFullName:payload.fullName,manualAliases});
+        await manageSupabaseUser('update',payload);
+      }else updateDemoUser({...payload,active:u.active,aliases:normalizedAliasValues([...(u.aliases||[]),u.techName,...manualAliases])});
+      state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('editUserModal');toast(csvNameChanged?`Usuário ${payload.fullName} atualizado. O nome anterior foi preservado como alias do CSV.`:`Usuário ${payload.fullName} atualizado${u.squadCode!==squadCode?` e movimentado para o Squad ${squadCode}`:''}.`);
     }catch(err){console.error(err);$('#editUserError').textContent=humanManageUserError(err)}finally{btn.disabled=false;btn.textContent='Salvar alterações'}
   }
   async function toggleUserActive(userId){
@@ -3331,7 +3361,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const {data,error}=await state.supabase.functions.invoke('manage-user',{body});if(error)throw await edgeFunctionErrorMessage(error);if(data?.error)throw new Error(data.error);return data
   }
   function updateDemoUser(p){
-    const list=loadDemoCreatedUsers(),i=list.findIndex(x=>String(x.userId)===String(p.userId));if(i>=0){list[i]={...list[i],fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,active:p.active,permissions:p.permissions||list[i].permissions||{}};saveDemoCreatedUsers(list);return}
+    const list=loadDemoCreatedUsers(),i=list.findIndex(x=>String(x.userId)===String(p.userId));if(i>=0){list[i]={...list[i],fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,aliases:normalizedAliasValues(p.aliases||list[i].aliases||[]),active:p.active,permissions:p.permissions||list[i].permissions||{}};saveDemoCreatedUsers(list);return}
     throw new Error('Usuários de demonstração padrão não são editáveis. Crie um usuário demo para testar esta função.');
   }
   function deleteDemoUser(u){const list=loadDemoCreatedUsers(),next=list.filter(x=>String(x.userId)!==String(u.userId));if(next.length===list.length)throw new Error('Usuários de demonstração padrão não podem ser excluídos.');saveDemoCreatedUsers(next)}
@@ -3364,7 +3394,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const role=$('#newUserRole').value;
       const payload={fullName:$('#newUserName').value.trim(),email:$('#newUserEmail').value.trim().toLowerCase(),password:$('#newUserPassword').value,role,squadCode:role==='super_admin'?null:$('#newUserSquad').value,techName:role==='technician'?normalizeName($('#newUserTechName').value):null};
       validateNewUserPayload(payload);
-      if(state.supabase) await createSupabaseUser(payload); else createDemoUser(payload);
+      if(state.supabase){const created=await createSupabaseUser(payload);if(role==='technician'&&created?.user?.id&&state.technicianAliasesAvailable!==false){try{await persistTechnicianAliasesForUser({userId:created.user.id,newTechName:payload.techName,newFullName:payload.fullName});}catch(aliasErr){console.warn(aliasErr)}}}else createDemoUser(payload);
       state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('userModal');toast(`Usuário ${payload.fullName} criado com sucesso.`);
     }catch(err){console.error(err);$('#createUserError').textContent=humanCreateUserError(err)}finally{submit.disabled=false;submit.textContent='Criar usuário'}
   }
@@ -3374,7 +3404,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function createDemoUser(p){
     if(allDemoUsers().some(u=>String(u.email).toLowerCase()===p.email))throw new Error('Já existe um usuário com este e-mail.');
-    const list=loadDemoCreatedUsers();list.push({email:p.email,password:p.password,fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,active:true,userId:`demo-${Date.now()}`});saveDemoCreatedUsers(list);
+    const list=loadDemoCreatedUsers();list.push({email:p.email,password:p.password,fullName:p.fullName,role:p.role,squadCode:p.squadCode,techName:p.techName,aliases:[],active:true,userId:`demo-${Date.now()}`});saveDemoCreatedUsers(list);
   }
   async function edgeFunctionErrorMessage(error){
     let message=String(error?.message||'').trim();
@@ -4173,7 +4203,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const id=$('#csvMonthSelect')?.value,pending=state.pendingCsv,block=$('#importPreviewBlock');if(!block||!pending||!id){if(block)block.classList.add('hidden');return}
     const preview=buildImportPreview(pending,id);state.importPreview=preview;if(!preview){block.classList.add('hidden');return}block.classList.remove('hidden');const {summary,validation}=preview;
     const scopeText=preview.codes.length===1?`Squad ${preview.codes[0]}`:`${preview.codes.length} Squads`;
-    $('#importPreviewSummary').innerHTML=[['Linhas válidas',fmtInt(summary.rows)],['Técnicos',fmtInt(summary.technicians)],['Ignoradas',fmtInt(pending.ignored)],['Escopo',scopeText]].map(([a,b])=>`<div class="import-preview-metric"><span>${a}</span><strong>${b}</strong></div>`).join('');
+    const previewMetrics=[['Linhas válidas',fmtInt(summary.rows)],['Técnicos',fmtInt(summary.technicians)],['Ignoradas',fmtInt(pending.ignored)],['Escopo',scopeText]];if(pending.kind==='service'&&(pending.aliasMatches||[]).length)previewMetrics.splice(2,0,['Aliases',fmtInt(pending.aliasMatches.length)]);$('#importPreviewSummary').innerHTML=previewMetrics.map(([a,b])=>`<div class="import-preview-metric"><span>${a}</span><strong>${b}</strong></div>`).join('');
     const banner=$('#importRiskBanner');banner.className=`import-risk-banner ${validation.level}`;banner.innerHTML=validation.blocked?'<strong>⛔ Importação bloqueada.</strong> Corrija os itens críticos antes de gravar.':validation.requiresConfirmation?'<strong>⚠ Revisão necessária.</strong> Existem diferenças relevantes. A confirmação exigirá a palavra IMPORTAR.':'<strong>✓ Validação concluída.</strong> Nenhum risco crítico foi identificado para esta competência.';
     $('#importValidationList').innerHTML=validation.issues.length?validation.issues.map(i=>`<div class="import-validation-item ${i.severity}"><b>${i.severity==='error'?'ERRO':i.severity==='warning'?'ATENÇÃO':'INFO'}</b><span>${escapeHtml(i.message)}</span></div>`).join(''):'<div class="import-validation-item info"><b>OK</b><span>Arquivo, escopo, competência e vínculos passaram pelas validações básicas.</span></div>';
     $('#importComparisonRows').innerHTML=(summary.squads||[]).map(s=>{const current=pending.kind==='quality'?safe(s.current.rows):safe(s.current.attendance),incoming=pending.kind==='quality'?safe(s.incoming.ratings):safe(s.incoming.attendance),delta=importDeltaText(pending.kind==='quality'?s.rowDelta:s.attendanceDelta),status=(pending.kind==='service'&&s.current.attendance>0&&s.attendanceDelta<=-.35)||(pending.kind==='quality'&&s.current.rows>0&&s.rowDelta<=-.40)?'Revisar':'OK';return`<tr><td><strong>Squad ${s.code}</strong></td><td>${fmtInt(current)}</td><td>${fmtInt(incoming)}</td><td><span class="import-delta ${delta.className}">${delta.text}</span></td><td>${fmtInt(s.current.technicians)}</td><td>${fmtInt(s.incoming.technicians)}</td><td><span class="import-risk-chip ${status==='OK'?'ok':'warning'}">${status}</span></td></tr>`}).join('')||'<tr><td colspan="7" class="muted">Nenhum dado vinculado ao período selecionado.</td></tr>';
@@ -4282,12 +4312,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       $('#importDetails').innerHTML=`<strong>${fmtInt(mapped.rows.length)} avaliações vinculadas</strong> • <strong>${months.length} meses disponíveis</strong>${un}${amb} • ${fmtInt(parsed.ignored)} linha(s) inválida(s)/sem nota de Produto ou Empresa. <span class="muted">Escopo: ${escapeHtml(importScopeLabel(scope))}. Vínculos recuperados pelo histórico: ${fmtInt(hist)} • pelo cadastro: ${fmtInt(directory)}. Técnicos desligados podem permanecer na qualidade mesmo sem linha operacional na competência.</span>`;
     }else{
       const parsed=parseServiceCsv(source.text),aliasBy=serviceTechnicianAliases(codes);if(!codes.some(code=>aliasBy[code]?.size))throw new Error(scopeAll?'Cadastre técnicos nos Squads antes de importar o CSV.':`Cadastre os técnicos do Squad ${codes[0]} em Usuários antes de importar o CSV.`);
-      const scopeRows=parsed.rows.filter(r=>codes.includes(r.group)),unmatchedSet=new Set(),rows=[];for(const r of scopeRows){const canonical=aliasBy[r.group]?.get(nameLinkKey(r.name));if(canonical)rows.push({...r,name:canonical});else unmatchedSet.add(`${r.group}: ${r.name}`)}
-      const unmatched=[...unmatchedSet].sort(),months=[...new Set(rows.map(r=>r.id))].sort().reverse();if(!months.length)throw new Error(scopeAll?'O CSV não possui registros que correspondam aos técnicos cadastrados nos Squads selecionados. Confira os vínculos em Usuários.':`O CSV não possui registros que correspondam aos técnicos cadastrados do Squad ${codes[0]}. Confira Nome do técnico, Nome completo e Squad do usuário.`);
-      state.pendingCsv={kind:'service',fileName:source.fileName,fileSize:source.fileSize,checksum:source.checksum,rows,ignored:parsed.ignored,total:parsed.total,months,unmatched,scopeAll,codes};
+      const scopeRows=parsed.rows.filter(r=>codes.includes(r.group)),unmatchedSet=new Set(),ambiguousSet=new Set(),aliasMatches=new Set(),rows=[];for(const r of scopeRows){const resolved=resolveTechnicianAliasCandidate(aliasBy[r.group],r.name);if(resolved.status==='matched'&&resolved.candidate){const candidate=resolved.candidate,canonical=normalizeName(candidate.canonical||r.name);rows.push({...r,originalName:r.name,name:canonical,userId:candidate.userId||null,linkSource:candidate.source||'cadastro'});if(!samePersonName(r.name,canonical))aliasMatches.add(`${r.group}: ${r.name} → ${canonical}`)}else if(resolved.status==='ambiguous')ambiguousSet.add(`${r.group}: ${r.name}`);else unmatchedSet.add(`${r.group}: ${r.name}`)}
+      const unmatched=[...unmatchedSet].sort(),ambiguous=[...ambiguousSet].sort(),aliases=[...aliasMatches].sort(),months=[...new Set(rows.map(r=>r.id))].sort().reverse();if(!months.length)throw new Error(scopeAll?'O CSV não possui registros que correspondam aos técnicos cadastrados nos Squads selecionados. Confira os vínculos em Usuários.':`O CSV não possui registros que correspondam aos técnicos cadastrados do Squad ${codes[0]}. Confira Nome do técnico, aliases e Squad do usuário.`);
+      state.pendingCsv={kind:'service',fileName:source.fileName,fileSize:source.fileSize,checksum:source.checksum,rows,ignored:parsed.ignored,total:parsed.total,months,unmatched,ambiguous,aliasMatches:aliases,scopeAll,codes};
       $('#csvMonthSelect').innerHTML=months.map(id=>{const [y,m]=id.split('-').map(Number);return `<option value="${id}">${MONTHS_PT[m-1]} ${y}</option>`}).join('');if(previousMonth&&months.includes(previousMonth))$('#csvMonthSelect').value=previousMonth;$('#csvPeriodBlock').classList.remove('hidden');$('#confirmCsvImportBtn').classList.remove('hidden');$('#confirmCsvImportBtn').textContent='Importar mês';$('#importMessage').textContent=`CSV operacional reconhecido • ${importScopeLabel(scope)}.`;
-      if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='A reimportação operacional substitui Serviço/atendimentos do mês, preserva dados financeiros manuais e qualidade Produto/Empresa e sincroniza o detalhamento diário somente no escopo escolhido acima.';
-      const unmatchedText=unmatched.length?` • <strong>${unmatched.length} vínculo(s) não encontrado(s) ignorado(s)</strong>: ${escapeHtml(unmatched.slice(0,5).join(', '))}${unmatched.length>5?'…':''}`:'';$('#importDetails').innerHTML=`<strong>${fmtInt(rows.length)} linhas vinculadas</strong> aos técnicos cadastrados • <strong>${months.length} meses disponíveis</strong>${unmatchedText} • ${fmtInt(parsed.ignored)} linhas inválidas/fora dos Squads A, B, D e E. <span class="muted">Escopo: ${escapeHtml(importScopeLabel(scope))}. O vínculo considera Nome do técnico, Nome completo e histórico do Squad.</span>`;
+      if($('#csvPeriodHint'))$('#csvPeriodHint').textContent='A reimportação substitui as métricas automáticas do mês. Nomes antigos e atuais do CRM são consolidados pelo mesmo usuário antes do cálculo.';
+      const unmatchedText=unmatched.length?` • <strong>${unmatched.length} vínculo(s) não encontrado(s)</strong>: ${escapeHtml(unmatched.slice(0,5).join(', '))}${unmatched.length>5?'…':''}`:'',ambiguousText=ambiguous.length?` • <strong>${ambiguous.length} vínculo(s) ambíguo(s)</strong>: ${escapeHtml(ambiguous.slice(0,4).join(', '))}${ambiguous.length>4?'…':''}`:'',aliasText=aliases.length?` • <strong>${aliases.length} alias(es) consolidados</strong>`:'';$('#importDetails').innerHTML=`<strong>${fmtInt(rows.length)} linhas vinculadas</strong> aos técnicos cadastrados • <strong>${months.length} meses disponíveis</strong>${aliasText}${unmatchedText}${ambiguousText} • ${fmtInt(parsed.ignored)} linhas inválidas/fora dos Squads A, B, D e E. <span class="muted">Identidade: user_id do técnico. Nome atual, nome completo e aliases históricos servem apenas para reconhecer o CSV.</span>`;
     }
     $('#importProgress').style.width='100%';renderImportPreview();const body=$('#importModalBody');if(body)body.scrollTop=0;
   }
@@ -4318,14 +4348,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         for(const code of codes){const squad=state.squads[code],m=squad?.months?.[id];if(!m)continue;await logAuditEvent('month.import_quality',{entityType:'squad_month',entityId:m.dbId||id,squadId:squad?.dbId||null,description:`Importação de avaliações Produto/Empresa de ${MONTHS_PT[month-1]} ${year} no Squad ${code}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'quality',sourceRows:(pending.rows||[]).filter(r=>r.group===code&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched)}})}
         saveDemoSquads();await recordCompletedImport(pending,id,snapshot,{importedSquads,importedRows,historicalMonthsPatched:safe(historySync.monthsPatched)});render();state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${fmtInt(importedRows)} avaliações de Produto/Empresa consolidadas em ${importedSquads} Squad(s).${historySync.monthsPatched?` Histórico de qualidade sincronizado em ${historySync.monthsPatched} competência(s).`:''}`);return;
       }
-      $('#importMessage').textContent='Consolidando dados do mês...';let importedSquads=0,importedTechs=0,historySync=null;
+      $('#importMessage').textContent='Consolidando dados do mês...';let importedSquads=0,importedTechs=0,identityReconciled=0,historySync=null;
       if(pending.scopeAll){
         const candidates=pending.codes.filter(code=>pending.rows.some(r=>r.group===code&&r.id===id));if(!candidates.length)throw new Error('Nenhum Squad possui registros vinculados para este mês.');const closedCodes=candidates.filter(code=>state.squads[code]?.months?.[id]?.isClosed);if(closedCodes.length)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no(s) Squad(s) ${closedCodes.join(', ')}. Reabra o mês antes de importar.`);
-        for(const code of candidates){const s=state.squads[code],previous=s.months[id],data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,code);s.months[id]=data;importedSquads++;importedTechs+=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${code}...`;$('#importProgress').style.width=(55+Math.round(importedSquads/Math.max(1,candidates.length)*34))+'%';await persistImportedMonth(data,s)}}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}for(const code of candidates){const squad=state.squads[code],m=squad?.months?.[id];if(!m)continue;await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:m.dbId||id,squadId:squad?.dbId||null,description:`Importação operacional de ${MONTHS_PT[month-1]} ${year} no Squad ${code}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(m.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===code&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched)}})}
+        for(const code of candidates){const s=state.squads[code],previous=s.months[id],data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,code);s.months[id]=data;importedSquads++;importedTechs+=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${code}...`;$('#importProgress').style.width=(55+Math.round(importedSquads/Math.max(1,candidates.length)*34))+'%';const persisted=await persistImportedMonth(data,s);identityReconciled+=safe(persisted?.reconciledDuplicates)}}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}for(const code of candidates){const squad=state.squads[code],m=squad?.months?.[id];if(!m)continue;await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:m.dbId||id,squadId:squad?.dbId||null,description:`Importação operacional de ${MONTHS_PT[month-1]} ${year} no Squad ${code}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(m.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===code&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched),identityDuplicatesReconciled:identityReconciled}})}
       }else{
-        const targetCode=pending.codes?.[0],s=state.squads?.[targetCode];if(!targetCode||!s)throw new Error('Squad selecionado não está disponível.');const previous=s.months[id];if(previous?.isClosed)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no Squad ${targetCode}. Reabra o mês antes de importar.`);const data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,targetCode);s.months[id]=data;importedSquads=1;importedTechs=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${targetCode}...`;$('#importProgress').style.width='70%';await persistImportedMonth(data,s)}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:data.dbId||id,squadId:s?.dbId||null,description:`Importação operacional de ${data.monthName} ${data.year} no Squad ${targetCode}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(data.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===targetCode&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched)}});
+        const targetCode=pending.codes?.[0],s=state.squads?.[targetCode];if(!targetCode||!s)throw new Error('Squad selecionado não está disponível.');const previous=s.months[id];if(previous?.isClosed)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no Squad ${targetCode}. Reabra o mês antes de importar.`);const data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,targetCode);s.months[id]=data;importedSquads=1;importedTechs=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${targetCode}...`;$('#importProgress').style.width='70%';const persisted=await persistImportedMonth(data,s);identityReconciled+=safe(persisted?.reconciledDuplicates)}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:data.dbId||id,squadId:s?.dbId||null,description:`Importação operacional de ${data.monthName} ${data.year} no Squad ${targetCode}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(data.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===targetCode&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched),identityDuplicatesReconciled:identityReconciled}});
       }
-      saveDemoSquads();state.financeRankingCache={};if(state.analysisMode==='competence'&&state.analysisPreset!=='custom'){const id=state.analysisCompetenceId||state.currentId,preset=state.analysisPreset,range=competencePresetRange(id,preset,'state');if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisCompetenceId=id;}}refreshSelectors();await recordCompletedImport(pending,id,snapshot,{importedSquads,importedTechnicians:importedTechs,historicalMonthsPatched:safe(historySync?.monthsPatched)});render();state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${importedSquads} Squad(s) e ${importedTechs} técnico(s) atualizados.${historySync?.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
+      saveDemoSquads();state.financeRankingCache={};if(state.analysisMode==='competence'&&state.analysisPreset!=='custom'){const id=state.analysisCompetenceId||state.currentId,preset=state.analysisPreset,range=competencePresetRange(id,preset,'state');if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisCompetenceId=id;}}refreshSelectors();await recordCompletedImport(pending,id,snapshot,{importedSquads,importedTechnicians:importedTechs,historicalMonthsPatched:safe(historySync?.monthsPatched),identityDuplicatesReconciled:identityReconciled});render();state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${importedSquads} Squad(s) e ${importedTechs} técnico(s) atualizados.${identityReconciled?` ${identityReconciled} registro(s) duplicado(s) reconciliado(s).`:''}${historySync?.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
     }catch(err){
       console.error(err);let rollbackError=null;try{await restoreImportSnapshot(snapshot)}catch(re){rollbackError=re;console.error('Falha ao restaurar snapshot após erro de importação.',re)}$('#importMessage').textContent=rollbackError?'Importação interrompida e a restauração automática precisa de conferência.':'Importação cancelada e estado anterior restaurado.';$('#importDetails').textContent=(err.message||String(err))+(rollbackError?` | Falha na restauração: ${rollbackError.message||rollbackError}`:'')+((state.pendingCsv?.kind==='quality'&&state.supabase)?' Se a tabela de qualidade ainda não existir, execute supabase/migrations/MIGRACAO_V2.27.0.sql no Supabase.':'');$('#importProgress').style.width='100%';
       const failed=normalizeImportHistory({batchKey:makeImportBatchKey(),kind:pending.kind,period:id,fileName:pending.fileName,checksum:pending.checksum,scope:preview?.codes||pending.codes||[],rows:preview?.summary?.rows||0,ignored:safe(pending.ignored),unmatched:(pending.unmatched||[]).length,status:'failed',createdAt:new Date().toISOString(),createdBy:state.user?.fullName||state.user?.email||'',risk:'error',details:{error:err.message||String(err),autoRollback:!rollbackError,rollbackError:rollbackError?.message||null}});await persistImportHistory(failed);
@@ -4341,18 +4371,18 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     for(const cols of lines.slice(1)){const date=parseCsvDate(cols[idx.date]),name=normalizeName(cols[idx.technician]),productNote=csvRating(cols[idx.product]),companyNote=csvRating(cols[idx.company]);if(!date||!name||(!productNote&&!companyNote)){ignored++;continue}const year=date.year,month=date.month,day=date.day;rows.push({id:`${year}-${String(month).padStart(2,'0')}`,year,month,day,name,productNote,companyNote});}
     if(!rows.length)throw new Error('Nenhuma avaliação válida de Produto ou Empresa foi encontrada. Confira a data, o técnico e as notas do arquivo.');return{rows,ignored,total:lines.length-1};
   }
-  function qualityUserAliasKeys(name){const key=nameLinkKey(name),keys=new Set([key]);for(const u of state.userDirectory||[]){if(u.role!=='technician')continue;if(samePersonName(u.fullName,name)||samePersonName(u.techName,name)){if(u.techName)keys.add(nameLinkKey(u.techName));if(u.fullName)keys.add(nameLinkKey(u.fullName));}}return keys}
+  function qualityUserAliasKeys(name){const key=nameLinkKey(name),keys=new Set([key]);for(const u of state.userDirectory||[]){if(u.role!=='technician')continue;const aliases=technicianUserAliases(u);if(!aliases.some(alias=>nameLinkKey(alias)===key))continue;for(const alias of aliases)keys.add(nameLinkKey(alias));}return keys}
   function monthOrdinal(id){const [y,m]=String(id||'').split('-').map(Number);return safe(y)*12+safe(m)}
   function qualityTechnicianCandidates(row,codes){
     const aliasKeys=qualityUserAliasKeys(row.name),targetOrd=monthOrdinal(row.id),eligible=(codes||[]).filter(code=>!!state.squads?.[code]?.months?.[row.id]);if(!eligible.length)return[];
-    const exact=[];for(const code of eligible){const target=state.squads[code].months[row.id];for(const t of target.technicians||[])if(aliasKeys.has(nameLinkKey(t.name)))exact.push({group:code,name:t.name,source:'competência',distance:0});}
+    const exact=[];for(const code of eligible){const target=state.squads[code].months[row.id];for(const t of target.technicians||[])if(aliasKeys.has(nameLinkKey(t.name)))exact.push({group:code,name:t.name,userId:t.userId||null,source:'competência',distance:0});}
     if(exact.length)return [...new Map(exact.map(x=>[`${x.group}|${nameLinkKey(x.name)}`,x])).values()];
-    const historical=[];for(const code of eligible){let best=null;for(const [id,m] of Object.entries(state.squads?.[code]?.months||{})){for(const t of m?.technicians||[]){if(!aliasKeys.has(nameLinkKey(t.name)))continue;const ord=monthOrdinal(id),past=ord<=targetOrd,distance=Math.abs(targetOrd-ord),score=distance*2+(past?0:1);if(!best||score<best.score)best={group:code,name:t.name,source:past?'histórico anterior':'histórico posterior',distance,score};}}if(best)historical.push(best);}
+    const historical=[];for(const code of eligible){let best=null;for(const [id,m] of Object.entries(state.squads?.[code]?.months||{})){for(const t of m?.technicians||[]){if(!aliasKeys.has(nameLinkKey(t.name)))continue;const ord=monthOrdinal(id),past=ord<=targetOrd,distance=Math.abs(targetOrd-ord),score=distance*2+(past?0:1);if(!best||score<best.score)best={group:code,name:t.name,userId:t.userId||null,source:past?'histórico anterior':'histórico posterior',distance,score};}}if(best)historical.push(best);}
     if(historical.length){const min=Math.min(...historical.map(x=>x.score));return historical.filter(x=>x.score===min).map(({score,...x})=>x);}
-    const directory=[];for(const u of state.userDirectory||[]){if(u.role!=='technician'||!eligible.includes(u.squadCode))continue;if(aliasKeys.has(nameLinkKey(u.techName))||aliasKeys.has(nameLinkKey(u.fullName)))directory.push({group:u.squadCode,name:u.techName||u.fullName||row.name,source:'cadastro de usuário',distance:999});}
+    const directory=[];for(const u of state.userDirectory||[]){if(u.role!=='technician'||!eligible.includes(u.squadCode))continue;if(technicianUserAliases(u).some(alias=>aliasKeys.has(nameLinkKey(alias))))directory.push({group:u.squadCode,name:u.techName||u.fullName||row.name,userId:u.userId,source:'cadastro de usuário',distance:999});}
     return [...new Map(directory.map(x=>[`${x.group}|${nameLinkKey(x.name)}`,x])).values()];
   }
-  function mapQualityCsvRows(rows,codes){const mapped=[],unmatchedCounts=new Map(),ambiguousCounts=new Map(),sourceCounts={competência:0,'histórico anterior':0,'histórico posterior':0,'cadastro de usuário':0};for(const row of rows||[]){const candidates=qualityTechnicianCandidates(row,codes);if(candidates.length===1){mapped.push({...row,group:candidates[0].group,name:candidates[0].name,linkSource:candidates[0].source});sourceCounts[candidates[0].source]=(sourceCounts[candidates[0].source]||0)+1}else if(!candidates.length)unmatchedCounts.set(row.name,(unmatchedCounts.get(row.name)||0)+1);else ambiguousCounts.set(row.name,(ambiguousCounts.get(row.name)||0)+1)}return{rows:mapped,unmatched:[...unmatchedCounts.keys()].map(titleWords).sort((a,b)=>a.localeCompare(b,'pt-BR')),ambiguous:[...ambiguousCounts.keys()].map(titleWords).sort((a,b)=>a.localeCompare(b,'pt-BR')),sourceCounts}}
+  function mapQualityCsvRows(rows,codes){const mapped=[],unmatchedCounts=new Map(),ambiguousCounts=new Map(),sourceCounts={competência:0,'histórico anterior':0,'histórico posterior':0,'cadastro de usuário':0};for(const row of rows||[]){const candidates=qualityTechnicianCandidates(row,codes);if(candidates.length===1){mapped.push({...row,group:candidates[0].group,name:candidates[0].name,userId:candidates[0].userId||null,linkSource:candidates[0].source});sourceCounts[candidates[0].source]=(sourceCounts[candidates[0].source]||0)+1}else if(!candidates.length)unmatchedCounts.set(row.name,(unmatchedCounts.get(row.name)||0)+1);else ambiguousCounts.set(row.name,(ambiguousCounts.get(row.name)||0)+1)}return{rows:mapped,unmatched:[...unmatchedCounts.keys()].map(titleWords).sort((a,b)=>a.localeCompare(b,'pt-BR')),ambiguous:[...ambiguousCounts.keys()].map(titleWords).sort((a,b)=>a.localeCompare(b,'pt-BR')),sourceCounts}}
   function applyQualityMonthImport(m,rows,fileName){
     const now=new Date().toISOString(),grouped=new Map();for(const row of rows||[]){const key=`${nameLinkKey(row.name)}|${row.day}`,g=grouped.get(key)||{name:row.name,technicianKey:nameLinkKey(row.name),day:row.day,product:{notes5:0,notes4:0,notes3:0,notes2:0,notes1:0},company:{notes5:0,notes4:0,notes3:0,notes2:0,notes1:0}};if(row.productNote)g.product[`notes${row.productNote}`]++;if(row.companyNote)g.company[`notes${row.companyNote}`]++;grouped.set(key,g)}
     const external=[];for(const g of grouped.values())for(const type of ['product','company']){const counts=g[type];if(!qualityNoteTotal(counts))continue;external.push({technicianName:g.name,technicianKey:g.technicianKey,day:g.day,qualityType:type,...counts,sourceFile:fileName,importedAt:now});}
@@ -4386,7 +4416,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
 
   function serviceCsvMonthTechMap(rows,id,squadCode){
-    const map=new Map();for(const r of rows||[]){if(r.id!==id||r.group!==squadCode)continue;const key=nameLinkKey(r.name),g=map.get(key)||{name:r.name,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,daily:new Map()};g.att+=safe(r.att);for(const n of [5,4,3,2,1])g[`notes${n}`]+=safe(r[`notes${n}`]);const d=g.daily.get(safe(r.day))||{day:safe(r.day),notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};for(const n of [5,4,3,2,1])d[`notes${n}`]+=safe(r[`notes${n}`]);g.daily.set(safe(r.day),d);map.set(key,g);}return map;
+    const map=new Map();for(const r of rows||[]){if(r.id!==id||r.group!==squadCode)continue;const key=technicianIdentityKey(r.userId,r.name),g=map.get(key)||{name:r.name,userId:r.userId||null,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,daily:new Map()};g.att+=safe(r.att);for(const n of [5,4,3,2,1])g[`notes${n}`]+=safe(r[`notes${n}`]);const d=g.daily.get(safe(r.day))||{day:safe(r.day),notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};for(const n of [5,4,3,2,1])d[`notes${n}`]+=safe(r[`notes${n}`]);g.daily.set(safe(r.day),d);map.set(key,g);}return map;
   }
   function syncHistoricalServiceDailyFromCsv(pending,selectedId){
     const changed=[],monthKeys=new Set();let techsPatched=0,daysPatched=0,monthlyMismatches=0,missingTechnicians=0;
@@ -4397,7 +4427,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         const mon=squad.months?.[id];if(!mon)continue;
         const source=serviceCsvMonthTechMap(pending.rows,id,code);if(!source.size)continue;
         for(const t of mon.technicians||[]){
-          const src=source.get(nameLinkKey(t.name));if(!src){missingTechnicians++;continue;}
+          const identity=existingTechnicianIdentity(t,code,serviceTechnicianAliases([code])?.[code]),src=source.get(identity.key);if(!src){missingTechnicians++;continue;}
           if([5,4,3,2,1].some(n=>safe(src[`notes${n}`])!==safe(t[`notes${n}`])))monthlyMismatches++;
           let changedTech=false;
           for(const d of t.daily||[]){
@@ -4419,16 +4449,44 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!state.supabase||!sync?.changed?.length)return;let done=0;for(const item of sync.changed){const t=item.tech;if(!t?.dbId)continue;const payload=(t.daily||[]).map(d=>({technician_month_id:t.dbId,day:safe(d.day),att:safe(d.att),notes5:safe(d.notes5),notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off}));for(let i=0;i<payload.length;i+=500){const {error}=await state.supabase.from('daily_metrics').upsert(payload.slice(i,i+500),{onConflict:'technician_month_id,day'});if(error)throw error}done++;if($('#importProgress'))$('#importProgress').style.width=(92+Math.round(done/Math.max(1,sync.changed.length)*7))+'%';}
   }
 
+  function technicianIdentityKey(userId,name){return userId?`u:${String(userId)}`:`n:${nameLinkKey(name)}`;}
+  function addTechnicianAliasCandidate(map,alias,candidate){
+    const key=nameLinkKey(alias);if(!key||!map)return;const list=map.get(key)||[],signature=candidate.userId?`u:${candidate.userId}`:`n:${nameLinkKey(candidate.canonical)}`;
+    if(!list.some(item=>(item.userId?`u:${item.userId}`:`n:${nameLinkKey(item.canonical)}`)===signature))list.push({...candidate,alias:normalizeName(alias)});map.set(key,list);
+  }
+  function resolveTechnicianAliasCandidate(map,name){
+    const key=nameLinkKey(name),raw=map?.get(key)||[];if(!raw.length)return{status:'unmatched',candidate:null,candidates:[]};
+    const distinct=[];for(const item of raw){const sig=item.userId?`u:${item.userId}`:`n:${nameLinkKey(item.canonical)}`;if(!distinct.some(x=>(x.userId?`u:${x.userId}`:`n:${nameLinkKey(x.canonical)}`)===sig))distinct.push(item)}
+    if(distinct.length===1)return{status:'matched',candidate:distinct[0],candidates:distinct};
+    const linked=[...new Set(distinct.map(x=>x.userId).filter(Boolean))];if(linked.length===1){const preferred=distinct.find(x=>x.userId===linked[0])||distinct[0];return{status:'matched',candidate:preferred,candidates:distinct}}
+    return{status:'ambiguous',candidate:null,candidates:distinct};
+  }
   function serviceTechnicianAliases(codes){
     const by={};for(const code of codes||[])by[code]=new Map();
     for(const u of state.userDirectory||[]){
       if(u.role!=='technician'||!u.squadCode||!by[u.squadCode])continue;
       const canonical=normalizeName(u.techName||u.fullName);if(!canonical)continue;
-      for(const alias of [u.techName,u.fullName]){const key=nameLinkKey(alias);if(key&&!by[u.squadCode].has(key))by[u.squadCode].set(key,canonical);}
-      const ownKey=nameLinkKey(canonical);if(ownKey&&!by[u.squadCode].has(ownKey))by[u.squadCode].set(ownKey,canonical);
+      for(const alias of technicianUserAliases(u))addTechnicianAliasCandidate(by[u.squadCode],alias,{userId:u.userId,canonical,source:'cadastro'});
     }
-    for(const code of codes||[]){const squad=state.squads?.[code];for(const monthData of Object.values(squad?.months||{}))for(const tech of monthData?.technicians||[]){const key=nameLinkKey(tech?.name);if(key&&!by[code].has(key))by[code].set(key,tech.name);}}
+    for(const code of codes||[]){
+      const squad=state.squads?.[code];for(const monthData of Object.values(squad?.months||{}))for(const tech of monthData?.technicians||[]){
+        const linked=tech?.userId?technicianDirectoryByUserId(tech.userId):null,canonical=normalizeName(linked?.techName||tech?.name);if(!canonical)continue;
+        addTechnicianAliasCandidate(by[code],tech?.name,{userId:tech?.userId||linked?.userId||null,canonical,source:'histórico'});
+      }
+    }
     return by;
+  }
+  function existingTechnicianIdentity(t,squadCode,aliasMap=null){
+    if(t?.userId)return{key:technicianIdentityKey(t.userId,t.name),userId:t.userId,canonical:normalizeName(technicianDirectoryByUserId(t.userId)?.techName||t.name)};
+    const resolved=resolveTechnicianAliasCandidate(aliasMap||serviceTechnicianAliases([squadCode])?.[squadCode],t?.name);if(resolved.status==='matched'&&resolved.candidate?.userId)return{key:technicianIdentityKey(resolved.candidate.userId,resolved.candidate.canonical),userId:resolved.candidate.userId,canonical:resolved.candidate.canonical};
+    return{key:technicianIdentityKey(null,t?.name),userId:null,canonical:normalizeName(t?.name)};
+  }
+  function preferredPreviousTechnician(rows,canonicalName,userId){
+    const list=(rows||[]).filter(Boolean);if(!list.length)return{};const canonicalKey=nameLinkKey(canonicalName),ordered=[...list].sort((a,b)=>{const score=x=>(nameLinkKey(x.name)===canonicalKey?0:(userId&&String(x.userId||'')===String(userId)?1:2));return score(a)-score(b)}),primary=ordered[0];
+    const firstTruthy=(field,fallback)=>{for(const row of ordered){const value=row?.[field];if(typeof value==='number'){if(Number.isFinite(value)&&value!==0)return value}else if(value===true||value)return value}return primary?.[field]??fallback};
+    const quality=[];const qSeen=new Set();for(const row of ordered)for(const q of row?.qualityDaily||[]){const key=`${safe(q.day)}|${q.qualityType||''}`;if(qSeen.has(key))continue;qSeen.add(key);quality.push(clone(q))}
+    const financeSource=ordered.find(x=>x?.financeData&&Object.keys(x.financeData||{}).length);
+    return{...clone(primary),dbId:primary?.dbId||null,userId:userId||primary?.userId||null,name:canonicalName||primary?.name||'',goalAtt:firstTruthy('goalAtt',0),goalEval:firstTruthy('goalEval',0),financeManualBonus:firstTruthy('financeManualBonus',0),salesCommission:firstTruthy('salesCommission',0),vacation:ordered.some(x=>!!x.vacation),waiveBelowDiscount:ordered.some(x=>!!x.waiveBelowDiscount),excludeFromGroupCount:ordered.some(x=>!!x.excludeFromGroupCount),evaluationExcludedAtt:firstTruthy('evaluationExcludedAtt',0),financeData:financeSource?clone(financeSource.financeData):{},qualityDaily:quality};
   }
 
   function parseServiceCsv(text){
@@ -4453,19 +4511,25 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
 
   function buildMonthFromCsv(rows,id,fileName,previous,squadCode=state.squadCode){
     const selected=rows.filter(r=>r.id===id&&r.group===squadCode);if(!selected.length)throw new Error('Nenhum registro encontrado para o mês selecionado.');
-    const [year,month]=id.split('-').map(Number),byTech=new Map();let latest=1;
-    for(const r of selected){latest=Math.max(latest,r.day);let t=byTech.get(r.name);if(!t){t={name:r.name,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,dailyMap:new Map()};byTech.set(r.name,t)}t.att+=r.att;t.notes5+=r.notes5;t.notes4+=r.notes4;t.notes3+=r.notes3;t.notes2+=r.notes2;t.notes1+=r.notes1;let d=t.dailyMap.get(r.day)||{day:r.day,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:false};d.att+=r.att;d.notes5+=r.notes5;d.notes4+=r.notes4;d.notes3+=r.notes3;d.notes2+=r.notes2;d.notes1+=r.notes1;t.dailyMap.set(r.day,d)}
-    const previousTechs=previous?.technicians||[],prevBy=new Map(previousTechs.map(t=>[nameLinkKey(t.name),t])),daysInMonth=new Date(year,month,0).getDate(),presentKeys=new Set([...byTech.keys()].map(nameLinkKey));
-    const technicians=[...byTech.values()].map(raw=>{const prev=prevBy.get(nameLinkKey(raw.name))||{};const daily=[];for(let d=1;d<=daysInMonth;d++)daily.push(raw.dailyMap.get(d)||{day:d,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:new Date(year,month-1,d).getDay()===0});return{dbId:prev.dbId||null,userId:prev.userId||null,name:raw.name,att:raw.att,notes5:raw.notes5,notes4:raw.notes4,notes3:raw.notes3,notes2:raw.notes2,notes1:raw.notes1,totalEval:0,avg:0,evalPct:0,status:prev.status||'',goalsHit:safe(prev.goalsHit),points:safe(prev.points),rank:prev.rank||null,discount:safe(prev.discount),pointBonus:safe(prev.pointBonus),goalAtt:safe(prev.goalAtt),goalEval:safe(prev.goalEval),financeManualBonus:safe(prev.financeManualBonus),salesCommission:safe(prev.salesCommission),vacation:!!prev.vacation,waiveBelowDiscount:!!prev.waiveBelowDiscount,excludeFromGroupCount:!!prev.excludeFromGroupCount,evaluationExcludedAtt:safe(prev.evaluationExcludedAtt),eligibleAtt:0,financeData:prev.financeData?clone(prev.financeData):{},qualityDaily:prev.qualityDaily?clone(prev.qualityDaily):[],daily}});
+    const [year,month]=id.split('-').map(Number),byTech=new Map(),aliasMap=serviceTechnicianAliases([squadCode])?.[squadCode]||new Map();let latest=1;
+    for(const r of selected){
+      latest=Math.max(latest,r.day);const identity=technicianIdentityKey(r.userId,r.name);let t=byTech.get(identity);if(!t){t={identityKey:identity,userId:r.userId||null,name:r.name,sourceAliases:new Set(),att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,dailyMap:new Map()};byTech.set(identity,t)}
+      if(r.originalName)t.sourceAliases.add(r.originalName);t.sourceAliases.add(r.name);t.att+=r.att;t.notes5+=r.notes5;t.notes4+=r.notes4;t.notes3+=r.notes3;t.notes2+=r.notes2;t.notes1+=r.notes1;let d=t.dailyMap.get(r.day)||{day:r.day,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:false};d.att+=r.att;d.notes5+=r.notes5;d.notes4+=r.notes4;d.notes3+=r.notes3;d.notes2+=r.notes2;d.notes1+=r.notes1;t.dailyMap.set(r.day,d)
+    }
+    const previousTechs=previous?.technicians||[],previousByIdentity=new Map();for(const prev of previousTechs){const identity=existingTechnicianIdentity(prev,squadCode,aliasMap),list=previousByIdentity.get(identity.key)||[];list.push(prev);previousByIdentity.set(identity.key,list)}
+    const daysInMonth=new Date(year,month,0).getDate(),presentKeys=new Set(byTech.keys());
+    const technicians=[...byTech.values()].map(raw=>{
+      const linked=raw.userId?technicianDirectoryByUserId(raw.userId):null,canonical=normalizeName(linked?.techName||raw.name),prevRows=previousByIdentity.get(raw.identityKey)||[],prev=preferredPreviousTechnician(prevRows,canonical,raw.userId),daily=[];for(let d=1;d<=daysInMonth;d++)daily.push(raw.dailyMap.get(d)||{day:d,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:new Date(year,month-1,d).getDay()===0});
+      return{dbId:prev.dbId||null,userId:raw.userId||prev.userId||null,name:canonical,sourceAliases:[...raw.sourceAliases],att:raw.att,notes5:raw.notes5,notes4:raw.notes4,notes3:raw.notes3,notes2:raw.notes2,notes1:raw.notes1,totalEval:0,avg:0,evalPct:0,status:prev.status||'',goalsHit:safe(prev.goalsHit),points:safe(prev.points),rank:prev.rank||null,discount:safe(prev.discount),pointBonus:safe(prev.pointBonus),goalAtt:safe(prev.goalAtt),goalEval:safe(prev.goalEval),financeManualBonus:safe(prev.financeManualBonus),salesCommission:safe(prev.salesCommission),vacation:!!prev.vacation,waiveBelowDiscount:!!prev.waiveBelowDiscount,excludeFromGroupCount:!!prev.excludeFromGroupCount,evaluationExcludedAtt:safe(prev.evaluationExcludedAtt),eligibleAtt:0,financeData:prev.financeData?clone(prev.financeData):{},qualityDaily:prev.qualityDaily?clone(prev.qualityDaily):[],daily};
+    });
 
-    // V2.20.4: a média da competência deve representar todos os técnicos que efetivamente
-    // tiveram produção naquele mês. Se um técnico já estava gravado na competência e deixa
-    // de aparecer em uma extração posterior (ex.: inativação/migração), preservamos o último
-    // consolidado daquele mês em vez de removê-lo. Assim B11/I11/J11/K11 não mudam artificialmente.
-    for(const prev of previousTechs){
-      const key=nameLinkKey(prev.name);if(presentKeys.has(key)||!isOperationalTechnicianRow(prev))continue;
-      const preserved=clone(prev);preserved.daily=(prev.daily||[]).map(d=>({...d}));technicians.push(preserved);
-      latest=Math.max(latest,...(preserved.daily||[]).filter(d=>safe(d.att)>0||safe(d.notes5)>0).map(d=>safe(d.day)),1);
+    // Preserva quem teve produção na competência mas não veio na extração atual. A V2.51.0
+    // preserva por identidade (user_id/alias), e não por texto do nome, evitando manter duas
+    // linhas da mesma pessoa quando o nome do CRM muda.
+    for(const [identityKey,prevRows] of previousByIdentity){
+      if(presentKeys.has(identityKey)||!prevRows.some(isOperationalTechnicianRow))continue;
+      const first=prevRows[0],identity=existingTechnicianIdentity(first,squadCode,aliasMap),linked=identity.userId?technicianDirectoryByUserId(identity.userId):null,canonical=normalizeName(linked?.techName||identity.canonical||first?.name),preserved=preferredPreviousTechnician(prevRows,canonical,identity.userId);
+      preserved.daily=(preserved.daily||[]).map(d=>({...d}));preserved.userId=identity.userId||preserved.userId||null;preserved.name=canonical;technicians.push(preserved);latest=Math.max(latest,...(preserved.daily||[]).filter(d=>safe(d.att)>0||safe(d.notes5)>0).map(d=>safe(d.day)),1);
     }
     technicians.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
     const data={id,month,monthName:MONTHS_PT[month-1],year,sourceFile:fileName,latestDay:latest,importedAt:new Date().toISOString(),teamResult:previous?.teamResult||'',redistributed:safe(previous?.redistributed),settings:previous?.settings?{...previous.settings}:undefined,scoreSettings:previous?.scoreSettings?{...previous.scoreSettings}:{},financeSettings:previous?.financeSettings?clone(previous.financeSettings):clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:previous?.financeMonthData?clone(previous.financeMonthData):{},financeModel:previous?.financeModel||'squad',financeCompare:previous?.financeCompare!==false,financeTechCompare:previous?.financeTechCompare===true,financeIndividualCap:Number.isFinite(Number(previous?.financeIndividualCap))?safe(previous.financeIndividualCap):7000,financeComparison:previous?.financeComparison?clone(previous.financeComparison):{},isClosed:!!previous?.isClosed,closedAt:previous?.closedAt||null,closedBy:previous?.closedBy||null,closedSnapshot:previous?.closedSnapshot?clone(previous.closedSnapshot):{},qualityExternal:previous?.qualityExternal?clone(previous.qualityExternal):[],technicians};recalculateMonth(data);return data;
@@ -4881,27 +4945,46 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   // V2.43: o carregamento monolitico anterior foi removido. Dados detalhados agora entram sob demanda.
   function periodWithinHistory(row,year,month){const key=year*100+month,from=safe(row.valid_from_year)*100+safe(row.valid_from_month),to=row.valid_to_year?safe(row.valid_to_year)*100+safe(row.valid_to_month):999999;return key>=from&&key<=to}
   async function userMapForSquadPeriod(squad,m){
-    const userMap={};
-    if(!state.supabase||!squad?.dbId)return userMap;
-    try{const {data:history,error}=await state.supabase.from('profile_squad_history').select('user_id,technician_name,valid_from_year,valid_from_month,valid_to_year,valid_to_month').eq('squad_id',squad.dbId);if(error)throw error;(history||[]).filter(h=>h.technician_name&&periodWithinHistory(h,m.year,m.month)).forEach(h=>userMap[nameLinkKey(h.technician_name)]=h.user_id)}catch(err){console.warn('Histórico de movimentação indisponível; usando perfil atual.',err)}
-    const {data:profiles,error:pe}=await state.supabase.from('profiles').select('user_id,technician_name,full_name').eq('squad_id',squad.dbId);if(pe)throw pe;(profiles||[]).forEach(p=>{for(const alias of [p.technician_name,p.full_name]){const key=nameLinkKey(alias);if(key&&!userMap[key])userMap[key]=p.user_id}});
-    return userMap;
+    const candidates=new Map(),eligibleUserIds=new Set(),add=(alias,userId)=>{const key=nameLinkKey(alias);if(!key||!userId)return;const ids=candidates.get(key)||new Set();ids.add(String(userId));candidates.set(key,ids);eligibleUserIds.add(userId)};
+    if(!state.supabase||!squad?.dbId)return{};
+    try{
+      const {data:history,error}=await state.supabase.from('profile_squad_history').select('user_id,technician_name,valid_from_year,valid_from_month,valid_to_year,valid_to_month').eq('squad_id',squad.dbId);if(error)throw error;
+      (history||[]).filter(h=>h.technician_name&&periodWithinHistory(h,m.year,m.month)).forEach(h=>add(h.technician_name,h.user_id));
+    }catch(err){console.warn('Histórico de movimentação indisponível; usando perfil atual.',err)}
+    const {data:profiles,error:pe}=await state.supabase.from('profiles').select('user_id,technician_name,full_name').eq('squad_id',squad.dbId);if(pe)throw pe;(profiles||[]).forEach(p=>{eligibleUserIds.add(p.user_id);for(const alias of [p.technician_name,p.full_name])add(alias,p.user_id)});
+    if(eligibleUserIds.size){
+      try{
+        const {data:aliases,error}=await state.supabase.from('technician_aliases').select('user_id,alias_name,alias_key').eq('organization_id',state.user.organizationId).eq('active',true).in('user_id',[...eligibleUserIds]);if(error)throw error;
+        for(const alias of aliases||[])add(alias.alias_name||alias.alias_key,alias.user_id);state.technicianAliasesAvailable=true;
+      }catch(err){state.technicianAliasesAvailable=false;console.warn('Aliases históricos indisponíveis durante a importação. Execute a migração V2.51.0.',err)}
+    }
+    // Um alias só participa da reconciliação automática quando identifica exatamente um usuário.
+    // Se o mesmo texto estiver ligado a duas pessoas, ele permanece sem resolução e a prévia da
+    // importação exige correção manual em vez de correr o risco de misturar históricos.
+    const userMap={};for(const [key,ids] of candidates)if(ids.size===1)userMap[key]=[...ids][0];return userMap;
+  }
+  function existingMonthlyIdentity(row,userMap){const userId=row?.user_id||userMap?.[nameLinkKey(row?.technician_name)]||null;return technicianIdentityKey(userId,row?.technician_name);}
+  function chooseExistingMonthlyPrimary(matches,targetName,userId){
+    const key=nameLinkKey(targetName);return[...(matches||[])].sort((a,b)=>{const score=x=>((userId&&String(x.user_id||'')===String(userId)&&nameLinkKey(x.technician_name)===key)?0:(nameLinkKey(x.technician_name)===key?1:(userId&&String(x.user_id||'')===String(userId)?2:3)));return score(a)-score(b)})[0]||null;
   }
   async function persistImportedMonth(m,squad){
     const payload={squad_id:squad.dbId,year:m.year,month:m.month,source_file:m.sourceFile,latest_day:m.latestDay,team_result:m.teamResult,redistributed:m.redistributed,team_goal_att:m.settings?.teamGoalAtt||autoTeamAttGoal(m),team_goal_eval_pct:m.settings?.teamGoalEvalPct??.343,score_settings:m.scoreSettings||{},finance_settings:financeSettingsForMonth(m),finance_month_data:m.financeMonthData||{},finance_model:financeModelForMonth(m),finance_compare:m.financeCompare!==false,finance_technician_compare:m.financeTechCompare===true,finance_individual_cap:Number.isFinite(Number(m.financeIndividualCap))?safe(m.financeIndividualCap):7000,finance_comparison_snapshot:m.financeComparison||{},imported_by:state.user.userId,imported_at:new Date().toISOString()};
     const {data:monthRow,error}=await state.supabase.from('squad_months').upsert(payload,{onConflict:'squad_id,year,month'}).select('id').single();if(error)throw error;m.dbId=monthRow.id;
     const userMap=await userMapForSquadPeriod(squad,m);
-    const {data:existing,error:ee}=await state.supabase.from('technician_monthly').select('id,technician_name').eq('squad_month_id',monthRow.id);if(ee)throw ee;const keepNames=new Set();
+    const {data:existing,error:ee}=await state.supabase.from('technician_monthly').select('id,user_id,technician_name').eq('squad_month_id',monthRow.id);if(ee)throw ee;const alive=new Map((existing||[]).map(row=>[row.id,row])),keepIds=new Set();let reconciledDuplicates=0;
     for(const t of m.technicians){
-      keepNames.add(nameLinkKey(t.name));
-      const row={squad_month_id:monthRow.id,user_id:userMap[nameLinkKey(t.name)]||null,technician_name:t.name,att:t.att,notes5:t.notes5,notes4:t.notes4,notes3:t.notes3,notes2:t.notes2,notes1:t.notes1,total_eval:t.totalEval,avg_rating:t.avg,eval_pct:t.evalPct,evaluation_excluded_att:normalizedEvaluationExcludedAtt(t),status:t.status,goals_hit:t.goalsHit,points:t.points,rank:t.rank,discount:t.discount,point_bonus:t.pointBonus,goal_att:t.goalAtt,goal_eval:t.goalEval};
-      const {data:tm,error:te}=await state.supabase.from('technician_monthly').upsert(row,{onConflict:'squad_month_id,technician_name'}).select('id').single();if(te)throw te;t.dbId=tm.id;
+      const resolvedUserId=t.userId||userMap[nameLinkKey(t.name)]||null;t.userId=resolvedUserId;
+      const identity=technicianIdentityKey(resolvedUserId,t.name),matches=[...alive.values()].filter(old=>existingMonthlyIdentity(old,userMap)===identity),primary=chooseExistingMonthlyPrimary(matches,t.name,resolvedUserId),duplicates=matches.filter(x=>x.id!==primary?.id);
+      for(const duplicate of duplicates){const {error:de}=await state.supabase.from('technician_monthly').delete().eq('id',duplicate.id);if(de)throw de;alive.delete(duplicate.id);reconciledDuplicates++}
+      const row={squad_month_id:monthRow.id,user_id:resolvedUserId,technician_name:t.name,att:t.att,notes5:t.notes5,notes4:t.notes4,notes3:t.notes3,notes2:t.notes2,notes1:t.notes1,total_eval:t.totalEval,avg_rating:t.avg,eval_pct:t.evalPct,evaluation_excluded_att:normalizedEvaluationExcludedAtt(t),status:t.status,goals_hit:t.goalsHit,points:t.points,rank:t.rank,discount:t.discount,point_bonus:t.pointBonus,goal_att:t.goalAtt,goal_eval:t.goalEval};
+      let tm=null;if(primary){const {data:updated,error:te}=await state.supabase.from('technician_monthly').update(row).eq('id',primary.id).select('id').single();if(te)throw te;tm=updated;alive.set(primary.id,{...primary,...row,id:primary.id})}else{const {data:inserted,error:te}=await state.supabase.from('technician_monthly').insert(row).select('id').single();if(te)throw te;tm=inserted;alive.set(inserted.id,{...row,id:inserted.id})}
+      t.dbId=tm.id;keepIds.add(tm.id);
       const financeRow={technician_month_id:tm.id,manual_bonus:safe(t.financeManualBonus),sales_commission:safe(t.salesCommission),vacation:!!t.vacation,waive_below_discount:!!t.waiveBelowDiscount,exclude_from_group_count:!!t.excludeFromGroupCount,calculated:t.financeData||{},updated_by:state.user.userId,updated_at:new Date().toISOString()};const {error:tfe}=await state.supabase.from('technician_finance_monthly').upsert(financeRow,{onConflict:'technician_month_id'});if(tfe)throw tfe;
       const {error:dd}=await state.supabase.from('daily_metrics').delete().eq('technician_month_id',tm.id);if(dd)throw dd;
       const daily=(t.daily||[]).map(d=>({technician_month_id:tm.id,day:d.day,att:d.att,notes5:d.notes5,notes4:safe(d.notes4),notes3:safe(d.notes3),notes2:safe(d.notes2),notes1:safe(d.notes1),off:!!d.off}));if(daily.length){const {error:de}=await state.supabase.from('daily_metrics').insert(daily);if(de)throw de}
     }
-    for(const old of existing||[]){if(!keepNames.has(nameLinkKey(old.technician_name))){const {error:se}=await state.supabase.from('technician_monthly').delete().eq('id',old.id);if(se)throw se}}
-    invalidateDashboardCaches();
+    for(const old of [...alive.values()]){if(keepIds.has(old.id))continue;const {error:se}=await state.supabase.from('technician_monthly').delete().eq('id',old.id);if(se)throw se;alive.delete(old.id)}
+    invalidateDashboardCaches();return{reconciledDuplicates};
   }
   async function persistThemeToSupabase(codes=appearanceScopeCodes(),theme=state.theme){if(!state.supabase||!codes?.length)return;const normalized=normalizeThemePayload(theme),now=new Date().toISOString(),rows=codes.map(code=>state.squads?.[code]).filter(s=>s?.dbId).map(s=>({squad_id:s.dbId,theme:themePayload(normalized,s.code),updated_by:state.user.userId,updated_at:now}));if(!rows.length)return;const {error}=await state.supabase.from('squad_themes').upsert(rows,{onConflict:'squad_id'});if(error)throw error;codes.forEach(code=>{if(state.squads?.[code])state.squads[code].theme=clone(normalized)});invalidateDashboardCaches({themes:true})}
 

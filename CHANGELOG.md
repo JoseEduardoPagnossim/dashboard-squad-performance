@@ -1,3 +1,17 @@
+## V2.51.0 — Identidade estável de técnicos e aliases do CSV
+
+- Passa a usar `user_id` como identidade principal do técnico durante a importação, evitando tratar mudança de nome no CRM como uma nova pessoa.
+- Adiciona **Nomes anteriores / aliases do CSV** no cadastro do Técnico; ao trocar o nome atual, o valor anterior é preservado antes da atualização do perfil.
+- Cria `technician_aliases` com isolamento por organização e sementes vindas do perfil, histórico de Squad, competências já vinculadas e auditoria.
+- A importação operacional consolida nomes diferentes ligados ao mesmo usuário **antes** dos cálculos do mês e informa os aliases reconhecidos na prévia.
+- Vínculos ambíguos passam a bloquear a importação em vez de realizar associação aproximada entre pessoas.
+- Ao reimportar uma competência já suja, o sistema reconstrói as métricas automáticas a partir do CSV, preserva dados manuais/financeiros e remove linhas mensais duplicadas da mesma identidade.
+- A importação de Produto/Empresa também passa a reconhecer aliases históricos.
+- A migration não soma métricas duplicadas automaticamente; competências já afetadas devem ser reimportadas depois da confirmação dos aliases.
+- Adiciona `MIGRACAO_V2.51.0.sql`; sem necessidade de republicar Edge Functions.
+
+Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
+
 ### V2.50.2 R4 — Fonte organizacional definitiva da Apresentação
 
 - Corrige o caso em que a Apresentação ficava **Online com 0 registros**, mesmo havendo competência e dados importados.
