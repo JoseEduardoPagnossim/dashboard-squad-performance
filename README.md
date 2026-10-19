@@ -1,5 +1,15 @@
 # Soften Performance Hub
 
+## V2.52.2 — Rótulos e exportação dos gráficos dos Squads
+
+- Os gráficos combinados da Visão do Squad agora também podem ser exportados em PNG/SVG ou copiados como imagem.
+- Barras exibem o total de atendimentos junto à base; a linha exibe a taxa de avaliação sobre os pontos.
+- O exportador reforça contraste e contorno dos rótulos para preservar legibilidade em fundo claro, escuro e transparente.
+- A exportação de um card utiliza título e contexto do Squad correspondente, mesmo quando a visão está em Todos os Squads.
+- Sem migration nova.
+
+Detalhes: `docs/ROTULOS_EXPORTACAO_SQUADS_V2.52.2.md`.
+
 ## V2.52.1 — Evolução dos Squads e exportação transparente
 
 - Corrige legendas/eixos invisíveis ao usar PNG/SVG transparente sobre slides claros.

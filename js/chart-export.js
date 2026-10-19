@@ -63,6 +63,7 @@
     const text = transparentLight ? '#111827' : transparentDark ? '#f8fafc' : light ? '#111827' : (palette.text || '#f5f6f8');
     const muted = transparentLight ? '#475569' : transparentDark ? '#cbd5e1' : light ? '#64748b' : (palette.muted || '#9aa3b1');
     const grid = transparentLight ? 'rgba(15,23,42,.16)' : transparentDark ? 'rgba(255,255,255,.16)' : light ? 'rgba(15,23,42,.12)' : 'rgba(255,255,255,.09)';
+    const labelHalo = transparentLight || light ? '#ffffff' : transparentDark ? '#07111f' : (panel !== 'none' ? panel : (palette.bg || '#080b12'));
     const accent = palette.accent || '#f0a33a', success = palette.success || '#36c98f', warn = palette.warn || '#f2c14e', danger = palette.danger || '#f26363';
     const chartX = slide ? 100 : 50, chartY = slide ? 205 : 55, chartW = slide ? 1720 : 1500, chartH = slide ? 640 : 700;
     const title = String(input?.title || 'Gráfico');
@@ -76,7 +77,7 @@
     const legend = buildLegend(input?.legend || [], { x: slide ? 110 : 70, y: slide ? 925 : 815, width: slide ? 1680 : 1460, textColor: text });
     const footer = slide ? `<text x="100" y="1030" fill="${escapeXml(muted)}" font-size="18">${escapeXml(source)}</text>${scaleNote ? `<text x="1820" y="1030" text-anchor="end" fill="${escapeXml(muted)}" font-size="18">${escapeXml(scaleNote)}</text>` : ''}` : '';
     const style = `<style>
-      text{font-family:Inter,Arial,sans-serif}.grid-line{stroke:${grid};stroke-width:1}.axis-label,.axis-label-right,.history-x-label{fill:${muted};font-size:14px}.chart-data-label{font-size:14px;font-weight:750}.chart-data-label.compact{font-size:13px}.chart-series-area{opacity:.8}.chart-point{stroke:${panel === 'none' ? bg : panel};stroke-width:3}.chart-ruler,.chart-hover-zone{opacity:0}.quality-axis-title,.history-axis-title{fill:${muted};font-size:14px}
+      text{font-family:Inter,Arial,sans-serif}.grid-line{stroke:${grid};stroke-width:1}.axis-label,.axis-label-right,.history-x-label{fill:${muted};font-size:14px;font-weight:650}.chart-data-label{font-size:15px;font-weight:850;paint-order:stroke fill;stroke:${labelHalo};stroke-width:4px;stroke-linejoin:round}.chart-data-label.compact{font-size:14px;stroke-width:3.4px}.squad-trend-bar-label{fill:${text}}.squad-trend-pct-label{font-size:15px}.chart-series-area{opacity:.8}.chart-point{stroke:${panel === 'none' ? 'transparent' : panel};stroke-width:3}.chart-ruler,.chart-hover-zone{opacity:0}.quality-axis-title,.history-axis-title{fill:${muted};font-size:14px;font-weight:650}
     </style>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${style}${transparent ? '' : `<rect width="100%" height="100%" rx="${slide ? 0 : 30}" fill="${escapeXml(bg)}"/>`}${slide && panel !== 'none' ? `<rect x="70" y="190" width="1780" height="710" rx="30" fill="${escapeXml(panel)}" stroke="${escapeXml(grid)}"/>` : ''}${header}${chartMarkup}${legend}${footer}</svg>`;
   }

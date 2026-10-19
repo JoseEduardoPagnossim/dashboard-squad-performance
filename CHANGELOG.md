@@ -1,3 +1,15 @@
+## V2.52.2 — Rótulos e exportação dos gráficos dos Squads
+
+- Habilita o botão **Exportar** nos quatro gráficos `Volume × avaliação` da Visão do Squad.
+- Adiciona quantidade de atendimentos na base das barras e percentual de avaliação nos pontos da linha.
+- Mantém todos os rótulos em séries com até 12 pontos e usa densidade intercalada em séries maiores para evitar sobreposição.
+- Exportação passa a respeitar o contexto do Squad do card, mesmo com `Todos os Squads` selecionado.
+- Legendas do mini gráfico passam a ser incorporadas ao pacote de exportação.
+- Reforça contraste dos rótulos na tela e no SVG/PNG, inclusive em fundos transparentes.
+- Sem migration nova.
+
+Detalhes: `docs/ROTULOS_EXPORTACAO_SQUADS_V2.52.2.md`.
+
 ## V2.52.1 — Evolução dos Squads e exportação transparente refinada
 
 - Corrige a exportação com fundo transparente: textos, eixos e legendas passam a usar contraste escuro explícito para slides claros.

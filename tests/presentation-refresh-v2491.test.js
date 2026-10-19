@@ -10,7 +10,7 @@ const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.50.2_R4.sql'), 'utf8');
 const index = readFileSync(join(root, 'index.html'), 'utf8');
 
-test('V2.52.1 R4 apresentação usa contexto organizacional dedicado por período e Squad',()=>{
+test('V2.52.2 R4 apresentação usa contexto organizacional dedicado por período e Squad',()=>{
   assert.match(app,/async function fetchPresentationDailyContextRpc\(/);
   assert.match(app,/get_presentation_daily_context_v2502/);
   assert.match(app,/p_start_date:state\.analysisStartDate\|\|null/);
@@ -54,6 +54,6 @@ test('R4 preserva última visão válida em falha e atualiza cache-bust',()=>{
   assert.match(refresh,/backupMeta=clone\(state\.presentationDataMeta\|\|null\)/);
   assert.match(refresh,/state\.orgTechnicianDailyOverview=backup/);
   assert.match(refresh,/state\.presentationDataMeta=backupMeta/);
-  assert.ok(index.includes('js/presentation.js?v=2.52.1'));
-  assert.ok(index.includes('js/app.js?v=2.52.1'));
+  assert.ok(index.includes('js/presentation.js?v=2.52.2'));
+  assert.ok(index.includes('js/app.js?v=2.52.2'));
 });

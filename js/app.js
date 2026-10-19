@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.52.1';
+  const APP_VERSION = '2.52.2';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -722,24 +722,25 @@
   function syncChartExportControls(){
     $$('.chart').forEach(chart=>{
       if(!chart.querySelector('svg'))return;
-      const shell=chart.closest('.chart-card,.indicator-card,.business-days-chart-card,.quality-wide-card,.fullscreen-chart-modal');if(!shell)return;
-      const head=shell.querySelector('.section-title')||shell.querySelector('.fullscreen-chart-head');if(!head)return;
+      const shell=chart.closest('.chart-card,.indicator-card,.business-days-chart-card,.quality-wide-card,.fullscreen-chart-modal,.squad-card-with-trend');if(!shell)return;
+      const head=shell.querySelector('.section-title')||shell.querySelector('.fullscreen-chart-head')||shell.querySelector('.squad-trend-head');if(!head)return;
       if(!chart.id){chartExportAutoId++;chart.id=`exportChart${chartExportAutoId}`;}
       if(head.querySelector(`[data-chart-export-for="${chart.id}"]`))return;
-      const btn=document.createElement('button');btn.type='button';btn.className='btn secondary compact chart-export-trigger';btn.dataset.chartExportFor=chart.id;btn.innerHTML='⇩ Exportar';btn.setAttribute('aria-label','Exportar gráfico para apresentação');btn.addEventListener('click',()=>openChartExport(chart));head.appendChild(btn);
+      const btn=document.createElement('button');btn.type='button';btn.className='btn secondary compact chart-export-trigger';btn.dataset.chartExportFor=chart.id;btn.innerHTML='⇩ Exportar';btn.setAttribute('aria-label','Exportar gráfico para apresentação');btn.addEventListener('click',event=>{event.stopPropagation();openChartExport(chart)});head.appendChild(btn);
     });
   }
-  function chartExportShell(chart){return chart?.closest('.chart-card,.indicator-card,.business-days-chart-card,.quality-wide-card,.fullscreen-chart-modal')||null}
-  function chartExportTitleFor(chart){const shell=chartExportShell(chart);return shell?.querySelector('.section-title h3,.section-title h2,.fullscreen-chart-head h2')?.textContent?.trim()||'Gráfico do Performance Hub'}
-  function chartExportEyebrowFor(chart){const shell=chartExportShell(chart);return shell?.querySelector('.section-title .eyebrow,.fullscreen-chart-head .eyebrow')?.textContent?.trim()||'PERFORMANCE HUB'}
+  function chartExportShell(chart){return chart?.closest('.chart-card,.indicator-card,.business-days-chart-card,.quality-wide-card,.fullscreen-chart-modal,.squad-card-with-trend')||null}
+  function chartExportTitleFor(chart){if(chart?.dataset?.exportTitle)return chart.dataset.exportTitle;const shell=chartExportShell(chart);return shell?.querySelector('.section-title h3,.section-title h2,.fullscreen-chart-head h2,.squad-card-with-trend h3')?.textContent?.trim()||'Gráfico do Performance Hub'}
+  function chartExportEyebrowFor(chart){if(chart?.dataset?.exportEyebrow)return chart.dataset.exportEyebrow;const shell=chartExportShell(chart);return shell?.querySelector('.section-title .eyebrow,.fullscreen-chart-head .eyebrow')?.textContent?.trim()||'PERFORMANCE HUB'}
   function chartExportContext(){const scope=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;return `${scope} • ${analysisRangeLabel()}`}
+  function chartExportContextFor(chart){return chart?.dataset?.exportContext||chartExportContext()}
   function chartExportLegend(chart){return [...(chart?.querySelectorAll('.chart-legend-inline .chart-legend-item,.chart-legend-inline > span')||[])].map(item=>{const swatch=item.querySelector('.legend-swatch'),computed=swatch?getComputedStyle(swatch):null,color=computed?.backgroundColor||computed?.borderColor||'#9ea4ad';return{label:item.textContent.trim(),color}}).filter(x=>x.label)}
-  function renderChartExportSummary(){if(!chartExportTarget||!$('#chartExportSummary'))return;const layout=$('#chartExportLayout')?.value==='chart'?'Somente gráfico':'16:9 para slide',appearance={current:'Tema atual',light:'Fundo claro',transparent:'Transparente • fundo claro','transparent-dark':'Transparente • fundo escuro'}[$('#chartExportAppearance')?.value]||'Tema atual';$('#chartExportSummary').innerHTML=`<strong>${escapeHtml(chartExportTitleFor(chartExportTarget))}</strong><span>${escapeHtml(chartExportContext())} • ${escapeHtml(layout)} • ${escapeHtml(appearance)}</span>`}
+  function renderChartExportSummary(){if(!chartExportTarget||!$('#chartExportSummary'))return;const layout=$('#chartExportLayout')?.value==='chart'?'Somente gráfico':'16:9 para slide',appearance={current:'Tema atual',light:'Fundo claro',transparent:'Transparente • fundo claro','transparent-dark':'Transparente • fundo escuro'}[$('#chartExportAppearance')?.value]||'Tema atual';$('#chartExportSummary').innerHTML=`<strong>${escapeHtml(chartExportTitleFor(chartExportTarget))}</strong><span>${escapeHtml(chartExportContextFor(chartExportTarget))} • ${escapeHtml(layout)} • ${escapeHtml(appearance)}</span>`}
   function openChartExport(chart){if(!chart?.querySelector('svg'))return toast('Este gráfico ainda não possui conteúdo para exportar.');chartExportTarget=chart;if($('#chartExportAppearance'))$('#chartExportAppearance').value='current';if($('#chartExportLayout'))$('#chartExportLayout').value='slide';renderChartExportSummary();openModal('chartExportModal')}
   function chartExportPayload(){
     const chart=chartExportTarget;if(!chart)return null;const svg=chart.querySelector('svg');if(!svg)return null;const cloneSvg=svg.cloneNode(true);cloneSvg.removeAttribute('style');cloneSvg.removeAttribute('width');cloneSvg.removeAttribute('height');cloneSvg.removeAttribute('x');cloneSvg.removeAttribute('y');cloneSvg.removeAttribute('preserveAspectRatio');cloneSvg.querySelectorAll('.chart-hover-zone,.chart-ruler,.chart-hover-tooltip').forEach(n=>n.remove());
     const palette=themePalette(),appearance=$('#chartExportAppearance')?.value||'current',layout=$('#chartExportLayout')?.value||'slide';
-    return{title:chartExportTitleFor(chart),eyebrow:chartExportEyebrowFor(chart),context:chartExportContext(),source:'Fonte: Soften Performance Hub',scaleNote:chart.dataset.scaleNote||'',legend:chartExportLegend(chart),palette,chartSvgMarkup:cloneSvg.outerHTML,options:{appearance,layout}};
+    return{title:chartExportTitleFor(chart),eyebrow:chartExportEyebrowFor(chart),context:chartExportContextFor(chart),source:'Fonte: Soften Performance Hub',scaleNote:chart.dataset.scaleNote||'',legend:chartExportLegend(chart),palette,chartSvgMarkup:cloneSvg.outerHTML,options:{appearance,layout}};
   }
   function chartExportSvgString(){const payload=chartExportPayload();return payload?buildChartExportSvg(payload):''}
   function downloadChartBlob(blob,fileName){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
@@ -2350,14 +2351,25 @@
     return{granularity:days<=15?'daily':days<=45?'weekly':'monthly',label:days<=15?'Diário':days<=45?'Semanal':'Por competência',buckets};
   }
   function renderSquadPortfolioTrendChart(el,squad,trend,color){
-    if(!el)return;const rows=trend?.buckets||[],has=rows.some(r=>safe(r.att)>0||safe(r.eval)>0);if(!has){el.innerHTML='<div class="squad-trend-empty">Sem evolução disponível.</div>';return;}el.classList.add('interactive-chart','chart-modern','squad-card-trend');
-    const prefs=currentChartPreferences(),visual=chartEngineLineVisual(prefs),evalValues=rows.map(r=>r.evalPct).filter(v=>v!=null),scale=configuredPercentScaleForValues(evalValues,100),w=Math.max(520,rows.length*70),h=Math.max(176,Math.min(230,configuredChartHeight(185))),p={l:42,r:44,t:22,b:38},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,rows.length),barW=Math.min(30,slot*.48),attTop=Math.max(1,...rows.map(r=>safe(r.att)))*1.08,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-((safe(v)-safe(scale.min))/Math.max(1,safe(scale.max)-safe(scale.min)))*plotH;
+    if(!el)return;
+    const rows=trend?.buckets||[],has=rows.some(r=>safe(r.att)>0||safe(r.eval)>0);
+    if(!has){el.innerHTML='<div class="squad-trend-empty">Sem evolução disponível.</div>';return;}
+    el.classList.add('interactive-chart','chart-modern','squad-card-trend');
+    const prefs=currentChartPreferences(),visual=chartEngineLineVisual(prefs),evalValues=rows.map(r=>r.evalPct).filter(v=>v!=null),scale=configuredPercentScaleForValues(evalValues,100),w=Math.max(520,rows.length*70),h=Math.max(186,Math.min(240,configuredChartHeight(195))),p={l:42,r:44,t:30,b:40},plotH=h-p.t-p.b,slot=(w-p.l-p.r)/Math.max(1,rows.length),barW=Math.min(30,slot*.48),attTop=Math.max(1,...rows.map(r=>safe(r.att)))*1.08,base=h-p.b,x=i=>p.l+slot*(i+.5),yAtt=v=>p.t+plotH-(safe(v)/attTop)*plotH,yPct=v=>p.t+plotH-((safe(v)-safe(scale.min))/Math.max(1,safe(scale.max)-safe(scale.min)))*plotH;
     const grid=[0,.5,1].map(f=>{const y=p.t+(1-f)*plotH,pct=safe(scale.min)+(safe(scale.max)-safe(scale.min))*f;return `<line x1="${p.l}" y1="${y}" x2="${w-p.r}" y2="${y}" class="grid-line"/><text x="4" y="${y+4}" class="axis-label squad-trend-axis">${fmtInt(attTop*f)}</text><text x="${w-4}" y="${y+4}" text-anchor="end" class="axis-label squad-trend-axis">${Math.round(pct)}%</text>`}).join('');
-    const bars=rows.map((r,i)=>{const yy=yAtt(r.att);return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="6" fill="${color}" opacity=".62" class="chart-series-shape squad-trend-bar" data-series-index="0"></rect>`}).join('');
-    const pts=rows.map((r,i)=>r.evalPct==null?null:{x:x(i),y:yPct(r.evalPct)}),segments=[];let current=[];pts.forEach(pt=>{if(pt)current.push(pt);else if(current.length){segments.push(current);current=[]}});if(current.length)segments.push(current);const line=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="${Math.max(2.2,visual.lineWidth-.4)}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('')+rows.map((r,i)=>r.evalPct==null?'':`<circle cx="${x(i)}" cy="${yPct(r.evalPct)}" r="${Math.max(2.5,visual.pointRadius-.4)}" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>`).join('');
+    const labelEvery=rows.length<=12?1:2,labelVisible=i=>i%labelEvery===0||i===rows.length-1;
+    const bars=rows.map((r,i)=>{const yy=yAtt(r.att),valueLabel=labelVisible(i)?`<text x="${x(i)}" y="${base-7}" text-anchor="middle" class="chart-data-label compact squad-trend-bar-label" fill="var(--text)">${escapeHtml(fmtInt(r.att))}</text>`:'';return `<rect x="${x(i)-barW/2}" y="${yy}" width="${barW}" height="${Math.max(0,base-yy)}" rx="6" fill="${color}" opacity=".68" class="chart-series-shape squad-trend-bar" data-series-index="0"></rect>${valueLabel}`}).join('');
+    const pts=rows.map((r,i)=>r.evalPct==null?null:{x:x(i),y:yPct(r.evalPct)}),segments=[];let current=[];pts.forEach(pt=>{if(pt)current.push(pt);else if(current.length){segments.push(current);current=[]}});if(current.length)segments.push(current);
+    const linePaths=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="var(--success)" stroke-width="${Math.max(2.2,visual.lineWidth-.4)}" stroke-linecap="round" stroke-linejoin="round" class="chart-series-shape" data-series-index="1"></path>`).join('');
+    const linePoints=rows.map((r,i)=>{if(r.evalPct==null)return'';const cy=yPct(r.evalPct),labelY=Math.max(p.t+12,Math.min(base-18,cy-9)),pctLabel=labelVisible(i)?`<text x="${x(i)}" y="${labelY}" text-anchor="middle" class="chart-data-label compact squad-trend-pct-label" fill="var(--success)">${escapeHtml(safe(r.evalPct).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}))}%</text>`:'';return `<circle cx="${x(i)}" cy="${cy}" r="${Math.max(2.5,visual.pointRadius-.4)}" fill="var(--success)" class="chart-series-shape" data-series-index="1"></circle>${pctLabel}`}).join('');
+    const line=linePaths+linePoints;
     const tickEvery=rows.length>10?2:1,xLabels=rows.map((r,i)=>(i%tickEvery===0||i===rows.length-1)?`<text x="${x(i)}" y="${h-13}" text-anchor="middle" class="axis-label squad-trend-x">${escapeHtml(r.label)}</text>`:'').join(''),zones=rows.map((_,i)=>`<rect x="${p.l+slot*i}" y="${p.t}" width="${slot}" height="${plotH}" class="chart-hover-zone" data-chart-index="${i}"></rect>`).join('');
-    const scaleText=scale.focused?`Escala % ${Math.round(scale.min)}–${Math.round(scale.max)}`:'';el.dataset.scaleNote=scale.focused?`Escala focada: ${Math.round(scale.min)}%–${Math.round(scale.max)}%`:'';
-    el.innerHTML=`<div class="squad-trend-meta"><span><i style="background:${color}"></i>Atendimentos</span><span><i class="line"></i>% avaliação</span>${scaleText?`<small>${escapeHtml(scaleText)}</small>`:''}</div><div class="chart-plot-scroll squad-trend-plot"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${line}${zones}${xLabels}</svg></div>`;
+    const scaleText=scale.focused?`Escala % ${Math.round(scale.min)}–${Math.round(scale.max)}`:'';
+    el.dataset.scaleNote=scale.focused?`Escala focada: ${Math.round(scale.min)}%–${Math.round(scale.max)}%`:'';
+    el.dataset.exportTitle=`Volume × avaliação • ${squad?.name||`Squad ${squad?.code||''}`}`;
+    el.dataset.exportEyebrow='VISÃO DO SQUAD';
+    el.dataset.exportContext=`${analysisRangeLabel()} • ${trend?.label||'Período'}`;
+    el.innerHTML=`<div class="squad-trend-meta chart-legend-inline"><span class="chart-legend-item"><i class="legend-swatch" style="background:${color}"></i>Atendimentos</span><span class="chart-legend-item"><i class="line legend-swatch"></i>% avaliação</span>${scaleText?`<small>${escapeHtml(scaleText)}</small>`:''}</div><div class="chart-plot-scroll squad-trend-plot"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${line}${zones}${xLabels}</svg></div>`;
     bindSharedChartTooltip(el,{labels:rows.map(r=>r.tooltipLabel||r.label),entriesForIndex:i=>[{name:'Atendimentos',value:rows[i]?.att,text:fmtInt(rows[i]?.att),color},{name:'Avaliações',value:rows[i]?.eval,text:fmtInt(rows[i]?.eval),color:'var(--accent2)'},{name:'% Avaliação',value:rows[i]?.evalPct,text:rows[i]?.evalPct==null?'—':`${safe(rows[i].evalPct).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:'var(--success)'}]});
   }
   function renderPortfolioPeriod(){
