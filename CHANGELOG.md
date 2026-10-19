@@ -1,3 +1,18 @@
+## V2.52.1 — Evolução dos Squads e exportação transparente refinada
+
+- Corrige a exportação com fundo transparente: textos, eixos e legendas passam a usar contraste escuro explícito para slides claros.
+- Adiciona a opção **Transparente • fundo escuro**, com textos claros para uso sobre apresentações escuras.
+- Mantém as cores oficiais das séries/Squads em ambas as variantes transparentes.
+- Adiciona aos cards de **Todos os Squads** um gráfico combinado compacto de **Atendimentos × % de avaliação**.
+- A granularidade do mini gráfico adapta-se automaticamente ao período: **diário até 15 dias**, **semanal de 16 a 45 dias** e **por competência acima de 45 dias**.
+- As barras usam a cor oficial configurada do Squad e a linha de avaliação usa a cor semântica de qualidade.
+- A escala percentual do mini gráfico reutiliza o **Foco automático** da V2.52.0 e informa o intervalo quando o eixo estiver focado.
+- Tooltip do card exibe Atendimentos, Avaliações e % de avaliação por recorte.
+- Os valores são derivados da mesma agregação operacional usada pelos KPIs dos cards, sem criar um segundo cálculo de performance.
+- Frontend-only: não exige migration nova nem republicação de Edge Function.
+
+Detalhes: `docs/EVOLUCAO_SQUADS_V2.52.1.md`.
+
 ## V2.52.0 — Indicadores otimizados, escala inteligente e exportação
 
 - Reorganiza a leitura de avaliação em Todos os Squads para evitar três gráficos com a mesma mensagem.

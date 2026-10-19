@@ -21,7 +21,7 @@
   function normalizeExportOptions(options) {
     const raw = options && typeof options === 'object' ? options : {};
     return {
-      appearance: ['current', 'light', 'transparent'].includes(raw.appearance) ? raw.appearance : 'current',
+      appearance: ['current', 'light', 'transparent', 'transparent-dark'].includes(raw.appearance) ? raw.appearance : 'current',
       layout: ['slide', 'chart'].includes(raw.layout) ? raw.layout : 'slide'
     };
   }
@@ -52,13 +52,17 @@
     const width = slide ? 1920 : 1600;
     const height = slide ? 1080 : 900;
     const palette = input?.palette || {};
-    const transparent = options.appearance === 'transparent';
+    const transparentLight = options.appearance === 'transparent';
+    const transparentDark = options.appearance === 'transparent-dark';
+    const transparent = transparentLight || transparentDark;
     const light = options.appearance === 'light';
     const bg = transparent ? 'none' : light ? '#ffffff' : (palette.bg || '#080b12');
     const panel = transparent ? 'none' : light ? '#ffffff' : (palette.panel || '#11161f');
-    const text = light ? '#111827' : (palette.text || '#f5f6f8');
-    const muted = light ? '#64748b' : (palette.muted || '#9aa3b1');
-    const grid = light ? 'rgba(15,23,42,.12)' : 'rgba(255,255,255,.09)';
+    // Export transparente precisa de uma cor de texto explícita, porque o PNG/SVG pode
+    // ser inserido em um slide com fundo diferente do tema atual do dashboard.
+    const text = transparentLight ? '#111827' : transparentDark ? '#f8fafc' : light ? '#111827' : (palette.text || '#f5f6f8');
+    const muted = transparentLight ? '#475569' : transparentDark ? '#cbd5e1' : light ? '#64748b' : (palette.muted || '#9aa3b1');
+    const grid = transparentLight ? 'rgba(15,23,42,.16)' : transparentDark ? 'rgba(255,255,255,.16)' : light ? 'rgba(15,23,42,.12)' : 'rgba(255,255,255,.09)';
     const accent = palette.accent || '#f0a33a', success = palette.success || '#36c98f', warn = palette.warn || '#f2c14e', danger = palette.danger || '#f26363';
     const chartX = slide ? 100 : 50, chartY = slide ? 205 : 55, chartW = slide ? 1720 : 1500, chartH = slide ? 640 : 700;
     const title = String(input?.title || 'Gráfico');

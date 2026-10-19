@@ -1,5 +1,16 @@
 # Soften Performance Hub
 
+## V2.52.1 — Evolução dos Squads e exportação transparente
+
+- Corrige legendas/eixos invisíveis ao usar PNG/SVG transparente sobre slides claros.
+- Adiciona duas variantes transparentes: **fundo claro** (textos escuros) e **fundo escuro** (textos claros).
+- A Visão do Squad em **Todos os Squads** passa a mostrar, dentro de cada card, um mini gráfico combinado de **Atendimentos × % de avaliação**.
+- A granularidade muda automaticamente entre diário, semanal e competência conforme o tamanho do período.
+- O mini gráfico respeita as cores oficiais dos Squads e a escala percentual inteligente.
+- Não requer migration nova.
+
+Detalhes: `docs/EVOLUCAO_SQUADS_V2.52.1.md`.
+
 ## V2.52.0 — Indicadores otimizados e exportação para apresentações
 
 - Reduz os gráficos redundantes de avaliação em **Todos os Squads**: qualidade vira **Nota média por Squad**, cobertura vira **% avaliado x meta**, e a evolução histórica permanece dedicada à tendência mensal.

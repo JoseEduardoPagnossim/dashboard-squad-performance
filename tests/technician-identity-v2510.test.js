@@ -11,8 +11,8 @@ const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 const engine = require(join(root, 'js', 'import-engine.js'));
 const pkg = require(join(root, 'package.json'));
 
-test('V2.52.0 adiciona aliases historicos ao cadastro do tecnico',()=>{
-  assert.equal(pkg.version,'2.52.0');
+test('V2.52.1 adiciona aliases historicos ao cadastro do tecnico',()=>{
+  assert.equal(pkg.version,'2.52.1');
   assert.ok(index.includes('id="editUserAliases"'));
   assert.match(index,/Nomes anteriores \/ aliases do CSV/);
   assert.match(app,/async function persistTechnicianAliasesForUser\(/);

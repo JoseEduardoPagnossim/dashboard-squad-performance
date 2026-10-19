@@ -11,8 +11,8 @@ const pkg = require(join(root, 'package.json'));
 const charts = require(join(root, 'js', 'chart-engine.js'));
 const exporter = require(join(root, 'js', 'chart-export.js'));
 
-test('V2.52.0 otimiza os três papéis dos indicadores de avaliação', () => {
-  assert.equal(pkg.version, '2.52.0');
+test('V2.52.1 otimiza os três papéis dos indicadores de avaliação', () => {
+  assert.equal(pkg.version, '2.52.1');
   assert.match(index, /Nota média das avaliações por Squad/);
   assert.match(index, /% de avaliação dos Squads x meta/);
   assert.match(index, /id="indicatorHistoryEvalTitle">% de avaliação/);
@@ -51,8 +51,8 @@ test('presets simplificam a configuração e preservam ajustes avançados', () =
 });
 
 test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
-  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.52.0');
-  const appIndex = index.indexOf('js/app.js?v=2.52.0');
+  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.52.1');
+  const appIndex = index.indexOf('js/app.js?v=2.52.1');
   assert.ok(chartExportIndex >= 0 && appIndex > chartExportIndex, 'chart-export precisa carregar antes do app');
   const svg = exporter.buildExportSvg({
     title: 'Avaliação por Squad',
@@ -74,6 +74,6 @@ test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
   assert.match(app, /1920,height=layout==='chart'\?900:1080/);
 });
 
-test('V2.52.0 é frontend-only e não cria migration adicional', () => {
-  assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.0.sql')), false);
+test('V2.52.1 é frontend-only e não cria migration adicional', () => {
+  assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.1.sql')), false);
 });
