@@ -5,18 +5,35 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
+  const DEFAULT_SQUAD_COLORS = Object.freeze({
+    A: '#f0a33a',
+    B: '#36c98f',
+    D: '#46a4ff',
+    E: '#d879ff'
+  });
+
+  const VISUAL_PRESETS = Object.freeze({
+    executive: Object.freeze({
+      labelDensity: 'extremes', labelFontSize: 10, axisFontSize: 11, legendFontSize: 10,
+      chartHeight: 340, cardPadding: 22, yScaleMode: 'focus', yMin: 0, yMax: 100,
+      lineWidth: 3, pointRadius: 4
+    }),
+    analytical: Object.freeze({
+      labelDensity: 'all', labelFontSize: 10, axisFontSize: 11, legendFontSize: 10,
+      chartHeight: 370, cardPadding: 22, yScaleMode: 'focus', yMin: 0, yMax: 100,
+      lineWidth: 3, pointRadius: 4
+    }),
+    presentation: Object.freeze({
+      labelDensity: 'extremes', labelFontSize: 12, axisFontSize: 13, legendFontSize: 12,
+      chartHeight: 420, cardPadding: 24, yScaleMode: 'focus', yMin: 0, yMax: 100,
+      lineWidth: 4, pointRadius: 5
+    })
+  });
+
   const DEFAULT_PREFERENCES = Object.freeze({
-    labelDensity: 'all',
-    labelFontSize: 10,
-    axisFontSize: 11,
-    legendFontSize: 10,
-    chartHeight: 340,
-    cardPadding: 22,
-    yScaleMode: 'auto',
-    yMin: 0,
-    yMax: 100,
-    lineWidth: 3,
-    pointRadius: 4
+    visualPreset: 'executive',
+    ...VISUAL_PRESETS.executive,
+    squadColors: DEFAULT_SQUAD_COLORS
   });
 
   const safe = value => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -29,25 +46,45 @@
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
+  const normalizeHexColor = (value, fallback) => /^#[0-9a-f]{6}$/i.test(String(value || '').trim()) ? String(value).trim().toLowerCase() : fallback;
+
+  function normalizeSquadColors(colors) {
+    const raw = colors && typeof colors === 'object' ? colors : {};
+    return Object.fromEntries(Object.entries(DEFAULT_SQUAD_COLORS).map(([code, fallback]) => [code, normalizeHexColor(raw[code], fallback)]));
+  }
+
+  function presetPreferences(name = 'executive', current = {}) {
+    const key = Object.prototype.hasOwnProperty.call(VISUAL_PRESETS, name) ? name : 'executive';
+    return normalizePreferences({ ...current, ...VISUAL_PRESETS[key], visualPreset: key });
+  }
+
   function normalizePreferences(prefs) {
     const raw = prefs && typeof prefs === 'object' ? prefs : {};
-    const labelDensity = ['all', 'alternate', 'every3', 'extremes', 'none'].includes(raw.labelDensity) ? raw.labelDensity : DEFAULT_PREFERENCES.labelDensity;
-    const yScaleMode = raw.yScaleMode === 'manual' ? 'manual' : 'auto';
-    const yMin = clamp(numberOrDefault(raw.yMin, DEFAULT_PREFERENCES.yMin), 0, 99);
-    const requestedYMax = numberOrDefault(raw.yMax, DEFAULT_PREFERENCES.yMax);
+    const validPreset = ['executive', 'analytical', 'presentation', 'custom'].includes(raw.visualPreset);
+    const legacyVisualKeys = ['labelDensity','labelFontSize','axisFontSize','legendFontSize','chartHeight','cardPadding','yScaleMode','yMin','yMax','lineWidth','pointRadius'];
+    const hasLegacyVisualPrefs = legacyVisualKeys.some(key => Object.prototype.hasOwnProperty.call(raw, key));
+    const visualPreset = validPreset ? raw.visualPreset : (hasLegacyVisualPrefs ? 'custom' : DEFAULT_PREFERENCES.visualPreset);
+    const base = visualPreset !== 'custom' && VISUAL_PRESETS[visualPreset] ? VISUAL_PRESETS[visualPreset] : DEFAULT_PREFERENCES;
+    const labelDensity = ['all', 'alternate', 'every3', 'extremes', 'none'].includes(raw.labelDensity) ? raw.labelDensity : base.labelDensity;
+    const requestedScale = raw.yScaleMode === 'auto' ? 'focus' : raw.yScaleMode;
+    const yScaleMode = ['focus', 'full', 'manual'].includes(requestedScale) ? requestedScale : base.yScaleMode;
+    const yMin = clamp(numberOrDefault(raw.yMin, base.yMin), 0, 99);
+    const requestedYMax = numberOrDefault(raw.yMax, base.yMax);
     const yMax = clamp(Math.max(requestedYMax, yMin + 1), 1, 100);
     return {
+      visualPreset,
       labelDensity,
-      labelFontSize: clamp(numberOrDefault(raw.labelFontSize, DEFAULT_PREFERENCES.labelFontSize), 8, 18),
-      axisFontSize: clamp(numberOrDefault(raw.axisFontSize, DEFAULT_PREFERENCES.axisFontSize), 9, 16),
-      legendFontSize: clamp(numberOrDefault(raw.legendFontSize, DEFAULT_PREFERENCES.legendFontSize), 9, 16),
-      chartHeight: clamp(numberOrDefault(raw.chartHeight, DEFAULT_PREFERENCES.chartHeight), 260, 520),
-      cardPadding: clamp(numberOrDefault(raw.cardPadding, DEFAULT_PREFERENCES.cardPadding), 16, 34),
+      labelFontSize: clamp(numberOrDefault(raw.labelFontSize, base.labelFontSize), 8, 18),
+      axisFontSize: clamp(numberOrDefault(raw.axisFontSize, base.axisFontSize), 9, 16),
+      legendFontSize: clamp(numberOrDefault(raw.legendFontSize, base.legendFontSize), 9, 16),
+      chartHeight: clamp(numberOrDefault(raw.chartHeight, base.chartHeight), 260, 520),
+      cardPadding: clamp(numberOrDefault(raw.cardPadding, base.cardPadding), 16, 34),
       yScaleMode,
       yMin,
       yMax,
-      lineWidth: clamp(numberOrDefault(raw.lineWidth, DEFAULT_PREFERENCES.lineWidth), 2, 6),
-      pointRadius: clamp(numberOrDefault(raw.pointRadius, DEFAULT_PREFERENCES.pointRadius), 2, 8)
+      lineWidth: clamp(numberOrDefault(raw.lineWidth, base.lineWidth), 2, 6),
+      pointRadius: clamp(numberOrDefault(raw.pointRadius, base.pointRadius), 2, 8),
+      squadColors: normalizeSquadColors(raw.squadColors || DEFAULT_SQUAD_COLORS)
     };
   }
 
@@ -71,8 +108,34 @@
   function percentScale(rawTop, explicitMax, prefs) {
     const cfg = normalizePreferences(prefs);
     if (cfg.yScaleMode === 'manual') return { min: cfg.yMin, max: Math.max(cfg.yMax, cfg.yMin + 1) };
+    if (cfg.yScaleMode === 'full') return { min: 0, max: Math.max(1, explicitMax != null ? safe(explicitMax) : 100) };
     const autoMax = explicitMax != null ? safe(explicitMax) : Math.max(10, Math.ceil(Math.max(1, safe(rawTop)) / 10) * 10);
     return { min: 0, max: Math.max(1, autoMax) };
+  }
+
+  function percentScaleForValues(values, explicitMax, prefs) {
+    const cfg = normalizePreferences(prefs);
+    if (cfg.yScaleMode === 'manual') return { min: cfg.yMin, max: Math.max(cfg.yMax, cfg.yMin + 1), focused: cfg.yMin > 0 };
+    if (cfg.yScaleMode === 'full') return { min: 0, max: Math.max(1, explicitMax != null ? safe(explicitMax) : 100), focused: false };
+    const nums = (values || []).map(Number).filter(Number.isFinite).map(v => clamp(v, 0, 100));
+    if (!nums.length) return { min: 0, max: Math.max(1, explicitMax != null ? safe(explicitMax) : 100), focused: false };
+    let low = Math.min(...nums), high = Math.max(...nums);
+    const spread = high - low;
+    const padding = Math.max(2.5, spread * .25, spread < 1 ? 5 : 0);
+    let min = Math.max(0, Math.floor((low - padding) / 5) * 5);
+    let max = Math.min(100, Math.ceil((high + padding) / 5) * 5);
+    if (max - min < 15) {
+      const center = (low + high) / 2;
+      min = Math.max(0, Math.floor((center - 7.5) / 5) * 5);
+      max = Math.min(100, Math.ceil((center + 7.5) / 5) * 5);
+    }
+    if (max <= min) max = Math.min(100, min + 10);
+    return { min, max, focused: min > 0 || max < 100 };
+  }
+
+  function squadColor(code, prefs, fallback = '#9ea4ad') {
+    const cfg = normalizePreferences(prefs);
+    return cfg.squadColors?.[String(code || '').toUpperCase()] || fallback;
   }
 
   function lineVisual(prefs, { emphasis = false, dashed = false } = {}) {
@@ -260,11 +323,17 @@
   }
 
   return {
+    DEFAULT_SQUAD_COLORS,
+    VISUAL_PRESETS,
     DEFAULT_PREFERENCES,
     normalizePreferences,
+    normalizeSquadColors,
+    presetPreferences,
     labelVisible,
     configuredHeight,
     percentScale,
+    percentScaleForValues,
+    squadColor,
     lineVisual,
     applyCssVariables,
     nextRenderId,

@@ -14,7 +14,10 @@
   const {sanitizeAuditValue,confirmationMatches,actionCategory,actionLabel}=auditUtils;
   const chartEngine = window.SoftenChartEngine;
   if(!chartEngine) throw new Error('SoftenChartEngine não carregado. Verifique js/chart-engine.js.');
-  const {DEFAULT_PREFERENCES:DEFAULT_CHART_PREFERENCES,normalizePreferences:normalizeChartPreferences,labelVisible:chartEngineLabelVisible,configuredHeight:chartEngineConfiguredHeight,percentScale:chartEnginePercentScale,lineVisual:chartEngineLineVisual,applyCssVariables:applyChartCssVariables,nextRenderId:nextChartRenderId,splitPointSegments:splitChartPointSegments,smoothSvgPath,smoothAreaPath,seriesGradient:svgSeriesGradient,inlineLabel:chartInlineLabel,valueText:chartValueText,dataLabelSvg:chartDataLabelSvg,bindSharedTooltip:bindSharedChartTooltip,bindTooltips:bindChartTooltips}=chartEngine;
+  const {DEFAULT_PREFERENCES:DEFAULT_CHART_PREFERENCES,normalizePreferences:normalizeChartPreferences,presetPreferences:chartPresetPreferences,labelVisible:chartEngineLabelVisible,configuredHeight:chartEngineConfiguredHeight,percentScale:chartEnginePercentScale,percentScaleForValues:chartEnginePercentScaleForValues,squadColor:chartEngineSquadColor,lineVisual:chartEngineLineVisual,applyCssVariables:applyChartCssVariables,nextRenderId:nextChartRenderId,splitPointSegments:splitChartPointSegments,smoothSvgPath,smoothAreaPath,seriesGradient:svgSeriesGradient,inlineLabel:chartInlineLabel,valueText:chartValueText,dataLabelSvg:chartDataLabelSvg,bindSharedTooltip:bindSharedChartTooltip,bindTooltips:bindChartTooltips}=chartEngine;
+  const chartExport = window.SoftenChartExport;
+  if(!chartExport) throw new Error('SoftenChartExport não carregado. Verifique js/chart-export.js.');
+  const {buildExportSvg:buildChartExportSvg,fileSafeName:chartExportFileSafeName}=chartExport;
   const importEngine = window.SoftenImportEngine;
   if(!importEngine) throw new Error('SoftenImportEngine não carregado. Verifique js/import-engine.js.');
   const {checksumText:importChecksum,summarizeService:summarizeServiceImport,summarizeQuality:summarizeQualityImport,validatePreview:validateImportPreview,historySummary:normalizeImportHistory,canRollback:canRollbackImport}=importEngine;
@@ -53,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.51.0';
+  const APP_VERSION = '2.52.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -631,7 +634,9 @@
   function applySystemFont(value){const key=normalizeSystemFont(value);document.documentElement.style.setProperty('--app-font-family',systemFontStack(key));document.documentElement.dataset.systemFont=key;const preview=$('#systemFontPreview');if(preview)preview.style.fontFamily=systemFontStack(key);return key}
   function syncSystemFontControl(){const key=normalizeSystemFont(state.theme?.fontFamily);if($('#systemFontSelect'))$('#systemFontSelect').value=key;applySystemFont(key)}
 
-  function currentChartPreferences(){return normalizeChartPreferences(state.theme?.chartPreferences||state.chartPreferences||DEFAULT_CHART_PREFERENCES)}
+  function currentChartPreferences(){return normalizeChartPreferences(state.chartPreferences||state.theme?.chartPreferences||DEFAULT_CHART_PREFERENCES)}
+  function chartSquadColor(code,fallbackIndex=0){return chartEngineSquadColor(code,currentChartPreferences(),HISTORY_COLORS[fallbackIndex%HISTORY_COLORS.length])}
+  function chartSquadColors(){return clone(currentChartPreferences().squadColors||{})}
   function applyChartPreferences(prefs){
     const cfg=applyChartCssVariables(document.documentElement.style,prefs);
     state.chartPreferences=cfg;
@@ -649,9 +654,11 @@
     if($('#chartScaleMode'))$('#chartScaleMode').value=cfg.yScaleMode;
     if($('#chartScaleMinInput'))$('#chartScaleMinInput').value=cfg.yMin;
     if($('#chartScaleMaxInput'))$('#chartScaleMaxInput').value=cfg.yMax;
-    if($('#chartLabelDensity'))$('#chartLabelDensity').value=cfg.labelDensity;
+    if($('#chartLabelDensity'))$('#chartLabelDensity').value=['extremes','all','none'].includes(cfg.labelDensity)?cfg.labelDensity:'extremes';
     if($('#chartLineWidthInput'))$('#chartLineWidthInput').value=cfg.lineWidth;
     if($('#chartPointRadiusInput'))$('#chartPointRadiusInput').value=cfg.pointRadius;
+    ['A','B','D','E'].forEach(code=>{const input=$(`#chartSquadColor${code}`),label=$(`#chartSquadColor${code}Text`),value=cfg.squadColors?.[code]||chartSquadColor(code);if(input)input.value=value;if(label)label.textContent=String(value).toUpperCase();});
+    $$('[data-chart-preset]').forEach(btn=>{const active=btn.dataset.chartPreset===cfg.visualPreset;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',active?'true':'false')});
     if($('#chartLabelFontValue'))$('#chartLabelFontValue').textContent=`${cfg.labelFontSize} px`;
     if($('#chartAxisFontValue'))$('#chartAxisFontValue').textContent=`${cfg.axisFontSize} px`;
     if($('#chartLegendFontValue'))$('#chartLegendFontValue').textContent=`${cfg.legendFontSize} px`;
@@ -663,7 +670,15 @@
     if($('#chartScaleMaxInput'))$('#chartScaleMaxInput').disabled=cfg.yScaleMode!=='manual';
   }
   function collectChartPreferencesFromUi(){
-    return normalizeChartPreferences({labelDensity:$('#chartLabelDensity')?.value,labelFontSize:$('#chartLabelFontInput')?.value,axisFontSize:$('#chartAxisFontInput')?.value,legendFontSize:$('#chartLegendFontInput')?.value,chartHeight:$('#chartHeightInput')?.value,cardPadding:$('#chartCardPaddingInput')?.value,yScaleMode:$('#chartScaleMode')?.value,yMin:$('#chartScaleMinInput')?.value,yMax:$('#chartScaleMaxInput')?.value,lineWidth:$('#chartLineWidthInput')?.value,pointRadius:$('#chartPointRadiusInput')?.value});
+    const current=currentChartPreferences(),active=$('[data-chart-preset].active')?.dataset.chartPreset||current.visualPreset||'custom',squadColors={};
+    ['A','B','D','E'].forEach(code=>squadColors[code]=$(`#chartSquadColor${code}`)?.value||current.squadColors?.[code]);
+    return normalizeChartPreferences({visualPreset:active,labelDensity:$('#chartLabelDensity')?.value,labelFontSize:$('#chartLabelFontInput')?.value,axisFontSize:$('#chartAxisFontInput')?.value,legendFontSize:$('#chartLegendFontInput')?.value,chartHeight:$('#chartHeightInput')?.value,cardPadding:$('#chartCardPaddingInput')?.value,yScaleMode:$('#chartScaleMode')?.value,yMin:$('#chartScaleMinInput')?.value,yMax:$('#chartScaleMaxInput')?.value,lineWidth:$('#chartLineWidthInput')?.value,pointRadius:$('#chartPointRadiusInput')?.value,squadColors});
+  }
+  function applyChartPresetFromUi(name){
+    if(!canEditAppearance())return;
+    const current=collectChartPreferencesFromUi(),cfg=chartPresetPreferences(name,{...current,squadColors:current.squadColors});
+    applyChartPreferences(cfg);syncChartPreferencePreview();render();
+    if($('#chartPrefsStatus'))$('#chartPrefsStatus').textContent=`Perfil ${name==='presentation'?'Apresentação':name==='analytical'?'Analítico':'Executivo'} aplicado em pré-visualização. Clique em salvar para persistir.`;
   }
   function appearanceScopeCodes(){
     if(state.appearanceScope==='all'&&isSuperAdmin())return Object.keys(state.squads||{}).filter(code=>code!=='all');
@@ -671,6 +686,10 @@
   }
   function canEditAppearance(){return isAdmin()&&hasPermission('appearance.manage')&&appearanceScopeCodes().length>0}
   function appearanceScopeLabel(){const codes=appearanceScopeCodes();return state.appearanceScope==='all'&&isSuperAdmin()?`todos os Squads (${codes.join(', ')})`:(codes[0]?`Squad ${codes[0]}`:'nenhum Squad')}
+  function markChartPresetCustom(){
+    const cfg=normalizeChartPreferences({...currentChartPreferences(),visualPreset:'custom'});applyChartPreferences(cfg);
+    $$('[data-chart-preset]').forEach(btn=>{btn.classList.remove('active');btn.setAttribute('aria-pressed','false')});
+  }
   function previewChartPreferences(){
     if(!canEditAppearance())return;
     const cfg=collectChartPreferencesFromUi(),fontKey=normalizeSystemFont($('#systemFontSelect')?.value||state.theme?.fontFamily);
@@ -696,6 +715,47 @@
   function chartLabelVisible(index,total){return chartEngineLabelVisible(index,total,currentChartPreferences())}
   function configuredChartHeight(baseHeight=340){return chartEngineConfiguredHeight(baseHeight,currentChartPreferences())}
   function configuredPercentScale(rawTop,explicitMax=null){return chartEnginePercentScale(rawTop,explicitMax,currentChartPreferences())}
+  function configuredPercentScaleForValues(values,explicitMax=null){return chartEnginePercentScaleForValues(values,explicitMax,currentChartPreferences())}
+
+  let chartExportTarget=null,chartExportSyncTimer=null,chartExportAutoId=0;
+  function scheduleChartExportControls(){clearTimeout(chartExportSyncTimer);chartExportSyncTimer=setTimeout(syncChartExportControls,0)}
+  function syncChartExportControls(){
+    $$('.chart').forEach(chart=>{
+      if(!chart.querySelector('svg'))return;
+      const shell=chart.closest('.chart-card,.indicator-card,.business-days-chart-card,.quality-wide-card,.fullscreen-chart-modal');if(!shell)return;
+      const head=shell.querySelector('.section-title')||shell.querySelector('.fullscreen-chart-head');if(!head)return;
+      if(!chart.id){chartExportAutoId++;chart.id=`exportChart${chartExportAutoId}`;}
+      if(head.querySelector(`[data-chart-export-for="${chart.id}"]`))return;
+      const btn=document.createElement('button');btn.type='button';btn.className='btn secondary compact chart-export-trigger';btn.dataset.chartExportFor=chart.id;btn.innerHTML='⇩ Exportar';btn.setAttribute('aria-label','Exportar gráfico para apresentação');btn.addEventListener('click',()=>openChartExport(chart));head.appendChild(btn);
+    });
+  }
+  function chartExportShell(chart){return chart?.closest('.chart-card,.indicator-card,.business-days-chart-card,.quality-wide-card,.fullscreen-chart-modal')||null}
+  function chartExportTitleFor(chart){const shell=chartExportShell(chart);return shell?.querySelector('.section-title h3,.section-title h2,.fullscreen-chart-head h2')?.textContent?.trim()||'Gráfico do Performance Hub'}
+  function chartExportEyebrowFor(chart){const shell=chartExportShell(chart);return shell?.querySelector('.section-title .eyebrow,.fullscreen-chart-head .eyebrow')?.textContent?.trim()||'PERFORMANCE HUB'}
+  function chartExportContext(){const scope=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`;return `${scope} • ${analysisRangeLabel()}`}
+  function chartExportLegend(chart){return [...(chart?.querySelectorAll('.chart-legend-inline .chart-legend-item,.chart-legend-inline > span')||[])].map(item=>{const swatch=item.querySelector('.legend-swatch'),computed=swatch?getComputedStyle(swatch):null,color=computed?.backgroundColor||computed?.borderColor||'#9ea4ad';return{label:item.textContent.trim(),color}}).filter(x=>x.label)}
+  function renderChartExportSummary(){if(!chartExportTarget||!$('#chartExportSummary'))return;const layout=$('#chartExportLayout')?.value==='chart'?'Somente gráfico':'16:9 para slide',appearance={current:'Tema atual',light:'Fundo claro',transparent:'Transparente'}[$('#chartExportAppearance')?.value]||'Tema atual';$('#chartExportSummary').innerHTML=`<strong>${escapeHtml(chartExportTitleFor(chartExportTarget))}</strong><span>${escapeHtml(chartExportContext())} • ${escapeHtml(layout)} • ${escapeHtml(appearance)}</span>`}
+  function openChartExport(chart){if(!chart?.querySelector('svg'))return toast('Este gráfico ainda não possui conteúdo para exportar.');chartExportTarget=chart;if($('#chartExportAppearance'))$('#chartExportAppearance').value='current';if($('#chartExportLayout'))$('#chartExportLayout').value='slide';renderChartExportSummary();openModal('chartExportModal')}
+  function chartExportPayload(){
+    const chart=chartExportTarget;if(!chart)return null;const svg=chart.querySelector('svg');if(!svg)return null;const cloneSvg=svg.cloneNode(true);cloneSvg.removeAttribute('style');cloneSvg.removeAttribute('width');cloneSvg.removeAttribute('height');cloneSvg.removeAttribute('x');cloneSvg.removeAttribute('y');cloneSvg.removeAttribute('preserveAspectRatio');cloneSvg.querySelectorAll('.chart-hover-zone,.chart-ruler,.chart-hover-tooltip').forEach(n=>n.remove());
+    const palette=themePalette(),appearance=$('#chartExportAppearance')?.value||'current',layout=$('#chartExportLayout')?.value||'slide';
+    return{title:chartExportTitleFor(chart),eyebrow:chartExportEyebrowFor(chart),context:chartExportContext(),source:'Fonte: Soften Performance Hub',scaleNote:chart.dataset.scaleNote||'',legend:chartExportLegend(chart),palette,chartSvgMarkup:cloneSvg.outerHTML,options:{appearance,layout}};
+  }
+  function chartExportSvgString(){const payload=chartExportPayload();return payload?buildChartExportSvg(payload):''}
+  function downloadChartBlob(blob,fileName){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
+  async function chartSvgToPngBlob(svgText,layout='slide'){
+    const width=layout==='chart'?1600:1920,height=layout==='chart'?900:1080,blob=new Blob([svgText],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+    try{return await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{try{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,width,height);canvas.toBlob(result=>result?resolve(result):reject(new Error('Não foi possível gerar o PNG.')),'image/png',1);}catch(err){reject(err)}};img.onerror=()=>reject(new Error('Não foi possível renderizar o gráfico para PNG.'));img.src=url;});}finally{setTimeout(()=>URL.revokeObjectURL(url),0)}
+  }
+  async function exportActiveChart(kind){
+    const payload=chartExportPayload();if(!payload)return toast('Selecione um gráfico válido.');const svgText=buildChartExportSvg(payload),base=chartExportFileSafeName(payload.title),layout=payload.options.layout;
+    try{
+      if(kind==='svg'){downloadChartBlob(new Blob([svgText],{type:'image/svg+xml;charset=utf-8'}),`${base}.svg`);toast('SVG exportado com qualidade vetorial.');return;}
+      const png=await chartSvgToPngBlob(svgText,layout);
+      if(kind==='copy'){if(!navigator.clipboard?.write||typeof ClipboardItem==='undefined')throw new Error('Seu navegador não permite copiar imagens diretamente. Use Baixar PNG.');await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);toast('Imagem copiada. Cole diretamente na apresentação.');return;}
+      downloadChartBlob(png,`${base}.png`);toast(layout==='slide'?'PNG 16:9 exportado em 1920×1080.':'PNG do gráfico exportado.');
+    }catch(err){console.error(err);toast(err.message||'Não foi possível exportar o gráfico.');}
+  }
 
 
   function loadDemoSquads(){
@@ -1053,8 +1113,14 @@
     if($('#feedbackFinalizeBtn'))$('#feedbackFinalizeBtn').addEventListener('click',()=>saveFeedbackEditor('finalized'));
     if($('#saveChartPrefsBtn'))$('#saveChartPrefsBtn').addEventListener('click',saveChartPreferences);
     if($('#resetChartPrefsBtn'))$('#resetChartPrefsBtn').addEventListener('click',resetChartPreferences);
+    $$('[data-chart-preset]').forEach(btn=>btn.addEventListener('click',()=>applyChartPresetFromUi(btn.dataset.chartPreset)));
     if($('#appearanceScopeSelect'))$('#appearanceScopeSelect').addEventListener('change',e=>{state.appearanceScope=e.target.value==='all'&&isSuperAdmin()?'all':'squad';renderAdmin();});
-    ['#systemFontSelect','#chartLabelDensity','#chartScaleMode','#chartScaleMinInput','#chartScaleMaxInput','#chartLabelFontInput','#chartAxisFontInput','#chartLegendFontInput','#chartHeightInput','#chartCardPaddingInput','#chartLineWidthInput','#chartPointRadiusInput'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',previewChartPreferences)});
+    ['#systemFontSelect','#chartLabelDensity','#chartScaleMode','#chartScaleMinInput','#chartScaleMaxInput','#chartLabelFontInput','#chartAxisFontInput','#chartLegendFontInput','#chartHeightInput','#chartCardPaddingInput','#chartLineWidthInput','#chartPointRadiusInput'].forEach(sel=>{if($(sel))$(sel).addEventListener('input',()=>{markChartPresetCustom();previewChartPreferences();})});
+    ['A','B','D','E'].forEach(code=>{const input=$(`#chartSquadColor${code}`);if(input)input.addEventListener('input',()=>{const label=$(`#chartSquadColor${code}Text`);if(label)label.textContent=String(input.value).toUpperCase();previewChartPreferences();});});
+    if($('#chartExportPngBtn'))$('#chartExportPngBtn').addEventListener('click',()=>exportActiveChart('png'));
+    if($('#chartExportSvgBtn'))$('#chartExportSvgBtn').addEventListener('click',()=>exportActiveChart('svg'));
+    if($('#chartExportCopyBtn'))$('#chartExportCopyBtn').addEventListener('click',()=>exportActiveChart('copy'));
+    ['#chartExportAppearance','#chartExportLayout'].forEach(sel=>{if($(sel))$(sel).addEventListener('change',renderChartExportSummary)});
     let allTechResizeTimer=null;window.addEventListener('resize',()=>{const monthlyOpen=$('#allTechniciansModal')?.classList.contains('open'),dailyOpen=$('#dailyTechniciansModal')?.classList.contains('open');if(!monthlyOpen&&!dailyOpen)return;clearTimeout(allTechResizeTimer);allTechResizeTimer=setTimeout(()=>{if(monthlyOpen)renderAllTechniciansFullscreenChart(state.allTechniciansRangeIds);if(dailyOpen)renderDailyTechniciansFullscreenChart();},120);});
   }
 
@@ -1569,6 +1635,7 @@
     if(!t||!squad||!start||!end)return{att:0,notes5:0,evalPct:0};let att=0,notes5=0,evalWeighted=0,evalWeight=0;for(const id of monthIdsForRange(start,end)){const m=squad.months?.[id];if(!m)continue;const mt=(m.technicians||[]).find(x=>samePersonName(x.name,t.name));if(!mt)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=start>monthStart?start:monthStart,to=end<monthEnd?end:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;const totalDays=Math.max(1,businessDaysMonFri(m.year,m.month));att+=safe(mt.goalAtt)*(days/totalDays);notes5+=safe(mt.goalEval)*(days/totalDays);if(days>0){evalWeighted+=safe(teamSettings(m).teamGoalEvalPct)*days;evalWeight+=days;}}return{att,notes5,evalPct:evalWeight?evalWeighted/evalWeight:0};
   }
   function periodTeamGoal(squad){let total=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;total+=safe(teamSettings(m).teamGoalAtt)*(days/Math.max(1,businessDaysMonFri(m.year,m.month)));}return total;}
+  function periodTeamEvalGoal(squad){let weighted=0,weight=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;if(days){weighted+=safe(teamSettings(m).teamGoalEvalPct)*days;weight+=days;}}return weight?weighted/weight:.343;}
 
   async function selectSquad(code,{history='replace'}={}){
     if(!isSuperAdmin())return; state.squadCode=code;
@@ -1682,7 +1749,7 @@
   }
 
   function render(){
-    applyPermissions();
+    applyPermissions();scheduleChartExportControls();
     if(state.currentView==='home'){renderHome();return;}
     if(state.currentView==='alerts'){renderAlertCenter();return;}
     if(state.currentView==='feedbacks'){renderFeedbacks();return;}
@@ -2347,15 +2414,15 @@ function renderIndicators(){
   renderIndicatorSafely('consolidado por Squad',()=>renderIndicatorSquadOverview(rangeIds),['indicatorSquadAttendanceChart','indicatorSquadEvaluationChart']);renderIndicatorSafely('ritmo diário do setor',()=>renderIndicatorOrgDailyComparison(rangeIds),['indicatorOrgDailyChart']);
   if(!rangeIds.length){renderPredictiveManagement([]);['indicatorStatusChart','indicatorMonthlyChart','indicatorWeeklyChart','indicatorHistoryAttChart','indicatorHistoryDailyAvgChart','indicatorHistoryEvalChart'].forEach(id=>{if($('#'+id))$('#'+id).innerHTML='<div class="chart-empty">Não há dados no período selecionado.</div>';});if($('#indicatorInsights'))$('#indicatorInsights').innerHTML='<div class="insight-item"><strong>Sem dados</strong><small>Escolha um período com dados importados.</small></div>';return;}
   renderIndicatorSafely('gestão preditiva',()=>renderPredictiveManagement(squads),['predictiveKpis','predictiveAlerts','predictiveSquadRows','predictiveRiskRows']);
-  const palette=['var(--accent)','var(--success)','#78b7ff','#ef5a29','#b18cff'],statusItems=[];let totalAtt=0,totalNotes5=0,totalEval=0,totalWorkedDays=0,totalPoints=0,totalTechRecords=0,totalAbove=0,totalBelow=0,squadMonthHits=0,squadMonthTotal=0;const distinctTechs=new Set(),techTotals=new Map();
+  const statusItems=[];let totalAtt=0,totalNotes5=0,totalEval=0,totalWorkedDays=0,totalPoints=0,totalTechRecords=0,totalAbove=0,totalBelow=0,squadMonthHits=0,squadMonthTotal=0;const distinctTechs=new Set(),techTotals=new Map();
   const dailySeries=[];
   squads.forEach((squad,sIndex)=>{const periodRows=periodTechniciansForSquad(squad);const totals=deriveTotals(periodRows);totalAtt+=totals.att;totalEval+=totals.eval;totalNotes5+=periodRows.reduce((sum,t)=>sum+safe(t.notes5),0);totalPoints+=periodRows.reduce((sum,t)=>sum+safe(t.periodPoints),0);totalTechRecords+=periodRows.length;const above=periodRows.filter(t=>String(t.periodStatus||t.status||'').toUpperCase()==='ACIMA').length,below=periodRows.filter(t=>String(t.periodStatus||t.status||'').toUpperCase()==='ABAIXO').length,teamStatus=teamStatusFromTechnicianStatuses(periodRows,{period:true});totalAbove+=above;totalBelow+=below;periodRows.forEach(t=>{distinctTechs.add(`${squad.code}|${nameLinkKey(t.name)}`);const key=`${squad.code}|${nameLinkKey(t.name)}`,prev=techTotals.get(key)||{name:t.name,squad:squad.code,points:0,months:1,evalPct:0};prev.points=safe(t.periodPoints);prev.evalPct=safe(t.evalPct);techTotals.set(key,prev);totalWorkedDays+=(t.daily||[]).filter(d=>isBusinessDateIso(d.date)).length;});if(teamStatus.count){squadMonthTotal++;if(teamStatus.status==='ACIMA')squadMonthHits++;}
-    const byDate=new Map();periodRows.forEach(t=>(t.daily||[]).forEach(d=>{const b=byDate.get(d.date)||{att:0,eval:0};b.att+=safe(d.att);b.eval+=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1);byDate.set(d.date,b)}));const labels=analysisDateLabels();dailySeries.push({squad:squad.code,color:palette[sIndex%palette.length],evalValues:labels.map(x=>{const b=byDate.get(x.date);return b&&b.att?(b.eval/b.att)*100:null;})});
+    const byDate=new Map();periodRows.forEach(t=>(t.daily||[]).forEach(d=>{const b=byDate.get(d.date)||{att:0,eval:0};b.att+=safe(d.att);b.eval+=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1);byDate.set(d.date,b)}));const labels=analysisDateLabels();dailySeries.push({squad:squad.code,color:chartSquadColor(squad.code,sIndex),evalValues:labels.map(x=>{const b=byDate.get(x.date);return b&&b.att?(b.eval/b.att)*100:null;})});
   });
   rangeIds.forEach(id=>{let above=0,below=0;squads.forEach(s=>{const m=s.months?.[id];if(!m)return;(m.technicians||[]).forEach(t=>{if(String(t.status).toUpperCase()==='ACIMA')above++;else if(String(t.status).toUpperCase()==='ABAIXO')below++;});});statusItems.push({label:monthLabelFromId(id),above,below});});
   const totalHours=totalWorkedDays*8,totalMinutes=totalHours*60,attPerHour=totalHours?totalAtt/totalHours:0,attPerMinute=totalMinutes?totalAtt/totalMinutes:0,aboveRatio=(totalAbove+totalBelow)?totalAbove/(totalAbove+totalBelow):0,excellence=totalAtt?totalNotes5/totalAtt:0,avgPointsPerTech=totalTechRecords?totalPoints/totalTechRecords:0;$('#indicatorAttPerHour').textContent=fmtNum(attPerHour);$('#indicatorAttPerMinute').textContent=`${fmtNum(attPerMinute)} por minuto`;$('#indicatorWorkedHours').textContent=`${fmtInt(totalHours)} horas consideradas entre ${analysisRangeLabel()}`;$('#indicatorAboveRatio').textContent=fmtPct(aboveRatio);$('#indicatorAboveCount').textContent=`${fmtInt(totalAbove)} acima • ${fmtInt(totalBelow)} abaixo`;$('#indicatorTechVolume').textContent=`${fmtInt(totalTechRecords)} técnicos com produção no período`;const periodAbove=squadMonthHits,periodBelow=Math.max(0,squadMonthTotal-squadMonthHits),periodStatus=periodAbove>periodBelow?'ACIMA':periodBelow>periodAbove?'ABAIXO':'EMPATE';$('#indicatorPeriodStatus').textContent=periodStatus;$('#indicatorPeriodStatus').className=periodStatus==='ACIMA'?'period-status-above':periodStatus==='ABAIXO'?'period-status-below':'period-status-tie';$('#indicatorPeriodStatusDetail').textContent=`${fmtInt(periodAbove)} equipes acima • ${fmtInt(periodBelow)} abaixo`;$('#indicatorPeriodStatusSupport').textContent=`Status das equipes calculado pela proporção de técnicos ACIMA (2 de 4 critérios), sem usar pontuação média.`;$('#indicatorExcellence').textContent=fmtPct(excellence);$('#indicatorAvgPoints').textContent=`${fmtNum(avgPointsPerTech)} pts simulados médios no período`;$('#indicatorExcellenceSupport').textContent=`${fmtInt(distinctTechs.size)} técnicos únicos no período`;
   renderIndicatorSafely('status oficial por competência',()=>renderTechnicianStatusMatrix($('#indicatorStatusChart'),squads,rangeIds),['indicatorStatusChart']);
-  const competencyEvalLabels=rangeIds.map(shortHistoryMonth),competencyEvalSeries=squads.map((squad,sIndex)=>({name:`Squad ${squad.code}`,color:palette[sIndex%palette.length],values:rangeIds.map(id=>{const rows=squad.months?.[id]?.technicians||[];const totals=deriveTotals(rows);return totals.att?totals.evalPct*100:null;})}));renderIndicatorSafely('% de avaliação por grupo',()=>{renderIndicatorLineChart($('#indicatorMonthlyChart'),competencyEvalLabels,competencyEvalSeries,{maxValue:100,percent:true,height:340,fitWidth:true});$('#indicatorMonthlyLegend').textContent=rangeIds.length===1?'Taxa de avaliação da competência selecionada por Squad.':`Comparativo por competência entre ${monthLabelFromId(rangeIds[0])} e ${monthLabelFromId(rangeIds[rangeIds.length-1])}.`;},['indicatorMonthlyChart']);
+  renderIndicatorSafely('% de avaliação dos Squads x meta',()=>{renderSquadCoverageBarChart($('#indicatorMonthlyChart'),squads);$('#indicatorMonthlyLegend').textContent=`${analysisRangeLabel()} • barras partem de 0% e comparam cada Squad à sua meta do período.`;},['indicatorMonthlyChart']);
   const weekly=weeklyBucketsForAnalysis(squads);renderIndicatorSafely('avaliação semanal por grupo',()=>{renderIndicatorLineChart($('#indicatorWeeklyChart'),weekly.labels,weekly.series,{maxValue:100,percent:true});$('#indicatorWeeklyNote').textContent=`Semanas construídas entre ${analysisRangeLabel()} • avaliações totais ÷ atendimentos.`;},['indicatorWeeklyChart']);
   const techList=[...techTotals.values()],bestTech=techList.sort((a,b)=>safe(b.points)-safe(a.points))[0];let bestSquad={code:'—',score:-1};squads.forEach(s=>{const rows=periodTechniciansForSquad(s),tot=deriveTotals(rows);if(tot.evalPct>bestSquad.score)bestSquad={code:s.code,score:tot.evalPct};});const strongestMonth=[...statusItems].sort((a,b)=>(b.above-b.below)-(a.above-a.below))[0],weakestMonth=[...statusItems].sort((a,b)=>(a.above-a.below)-(b.above-b.below))[0];$('#indicatorInsights').innerHTML=`<div class="insight-item"><strong>Squad destaque</strong><small>${bestSquad.code==='—'?'Sem base suficiente.':`Squad ${bestSquad.code} lidera em % de avaliação com ${fmtPct(bestSquad.score)} no período.`}</small></div><div class="insight-item"><strong>Técnico destaque do período</strong><small>${bestTech?`${escapeHtml(titleWords(bestTech.name))} • Squad ${escapeHtml(bestTech.squad)} • ${fmtNum(bestTech.points)} pts simulados.`:'Sem dados suficientes.'}</small></div><div class="insight-item"><strong>Status mensal oficial</strong><small>${strongestMonth?`${escapeHtml(strongestMonth.label)} teve o melhor saldo entre ACIMA e ABAIXO dentre as competências tocadas pelo filtro.`:'Sem dados suficientes.'}</small></div><div class="insight-item"><strong>Ponto de atenção</strong><small>${weakestMonth?`${escapeHtml(weakestMonth.label)} teve o menor saldo mensal oficial dentro do período.`:'Sem dados suficientes.'}</small></div>`;
   renderIndicatorSafely('ranking financeiro',()=>renderIndicatorFinanceRanking(squads,rangeIds),['indicatorFinanceRanking']);renderIndicatorSafely('histórico analítico',()=>renderIndicatorHistoricalAnalytics(squads,rangeIds),['indicatorHistoryAttChart','indicatorHistoryDailyAvgChart','indicatorHistoryEvalChart']);
@@ -2409,7 +2476,22 @@ function renderPredictiveManagement(squads){
 
 
 function analysisDateLabels(){const out=[];if(!state.analysisStartDate||!state.analysisEndDate)return out;let i=0;for(let d=state.analysisStartDate;d<=state.analysisEndDate;d=addCalendarDays(d,1),i++){const dt=parseIsoAnalysisDate(d);out.push({date:d,label:`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`});}return out;}
-function weeklyBucketsForAnalysis(squads){const dates=analysisDateLabels(),buckets=[];dates.forEach((x,i)=>{const idx=Math.floor(i/7);if(!buckets[idx])buckets[idx]={start:x.date,end:x.date,bySquad:new Map()};buckets[idx].end=x.date;});(squads||[]).forEach(squad=>{const rows=periodTechniciansForSquad(squad);rows.forEach(t=>(t.daily||[]).forEach(d=>{if(!dateBetween(d.date))return;const offset=Math.floor((parseIsoAnalysisDate(d.date)-parseIsoAnalysisDate(state.analysisStartDate))/86400000),idx=Math.max(0,Math.floor(offset/7)),b=buckets[idx];if(!b)return;const v=b.bySquad.get(squad.code)||{att:0,eval:0};v.att+=safe(d.att);v.eval+=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1);b.bySquad.set(squad.code,v);}));});const labels=buckets.map(b=>{const a=parseIsoAnalysisDate(b.start),z=parseIsoAnalysisDate(b.end);return `${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}–${String(z.getDate()).padStart(2,'0')}/${String(z.getMonth()+1).padStart(2,'0')}`}),palette=['var(--accent)','var(--success)','#78b7ff','#ef5a29','#b18cff'],series=(squads||[]).map((s,i)=>({name:`Squad ${s.code}`,color:palette[i%palette.length],values:buckets.map(b=>{const v=b.bySquad.get(s.code);return v&&v.att?(v.eval/v.att)*100:null;})}));return{labels,series};}
+function weeklyBucketsForAnalysis(squads){const dates=analysisDateLabels(),buckets=[];dates.forEach((x,i)=>{const idx=Math.floor(i/7);if(!buckets[idx])buckets[idx]={start:x.date,end:x.date,bySquad:new Map()};buckets[idx].end=x.date;});(squads||[]).forEach(squad=>{const rows=periodTechniciansForSquad(squad);rows.forEach(t=>(t.daily||[]).forEach(d=>{if(!dateBetween(d.date))return;const offset=Math.floor((parseIsoAnalysisDate(d.date)-parseIsoAnalysisDate(state.analysisStartDate))/86400000),idx=Math.max(0,Math.floor(offset/7)),b=buckets[idx];if(!b)return;const v=b.bySquad.get(squad.code)||{att:0,eval:0};v.att+=safe(d.att);v.eval+=safe(d.notes5)+safe(d.notes4)+safe(d.notes3)+safe(d.notes2)+safe(d.notes1);b.bySquad.set(squad.code,v);}));});const labels=buckets.map(b=>{const a=parseIsoAnalysisDate(b.start),z=parseIsoAnalysisDate(b.end);return `${String(a.getDate()).padStart(2,'0')}/${String(a.getMonth()+1).padStart(2,'0')}–${String(z.getDate()).padStart(2,'0')}/${String(z.getMonth()+1).padStart(2,'0')}`}),series=(squads||[]).map((s,i)=>({name:`Squad ${s.code}`,color:chartSquadColor(s.code,i),values:buckets.map(b=>{const v=b.bySquad.get(s.code);return v&&v.att?(v.eval/v.att)*100:null;})}));return{labels,series};}
+
+
+function renderSquadCoverageBarChart(el,squads){
+  if(!el)return;
+  const rows=(squads||[]).map((squad,i)=>{const periodRows=periodTechniciansForSquad(squad),totals=deriveTotals(periodRows),value=totals.att?totals.evalPct*100:null,target=periodTeamEvalGoal(squad)*100;return{code:squad.code,name:`Squad ${squad.code}`,value,target,color:chartSquadColor(squad.code,i),diff:value==null?null:value-target};}).filter(r=>r.value!=null);
+  if(!rows.length){el.innerHTML='<div class="chart-empty">Sem dados para este recorte.</div>';return;}
+  el.classList.add('interactive-chart','chart-modern','squad-coverage-bars');
+  const maxObserved=Math.max(...rows.flatMap(r=>[safe(r.value),safe(r.target)])),axisMax=Math.min(100,Math.max(50,Math.ceil((maxObserved*1.18)/10)*10)),w=Math.max(860,Math.floor(el.clientWidth||0)-12),rowH=58,p={l:132,r:110,t:34,b:42},h=Math.max(300,p.t+p.b+rows.length*rowH),plotW=w-p.l-p.r,x=v=>p.l+(clamp(safe(v),0,axisMax)/axisMax)*plotW;
+  const grid=[0,.25,.5,.75,1].map(f=>{const xx=p.l+plotW*f,val=axisMax*f;return `<line x1="${xx}" y1="${p.t-10}" x2="${xx}" y2="${h-p.b+4}" class="grid-line"/><text x="${xx}" y="${h-12}" text-anchor="middle" class="axis-label">${Math.round(val)}%</text>`}).join('');
+  const bars=rows.map((r,i)=>{const y=p.t+i*rowH+10,barY=y+8,barH=18,end=x(r.value),targetX=x(r.target),tone=r.diff>=0?'var(--success)':'var(--danger)',diff=`${r.diff>=0?'+':''}${safe(r.diff).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`;return `<text x="8" y="${y+22}" class="coverage-label">${escapeHtml(r.name)}</text><rect x="${p.l}" y="${barY}" width="${Math.max(2,end-p.l)}" height="${barH}" rx="9" fill="${r.color}" opacity=".9" class="chart-series-shape"></rect><line x1="${targetX}" y1="${barY-7}" x2="${targetX}" y2="${barY+barH+7}" stroke="var(--warn)" stroke-width="2" stroke-dasharray="4 4"></line><text x="${Math.min(w-p.r+6,end+8)}" y="${barY+14}" class="coverage-value" fill="${r.color}">${safe(r.value).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</text><text x="${w-8}" y="${barY+14}" text-anchor="end" class="coverage-diff" fill="${tone}">${diff}</text><rect x="${p.l}" y="${y}" width="${plotW}" height="${rowH-4}" fill="transparent" class="chart-hover-zone" data-chart-index="${i}"></rect>`}).join('');
+  const legend=`<div class="chart-legend-inline chart-legend-visible"><span><i class="legend-swatch" style="background:var(--warn)"></i>Meta do Squad</span>${rows.map(r=>`<span><i class="legend-swatch" style="background:${r.color}"></i>${escapeHtml(r.name)}</span>`).join('')}</div>`;
+  el.dataset.scaleNote='Barras com base em 0%';
+  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}</svg></div>${legend}`;
+  bindSharedChartTooltip(el,{labels:rows.map(r=>r.name),entriesForIndex:i=>{const r=rows[i];return[{name:'% avaliado',value:r.value,text:`${safe(r.value).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:r.color},{name:'Meta',value:r.target,text:`${safe(r.target).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:'var(--warn)'},{name:'Diferença',value:r.diff,text:`${r.diff>=0?'+':''}${safe(r.diff).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`,color:r.diff>=0?'var(--success)':'var(--danger)'}]}});
+}
 
 
 function renderIndicatorFinanceRanking(squads,rangeIds){
@@ -2461,12 +2543,12 @@ function orgOverviewMonthIds(rows=orgOverviewRows(),limit=12){
   const ids=[...new Set((rows||[]).map(r=>r.id).filter(Boolean))].sort();
   return limit&&ids.length>limit?ids.slice(-limit):ids;
 }
-function buildOrgSquadSeries(ids,rows=orgOverviewRows()){
-  const palette=['#f0a33a','#36c98f','#46a4ff','#d879ff','#ef5a29','#46d7d0','#f2c14e','#ff6d92'];
+function buildOrgSquadSeries(ids,rows=orgOverviewRows(),technicianRows=orgTechnicianRows()){
   const codes=[...new Set((rows||[]).map(r=>r.squadCode).filter(Boolean))].sort();
-  const attendance=codes.map((code,i)=>({name:`Squad ${code}`,color:palette[i%palette.length],values:ids.map(id=>{const r=rows.find(x=>x.id===id&&x.squadCode===code);return r?safe(r.totalAtt):null})}));
-  const evaluation=codes.map((code,i)=>({name:`Squad ${code}`,color:palette[i%palette.length],values:ids.map(id=>{const r=rows.find(x=>x.id===id&&x.squadCode===code);return r?safe(r.evalPct)*100:null})}));
-  return{codes,attendance,evaluation};
+  const attendance=codes.map((code,i)=>({name:`Squad ${code}`,color:chartSquadColor(code,i),values:ids.map(id=>{const r=rows.find(x=>x.id===id&&x.squadCode===code);return r?safe(r.totalAtt):null})}));
+  const evaluation=codes.map((code,i)=>({name:`Squad ${code}`,color:chartSquadColor(code,i),values:ids.map(id=>{const r=rows.find(x=>x.id===id&&x.squadCode===code);return r?safe(r.evalPct)*100:null})}));
+  const average=codes.map((code,i)=>({name:`Squad ${code}`,color:chartSquadColor(code,i),values:ids.map(id=>{const techs=(technicianRows||[]).filter(x=>x.id===id&&x.squadCode===code&&safe(x.totalEval)>0);const total=techs.reduce((sum,x)=>sum+safe(x.totalEval),0);return total?techs.reduce((sum,x)=>sum+safe(x.avg)*safe(x.totalEval),0)/total:null;})}));
+  return{codes,attendance,evaluation,average};
 }
 function buildOrgDailyOverviewFromState(){
   const rows=[];Object.values(state.squads||{}).filter(Boolean).forEach(squad=>{Object.values(squad.months||{}).forEach(m=>{if(!m)return;const byDay=new Map();(m.technicians||[]).forEach(t=>(t.daily||[]).forEach(d=>{if(safe(d.day)>safe(m.latestDay)||d.off)return;const v=byDay.get(safe(d.day))||{att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0};v.att+=safe(d.att);v.notes5+=safe(d.notes5);v.notes4+=safe(d.notes4);v.notes3+=safe(d.notes3);v.notes2+=safe(d.notes2);v.notes1+=safe(d.notes1);byDay.set(safe(d.day),v);}));[...byDay.entries()].forEach(([day,v])=>{const totalEval=v.notes5+v.notes4+v.notes3+v.notes2+v.notes1;rows.push({squadCode:squad.code,id:m.id,year:safe(m.year),month:safe(m.month),day:safe(day),date:isoDateParts(m.year,m.month,day),totalAtt:v.att,notes5:v.notes5,notes4:v.notes4,notes3:v.notes3,notes2:v.notes2,notes1:v.notes1,totalEval,evalPct:v.att?totalEval/v.att:0});});});});return rows.sort((a,b)=>a.date.localeCompare(b.date)||String(a.squadCode).localeCompare(String(b.squadCode)));}
@@ -2484,7 +2566,7 @@ function buildOrgSquadMonthlySeries(){
   // comprimidos quando o usuário seleciona vários meses.
   const allRows=orgOverviewRows(),available=orgOverviewMonthIds(allRows,0),ids=analysisMonthIds().filter(id=>available.includes(id));
   const data=buildOrgSquadSeries(ids,allRows);
-  return{ids,labels:ids.map(shortHistoryMonth),attendance:data.attendance,evaluation:data.evaluation};
+  return{ids,labels:ids.map(shortHistoryMonth),attendance:data.attendance,evaluation:data.evaluation,average:data.average};
 }
 function renderTeamSquadOverview(){
   if(!$('#teamSquadAttendanceChart'))return;
@@ -2498,7 +2580,7 @@ function renderIndicatorSquadOverview(){
   const data=buildOrgSquadMonthlySeries();
   $('#indicatorSectorPeriod').textContent=analysisRangeLabel();
   renderIndicatorLineChart($('#indicatorSquadAttendanceChart'),data.labels,data.attendance,{maxValue:null,percent:false,decimals:0,height:280,fitWidth:true});
-  renderIndicatorLineChart($('#indicatorSquadEvaluationChart'),data.labels,data.evaluation,{maxValue:null,percent:true,decimals:1,height:280,fitWidth:true});
+  renderIndicatorLineChart($('#indicatorSquadEvaluationChart'),data.labels,data.average,{maxValue:5,percent:false,decimals:2,height:280,fitWidth:true,focusNumeric:true,valueFormatter:v=>safe(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})});
 }
 
 function allTechnicianMetricConfig(metric=state.allTechniciansMetric){
@@ -2592,7 +2674,7 @@ function openDailyTechniciansChart(){
   if(!isSuperAdmin())return;const data=dailyTechnicianSeries(state.dailyTechniciansMetric);if(!data.series.length){toast('Não há dados diários de técnicos no período selecionado.');return;}openModal('dailyTechniciansModal');requestAnimationFrame(()=>requestAnimationFrame(renderDailyTechniciansFullscreenChart));
 }
 function renderDailyTechniciansFullscreenChart(){
-  const el=$('#dailyTechniciansFullscreenChart');if(!el)return;const cfg=dailyTechnicianMetricConfig(state.dailyTechniciansMetric),data=dailyTechnicianSeries(state.dailyTechniciansMetric);$('#dailyTechniciansMetric').value=state.dailyTechniciansMetric;$('#dailyTechniciansPeriod').textContent=analysisRangeLabel();$('#dailyTechniciansSubtitle').textContent=state.dailyTechniciansMetric==='points'?`${cfg.label} dentro do calendário selecionado. É uma leitura analítica diária e não altera a pontuação oficial da competência.`:`${cfg.label} dentro do calendário diário selecionado.`;$('#dailyTechniciansCount').textContent=`${data.series.length} ${data.series.length===1?'técnico':'técnicos'} • ${analysisRangeLabel()}`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:cfg.maxValue,percent:cfg.percent,decimals:cfg.decimals,height:responsiveFullscreenPlotHeight(el),fitWidth:true,emphasis:true});
+  const el=$('#dailyTechniciansFullscreenChart');if(!el)return;const cfg=dailyTechnicianMetricConfig(state.dailyTechniciansMetric),data=dailyTechnicianSeries(state.dailyTechniciansMetric);$('#dailyTechniciansMetric').value=state.dailyTechniciansMetric;$('#dailyTechniciansPeriod').textContent=analysisRangeLabel();$('#dailyTechniciansSubtitle').textContent=state.dailyTechniciansMetric==='points'?`${cfg.label} dentro do calendário selecionado. É uma leitura analítica diária e não altera a pontuação oficial da competência.`:`${cfg.label} dentro do calendário diário selecionado.`;$('#dailyTechniciansCount').textContent=`${data.series.length} ${data.series.length===1?'técnico':'técnicos'} • ${analysisRangeLabel()}`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:cfg.maxValue,percent:cfg.percent,decimals:cfg.decimals,height:responsiveFullscreenPlotHeight(el),fitWidth:true,emphasis:true});scheduleChartExportControls();
 }
 
 function shortHistoryMonth(id){
@@ -2635,7 +2717,7 @@ function buildTechnicianHistory(squad,ids){
   evaluation.unshift({name:'Total geral',color:'var(--accent2)',dashed:true,vacations:(ids||[]).map(()=>false),values:(ids||[]).map((id,ix)=>{let att=0,ev=0;entities.forEach(e=>{const rows=dailyRowsForTechnician(squad,e.name).filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id),agg=aggregateDailyRows(rows);att+=agg.att;ev+=agg.totalEval;});return att?(ev/att)*100:null;})});
   return{ids,labels:(ids||[]).map(shortHistoryMonth),totals,attendance,daily,evaluation,entityCount:entities.length};
 }
-function buildSquadHistory(squads,ids){const active=(squads||[]).filter(Boolean).sort((a,b)=>a.code.localeCompare(b.code)),totals=[],attendance=active.map((s,i)=>({name:`Squad ${s.code}`,color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[]})),daily=active.map((s,i)=>({name:`Squad ${s.code}`,color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[]})),evaluation=active.map((s,i)=>({name:`Squad ${s.code}`,color:HISTORY_COLORS[i%HISTORY_COLORS.length],values:[]}));(ids||[]).forEach((id,ix)=>{let overall=0;active.forEach((s,si)=>{const rows=periodTechniciansForSquad(s).filter(t=>(t.daily||[]).some(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id)),monthDaily=[];rows.forEach(t=>monthDaily.push(...(t.daily||[]).filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id)));const agg=aggregateDailyRows(monthDaily),workDays=Math.max(1,new Set(monthDaily.filter(d=>isBusinessDateIso(d.date)).map(d=>d.date)).size),techCount=Math.max(1,rows.length);attendance[si].values.push(monthDaily.length?agg.att:null);daily[si].values.push(monthDaily.length?agg.att/(workDays*techCount):null);evaluation[si].values.push(monthDaily.length?agg.evalPct*100:null);overall+=agg.att;});totals.push(overall);});daily.unshift({name:'Média geral',color:'var(--accent2)',dashed:true,values:(ids||[]).map((_,ix)=>{const vals=daily.slice(1).map(s=>s.values[ix]).filter(v=>v!=null);return vals.length?meanOf(vals,x=>x):null;})});evaluation.unshift({name:'Total geral',color:'var(--accent2)',dashed:true,values:(ids||[]).map((_,ix)=>{let att=0,weighted=0;attendance.forEach((a,si)=>{const av=a.values[ix],ep=evaluation[si]?.values[ix];if(av!=null&&ep!=null){att+=av;weighted+=av*(ep/100);}});return att?(weighted/att)*100:null;})});return{ids,labels:(ids||[]).map(shortHistoryMonth),totals,attendance,daily,evaluation,entityCount:active.length};}
+function buildSquadHistory(squads,ids){const active=(squads||[]).filter(Boolean).sort((a,b)=>a.code.localeCompare(b.code)),totals=[],attendance=active.map((s,i)=>({name:`Squad ${s.code}`,color:chartSquadColor(s.code,i),values:[]})),daily=active.map((s,i)=>({name:`Squad ${s.code}`,color:chartSquadColor(s.code,i),values:[]})),evaluation=active.map((s,i)=>({name:`Squad ${s.code}`,color:chartSquadColor(s.code,i),values:[]}));(ids||[]).forEach((id,ix)=>{let overall=0;active.forEach((s,si)=>{const rows=periodTechniciansForSquad(s).filter(t=>(t.daily||[]).some(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id)),monthDaily=[];rows.forEach(t=>monthDaily.push(...(t.daily||[]).filter(d=>`${d.year}-${String(d.month).padStart(2,'0')}`===id)));const agg=aggregateDailyRows(monthDaily),workDays=Math.max(1,new Set(monthDaily.filter(d=>isBusinessDateIso(d.date)).map(d=>d.date)).size),techCount=Math.max(1,rows.length);attendance[si].values.push(monthDaily.length?agg.att:null);daily[si].values.push(monthDaily.length?agg.att/(workDays*techCount):null);evaluation[si].values.push(monthDaily.length?agg.evalPct*100:null);overall+=agg.att;});totals.push(overall);});daily.unshift({name:'Média geral',color:'var(--accent2)',dashed:true,values:(ids||[]).map((_,ix)=>{const vals=daily.slice(1).map(s=>s.values[ix]).filter(v=>v!=null);return vals.length?meanOf(vals,x=>x):null;})});evaluation.unshift({name:'Total geral',color:'var(--accent2)',dashed:true,values:(ids||[]).map((_,ix)=>{let att=0,weighted=0;attendance.forEach((a,si)=>{const av=a.values[ix],ep=evaluation[si]?.values[ix];if(av!=null&&ep!=null){att+=av;weighted+=av*(ep/100);}});return att?(weighted/att)*100:null;})});return{ids,labels:(ids||[]).map(shortHistoryMonth),totals,attendance,daily,evaluation,entityCount:active.length};}
 
 function renderTeamHistoricalAnalytics(squad){
   if(!squad||!$('#teamHistoryAttChart'))return;
@@ -2957,7 +3039,7 @@ function renderTechnicianStatusMatrix(el,squads,rangeIds){
   bindChartTooltips(el);
 }
 
-function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,decimals=0,height=340,fitWidth=false,emphasis=false,axisFormatter=null,valueFormatter=null}={}){
+function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,decimals=0,height=340,fitWidth=false,emphasis=false,axisFormatter=null,valueFormatter=null,focusNumeric=false}={}){
   if(!el)return;
   const validSeries=(series||[]).filter(s=>(s.values||[]).some(v=>v!=null));
   if(!validSeries.length){el.innerHTML='<div class="chart-empty">Sem dados para este recorte.</div>';return;}
@@ -2966,7 +3048,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   const containerWidth=fitWidth?Math.max(0,Math.floor(el.clientWidth||el.getBoundingClientRect?.().width||0)-18):0;
   const resolvedHeight=configuredChartHeight(height),w=Math.max(900,(labels?.length||0)*124,containerWidth),h=Math.max(300,safe(resolvedHeight)||340),p=emphasis?{l:70,r:40,t:36,b:72}:{l:56,r:30,t:32,b:60};
   const vals=validSeries.flatMap(s=>s.values).filter(v=>v!=null).map(v=>safe(v));
-  const rawTop=Math.max(1,...vals),scale=percent?configuredPercentScale(rawTop,maxValue):(maxValue!=null?{min:0,max:maxValue}:{min:0,max:rawTop*1.1}),range=Math.max(1,safe(scale.max)-safe(scale.min)),baseline=h-p.b;
+  const rawTop=Math.max(1,...vals);let scale;if(percent)scale=configuredPercentScaleForValues(vals,maxValue);else if(focusNumeric&&vals.length){const lo=Math.min(...vals),hi=Math.max(...vals),spread=Math.max(.05,hi-lo),pad=Math.max(.08,spread*.3),step=maxValue&&maxValue<=5?.1:Math.max(1,Math.pow(10,Math.floor(Math.log10(spread||1)))/2),floor=v=>Math.floor(v/step)*step,ceil=v=>Math.ceil(v/step)*step;scale={min:Math.max(0,floor(lo-pad)),max:maxValue!=null?Math.min(maxValue,ceil(hi+pad)):ceil(hi+pad),focused:true};if(scale.max-scale.min<step*2)scale.min=Math.max(0,scale.max-step*3);}else scale=maxValue!=null?{min:0,max:maxValue}:{min:0,max:rawTop*1.1};const range=Math.max(.0001,safe(scale.max)-safe(scale.min)),baseline=h-p.b;
   const x=i=>p.l+(labels.length<=1?0:i*(w-p.l-p.r)/(labels.length-1)),y=v=>p.t+(h-p.t-p.b)-((safe(v)-safe(scale.min))/range)*(h-p.t-p.b);
   const grid=[0,.25,.5,.75,1].map(f=>{const yy=p.t+(1-f)*(h-p.t-p.b),v=safe(scale.min)+range*f,label=axisFormatter?axisFormatter(v):(percent?`${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}%`:v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:decimals}));return `<line x1="${p.l}" y1="${yy}" x2="${w-p.r}" y2="${yy}" class="grid-line"/><text x="8" y="${yy+4}" class="axis-label">${label}</text>`}).join('');
   const tickStep=labels.length>24?Math.ceil(labels.length/7):labels.length>16?Math.ceil(labels.length/8):labels.length>12?2:1;
@@ -2986,8 +3068,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   const plotWidth=Math.max(1,w-p.l-p.r),zoneWidth=labels.length<=1?plotWidth:plotWidth/(labels.length-1);
   const zones=(labels||[]).map((_,i)=>{const zx=labels.length<=1?p.l:Math.max(p.l,x(i)-zoneWidth/2),zw=labels.length<=1?plotWidth:(i===0||i===labels.length-1?zoneWidth/2:zoneWidth);return `<rect x="${zx}" y="${p.t}" width="${zw}" height="${h-p.t-p.b}" class="chart-hover-zone" data-chart-index="${i}"></rect>`}).join('');
   const legend=`<div class="chart-legend-inline chart-legend-visible chart-legend-interactive">${validSeries.map((s,si)=>`<button type="button" class="chart-legend-item" data-series-index="${si}" aria-pressed="false" title="Passe o mouse para destacar; clique para fixar"><i class="legend-swatch${s.dashed?' dashed':''}" style="background:${s.color||'var(--accent)'}"></i>${escapeHtml(s.name)}</button>`).join('')}</div>`;
+  const scaleNote=scale.focused?`<div class="chart-scale-note">Escala focada: ${percent?`${safe(scale.min).toLocaleString('pt-BR',{maximumFractionDigits:0})}%–${safe(scale.max).toLocaleString('pt-BR',{maximumFractionDigits:0})}%`:`${safe(scale.min).toLocaleString('pt-BR',{maximumFractionDigits:2})}–${safe(scale.max).toLocaleString('pt-BR',{maximumFractionDigits:2})}`} • valores preservados</div>`:'';
+  el.dataset.scaleNote=scale.focused?`Escala focada: ${percent?`${safe(scale.min).toLocaleString('pt-BR',{maximumFractionDigits:0})}%–${safe(scale.max).toLocaleString('pt-BR',{maximumFractionDigits:0})}%`:`${safe(scale.min).toLocaleString('pt-BR',{maximumFractionDigits:2})}–${safe(scale.max).toLocaleString('pt-BR',{maximumFractionDigits:2})}`}`:'';
   el.classList.toggle('chart-emphasis',!!emphasis);
-  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;--chart-height:${h}px" preserveAspectRatio="none"><defs>${defs.join('')}</defs>${grid}${paths}${rulers}${zones}${xLabels}</svg></div>${legend}`;
+  el.innerHTML=`<div class="chart-plot-scroll"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;--chart-height:${h}px" preserveAspectRatio="none"><defs>${defs.join('')}</defs>${grid}${paths}${rulers}${zones}${xLabels}</svg></div>${legend}${scaleNote}`;
   bindSharedChartTooltip(el,{labels,entriesForIndex:i=>validSeries.map(s=>s.values?.[i]==null?null:{name:s.vacations?.[i]?`${s.name} 🏖`:s.name,value:s.values[i],text:`${valueFormatter?valueFormatter(s.values[i]):chartValueText(s.values[i],{percent,decimals})}${s.vacations?.[i]?' • férias':''}`,color:s.color||'var(--accent)'})});
 }
 

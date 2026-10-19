@@ -1,3 +1,18 @@
+## V2.52.0 — Indicadores otimizados, escala inteligente e exportação
+
+- Reorganiza a leitura de avaliação em Todos os Squads para evitar três gráficos com a mesma mensagem.
+- O comparativo executivo de qualidade passa a exibir **Nota média das avaliações por Squad** em escala 1–5 e média ponderada.
+- Substitui o comparativo mensal redundante por **% de avaliação dos Squads x meta**, com barras a partir de 0%, marcador da meta e diferença em p.p.
+- Mantém **% de avaliação por Squad** na Evolução Histórica como série mensal consolidada.
+- Adiciona cores oficiais personalizáveis para A, B, D e E, persistidas junto ao tema e reutilizadas nos gráficos por Squad.
+- Adiciona os perfis visuais **Executivo, Analítico e Apresentação** e move os controles detalhados para Ajustes avançados.
+- Substitui a antiga escala Automática por **Foco automático**, mantendo Completa 0–100% e Manual; gráficos focados exibem o intervalo usado.
+- Adiciona exportação local dos gráficos para PNG 16:9, PNG somente gráfico, SVG vetorial e área de transferência, com tema atual, fundo claro ou transparente.
+- Adiciona `js/chart-export.js` e cobertura automatizada específica da V2.52.0.
+- Frontend-only: não exige migration nova nem republicação de Edge Function.
+
+Detalhes: `docs/INDICADORES_EXPORTACAO_V2.52.0.md`.
+
 ## V2.51.0 — Identidade estável de técnicos e aliases do CSV
 
 - Passa a usar `user_id` como identidade principal do técnico durante a importação, evitando tratar mudança de nome no CRM como uma nova pessoa.

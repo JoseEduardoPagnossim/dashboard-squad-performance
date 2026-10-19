@@ -13,7 +13,7 @@ test('preferências inválidas são limitadas aos intervalos seguros', () => {
     chartHeight: 900, cardPadding: 2, yScaleMode: 'manual', yMin: 95, yMax: 20,
     lineWidth: 99, pointRadius: 0
   });
-  assert.equal(cfg.labelDensity, 'all');
+  assert.equal(cfg.labelDensity, 'extremes');
   assert.equal(cfg.labelFontSize, 18);
   assert.equal(cfg.axisFontSize, 9);
   assert.equal(cfg.legendFontSize, 16);
@@ -24,6 +24,15 @@ test('preferências inválidas são limitadas aos intervalos seguros', () => {
   assert.equal(cfg.yMax, 96);
   assert.equal(cfg.lineWidth, 6);
   assert.equal(cfg.pointRadius, 2);
+});
+
+
+test('preferências legadas são preservadas como configuração personalizada', () => {
+  const cfg = charts.normalizePreferences({ labelDensity: 'all', chartHeight: 390, yScaleMode: 'auto' });
+  assert.equal(cfg.visualPreset, 'custom');
+  assert.equal(cfg.labelDensity, 'all');
+  assert.equal(cfg.chartHeight, 390);
+  assert.equal(cfg.yScaleMode, 'focus');
 });
 
 test('densidade de rótulos respeita todos os modos', () => {

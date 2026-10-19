@@ -17,9 +17,9 @@ function topbarHtml(){
 }
 
 test('V2.49.1 identifica a versão correta',()=>{
-  assert.equal(pkg.version,'2.51.0');
-  assert.ok(index.includes('js/app.js?v=2.51.0'));
-  assert.ok(index.includes('css/styles.css?v=2.51.0'));
+  assert.equal(pkg.version,'2.52.0');
+  assert.ok(index.includes('js/app.js?v=2.52.0'));
+  assert.ok(index.includes('css/styles.css?v=2.52.0'));
 });
 
 test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
@@ -81,5 +81,5 @@ test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
 test('R3 mantém menus customizados acima do Período de análise',()=>{
   assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
   assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
-  assert.ok(index.includes('css/styles.css?v=2.51.0'));
+  assert.ok(index.includes('css/styles.css?v=2.52.0'));
 });

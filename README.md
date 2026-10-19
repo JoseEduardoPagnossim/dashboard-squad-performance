@@ -1,5 +1,16 @@
 # Soften Performance Hub
 
+## V2.52.0 — Indicadores otimizados e exportação para apresentações
+
+- Reduz os gráficos redundantes de avaliação em **Todos os Squads**: qualidade vira **Nota média por Squad**, cobertura vira **% avaliado x meta**, e a evolução histórica permanece dedicada à tendência mensal.
+- Adiciona cores oficiais personalizáveis para os Squads A, B, D e E e reutiliza a mesma identidade nos comparativos.
+- Adiciona escala percentual **Foco automático**, além dos modos Completa 0–100% e Manual, com indicação visível quando o eixo estiver focado.
+- Simplifica a configuração visual com presets **Executivo**, **Analítico** e **Apresentação**; os controles detalhados ficam em Ajustes avançados.
+- Permite exportar gráficos em **PNG 16:9 (1920×1080)**, PNG somente gráfico, **SVG vetorial** ou copiar a imagem, com tema atual, fundo claro ou transparente.
+- Não requer migration nova.
+
+Detalhes: `docs/INDICADORES_EXPORTACAO_V2.52.0.md`.
+
 ## V2.51.0 — Identidade estável de técnicos
 
 - O técnico passa a ser identificado por `user_id`, e não somente pelo texto do nome vindo do CRM.
@@ -27,7 +38,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.51.0`<br>
+**Versão atual:** `2.52.0`<br>
 
 
 
