@@ -98,3 +98,37 @@ test('V2.47.1 importacao de qualidade continua bloqueando arquivo incompleto',()
   assert.equal(r.missing[0].key,'company');
   assert.ok(r.missing[0].accepted.includes('NotaEmpresa'));
 });
+
+test('V2.53.0 Qualidade Completa reconhece as cinco dimensoes e grupo opcional',()=>{
+  const r=engine.resolveQualityFullImportColumns(['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa','grupoAtendimento']);
+  assert.deepEqual(r.missing,[]);
+  assert.deepEqual(r.indexes,{date:0,technician:1,service:2,product:3,company:4,group:5});
+});
+
+test('V2.53.0 Qualidade Completa exige NotaServico para manter as tres linhas comparaveis',()=>{
+  const r=engine.resolveQualityFullImportColumns(['DataAvaliacao','nomeApresentativo','NotaProduto','NotaEmpresa']);
+  assert.equal(r.indexes.service,null);
+  assert.ok(r.missing.some(x=>x.key==='service'));
+  assert.equal(r.missing.some(x=>x.key==='group'),false);
+});
+
+test('V2.53.0 Qualidade Completa preserva todas as linhas sem deduplicar tecnico',()=>{
+  const rows=[
+    {id:'2026-10',group:'A',name:'ANA',serviceNote:5,productNote:4,companyNote:5},
+    {id:'2026-10',group:'A',name:'ANA',serviceNote:4,productNote:5,companyNote:5},
+    {id:'2026-10',group:'A',name:'ANA',serviceNote:5,productNote:5,companyNote:4}
+  ];
+  const p=engine.summarizeQualityFull(rows,'2026-10',['A'],{A:{rows:0,technicians:0,service:0,product:0,company:0}});
+  assert.equal(p.kind,'quality-full');
+  assert.equal(p.rows,3);
+  assert.equal(p.technicians,1);
+  assert.equal(p.service,3);
+  assert.equal(p.product,3);
+  assert.equal(p.company,3);
+});
+
+test('V2.53.0 historico preserva kind quality-full sem habilitar rollback por snapshot vazio',()=>{
+  const row=engine.historySummary({batchKey:'qf-1',kind:'quality-full',period:'2026-10',status:'success',beforeSnapshot:{}});
+  assert.equal(row.kind,'quality-full');
+  assert.equal(engine.canRollback(row),false);
+});

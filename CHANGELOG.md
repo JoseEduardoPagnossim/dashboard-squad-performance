@@ -1,3 +1,17 @@
+## V2.53.0 — Qualidade Completa sem deduplicação
+
+- Cria a importação exclusiva **Qualidade Completa**, destinada ao CSV completo de avaliações sem deduplicação de clientes.
+- Aceita Data, Técnico, Nota Serviço, Nota Produto e Nota Empresa; `grupoAtendimento` é opcional e pode acelerar o vínculo ao Squad.
+- Mantém cada linha válida da origem como uma resposta e agrega os dados por dia/Squad antes de persistir.
+- Cria `quality_full_daily`, sem armazenar nomes ou CNPJs de clientes, com RLS por organização/Squad.
+- Reimportar uma competência substitui somente aquela competência da nova base analítica.
+- Adiciona em Visão do Squad o gráfico **Qualidade Atendimento × Produto × Empresa**, ponderado pelas respostas reais de cada dimensão.
+- O gráfico respeita lacunas históricas, escala focada, rótulos e exportação da V2.52.x.
+- A nova fonte não altera ranking, bonificação, taxa oficial de avaliação, importação operacional, Produto/Empresa atual ou Impacto Financeiro.
+- Requer `supabase/migrations/MIGRACAO_V2.53.0.sql`.
+
+Detalhes: `docs/QUALIDADE_COMPLETA_V2.53.0.md`.
+
 ## V2.52.3 — Benchmark consolidado de avaliação
 
 - Novo card de largura total em **Visão do Squad → Todos os Squads** com a evolução consolidada da taxa de avaliação.

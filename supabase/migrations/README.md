@@ -139,3 +139,9 @@ Depois da migration, republique as Edge Functions `create-user` e `manage-user`,
 `MIGRACAO_V2.51.0.sql` cria `technician_aliases` para armazenar os nomes atuais e históricos usados pelo CRM/CSV e vinculá-los ao `user_id` real do técnico. A migration também semeia aliases a partir do cadastro, histórico de Squad, competências mensais já vinculadas e auditoria, além de adicionar índice de apoio em `technician_monthly(squad_month_id,user_id)`.
 
 A migration não soma nem apaga métricas mensais existentes. Se uma competência já tiver dois registros da mesma pessoa por mudança de nome, confirme o alias em **Usuários** e reimporte o CSV operacional daquele mês; a aplicação reconcilia as linhas usando o CSV como fonte de verdade. Não é necessário republicar Edge Functions.
+
+## V2.53.0 — Qualidade Completa sem deduplicação
+
+`MIGRACAO_V2.53.0.sql` cria `quality_full_daily`, uma base agregada diária para o gráfico Serviço × Produto × Empresa alimentado por CSV completo, sem deduplicação prévia. A tabela armazena somente contagens de notas por Squad/data e metadados técnicos da importação; não recebe nome, CPF/CNPJ ou identificador de cliente.
+
+A migration também amplia `import_batches.kind` com `quality-full`. Leitura segue `can_read_squad(uuid)` e escrita exige `can_admin_squad(uuid)`. Não é necessário republicar Edge Functions.

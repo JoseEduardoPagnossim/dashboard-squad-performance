@@ -32,6 +32,14 @@
     product:{label:'Nota Produto',accepted:['NotaProduto','Nota Produto'],aliases:['notaproduto']},
     company:{label:'Nota Empresa',accepted:['NotaEmpresa','Nota Empresa'],aliases:['notaempresa']}
   };
+  const QUALITY_FULL_IMPORT_HEADER_ALIASES={
+    date:{label:'Data da avaliação',accepted:['Time','DataAvaliacao','Data Avaliação','Data da Avaliação','Data'],aliases:['time','dataavaliacao','datadaavaliacao','data']},
+    technician:{label:'Técnico',accepted:['nomeApresentativo','Nome Apresentativo','Tecnico','Técnico','Atendente'],aliases:['nomeapresentativo','tecnico','atendente']},
+    service:{label:'Nota Serviço',accepted:['NotaServico','Nota Serviço','Nota Atendimento'],aliases:['notaservico','notaatendimento']},
+    product:{label:'Nota Produto',accepted:['NotaProduto','Nota Produto'],aliases:['notaproduto']},
+    company:{label:'Nota Empresa',accepted:['NotaEmpresa','Nota Empresa'],aliases:['notaempresa']},
+    group:{label:'Grupo',accepted:['grupoAtendimento','Grupo Atendimento','Squad','Grupo'],aliases:['grupoatendimento','squad','grupo'],optional:true}
+  };
   function resolveFinancialImpactColumns(headers=[]){
     const original=(headers||[]).map(v=>String(v||'').trim()),normalized=original.map(normalizeCsvHeader),indexes={},missing=[];
     for(const [key,definition] of Object.entries(FINANCIAL_IMPACT_HEADER_ALIASES)){
@@ -47,6 +55,15 @@
       const index=normalized.findIndex(header=>definition.aliases.includes(header));
       indexes[key]=index>=0?index:null;
       if(index<0)missing.push({key,label:definition.label,accepted:[...definition.accepted]});
+    }
+    return{indexes,missing,headers:original,normalizedHeaders:normalized};
+  }
+  function resolveQualityFullImportColumns(headers=[]){
+    const original=(headers||[]).map(v=>String(v||'').trim()),normalized=original.map(normalizeCsvHeader),indexes={},missing=[];
+    for(const [key,definition] of Object.entries(QUALITY_FULL_IMPORT_HEADER_ALIASES)){
+      const index=normalized.findIndex(header=>definition.aliases.includes(header));
+      indexes[key]=index>=0?index:null;
+      if(index<0&&!definition.optional)missing.push({key,label:definition.label,accepted:[...definition.accepted]});
     }
     return{indexes,missing,headers:original,normalizedHeaders:normalized};
   }
@@ -72,6 +89,17 @@
     }
     return {kind:'quality',period,squads,rows:squads.reduce((s,x)=>s+x.incoming.rows,0),technicians:squads.reduce((s,x)=>s+x.incoming.technicians,0),product:squads.reduce((s,x)=>s+x.incoming.product,0),company:squads.reduce((s,x)=>s+x.incoming.company,0)};
   }
+  function summarizeQualityFull(rows,period,codes,currentByCode={}){
+    const squads=[];
+    for(const code of codes||[]){
+      const selected=(rows||[]).filter(r=>r.id===period&&r.group===code);
+      if(!selected.length)continue;
+      const service=selected.reduce((s,r)=>s+(safe(r.serviceNote)>0?1:0),0),product=selected.reduce((s,r)=>s+(safe(r.productNote)>0?1:0),0),company=selected.reduce((s,r)=>s+(safe(r.companyNote)>0?1:0),0),incoming={rows:selected.length,ratings:service+product+company,technicians:uniqueNames(selected),service,product,company};
+      const current=currentByCode?.[code]||{rows:0,technicians:0,service:0,product:0,company:0};
+      squads.push({code,incoming,current,rowDelta:pctDelta(incoming.rows,current.rows),technicianDelta:pctDelta(incoming.technicians,current.technicians)});
+    }
+    return {kind:'quality-full',period,squads,rows:squads.reduce((s,x)=>s+x.incoming.rows,0),technicians:squads.reduce((s,x)=>s+x.incoming.technicians,0),service:squads.reduce((s,x)=>s+x.incoming.service,0),product:squads.reduce((s,x)=>s+x.incoming.product,0),company:squads.reduce((s,x)=>s+x.incoming.company,0)};
+  }
   function validatePreview({kind,totalRows=0,validRows=0,ignored=0,unmatched=0,ambiguous=0,negativeValues=0,closedSquads=[],summary=null}={}){
     const issues=[];let level='ok',blocked=false,requiresConfirmation=false;
     const add=(severity,code,message)=>{issues.push({severity,code,message});if(severity==='error'){level='error';blocked=true}else if(severity==='warning'&&level!=='error'){level='warning';requiresConfirmation=true}else if(severity==='info'&&level==='ok'){level='ok'}};
@@ -92,14 +120,15 @@
         if(item.incoming.evaluations>item.incoming.attendance*1.15)add('warning','evaluation_ratio',`Squad ${item.code}: avaliações estão acima de 115% dos atendimentos; confira o CSV.`);
       }
       if(kind==='quality'&&item.current?.rows>0&&item.rowDelta<=-.40)add('warning','quality_drop',`Squad ${item.code}: avaliações de Produto/Empresa cairão ${Math.round(Math.abs(item.rowDelta)*100)}%.`);
+      if(kind==='quality-full'&&item.current?.rows>0&&item.rowDelta<=-.40)add('warning','quality_full_drop',`Squad ${item.code}: linhas da Qualidade Completa cairão ${Math.round(Math.abs(item.rowDelta)*100)}% em relação à base atual.`);
     }
     return {level,blocked,requiresConfirmation,issues};
   }
   function historySummary(record={}){
     return {
-      id:String(record.id||record.batchKey||''),batchKey:String(record.batchKey||record.id||''),kind:record.kind==='quality'?'quality':'service',period:String(record.period||''),fileName:String(record.fileName||''),checksum:String(record.checksum||''),scope:Array.isArray(record.scope)?record.scope:[],rows:safe(record.rows),ignored:safe(record.ignored),unmatched:safe(record.unmatched),status:['success','failed','reverted'].includes(record.status)?record.status:'success',createdAt:record.createdAt||new Date().toISOString(),createdBy:record.createdBy||'',risk:record.risk||'ok',beforeSnapshot:record.beforeSnapshot||null,details:record.details||{}
+      id:String(record.id||record.batchKey||''),batchKey:String(record.batchKey||record.id||''),kind:['service','quality','quality-full'].includes(record.kind)?record.kind:'service',period:String(record.period||''),fileName:String(record.fileName||''),checksum:String(record.checksum||''),scope:Array.isArray(record.scope)?record.scope:[],rows:safe(record.rows),ignored:safe(record.ignored),unmatched:safe(record.unmatched),status:['success','failed','reverted'].includes(record.status)?record.status:'success',createdAt:record.createdAt||new Date().toISOString(),createdBy:record.createdBy||'',risk:record.risk||'ok',beforeSnapshot:record.beforeSnapshot||null,details:record.details||{}
     };
   }
   function canRollback(record){return Boolean(record&&record.status==='success'&&record.beforeSnapshot&&Object.keys(record.beforeSnapshot||{}).length>0)}
-  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,resolveQualityImportColumns,summarizeService,summarizeQuality,validatePreview,historySummary,canRollback};
+  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,resolveQualityImportColumns,resolveQualityFullImportColumns,summarizeService,summarizeQuality,summarizeQualityFull,validatePreview,historySummary,canRollback};
 });

@@ -10,8 +10,8 @@ const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 const exporter = require(join(root, 'js', 'chart-export.js'));
 const pkg = require(join(root, 'package.json'));
 
-test('V2.52.3 habilita exportação nos gráficos de Volume x avaliação dos cards', () => {
-  assert.equal(pkg.version, '2.52.3');
+test('V2.52.2 habilita exportação nos gráficos de Volume x avaliação dos cards', () => {
+  assert.equal(pkg.version, '2.53.0');
   assert.match(app, /fullscreen-chart-modal,.squad-card-with-trend/);
   assert.match(app, /shell\.querySelector\('\.squad-trend-head'\)/);
   assert.match(app, /event\.stopPropagation\(\);openChartExport\(chart\)/);
@@ -21,7 +21,7 @@ test('V2.52.3 habilita exportação nos gráficos de Volume x avaliação dos ca
   assert.match(css, /squad-trend-head \.chart-export-trigger/);
 });
 
-test('V2.52.3 mostra rótulos de atendimentos na base e percentual na linha', () => {
+test('V2.52.2 mostra rótulos de atendimentos na base e percentual na linha', () => {
   assert.match(app, /squad-trend-bar-label/);
   assert.match(app, /y="\$\{base-7\}"/);
   assert.match(app, /squad-trend-pct-label/);
@@ -53,9 +53,9 @@ test('exportador reforça legibilidade dos labels em tema e transparência', () 
   assert.match(svg, /% avaliação/);
 });
 
-test('V2.52.3 atualiza cache e continua frontend-only', () => {
-  assert.ok(index.includes('js/app.js?v=2.52.3'));
-  assert.ok(index.includes('js/chart-export.js?v=2.52.3'));
-  assert.ok(index.includes('css/styles.css?v=2.52.3'));
+test('V2.52.2 atualiza cache e continua frontend-only', () => {
+  assert.ok(index.includes('js/app.js?v=2.53.0'));
+  assert.ok(index.includes('js/chart-export.js?v=2.53.0'));
+  assert.ok(index.includes('css/styles.css?v=2.53.0'));
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
 });

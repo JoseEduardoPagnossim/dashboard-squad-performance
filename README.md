@@ -1,3 +1,14 @@
+## V2.53.0 — Qualidade Completa sem deduplicação
+
+- Adiciona importação exclusiva de **Qualidade Completa** para CSV sem remoção de clientes repetidos.
+- Serviço, Produto e Empresa passam a ter uma base analítica equivalente para o gráfico comparativo, sem alterar as métricas operacionais existentes.
+- A importação substitui somente a competência selecionada nessa nova fonte, evitando soma duplicada em reimportações.
+- O banco recebe apenas agregados diários por Squad e nota; nomes/CNPJs de clientes não são persistidos.
+- Adiciona o gráfico **Qualidade Atendimento × Produto × Empresa** na Visão do Squad, para Todos os Squads e Squad específico, com escala focada, rótulos e exportação.
+- Requer `supabase/migrations/MIGRACAO_V2.53.0.sql` em bases existentes.
+
+Detalhes: `docs/QUALIDADE_COMPLETA_V2.53.0.md`.
+
 ## V2.52.3 — Benchmark consolidado de avaliação
 
 - Adiciona, abaixo dos quatro cards de Squad, um gráfico consolidado da taxa de avaliação da operação ao longo das competências.
@@ -70,7 +81,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.52.3`<br>
+**Versão atual:** `2.53.0`<br>
 
 
 
