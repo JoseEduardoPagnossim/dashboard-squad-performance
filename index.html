@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.52.2" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.52.2" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.52.2" />
+  <link rel="stylesheet" href="css/styles.css?v=2.52.3" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.52.3" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.52.3" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +74,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.52.2 • Rótulos e exportação dos gráficos dos Squads</small>
+        <small class="login-version">V2.52.3 • Benchmark consolidado de avaliação</small>
       </section>
     </div>
   </section>
@@ -163,7 +163,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.52.2 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.52.3 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -480,6 +480,18 @@
         <div id="allSquadsPanel" class="hidden">
           <div class="portfolio-hero card"><div><span class="eyebrow">VISÃO ADMINISTRATIVA</span><h2>Todos os Squads</h2><p>Resumo consolidado dos quatro times. Selecione um Squad no topo para abrir os detalhes.</p></div><span class="portfolio-chip">4 SQUADS</span></div>
           <div id="squadPortfolio" class="portfolio-grid"></div>
+          <article id="portfolioBenchmarkCard" class="card chart-card portfolio-benchmark-card">
+            <div class="section-title">
+              <div><span class="eyebrow">REFERÊNCIA OPERACIONAL</span><h3>Taxa consolidada de avaliação × benchmark</h3></div>
+              <span class="muted">Objetivo 60% • limite mínimo 20%</span>
+            </div>
+            <div class="portfolio-benchmark-kpis">
+              <div><span>Taxa atual</span><strong id="portfolioBenchmarkCurrent">—</strong><small>consolidado ponderado</small></div>
+              <div><span>Distância do objetivo</span><strong id="portfolioBenchmarkGap">—</strong><small>referência de 60%</small></div>
+              <div><span>Tendência</span><strong id="portfolioBenchmarkTrend">—</strong><small id="portfolioBenchmarkTrendNote">por competência</small></div>
+            </div>
+            <div id="portfolioBenchmarkChart" class="chart portfolio-benchmark-chart"></div>
+          </article>
         </div>
         <div id="singleSquadPanel">
           <div id="teamEmpty" class="empty-state empty-state-v241 hidden"><div>♛</div><h2>Este Squad ainda não possui dados</h2><p>Importe a primeira competência para liberar a visão consolidada da equipe.</p><div class="empty-state-actions"><button class="btn primary admin-only" data-permission="data.import" type="button" data-empty-admin-section="operation">Ir para Operação</button><button class="btn secondary" type="button" data-empty-view="help">Ver como usar</button></div></div>
@@ -1187,7 +1199,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.52.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.52.3</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1743,24 +1755,24 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.52.2"></script>
-  <script src="js/finance-rules.js?v=2.52.2"></script>
-  <script src="js/finance-advanced.js?v=2.52.2"></script>
-  <script src="js/tv-engine.js?v=2.52.2"></script>
-  <script src="js/presentation.js?v=2.52.2"></script>
-  <script src="js/chart-engine.js?v=2.52.2"></script>
-  <script src="js/chart-export.js?v=2.52.2"></script>
-  <script src="js/import-engine.js?v=2.52.2"></script>
-  <script src="js/predictive-engine.js?v=2.52.2"></script>
-  <script src="js/alert-engine.js?v=2.52.2"></script>
-  <script src="js/settings-engine.js?v=2.52.2"></script>
-  <script src="js/performance-engine.js?v=2.52.2"></script>
-  <script src="js/navigation-engine.js?v=2.52.2"></script>
-  <script src="js/workspace-engine.js?v=2.52.2"></script>
-  <script src="js/filter-system.js?v=2.52.2"></script>
-  <script src="js/comparison-engine.js?v=2.52.2"></script>
-  <script src="js/finance-report-engine.js?v=2.52.2"></script>
-  <script src="js/design-system.js?v=2.52.2"></script>
-  <script src="js/app.js?v=2.52.2"></script>
+  <script src="js/business-calendar.js?v=2.52.3"></script>
+  <script src="js/finance-rules.js?v=2.52.3"></script>
+  <script src="js/finance-advanced.js?v=2.52.3"></script>
+  <script src="js/tv-engine.js?v=2.52.3"></script>
+  <script src="js/presentation.js?v=2.52.3"></script>
+  <script src="js/chart-engine.js?v=2.52.3"></script>
+  <script src="js/chart-export.js?v=2.52.3"></script>
+  <script src="js/import-engine.js?v=2.52.3"></script>
+  <script src="js/predictive-engine.js?v=2.52.3"></script>
+  <script src="js/alert-engine.js?v=2.52.3"></script>
+  <script src="js/settings-engine.js?v=2.52.3"></script>
+  <script src="js/performance-engine.js?v=2.52.3"></script>
+  <script src="js/navigation-engine.js?v=2.52.3"></script>
+  <script src="js/workspace-engine.js?v=2.52.3"></script>
+  <script src="js/filter-system.js?v=2.52.3"></script>
+  <script src="js/comparison-engine.js?v=2.52.3"></script>
+  <script src="js/finance-report-engine.js?v=2.52.3"></script>
+  <script src="js/design-system.js?v=2.52.3"></script>
+  <script src="js/app.js?v=2.52.3"></script>
 </body>
 </html>

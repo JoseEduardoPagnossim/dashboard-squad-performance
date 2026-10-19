@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.52.2';
+  const APP_VERSION = '2.52.3';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -2372,10 +2372,42 @@
     el.innerHTML=`<div class="squad-trend-meta chart-legend-inline"><span class="chart-legend-item"><i class="legend-swatch" style="background:${color}"></i>Atendimentos</span><span class="chart-legend-item"><i class="line legend-swatch"></i>% avaliação</span>${scaleText?`<small>${escapeHtml(scaleText)}</small>`:''}</div><div class="chart-plot-scroll squad-trend-plot"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px" preserveAspectRatio="none">${grid}${bars}${line}${zones}${xLabels}</svg></div>`;
     bindSharedChartTooltip(el,{labels:rows.map(r=>r.tooltipLabel||r.label),entriesForIndex:i=>[{name:'Atendimentos',value:rows[i]?.att,text:fmtInt(rows[i]?.att),color},{name:'Avaliações',value:rows[i]?.eval,text:fmtInt(rows[i]?.eval),color:'var(--accent2)'},{name:'% Avaliação',value:rows[i]?.evalPct,text:rows[i]?.evalPct==null?'—':`${safe(rows[i].evalPct).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`,color:'var(--success)'}]});
   }
+  const PORTFOLIO_EVAL_BENCHMARK_MIN=20,PORTFOLIO_EVAL_BENCHMARK_GOOD=60;
+  function linearTrendValues(values){
+    const pts=(values||[]).map((value,index)=>value==null?null:{x:index,y:safe(value)}).filter(Boolean);if(!pts.length)return{values:(values||[]).map(()=>null),slope:0};if(pts.length===1)return{values:(values||[]).map((value,index)=>value==null?null:pts[0].y),slope:0};
+    const n=pts.length,sumX=pts.reduce((a,p)=>a+p.x,0),sumY=pts.reduce((a,p)=>a+p.y,0),sumXY=pts.reduce((a,p)=>a+p.x*p.y,0),sumXX=pts.reduce((a,p)=>a+p.x*p.x,0),den=n*sumXX-sumX*sumX,slope=Math.abs(den)<1e-9?0:(n*sumXY-sumX*sumY)/den,intercept=(sumY-slope*sumX)/n;
+    return{values:(values||[]).map((value,index)=>value==null?null:intercept+slope*index),slope};
+  }
+  function portfolioBenchmarkData(start=state.analysisStartDate,end=state.analysisEndDate){
+    const squads=Object.values(state.squads||{}).filter(Boolean).sort((a,b)=>a.code.localeCompare(b.code)),ids=monthIdsForRange(start,end),rows=[];
+    for(const id of ids){let att=0,eligibleAtt=0,evals=0,has=false;for(const squad of squads){const m=squad.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay)||1)),from=start>monthStart?start:monthStart,to=end<monthEnd?end:monthEnd;if(from>to)continue;const totals=deriveTotals(periodTechniciansForSquad(squad,from,to));if(safe(totals.att)>0||safe(totals.eval)>0){has=true;att+=safe(totals.att);eligibleAtt+=safe(totals.eligibleAtt);evals+=safe(totals.eval);}}
+      rows.push({id,label:shortHistoryMonth(id),tooltipLabel:monthLabelFromId(id),att,eligibleAtt,eval:evals,evalPct:has&&eligibleAtt?evals/eligibleAtt*100:null});
+    }
+    const actual=rows.map(r=>r.evalPct),trend=linearTrendValues(actual),last=[...actual].reverse().find(v=>v!=null);
+    return{rows,actual,trend:trend.values,slope:trend.slope,current:last==null?null:last};
+  }
+  function renderPortfolioBenchmark(){
+    const card=$('#portfolioBenchmarkCard'),el=$('#portfolioBenchmarkChart');if(!card||!el)return;const data=portfolioBenchmarkData(),has=data.actual.some(v=>v!=null);card.classList.toggle('is-empty',!has);
+    if(!has){$('#portfolioBenchmarkCurrent').textContent='—';$('#portfolioBenchmarkGap').textContent='—';$('#portfolioBenchmarkTrend').textContent='—';$('#portfolioBenchmarkTrendNote').textContent='Sem histórico no período';el.innerHTML='<div class="chart-empty">Sem histórico consolidado no período selecionado.</div>';return;}
+    const current=safe(data.current),gap=PORTFOLIO_EVAL_BENCHMARK_GOOD-current,slope=safe(data.slope),trendDir=Math.abs(slope)<.05?'→':slope>0?'↗':'↘';
+    $('#portfolioBenchmarkCurrent').textContent=`${current.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`;
+    $('#portfolioBenchmarkGap').textContent=gap<=0?`+${Math.abs(gap).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`:`-${gap.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`;
+    $('#portfolioBenchmarkTrend').textContent=`${trendDir} ${Math.abs(slope).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`;$('#portfolioBenchmarkTrendNote').textContent=Math.abs(slope)<.05?'estável por competência':slope>0?'crescimento por competência':'queda por competência';
+    const labels=data.rows.map(r=>r.label),series=[
+      {name:'Taxa consolidada',color:'#4f8df7',values:data.actual,area:false,labelMode:'all'},
+      {name:'Tendência',color:'var(--accent2)',values:data.trend,dashed:true,area:false,points:false,labels:false},
+      {name:'Limite mínimo 20%',color:'var(--danger)',values:data.rows.map(()=>PORTFOLIO_EVAL_BENCHMARK_MIN),area:false,points:false,labels:false},
+      {name:'Objetivo 60%',color:'var(--success)',values:data.rows.map(()=>PORTFOLIO_EVAL_BENCHMARK_GOOD),area:false,points:false,labels:false}
+    ];
+    el.dataset.exportTitle='Taxa consolidada de avaliação × benchmark';el.dataset.exportEyebrow='VISÃO DOS SQUADS';el.dataset.exportContext=`Todos os Squads • ${analysisRangeLabel()}`;
+    renderIndicatorLineChart(el,labels,series,{maxValue:100,percent:true,decimals:1,height:390,fitWidth:true,emphasis:true});scheduleChartExportControls();
+  }
+
   function renderPortfolioPeriod(){
     const squads=Object.values(state.squads).sort((a,b)=>a.code.localeCompare(b.code));
     $('#squadPortfolio').innerHTML=squads.map((s,index)=>{const rows=periodTechniciansForSquad(s),totals=deriveTotals(rows);if(!rows.length)return `<article class="card squad-card" data-squad-card="${s.code}"><div class="squad-card-head"><div class="squad-letter">${s.code}</div><span class="status-line">SEM DADOS</span></div><h3>${escapeHtml(s.name)}</h3><div class="squad-empty">Sem produção no período selecionado.</div></article>`;const teamStatus=teamStatusFromTechnicianStatuses(rows,{period:true}),status=teamStatus.status||'—',trend=squadPortfolioTrendBuckets(s);return `<article class="card squad-card squad-card-with-trend" data-squad-card="${s.code}"><div class="squad-card-head"><div class="squad-letter">${s.code}</div><span class="status ${status==='ACIMA'?'above':status==='ABAIXO'?'below':''}">${status}</span></div><h3>${escapeHtml(s.name)}</h3><div class="status-line">${analysisRangeLabel()} • ${rows.length} técnicos</div><div class="squad-summary"><div><span>Atend.</span><strong>${fmtInt(totals.att)}</strong></div><div><span>Aval.</span><strong>${fmtInt(totals.eval)}</strong></div><div><span>% Aval.</span><strong>${fmtPct(totals.evalPct)}</strong></div></div><div class="squad-trend-head"><span>Volume × avaliação</span><small>${escapeHtml(trend.label)}</small></div><div id="squadPortfolioTrend-${escapeHtml(s.code)}" class="chart squad-card-trend-host"></div></article>`}).join('');
     squads.forEach((s,index)=>{const el=$(`#squadPortfolioTrend-${s.code}`);if(el)renderSquadPortfolioTrendChart(el,s,squadPortfolioTrendBuckets(s),chartSquadColor(s.code,index));});
+    renderPortfolioBenchmark();
     $$('[data-squad-card]').forEach(el=>el.addEventListener('click',()=>selectSquad(el.dataset.squadCard)));
   }
 
@@ -3105,10 +3137,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   const paths=validSeries.map((s,si)=>{
     const color=s.color||'var(--accent)',segments=splitChartPointSegments(s.values,x,y),visual=chartEngineLineVisual(prefs,{emphasis,dashed:!!s.dashed});
     const dash=s.dashed?' stroke-dasharray="7 7"':'',lineWidth=visual.lineWidth,pointRadius=visual.pointRadius;
-    const showArea=!s.dashed;
+    const showArea=s.area!==false&&!s.dashed;
     const areas=showArea?segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothAreaPath(seg,baseline)}" fill="url(#${chartId}-area-${si})" class="chart-series-area" style="--series-color:${color}" data-series-index="${si}"></path>`).join(''):'';
     const linePaths=segments.filter(seg=>seg.length>1).map(seg=>`<path d="${smoothSvgPath(seg)}" fill="none" stroke="${color}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round"${dash} class="chart-series-line chart-series-shape" style="--series-color:${color}" data-series-index="${si}"></path>`).join('');
-    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=y(v),offset=(si%3===0?-10:si%3===1?15:-22),label=valueFormatter?valueFormatter(v):chartValueText(v,{percent,decimals}),visible=chartLabelVisible(i,labels.length);return `${vacation?`<circle cx="${cx}" cy="${cy}" r="${pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?pointRadius+0.8:pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>${visible?chartDataLabelSvg(cx,Math.max(p.t+10,Math.min(baseline-5,cy+offset)),label,{color,compact:validSeries.length>3}):''}`}).join('');
+    const dots=(s.values||[]).map((v,i)=>{if(v==null)return'';const vacation=!!s.vacations?.[i],cx=x(i),cy=y(v),offset=(si%3===0?-10:si%3===1?15:-22),label=valueFormatter?valueFormatter(v):chartValueText(v,{percent,decimals}),visible=s.labels===false?false:(s.labelMode==='all'?true:chartLabelVisible(i,labels.length)),point=s.points===false?'':`${vacation?`<circle cx="${cx}" cy="${cy}" r="${pointRadius+4.2}" fill="none" stroke="var(--warn)" stroke-width="2.2" class="vacation-point-halo chart-series-shape" data-series-index="${si}" data-point-index="${i}"></circle>`:''}<circle cx="${cx}" cy="${cy}" r="${vacation?pointRadius+0.8:pointRadius}" fill="${color}" class="chart-point chart-series-shape${vacation?' vacation-point':''}" style="--series-color:${color}" data-series-index="${si}" data-point-index="${i}"></circle>`;return `${point}${visible?chartDataLabelSvg(cx,Math.max(p.t+10,Math.min(baseline-5,cy+offset)),label,{color,compact:validSeries.length>3}):''}`}).join('');
     return areas+linePaths+dots;
   }).join('');
   const rulers=(labels||[]).map((_,i)=>`<line x1="${x(i)}" y1="${p.t}" x2="${x(i)}" y2="${baseline}" class="chart-ruler" data-ruler-index="${i}"></line>`).join('');

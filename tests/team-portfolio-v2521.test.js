@@ -10,8 +10,8 @@ const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 const exporter = require(join(root, 'js', 'chart-export.js'));
 const pkg = require(join(root, 'package.json'));
 
-test('V2.52.2 adiciona evolução combinada nos cards de Todos os Squads', () => {
-  assert.equal(pkg.version, '2.52.2');
+test('V2.52.3 adiciona evolução combinada nos cards de Todos os Squads', () => {
+  assert.equal(pkg.version, '2.52.3');
   assert.match(app, /function squadPortfolioTrendBuckets\(/);
   assert.match(app, /days<=15\?'daily':days<=45\?'weekly':'monthly'/);
   assert.match(app, /function renderSquadPortfolioTrendChart\(/);
@@ -52,6 +52,6 @@ test('exportação transparente usa contraste explícito e oferece variante para
   assert.ok(index.includes('value="transparent-dark"'));
 });
 
-test('V2.52.2 permanece frontend-only', () => {
-  assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.2.sql')), false);
+test('V2.52.3 permanece frontend-only', () => {
+  assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
 });

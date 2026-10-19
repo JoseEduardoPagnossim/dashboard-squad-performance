@@ -1,3 +1,14 @@
+## V2.52.3 — Benchmark consolidado de avaliação
+
+- Adiciona, abaixo dos quatro cards de Squad, um gráfico consolidado da taxa de avaliação da operação ao longo das competências.
+- A taxa principal é ponderada pelo volume real: avaliações ÷ atendimentos elegíveis de todos os Squads.
+- Inclui linha de tendência linear, objetivo fixo de **60%** e limite mínimo fixo de **20%**.
+- Exibe taxa atual, distância para o objetivo e direção da tendência em p.p. por competência.
+- O gráfico respeita a escala percentual inteligente e também pode ser exportado para apresentação.
+- Sem migration nova.
+
+Detalhes: `docs/BENCHMARK_AVALIACAO_V2.52.3.md`.
+
 # Soften Performance Hub
 
 ## V2.52.2 — Rótulos e exportação dos gráficos dos Squads
@@ -59,7 +70,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.52.0`<br>
+**Versão atual:** `2.52.3`<br>
 
 
 

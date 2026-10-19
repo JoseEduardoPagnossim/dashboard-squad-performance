@@ -1,3 +1,13 @@
+## V2.52.3 — Benchmark consolidado de avaliação
+
+- Novo card de largura total em **Visão do Squad → Todos os Squads** com a evolução consolidada da taxa de avaliação.
+- Taxa calculada por volume real da operação, usando avaliações ÷ atendimentos elegíveis.
+- Referências fixas de **60% objetivo** e **20% limite mínimo**.
+- Linha de tendência linear para leitura da direção histórica.
+- Rótulos da série principal, resumo da taxa atual/gap/tendência e exportação pelo mesmo fluxo da V2.52.x.
+- `renderIndicatorLineChart` passa a aceitar controle por série para área, pontos e rótulos, sem alterar o comportamento padrão dos gráficos existentes.
+- Frontend-only: sem migration nova.
+
 ## V2.52.2 — Rótulos e exportação dos gráficos dos Squads
 
 - Habilita o botão **Exportar** nos quatro gráficos `Volume × avaliação` da Visão do Squad.

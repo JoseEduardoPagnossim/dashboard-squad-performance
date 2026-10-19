@@ -2812,3 +2812,19 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 .squad-card-trend .chart-data-label.squad-trend-pct-label{font-size:8.25px!important}
 @media(max-width:1100px){.squad-trend-head{flex-wrap:wrap}.squad-trend-head .chart-export-trigger{margin-left:auto!important}.squad-card-trend .chart-data-label.squad-trend-bar-label,.squad-card-trend .chart-data-label.squad-trend-pct-label{font-size:7.5px!important}}
 @media(max-width:720px){.squad-trend-head .chart-export-trigger{width:auto!important;margin-left:auto!important}.squad-card-trend .chart-data-label.squad-trend-bar-label,.squad-card-trend .chart-data-label.squad-trend-pct-label{font-size:7px!important}}
+
+
+/* V2.52.3 - BENCHMARK CONSOLIDADO DA VISAO DOS SQUADS */
+.portfolio-benchmark-card{margin-top:14px;padding:22px;overflow:hidden}
+.portfolio-benchmark-card .section-title{align-items:center}
+.portfolio-benchmark-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.portfolio-benchmark-kpis>div{padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.018)}
+.portfolio-benchmark-kpis span,.portfolio-benchmark-kpis strong,.portfolio-benchmark-kpis small{display:block}
+.portfolio-benchmark-kpis span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.portfolio-benchmark-kpis strong{margin-top:4px;font-size:18px;color:var(--text)}
+.portfolio-benchmark-kpis small{margin-top:2px;font-size:8px;color:var(--muted)}
+.portfolio-benchmark-chart.chart,.portfolio-benchmark-chart.chart.interactive-chart{height:auto!important;min-height:360px;margin-top:10px}
+.portfolio-benchmark-chart .chart-plot-scroll{overflow-x:auto}
+.portfolio-benchmark-chart .chart-data-label{paint-order:stroke fill;stroke:var(--panel);stroke-width:3.2px;stroke-linejoin:round;font-weight:900}
+.portfolio-benchmark-card.is-empty .portfolio-benchmark-kpis{opacity:.55}
+@media(max-width:820px){.portfolio-benchmark-kpis{grid-template-columns:1fr}.portfolio-benchmark-card{padding:18px}.portfolio-benchmark-chart.chart,.portfolio-benchmark-chart.chart.interactive-chart{min-height:320px}}
