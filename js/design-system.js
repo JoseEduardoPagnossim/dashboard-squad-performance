@@ -209,7 +209,7 @@
     },true);
     document.addEventListener('change',event=>{if(event.target?.matches?.('select[data-ds-select-ready="1"]'))syncSelectControl(event.target,{rebuild:true})},true);
     window.addEventListener('resize',()=>openSelectControl?positionSelectMenu(openSelectControl):syncAllSelectControls(),{passive:true});
-    window.addEventListener('scroll',()=>{if(openSelectControl)closeSelectControl(openSelectControl)},{passive:true,capture:true});
+    window.addEventListener('scroll',event=>{if(!openSelectControl)return;const target=event.target;if(target===openSelectControl.menu||openSelectControl.menu?.contains?.(target))return;closeSelectControl(openSelectControl)},{passive:true,capture:true});
     window.setInterval(()=>{if(!document.hidden)syncAllSelectControls()},350);
   }
 

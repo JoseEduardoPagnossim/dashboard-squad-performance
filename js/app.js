@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.53.0';
+  const APP_VERSION = '2.53.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -202,6 +202,10 @@
     qualityFullError:'',
     dataPromises:{},
     orgOverviewLoaded:false,
+    orgTechnicianOverviewLoaded:false,
+    orgDailyRangeKey:'',
+    orgDailyRangeStart:null,
+    orgDailyRangeEnd:null,
     orgOverviewLoading:null,
     superAdminCommissionsLoaded:false,
     superAdminCommissionsLoading:null,
@@ -4551,7 +4555,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }else{
         const targetCode=pending.codes?.[0],s=state.squads?.[targetCode];if(!targetCode||!s)throw new Error('Squad selecionado não está disponível.');const previous=s.months[id];if(previous?.isClosed)throw new Error(`${MONTHS_PT[month-1]} ${year} está fechado no Squad ${targetCode}. Reabra o mês antes de importar.`);const data=buildMonthFromCsv(pending.rows,id,pending.fileName,previous,targetCode);s.months[id]=data;importedSquads=1;importedTechs=data.technicians.length;if(state.supabase){$('#importMessage').textContent=`Gravando Squad ${targetCode}...`;$('#importProgress').style.width='70%';const persisted=await persistImportedMonth(data,s);identityReconciled+=safe(persisted?.reconciledDuplicates)}historySync=syncHistoricalServiceDailyFromCsv(pending,id);if(historySync.changed.length&&state.supabase){$('#importMessage').textContent='Sincronizando notas diárias das competências anteriores...';await persistHistoricalServiceDailySync(historySync)}await logAuditEvent('month.import_service',{entityType:'squad_month',entityId:data.dbId||id,squadId:s?.dbId||null,description:`Importação operacional de ${data.monthName} ${data.year} no Squad ${targetCode}.`,metadata:{period:id,fileName:pending.fileName,checksum:pending.checksum,kind:'service',technicians:(data.technicians||[]).length,sourceRows:(pending.rows||[]).filter(r=>r.group===targetCode&&r.id===id).length,ignored:safe(pending.ignored),historicalMonthsPatched:safe(historySync.monthsPatched),identityDuplicatesReconciled:identityReconciled}});
       }
-      saveDemoSquads();state.financeRankingCache={};if(state.analysisMode==='competence'&&state.analysisPreset!=='custom'){const id=state.analysisCompetenceId||state.currentId,preset=state.analysisPreset,range=competencePresetRange(id,preset,'state');if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisCompetenceId=id;}}refreshSelectors();await recordCompletedImport(pending,id,snapshot,{importedSquads,importedTechnicians:importedTechs,historicalMonthsPatched:safe(historySync?.monthsPatched),identityDuplicatesReconciled:identityReconciled});render();state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${importedSquads} Squad(s) e ${importedTechs} técnico(s) atualizados.${identityReconciled?` ${identityReconciled} registro(s) duplicado(s) reconciliado(s).`:''}${historySync?.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
+      saveDemoSquads();state.financeRankingCache={};state.orgOverviewLoaded=false;state.orgTechnicianOverviewLoaded=false;state.orgDailyRangeKey='';state.orgDailyRangeStart=null;state.orgDailyRangeEnd=null;if(state.analysisMode==='competence'&&state.analysisPreset!=='custom'){const id=state.analysisCompetenceId||state.currentId,preset=state.analysisPreset,range=competencePresetRange(id,preset,'state');if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisCompetenceId=id;}}refreshSelectors();await recordCompletedImport(pending,id,snapshot,{importedSquads,importedTechnicians:importedTechs,historicalMonthsPatched:safe(historySync?.monthsPatched),identityDuplicatesReconciled:identityReconciled});render();state.pendingCsv=null;state.importPreview=null;state.expectedCsvKind=null;closeModal('importModal');toast(`${MONTHS_PT[month-1]} ${year}: ${importedSquads} Squad(s) e ${importedTechs} técnico(s) atualizados.${identityReconciled?` ${identityReconciled} registro(s) duplicado(s) reconciliado(s).`:''}${historySync?.monthsPatched?` Histórico diário corrigido em ${historySync.monthsPatched} competência(s).`:''}`);
     }catch(err){
       console.error(err);let rollbackError=null;if(pending.kind!=='quality-full'){try{await restoreImportSnapshot(snapshot)}catch(re){rollbackError=re;console.error('Falha ao restaurar snapshot após erro de importação.',re)}}$('#importMessage').textContent=pending.kind==='quality-full'?'Importação da Qualidade Completa interrompida. Reimporte a competência após corrigir o erro.':rollbackError?'Importação interrompida e a restauração automática precisa de conferência.':'Importação cancelada e estado anterior restaurado.';$('#importDetails').textContent=(err.message||String(err))+(rollbackError?` | Falha na restauração: ${rollbackError.message||rollbackError}`:'')+((state.pendingCsv?.kind==='quality'&&state.supabase)?' Se a tabela de qualidade ainda não existir, execute supabase/migrations/MIGRACAO_V2.27.0.sql no Supabase.':'')+((state.pendingCsv?.kind==='quality-full'&&state.supabase)?' Execute supabase/migrations/MIGRACAO_V2.53.0.sql antes da primeira importação.':'');$('#importProgress').style.width='100%';
       const failed=normalizeImportHistory({batchKey:makeImportBatchKey(),kind:pending.kind,period:id,fileName:pending.fileName,checksum:pending.checksum,scope:preview?.codes||pending.codes||[],rows:preview?.summary?.rows||0,ignored:safe(pending.ignored),unmatched:(pending.unmatched||[]).length,status:'failed',createdAt:new Date().toISOString(),createdBy:state.user?.fullName||state.user?.email||'',risk:'error',details:{error:err.message||String(err),autoRollback:!rollbackError,rollbackError:rollbackError?.message||null}});await persistImportHistory(failed);
@@ -5044,7 +5048,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return{userId:authUser.id,email:profile.email||authUser.email,fullName:profile.full_name||profile.fullName||authUser.email,role:normalizeAccessRole(profile.role),organizationId:profile.organization_id||profile.organizationId||null,squadCode:profile.squad?.code||profile.squads?.code||profile.squadCode||null,techName:profile.technician_name?normalizeName(profile.technician_name):(profile.techName?normalizeName(profile.techName):null),permissions:profile.permissions||{},uiPreferences:profile.ui_preferences||profile.uiPreferences||null,avatarPath:profile.avatar_path||profile.avatarPath||null,avatarUrl:null};
   }
   function hydrateInitialContext(context,authUser){
-    const profile=context?.profile||{};state.user=buildUserFromInitialProfile(profile,authUser);state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];state.presentationDataMeta=null;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissions=[];state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;
+    const profile=context?.profile||{};state.user=buildUserFromInitialProfile(profile,authUser);state.squads={};state.orgOverview=[];state.orgTechnicianOverview=[];state.orgDailyOverview=[];state.orgTechnicianDailyOverview=[];state.orgOverviewLoaded=false;state.orgTechnicianOverviewLoaded=false;state.orgDailyRangeKey='';state.orgDailyRangeStart=null;state.orgDailyRangeEnd=null;state.presentationDataMeta=null;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissions=[];state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;
     const themeScope=`theme:${state.user.organizationId||'org'}`;
     for(const row of context?.squads||[]){const code=String(row.code||'').toUpperCase();if(!code)continue;const cachedTheme=readPerformanceCache(themeScope,performanceThemeCacheId(code));state.squads[code]={code,name:row.name||`Squad ${code}`,dbId:row.id,months:{},theme:cachedTheme?.value?normalizeThemePayload(cachedTheme.value):undefined};}
     const codeById=new Map(Object.values(state.squads).map(s=>[String(s.dbId),s.code]));
@@ -5087,15 +5091,48 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   async function ensureMonthsLoaded(codes,ids,{silent=false}={}){
     const jobs=[];for(const code of [...new Set(codes||[])])for(const id of [...new Set(ids||[])])if(state.squads?.[code]?.months?.[id]&&!isPerformanceFullMonth(state.squads[code].months[id]))jobs.push(ensureMonthLoaded(code,id,{silent:true}).catch(err=>null));if(!jobs.length)return[];if(!silent)setDataLoadIndicator(true,`Carregando ${jobs.length} competencia(s)...`);try{return await Promise.all(jobs);}finally{if(!silent)setDataLoadIndicator(false);}
   }
+  function orgDailyRequestedRange(){
+    let start=state.analysisStartDate||null,end=state.analysisEndDate||null;
+    if((!start||!end)&&(state.analysisCompetenceId||state.currentId)){
+      const bounds=competenceBounds(state.analysisCompetenceId||state.currentId,'state');
+      start=start||bounds?.min||null;end=end||bounds?.max||null;
+    }
+    if(start&&end&&start>end)[start,end]=[end,start];
+    return{start,end,key:`${start||''}|${end||''}`};
+  }
+  async function fetchRpcPaged(name,args={},pageSize=900){
+    const rows=[];let from=0;const size=Math.max(100,Math.min(900,safe(pageSize)||900));
+    for(let page=0;page<100;page++){
+      let query=state.supabase.rpc(name,args);
+      if(query&&typeof query.range==='function')query=query.range(from,from+size-1);
+      const {data,error}=await query;if(error)throw error;const batch=Array.isArray(data)?data:[];rows.push(...batch);
+      if(batch.length<size)return rows;from+=size;
+    }
+    throw new Error(`A consulta ${name} excedeu o limite seguro de paginacao.`);
+  }
   async function ensureOrgOverviewData({daily=false,technicians=false,force=false,strict=false}={}){
-    if(!state.supabase)return;if(state.orgOverviewLoaded&&!force&&(!daily||state.orgDailyOverview.length)&&(!technicians||state.orgTechnicianOverview.length))return;
-    if(state.orgOverviewLoading)return state.orgOverviewLoading;
+    if(!state.supabase)return;
+    const requested=orgDailyRequestedRange(),needOverview=force||!state.orgOverviewLoaded,needTechnicians=technicians&&(force||!state.orgTechnicianOverviewLoaded),needDaily=daily&&(force||state.orgDailyRangeKey!==requested.key);
+    if(!needOverview&&!needTechnicians&&!needDaily)return;
+    if(state.orgOverviewLoading){await state.orgOverviewLoading;return ensureOrgOverviewData({daily,technicians,force:false,strict});}
     state.orgOverviewLoading=(async()=>{try{
-      const jobs=[state.supabase.rpc('get_org_squad_monthly_overview')];if(technicians)jobs.push(state.supabase.rpc('get_org_technician_monthly_overview'));if(daily){jobs.push(state.supabase.rpc('get_org_daily_attendance_overview'));jobs.push(state.supabase.rpc('get_org_technician_daily_overview'));}
-      const results=await Promise.all(jobs);let i=0;const overview=results[i++];if(overview.error)throw overview.error;state.orgOverview=(overview.data||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),totalAtt:safe(r.total_att),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct),technicianCount:safe(r.technician_count)}));
-      if(technicians){const x=results[i++];if(x.error)throw x.error;state.orgTechnicianOverview=(x.data||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),technicianName:r.technician_name||'',att:safe(r.att),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct),points:safe(r.points),status:String(r.status||'').toUpperCase()}));}
-      if(daily){const x=results[i++];if(x.error)throw x.error;state.orgDailyOverview=(x.data||[]).map(r=>({squadCode:r.squad_code,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),totalAtt:safe(r.total_att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct)}));const y=results[i++];if(y.error)throw y.error;state.orgTechnicianDailyOverview=(y.data||[]).map(r=>({squadCode:r.squad_code,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct)}));}
-      state.orgOverviewLoaded=true;
+      const jobs=[];
+      if(needOverview)jobs.push(['overview',state.supabase.rpc('get_org_squad_monthly_overview')]);
+      if(needTechnicians)jobs.push(['technicians',state.supabase.rpc('get_org_technician_monthly_overview')]);
+      if(needDaily){
+        if(!requested.start||!requested.end)throw new Error('Periodo de analise indisponivel para carregar os consolidados diarios.');
+        const params={p_start_date:requested.start,p_end_date:requested.end};
+        jobs.push(['daily',fetchRpcPaged('get_org_daily_attendance_overview_range',params)]);
+        jobs.push(['technicianDaily',fetchRpcPaged('get_org_technician_daily_overview_range',params)]);
+      }
+      const results=await Promise.all(jobs.map(async([key,promise])=>[key,await promise]));
+      for(const [key,result] of results){
+        if(key==='overview'){if(result.error)throw result.error;state.orgOverview=(result.data||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),totalAtt:safe(r.total_att),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct),technicianCount:safe(r.technician_count)}));state.orgOverviewLoaded=true;}
+        else if(key==='technicians'){if(result.error)throw result.error;state.orgTechnicianOverview=(result.data||[]).map(r=>({squadCode:r.squad_code,squadName:r.squad_name,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),technicianName:r.technician_name||'',att:safe(r.att),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct),points:safe(r.points),status:String(r.status||'').toUpperCase()}));state.orgTechnicianOverviewLoaded=true;}
+        else if(key==='daily')state.orgDailyOverview=(result||[]).map(r=>({squadCode:r.squad_code,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),totalAtt:safe(r.total_att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),evalPct:safe(r.eval_pct)}));
+        else if(key==='technicianDaily')state.orgTechnicianDailyOverview=(result||[]).map(r=>({squadCode:r.squad_code,id:monthIdFromParts(r.year,r.month),year:safe(r.year),month:safe(r.month),day:safe(r.day),date:isoDateParts(r.year,r.month,r.day),technicianName:r.technician_name||'',att:safe(r.att),notes5:safe(r.notes5),notes4:safe(r.notes4),notes3:safe(r.notes3),notes2:safe(r.notes2),notes1:safe(r.notes1),totalEval:safe(r.total_eval),avg:safe(r.avg_rating),evalPct:safe(r.eval_pct)}));
+      }
+      if(needDaily){state.orgDailyRangeKey=requested.key;state.orgDailyRangeStart=requested.start;state.orgDailyRangeEnd=requested.end;}
     }catch(err){console.warn('Consolidados organizacionais indisponiveis.',err);if(strict)throw err;}finally{state.orgOverviewLoading=null;}})();return state.orgOverviewLoading;
   }
   async function ensureSuperAdminCommissions(force=false){

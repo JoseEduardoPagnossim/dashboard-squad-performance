@@ -145,3 +145,9 @@ A migration não soma nem apaga métricas mensais existentes. Se uma competênci
 `MIGRACAO_V2.53.0.sql` cria `quality_full_daily`, uma base agregada diária para o gráfico Serviço × Produto × Empresa alimentado por CSV completo, sem deduplicação prévia. A tabela armazena somente contagens de notas por Squad/data e metadados técnicos da importação; não recebe nome, CPF/CNPJ ou identificador de cliente.
 
 A migration também amplia `import_batches.kind` com `quality-full`. Leitura segue `can_read_squad(uuid)` e escrita exige `can_admin_squad(uuid)`. Não é necessário republicar Edge Functions.
+
+## V2.53.1 — Consolidados diários por período
+
+`MIGRACAO_V2.53.1.sql` adiciona `get_org_daily_attendance_overview_range(date,date)` e `get_org_technician_daily_overview_range(date,date)`. As novas RPCs restringem o consolidado diário ao período solicitado pelo frontend e preservam o isolamento por organização do usuário autenticado. O frontend também pagina os resultados, evitando truncamento em 1.000 linhas quando o período possui muitos técnicos/dias.
+
+Não é necessário republicar Edge Functions.

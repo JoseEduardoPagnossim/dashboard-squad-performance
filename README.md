@@ -1,3 +1,13 @@
+## V2.53.1 — Consolidados diários por período + seletor de competência estável
+
+- Corrige o gráfico **Atendimentos diários consolidados x média do período**, que podia parar após cerca de 1.000 linhas retornadas pela Data API.
+- As RPCs diárias passam a receber `data inicial` e `data final` e o frontend pagina resultados em blocos seguros.
+- O cache diário passa a ser identificado pelo intervalo ativo e é recarregado quando o **Período de análise** muda.
+- Corrige o seletor de **Mês a importar** da Central de Importação: rolar a própria lista não fecha mais o menu, permitindo alcançar competências antigas como Janeiro.
+- Requer `supabase/migrations/MIGRACAO_V2.53.1.sql` em bases existentes.
+
+Detalhes: `docs/CONSOLIDADOS_DIARIOS_V2.53.1.md`.
+
 ## V2.53.0 — Qualidade Completa sem deduplicação
 
 - Adiciona importação exclusiva de **Qualidade Completa** para CSV sem remoção de clientes repetidos.
@@ -81,7 +91,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.53.0`<br>
+**Versão atual:** `2.53.1`<br>
 
 
 

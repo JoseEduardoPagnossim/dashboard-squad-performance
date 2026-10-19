@@ -1,3 +1,13 @@
+## V2.53.1 — Consolidados diários por período + seletor de competência estável
+
+- Corrige truncamento dos gráficos diários causado pelo retorno máximo por requisição da Data API.
+- Adiciona `get_org_daily_attendance_overview_range(date,date)` e `get_org_technician_daily_overview_range(date,date)`.
+- O frontend envia o período ativo e pagina respostas em lotes de até 900 linhas.
+- O consolidado diário é invalidado/recarregado quando o período muda.
+- Corrige o Design System para não fechar um select customizado ao rolar o próprio menu de opções.
+- O ajuste resolve a seleção de Janeiro em arquivos com muitas competências na Central de Importação.
+- Requer `MIGRACAO_V2.53.1.sql`.
+
 ## V2.53.0 — Qualidade Completa sem deduplicação
 
 - Cria a importação exclusiva **Qualidade Completa**, destinada ao CSV completo de avaliações sem deduplicação de clientes.
