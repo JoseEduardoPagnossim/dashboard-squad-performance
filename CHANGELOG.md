@@ -1,3 +1,11 @@
+## V2.53.2 — Média diária somente em dias com atendimento
+
+- Ajusta o gráfico **Atendimentos diários consolidados x média do período** para considerar somente datas com volume consolidado maior que zero.
+- Dias sem nenhum atendimento deixam de aparecer na série e não entram no divisor da média diária.
+- A linha de referência passa a se chamar **Média dos dias com atendimento**.
+- O cabeçalho informa quantos dias com atendimento foram considerados no cálculo.
+- Sem migration nova; reutiliza as RPCs por período da V2.53.1.
+
 ## V2.53.1 — Consolidados diários por período + seletor de competência estável
 
 - Corrige truncamento dos gráficos diários causado pelo retorno máximo por requisição da Data API.

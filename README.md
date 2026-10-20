@@ -1,12 +1,13 @@
-## V2.53.1 — Consolidados diários por período + seletor de competência estável
+## V2.53.2 — Média diária somente em dias com atendimento
 
-- Corrige o gráfico **Atendimentos diários consolidados x média do período**, que podia parar após cerca de 1.000 linhas retornadas pela Data API.
-- As RPCs diárias passam a receber `data inicial` e `data final` e o frontend pagina resultados em blocos seguros.
-- O cache diário passa a ser identificado pelo intervalo ativo e é recarregado quando o **Período de análise** muda.
-- Corrige o seletor de **Mês a importar** da Central de Importação: rolar a própria lista não fecha mais o menu, permitindo alcançar competências antigas como Janeiro.
-- Requer `supabase/migrations/MIGRACAO_V2.53.1.sql` em bases existentes.
+- O gráfico **Atendimentos diários consolidados x média do período** ignora datas cujo volume consolidado seja zero.
+- A média diária passa a dividir o total somente pelos dias em que realmente houve atendimento registrado.
+- Dias sem atendimento também deixam de ser plotados no gráfico, evitando quedas artificiais para zero.
+- O cabeçalho informa a quantidade de dias considerados e a linha pontilhada passa a representar a **Média dos dias com atendimento**.
+- Sem migration nova; requer apenas que a V2.53.1 já esteja aplicada quando a base usa Supabase.
 
-Detalhes: `docs/CONSOLIDADOS_DIARIOS_V2.53.1.md`.
+Detalhes: `docs/DIAS_COM_ATENDIMENTO_V2.53.2.md`.
+
 
 ## V2.53.0 — Qualidade Completa sem deduplicação
 
@@ -91,7 +92,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.53.1`<br>
+**Versão atual:** `2.53.2`<br>
 
 
 
