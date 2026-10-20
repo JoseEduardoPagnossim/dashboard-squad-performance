@@ -1,3 +1,10 @@
+## V2.54.1 — Hotfix dos seletores de mês e ano do calendário
+
+- Corrige os controles de **mês** e **ano** da navegação direta do calendário no seletor de Período de análise.
+- O Design System transforma `<select>` em botões visuais; a regra genérica dos botões de navegação estava reduzindo esses dois controles para `34x34px` e escondendo seus textos.
+- O hotfix aplica dimensões e layout próprios aos proxies de mês/ano, preservando as setas anterior/próximo e toda a lógica da V2.54.0.
+- Frontend-only; sem migration e sem alteração de filtros, cálculos ou persistência do contexto global.
+
 ## V2.54.0 — Seleção avançada de período e contexto global
 
 - Intervalo livre passa a permitir escolher **Competência inicial** e **Competência final** diretamente, usando o primeiro/último dia disponível de cada competência.

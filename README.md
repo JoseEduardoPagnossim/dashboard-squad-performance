@@ -1,3 +1,9 @@
+## V2.54.1 — Hotfix dos seletores de mês e ano
+
+- Corrige a quebra visual dos seletores de **mês** e **ano** dentro do calendário do **Período de análise**.
+- Mantém intactas as competências inicial/final, presets rápidos, navegação direta e contexto global persistente introduzidos na V2.54.0.
+- Frontend-only; sem migration.
+
 ## V2.54.0 — Seleção avançada de período e contexto global
 
 - Intervalo livre passa a permitir escolher **Competência inicial** e **Competência final** diretamente, usando o primeiro/último dia disponível de cada competência.
@@ -105,7 +111,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.54.0`<br>
+**Versão atual:** `2.54.1`<br>
 
 
 

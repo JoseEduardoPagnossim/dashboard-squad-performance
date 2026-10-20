@@ -2849,3 +2849,46 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 .period-picker-nav{grid-template-columns:34px minmax(0,1fr) 34px}.period-picker-jump{display:grid;grid-template-columns:minmax(140px,1fr) minmax(88px,.55fr);gap:6px;align-items:center;max-width:330px;width:100%;justify-self:center}.period-picker-jump select{width:100%;height:34px;border:1px solid var(--border);border-radius:9px;background:color-mix(in srgb,var(--panel2) 97%,var(--bg));color:var(--text);padding:0 9px;font:inherit;font-size:9px;font-weight:800;outline:none}.period-picker-jump .ds-select-proxy{min-width:0}
 @media(max-width:760px){.period-picker-free-head{align-items:flex-start}.period-free-boundaries{grid-template-columns:1fr}.period-free-boundaries>i{height:auto;transform:rotate(90deg)}.period-free-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.period-picker-jump{grid-template-columns:minmax(0,1fr) 90px;max-width:none}}
 @media(max-width:480px){.period-free-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.period-picker-jump{grid-template-columns:minmax(0,1fr) 78px}.period-picker-jump select{font-size:8px;padding:0 6px}}
+
+/* ============================================================
+   V2.54.1 - HOTFIX NAVEGACAO MES/ANO DO PERIODO
+   O seletor customizado do Design System usa um <button> como proxy.
+   A regra generica .period-picker-nav button limitava tambem esses
+   proxies a 34x34px, escondendo os textos de mes e ano.
+   ============================================================ */
+.period-picker-jump .ds-select-proxy{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  display:block;
+}
+.period-picker-jump .ds-select-trigger{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0 9px 0 10px!important;
+  border:1px solid var(--border)!important;
+  border-radius:9px!important;
+  background:color-mix(in srgb,var(--panel2) 97%,var(--bg))!important;
+  color:var(--text)!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 18px!important;
+  align-items:center!important;
+  gap:6px!important;
+  font:inherit!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  text-align:left!important;
+}
+.period-picker-jump .ds-select-value{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media(max-width:480px){
+  .period-picker-jump .ds-select-trigger{font-size:8px!important;padding-left:7px!important;padding-right:7px!important}
+}
