@@ -13,7 +13,7 @@ const migration=readFileSync(migrationPath,'utf8');
 const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
 
  test('V2.53.0 publica a importacao exclusiva e os dois pontos de visualizacao',()=>{
-  assert.equal(pkg.version,'2.54.1');
+  assert.equal(pkg.version,'2.55.0');
   assert.ok(index.includes('id="adminQualityFullImportBtn"'));
   assert.ok(index.includes('Importar Qualidade Completa'));
   assert.ok(index.includes('id="portfolioQualityFullChart"'));
@@ -30,8 +30,8 @@ test('V2.53.0 usa fonte separada sem alterar a importacao Produto Empresa existe
   assert.match(app,/deduplicated:false/);
   assert.match(app,/Fonte: Qualidade Completa/);
   assert.match(app,/focusNumeric:true/);
-  assert.ok(index.includes('<b>Produto/Empresa:</b>'));
-  assert.ok(index.includes('<b>Qualidade Completa:</b>'));
+  assert.ok(index.includes('<b>Produto/Empresa e Qualidade Completa:</b>'));
+  assert.ok(index.includes('◆ Importar Qualidade Completa'));
 });
 
 test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
@@ -49,8 +49,8 @@ test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
 });
 
 test('V2.53.0 atualiza cache de assets e scripts',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.54.1'));
-  assert.ok(index.includes('js/import-engine.js?v=2.54.1'));
-  assert.ok(index.includes('js/app.js?v=2.54.1'));
-  assert.ok(index.includes('V2.54.1'));
+  assert.ok(index.includes('css/styles.css?v=2.55.0'));
+  assert.ok(index.includes('js/import-engine.js?v=2.55.0'));
+  assert.ok(index.includes('js/app.js?v=2.55.0'));
+  assert.ok(index.includes('V2.55.0'));
 });

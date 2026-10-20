@@ -1,3 +1,15 @@
+## V2.55.0 — Preparação inteligente de CSV
+
+- Produto/Empresa e Qualidade Completa podem usar o mesmo relatório bruto exportado do CRM.
+- Adiciona uma etapa de preparação para mapear Data, Técnico, Serviço, Produto, Empresa e Grupo diretamente para as colunas da origem.
+- Colunas extras são ignoradas automaticamente, eliminando a necessidade de apagar campos manualmente no Excel.
+- Produto/Empresa passa a oferecer deduplicação interna por uma ou mais colunas escolhidas, separada por competência, com opção de manter a primeira ou a última ocorrência.
+- Qualidade Completa mantém todas as respostas e deixa a deduplicação desativada por padrão para preservar a semântica do gráfico consolidado.
+- Mapeamento e chaves do mesmo relatório podem ser lembrados localmente.
+- Frontend-only; sem migration e sem alteração nas regras de cálculo ou persistência.
+
+Detalhes: `docs/PREPARACAO_CSV_V2.55.0.md`.
+
 ## V2.54.1 — Hotfix dos seletores de mês e ano
 
 - Corrige a quebra visual dos seletores de **mês** e **ano** dentro do calendário do **Período de análise**.
@@ -111,7 +123,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.54.1`<br>
+**Versão atual:** `2.55.0`<br>
 
 
 

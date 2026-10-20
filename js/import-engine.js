@@ -67,6 +67,38 @@
     }
     return{indexes,missing,headers:original,normalizedHeaders:normalized};
   }
+
+  const QUALITY_PREP_DEDUPE_ALIASES=['idcliente','clienteid','codigocliente','codcliente','cnpj','cpf','documento','documentocliente','clientecnpj','razaosocial','nomecliente','cliente'];
+  function suggestQualityPreparation(headers=[],kind='quality'){
+    const original=(headers||[]).map(v=>String(v||'').trim()),base=kind==='quality-full'?resolveQualityFullImportColumns(original):resolveQualityImportColumns(original),full=resolveQualityFullImportColumns(original),mapping={date:base.indexes.date,technician:base.indexes.technician,product:base.indexes.product,company:base.indexes.company,service:full.indexes.service,group:full.indexes.group};
+    const normalized=original.map(normalizeCsvHeader),dedupeIndex=normalized.findIndex(h=>QUALITY_PREP_DEDUPE_ALIASES.includes(h));
+    return{headers:original,mapping,dedupeColumns:dedupeIndex>=0?[dedupeIndex]:[],dedupeEnabled:kind==='quality',keep:'first'};
+  }
+  function qualityPreparationMonthKey(value){
+    const raw=String(value||'').trim();if(!raw)return'';
+    let m=raw.match(/^(\d{4})[-\/]([01]?\d)(?:[-\/]([0-3]?\d))?/);if(m)return`${m[1]}-${String(Number(m[2])).padStart(2,'0')}`;
+    m=raw.match(/^([0-3]?\d)[-\/]([01]?\d)[-\/](\d{4})/);if(m)return`${m[3]}-${String(Number(m[2])).padStart(2,'0')}`;
+    m=raw.match(/(\d{4})[-\/]([01]?\d)/);return m?`${m[1]}-${String(Number(m[2])).padStart(2,'0')}`:'';
+  }
+  function qualityPreparationKeyValue(value){return String(value||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').replace(/[^a-z0-9@._ -]/g,'').trim()}
+  function csvEscape(value){const text=String(value??'');return /[";,\n\r]/.test(text)?`"${text.replace(/"/g,'""')}"`:text}
+  function prepareQualitySource({headers=[],rows=[],kind='quality',mapping={},dedupeEnabled=false,dedupeColumns=[],keep='first'}={}){
+    if(!['quality','quality-full'].includes(kind))throw new Error('Tipo de preparação de qualidade inválido.');
+    const required=kind==='quality-full'?['date','technician','service','product','company']:['date','technician','product','company'];
+    const missing=required.filter(key=>!Number.isInteger(Number(mapping?.[key]))||Number(mapping[key])<0||Number(mapping[key])>=headers.length);if(missing.length)throw new Error(`Mapeie as colunas obrigatórias: ${missing.join(', ')}.`);
+    const dedupeIdx=(dedupeColumns||[]).map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<headers.length);if(dedupeEnabled&&!dedupeIdx.length)throw new Error('Selecione ao menos uma coluna para deduplicar.');
+    const sourceRows=(rows||[]).map((row,index)=>({row,index})),dateIdx=Number(mapping.date),seen=new Map(),kept=[],duplicateIndexes=new Set();let blankDedupKeys=0;
+    if(dedupeEnabled){
+      for(const item of sourceRows){const month=qualityPreparationMonthKey(item.row[dateIdx]),parts=dedupeIdx.map(i=>qualityPreparationKeyValue(item.row[i]));if(parts.every(v=>!v)){blankDedupKeys++;continue}const key=`${month||'sem-competencia'}|${parts.join('|')}`;if(!seen.has(key))seen.set(key,item.index);else if(keep==='last'){duplicateIndexes.add(seen.get(key));seen.set(key,item.index)}else duplicateIndexes.add(item.index)}
+    }
+    for(const item of sourceRows)if(!duplicateIndexes.has(item.index))kept.push(item.row);
+    const get=(row,key)=>{const idx=Number(mapping?.[key]);return Number.isInteger(idx)&&idx>=0&&idx<row.length?row[idx]:''};
+    const canonicalHeaders=kind==='quality-full'?['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa','grupoAtendimento']:['DataAvaliacao','nomeApresentativo','NotaProduto','NotaEmpresa'];
+    const canonicalRows=kept.map(row=>kind==='quality-full'?[get(row,'date'),get(row,'technician'),get(row,'service'),get(row,'product'),get(row,'company'),get(row,'group')]:[get(row,'date'),get(row,'technician'),get(row,'product'),get(row,'company')]);
+    const csvText=[canonicalHeaders,...canonicalRows].map(row=>row.map(csvEscape).join(',')).join('\n');
+    return{csvText,headers:canonicalHeaders,rows:canonicalRows,stats:{sourceRows:sourceRows.length,sourceColumns:headers.length,resultRows:canonicalRows.length,duplicatesRemoved:duplicateIndexes.size,blankDedupKeys,dedupeEnabled:!!dedupeEnabled,dedupeColumns:dedupeIdx,keep:keep==='last'?'last':'first',partitionByCompetence:true},mapping:{...mapping}};
+  }
+
   function summarizeService(rows,period,codes,currentByCode={}){
     const squads=[];
     for(const code of codes||[]){
@@ -130,5 +162,5 @@
     };
   }
   function canRollback(record){return Boolean(record&&record.status==='success'&&record.beforeSnapshot&&Object.keys(record.beforeSnapshot||{}).length>0)}
-  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,resolveQualityImportColumns,resolveQualityFullImportColumns,summarizeService,summarizeQuality,summarizeQualityFull,validatePreview,historySummary,canRollback};
+  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,resolveQualityImportColumns,resolveQualityFullImportColumns,suggestQualityPreparation,prepareQualitySource,summarizeService,summarizeQuality,summarizeQualityFull,validatePreview,historySummary,canRollback};
 });
