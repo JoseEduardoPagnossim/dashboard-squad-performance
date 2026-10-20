@@ -10,25 +10,36 @@ test('workspace padrão ativa filtros persistentes sem visões ou favoritos', ()
   assert.deepEqual(ws.filterMemory,{});
 });
 
-test('memória de filtros é separada por tela e subseção', () => {
+test('memória local mantém mês e técnico separados por tela enquanto Squad e período ficam globais', () => {
   let ws=engine.normalizeWorkspace({});
   ws=engine.rememberFilters(ws,{page:'indicators',indicator:'quality',squad:'D',month:'2026-09',from:'2026-09-01',to:'2026-09-30'},'2026-10-05T18:00:00Z');
   ws=engine.rememberFilters(ws,{page:'indicators',indicator:'performance',squad:'E',month:'2026-10'},'2026-10-05T18:01:00Z');
-  assert.equal(ws.filterMemory['indicators:quality'].squad,'D');
-  assert.equal(ws.filterMemory['indicators:performance'].squad,'E');
+  assert.equal(ws.filterMemory['indicators:quality'].month,'2026-09');
+  assert.equal(ws.filterMemory['indicators:performance'].month,'2026-10');
+  assert.equal(ws.filterMemory['indicators:quality'].squad,undefined);
 });
 
-test('filtro explícito da rota tem prioridade sobre filtro lembrado', () => {
-  const memory={'team':{squad:'D',month:'2026-09',from:'2026-09-01',to:'2026-09-30'}};
-  const route=engine.mergeRememberedFilters({page:'team',squad:'E'},memory,true);
+test('contexto global preenche Squad e período sem sobrescrever filtros explícitos', () => {
+  const memory={'team':{month:'2026-09'}};
+  const globalContext={squad:'D',from:'2026-09-01',to:'2026-09-30'};
+  const route=engine.mergeRememberedFilters({page:'team',squad:'E'},memory,true,globalContext);
   assert.equal(route.squad,'E');
   assert.equal(route.month,'2026-09');
   assert.equal(route.from,'2026-09-01');
+  assert.equal(route.to,'2026-09-30');
+});
+
+test('contexto global pode ser lembrado entre sessões', () => {
+  let ws=engine.normalizeWorkspace({});
+  ws=engine.rememberGlobalContext(ws,{page:'team',squad:'D',from:'2026-01-01',to:'2026-10-20'},'2026-10-20T12:00:00Z');
+  assert.equal(ws.globalContext.squad,'D');
+  assert.equal(ws.globalContext.from,'2026-01-01');
+  assert.equal(ws.globalContext.to,'2026-10-20');
 });
 
 test('filtros persistentes podem ser desligados', () => {
-  const memory={'team':{squad:'D',month:'2026-09'}};
-  assert.deepEqual(engine.mergeRememberedFilters({page:'team'},memory,false),{page:'team'});
+  const memory={'team':{month:'2026-09'}},globalContext={squad:'D',from:'2026-01-01',to:'2026-10-20'};
+  assert.deepEqual(engine.mergeRememberedFilters({page:'team'},memory,false,globalContext),{page:'team'});
 });
 
 test('visão salva preserva rota e nome normalizados', () => {

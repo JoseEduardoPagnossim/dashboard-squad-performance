@@ -17,9 +17,9 @@ function topbarHtml(){
 }
 
 test('V2.49.1 identifica a versão correta',()=>{
-  assert.equal(pkg.version,'2.53.2');
-  assert.ok(index.includes('js/app.js?v=2.53.2'));
-  assert.ok(index.includes('css/styles.css?v=2.53.2'));
+  assert.equal(pkg.version,'2.54.0');
+  assert.ok(index.includes('js/app.js?v=2.54.0'));
+  assert.ok(index.includes('css/styles.css?v=2.54.0'));
 });
 
 test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
@@ -73,13 +73,13 @@ test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
   assert.match(app,/competenceSelect\?\.addEventListener\('input',handleCompetenceSelection\)/);
   assert.match(app,/competenceSelect\?\.addEventListener\('change',handleCompetenceSelection\)/);
   assert.match(app,/setPickerDraftFromCompetence\(id\);renderAnalysisPeriodPicker\(\)/);
-  assert.match(app,/ds-select-proxy\[data-for-select=\"periodCompetenceSelect\"\]/);
-  assert.match(app,/insideCompetencePortal/);
+  assert.match(app,/root\.querySelectorAll\('\.ds-select-proxy\.open'\)/);
+  assert.match(app,/insideSelectPortal/);
   assert.match(app,/SoftenDesignSystem\?\.syncSelects\?\.\(\{rebuild:true\}\)/);
 });
 
 test('R3 mantém menus customizados acima do Período de análise',()=>{
   assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
   assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
-  assert.ok(index.includes('css/styles.css?v=2.53.2'));
+  assert.ok(index.includes('css/styles.css?v=2.54.0'));
 });

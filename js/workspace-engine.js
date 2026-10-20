@@ -5,6 +5,8 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   const ROUTE_KEYS=['page','section','module','indicator','squad','month','tech','from','to'];
   const FILTER_KEYS=['squad','month','tech','from','to'];
+  const GLOBAL_FILTER_KEYS=['squad','from','to'];
+  const LOCAL_FILTER_KEYS=['month','tech'];
   const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','settings','profile','my-feedbacks','help']);
   const MAX_SAVED_VIEWS=30;
   const MAX_FAVORITES=20;
@@ -43,27 +45,46 @@
     FILTER_KEYS.forEach(k=>{if(r[k])out[k]=r[k]});
     return out;
   }
+  function globalFilterSnapshot(route={}){
+    const r=copyRoute(route),out={};
+    GLOBAL_FILTER_KEYS.forEach(k=>{if(r[k])out[k]=r[k]});
+    return out;
+  }
+  function localFilterSnapshot(route={}){
+    const r=copyRoute(route),out={};
+    LOCAL_FILTER_KEYS.forEach(k=>{if(r[k])out[k]=r[k]});
+    return out;
+  }
   function routeSignature(route={}){
     const r=copyRoute(route);
     return ROUTE_KEYS.filter(k=>r[k]).map(k=>`${k}=${encodeURIComponent(r[k])}`).join('&');
   }
-  function mergeRememberedFilters(route={},memory={},enabled=true){
+  function mergeRememberedFilters(route={},memory={},enabled=true,globalContext={}){
     const base=copyRoute(route);if(!enabled)return base;
+    const merged={...base},global=globalFilterSnapshot(globalContext);
+    GLOBAL_FILTER_KEYS.forEach(k=>{if(!merged[k]&&global[k])merged[k]=global[k]});
     const remembered=memory&&typeof memory==='object'?memory[routeContextKey(base)]:null;
-    if(!remembered||typeof remembered!=='object')return base;
-    const snap=filterSnapshot(remembered),merged={...base};
-    FILTER_KEYS.forEach(k=>{if(!merged[k]&&snap[k])merged[k]=snap[k]});
+    if(!remembered||typeof remembered!=='object')return copyRoute(merged);
+    const snap=localFilterSnapshot(remembered);
+    LOCAL_FILTER_KEYS.forEach(k=>{if(!merged[k]&&snap[k])merged[k]=snap[k]});
     return copyRoute(merged);
   }
   function rememberFilters(workspace,route,now=new Date().toISOString()){
-    const current=normalizeWorkspace(workspace),key=routeContextKey(route),snap=filterSnapshot(route);
+    const current=normalizeWorkspace(workspace),key=routeContextKey(route),snap=localFilterSnapshot(route);
     if(!current.persistentFilters||key==='home'||!Object.keys(snap).length)return current;
-    const previous=current.filterMemory?.[key]||{},previousSnap=filterSnapshot(previous);
+    const previous=current.filterMemory?.[key]||{},previousSnap=localFilterSnapshot(previous);
     if(JSON.stringify(previousSnap)===JSON.stringify(snap))return current;
     const entries=Object.entries(current.filterMemory||{}).filter(([k])=>k!==key);
     const next={[key]:{...snap,updatedAt:isoText(now)||new Date().toISOString()}};
     entries.sort((a,b)=>Date.parse(b[1]?.updatedAt||0)-Date.parse(a[1]?.updatedAt||0)).slice(0,MAX_FILTER_CONTEXTS-1).forEach(([k,v])=>{next[k]=v});
     return{...current,filterMemory:next};
+  }
+  function rememberGlobalContext(workspace,route,now=new Date().toISOString()){
+    const current=normalizeWorkspace(workspace);if(!current.persistentFilters)return current;
+    const snap=globalFilterSnapshot(route);if(!Object.keys(snap).length)return current;
+    const previous=globalFilterSnapshot(current.globalContext||{});
+    if(JSON.stringify(previous)===JSON.stringify(snap))return current;
+    return{...current,globalContext:{...snap,updatedAt:isoText(now)||new Date().toISOString()}};
   }
   function normalizeSavedView(item,index=0){
     const raw=item&&typeof item==='object'?item:{},route=copyRoute(raw.route),name=text(raw.name).slice(0,72);
@@ -80,7 +101,7 @@
     const raw=memory&&typeof memory==='object'?memory:{},entries=[];
     for(const [key,value] of Object.entries(raw)){
       if(!key||!value||typeof value!=='object')continue;
-      const snap=filterSnapshot(value);if(!Object.keys(snap).length)continue;
+      const snap=localFilterSnapshot(value);if(!Object.keys(snap).length)continue;
       entries.push([key.slice(0,120),{...snap,updatedAt:isoText(value.updatedAt)||new Date(0).toISOString()}]);
     }
     entries.sort((a,b)=>Date.parse(b[1].updatedAt)-Date.parse(a[1].updatedAt));
@@ -94,7 +115,8 @@
     for(const [i,item] of (Array.isArray(raw.favorites)?raw.favorites:[]).entries()){
       const fav=normalizeFavorite(item,i);if(fav&&!favorites.some(x=>x.signature===fav.signature))favorites.push(fav);if(favorites.length>=MAX_FAVORITES)break;
     }
-    return{version:1,persistentFilters:raw.persistentFilters!==false,filterMemory:normalizeFilterMemory(raw.filterMemory),savedViews:saved,favorites};
+    const global=globalFilterSnapshot(raw.globalContext||{}),globalContext=Object.keys(global).length?{...global,updatedAt:isoText(raw.globalContext?.updatedAt)||new Date(0).toISOString()}:{};
+    return{version:2,persistentFilters:raw.persistentFilters!==false,globalContext,filterMemory:normalizeFilterMemory(raw.filterMemory),savedViews:saved,favorites};
   }
   function createSavedView(workspace,{id,name,route,now=new Date().toISOString()}={}){
     const current=normalizeWorkspace(workspace),view=normalizeSavedView({id:id||`saved-${Date.now().toString(36)}`,name,route,createdAt:now,updatedAt:now},current.savedViews.length);
@@ -116,6 +138,6 @@
     return fav?{...current,favorites:[fav,...current.favorites].slice(0,MAX_FAVORITES)}:current;
   }
   function setPersistentFilters(workspace,enabled){const current=normalizeWorkspace(workspace);return{...current,persistentFilters:enabled!==false}}
-  function clearFilterMemory(workspace){const current=normalizeWorkspace(workspace);return{...current,filterMemory:{}}}
-  return{ROUTE_KEYS,FILTER_KEYS,MAX_SAVED_VIEWS,MAX_FAVORITES,normalizeText,copyRoute,routeContextKey,filterSnapshot,routeSignature,mergeRememberedFilters,rememberFilters,normalizeWorkspace,createSavedView,renameSavedView,deleteSavedView,favoriteForRoute,toggleFavorite,setPersistentFilters,clearFilterMemory};
+  function clearFilterMemory(workspace){const current=normalizeWorkspace(workspace);return{...current,globalContext:{},filterMemory:{}}}
+  return{ROUTE_KEYS,FILTER_KEYS,GLOBAL_FILTER_KEYS,LOCAL_FILTER_KEYS,MAX_SAVED_VIEWS,MAX_FAVORITES,normalizeText,copyRoute,routeContextKey,filterSnapshot,globalFilterSnapshot,localFilterSnapshot,routeSignature,mergeRememberedFilters,rememberFilters,rememberGlobalContext,normalizeWorkspace,createSavedView,renameSavedView,deleteSavedView,favoriteForRoute,toggleFavorite,setPersistentFilters,clearFilterMemory};
 });

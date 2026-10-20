@@ -2836,3 +2836,16 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 .quality-full-trend-card .section-title{align-items:flex-start;gap:16px}
 .quality-full-trend-card .section-title>.muted{max-width:46%;text-align:right;line-height:1.35}
 @media (max-width:900px){.quality-full-trend-card .section-title{flex-direction:column}.quality-full-trend-card .section-title>.muted{max-width:none;text-align:left}.quality-full-trend-chart{min-height:340px}}
+
+
+/* ============================================================
+   V2.54.0 - SELECAO AVANCADA DE PERIODO
+   Intervalo livre com competencias, presets e salto mes/ano.
+   ============================================================ */
+.period-picker-free-panel{display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch}
+.period-picker-free-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.period-picker-free-head>div{display:grid;gap:3px}.period-picker-free-head strong{font-size:10px}.period-picker-free-head small{font-size:8.5px;color:var(--muted);line-height:1.35}
+.period-free-boundaries{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:8px;align-items:end}.period-free-boundaries>i{display:grid;place-items:center;height:36px;font-style:normal;color:var(--muted);font-weight:900}.period-free-boundaries .period-picker-competence-field small{min-height:14px;font-size:8px;color:var(--muted);font-weight:700}
+.period-free-presets{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.period-free-presets button{min-height:30px;padding:5px 7px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02);color:var(--muted);font:inherit;font-size:8px;font-weight:820;cursor:pointer;transition:.15s}.period-free-presets button:hover:not(:disabled),.period-free-presets button.active{color:var(--text);border-color:color-mix(in srgb,var(--accent) 42%,var(--border));background:color-mix(in srgb,var(--accent) 8%,transparent)}.period-free-presets button:disabled{opacity:.28;cursor:not-allowed}
+.period-picker-nav{grid-template-columns:34px minmax(0,1fr) 34px}.period-picker-jump{display:grid;grid-template-columns:minmax(140px,1fr) minmax(88px,.55fr);gap:6px;align-items:center;max-width:330px;width:100%;justify-self:center}.period-picker-jump select{width:100%;height:34px;border:1px solid var(--border);border-radius:9px;background:color-mix(in srgb,var(--panel2) 97%,var(--bg));color:var(--text);padding:0 9px;font:inherit;font-size:9px;font-weight:800;outline:none}.period-picker-jump .ds-select-proxy{min-width:0}
+@media(max-width:760px){.period-picker-free-head{align-items:flex-start}.period-free-boundaries{grid-template-columns:1fr}.period-free-boundaries>i{height:auto;transform:rotate(90deg)}.period-free-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.period-picker-jump{grid-template-columns:minmax(0,1fr) 90px;max-width:none}}
+@media(max-width:480px){.period-free-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.period-picker-jump{grid-template-columns:minmax(0,1fr) 78px}.period-picker-jump select{font-size:8px;padding:0 6px}}

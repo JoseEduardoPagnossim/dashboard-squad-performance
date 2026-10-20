@@ -1,3 +1,16 @@
+## V2.54.0 — Seleção avançada de período e contexto global
+
+- Intervalo livre passa a permitir escolher **Competência inicial** e **Competência final** diretamente, usando o primeiro/último dia disponível de cada competência.
+- Adiciona presets rápidos de **3, 6 e 12 meses**, **Ano atual**, **Ano anterior** e **Histórico**.
+- O calendário ganha navegação direta por **mês e ano**, mantendo as setas para ajuste sequencial.
+- **Squad e Período** passam a formar um contexto global de análise: ao navegar entre módulos, os valores atuais permanecem até o usuário alterá-los explicitamente.
+- Visões salvas e URLs explícitas continuam podendo aplicar outro contexto de forma intencional.
+- Mês e Técnico continuam contextuais por tela; módulos que não usam Período não apagam o intervalo global.
+- A troca manual de Squad preserva o período atual quando houver interseção de dados no novo escopo.
+- Frontend-only; sem migration e sem alteração das regras de cálculo.
+
+Detalhes: `docs/PERIODO_CONTEXTO_GLOBAL_V2.54.0.md`.
+
 ## V2.53.2 — Média diária somente em dias com atendimento
 
 - O gráfico **Atendimentos diários consolidados x média do período** ignora datas cujo volume consolidado seja zero.
@@ -92,7 +105,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.53.2`<br>
+**Versão atual:** `2.54.0`<br>
 
 
 
