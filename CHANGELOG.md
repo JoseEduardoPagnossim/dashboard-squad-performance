@@ -1,3 +1,14 @@
+## V2.56.1 — Filtro de Squad consistente em Indicadores
+
+- Corrige a troca de Squad feita diretamente na aba **Qualidade**, sem exigir passagem prévia por **Desempenho**.
+- Ao alterar o Squad nas abas de **Qualidade**, **Dias úteis** e **Detalhamento**, os dados completos das competências do novo escopo são carregados antes da renderização final dos cards e gráficos.
+- A troca para **Todos os Squads** também garante o carregamento dos meses necessários de todos os grupos antes de consolidar a Qualidade.
+- Ao alternar entre as subabas de Indicadores, o módulo revalida os dados necessários em segundo plano, preservando o mesmo contexto global de Squad e período.
+- Mantém inalteradas as fórmulas de Desempenho, Qualidade, Gestão Preditiva, bonificação e importações.
+- Frontend-only; sem migration e sem alteração de schema.
+
+Detalhes: `docs/FILTRO_SQUAD_QUALIDADE_V2.56.1.md`.
+
 ## V2.56.0 — Gestão preditiva por Squad
 
 - Corrige e protege o escopo da Gestão Preditiva para que cards, alertas, tabela por Squad e técnicos em risco respeitem o Squad selecionado.

@@ -12,8 +12,8 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.53.1.sql');
 const migration=readFileSync(migrationPath,'utf8');
 const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
 
-test('V2.56.0 consulta consolidados diarios somente no periodo ativo e pagina a resposta',()=>{
-  assert.equal(pkg.version,'2.56.0');
+test('V2.56.1 consulta consolidados diarios somente no periodo ativo e pagina a resposta',()=>{
+  assert.equal(pkg.version,'2.56.1');
   assert.match(app,/function orgDailyRequestedRange\(\)/);
   assert.match(app,/fetchRpcPaged\('get_org_daily_attendance_overview_range',params\)/);
   assert.match(app,/fetchRpcPaged\('get_org_technician_daily_overview_range',params\)/);
@@ -23,7 +23,7 @@ test('V2.56.0 consulta consolidados diarios somente no periodo ativo e pagina a 
   assert.match(app,/state\.orgDailyRangeKey!==requested\.key/);
 });
 
-test('V2.56.0 publica RPCs por intervalo mantendo isolamento organizacional',()=>{
+test('V2.56.1 publica RPCs por intervalo mantendo isolamento organizacional',()=>{
   assert.equal(existsSync(migrationPath),true);
   for(const sql of [migration,schema]){
     assert.match(sql,/get_org_daily_attendance_overview_range\s*\(/i);
@@ -36,15 +36,15 @@ test('V2.56.0 publica RPCs por intervalo mantendo isolamento organizacional',()=
   }
 });
 
-test('V2.56.0 permite rolar o menu do select sem fecha-lo',()=>{
+test('V2.56.1 permite rolar o menu do select sem fecha-lo',()=>{
   assert.match(design,/target===openSelectControl\.menu\|\|openSelectControl\.menu\?\.contains\?\.\(target\)\)return/);
   assert.match(design,/window\.addEventListener\('scroll',event=>/);
 });
 
-test('V2.56.0 atualiza cache-bust e versao visivel',()=>{
-  assert.ok(index.includes('V2.56.0'));
-  assert.ok(index.includes('css/styles.css?v=2.56.0'));
-  assert.ok(index.includes('js/design-system.js?v=2.56.0'));
-  assert.ok(index.includes('js/app.js?v=2.56.0'));
-  assert.match(app,/APP_VERSION = '2\.56\.0'/);
+test('V2.56.1 atualiza cache-bust e versao visivel',()=>{
+  assert.ok(index.includes('V2.56.1'));
+  assert.ok(index.includes('css/styles.css?v=2.56.1'));
+  assert.ok(index.includes('js/design-system.js?v=2.56.1'));
+  assert.ok(index.includes('js/app.js?v=2.56.1'));
+  assert.match(app,/APP_VERSION = '2\.56\.1'/);
 });

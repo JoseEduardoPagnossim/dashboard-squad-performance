@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.56.0';
+  const APP_VERSION = '2.56.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -1698,6 +1698,18 @@
   function periodTeamGoal(squad){let total=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;total+=safe(teamSettings(m).teamGoalAtt)*(days/Math.max(1,businessDaysMonFri(m.year,m.month)));}return total;}
   function periodTeamEvalGoal(squad){let weighted=0,weight=0;for(const id of analysisMonthIds()){const m=squad?.months?.[id];if(!m)continue;const monthStart=isoDateParts(m.year,m.month,1),monthEnd=isoDateParts(m.year,m.month,Math.max(1,safe(m.latestDay))),from=state.analysisStartDate>monthStart?state.analysisStartDate:monthStart,to=state.analysisEndDate<monthEnd?state.analysisEndDate:monthEnd;if(from>to)continue;let days=0;for(let d=from;d<=to;d=addCalendarDays(d,1))if(isBusinessDateIso(d))days++;if(days){weighted+=safe(teamSettings(m).teamGoalEvalPct)*days;weight+=days;}}return weight?weighted/weight:.343;}
 
+  function indicatorSquadFilterRequiresFullData(section=state.indicatorSection){
+    return ['quality','business-days','detail'].includes(section);
+  }
+  async function ensureIndicatorSquadFilterReady(code=state.squadCode){
+    if(!state.supabase||state.currentView!=='indicators'||!indicatorSquadFilterRequiresFullData(state.indicatorSection))return;
+    const requested=String(code||state.squadCode||'all').toUpperCase(),codes=requested==='ALL'?Object.keys(state.squads||{}).sort():[requested].filter(item=>!!state.squads?.[item]),ids=analysisMonthIds().filter(Boolean);
+    if(!codes.length||!ids.length)return;
+    setDataLoadIndicator(true,'Atualizando dados do filtro de Squad...');
+    try{await ensureMonthsLoaded(codes,ids,{silent:true});}
+    finally{setDataLoadIndicator(false);}
+  }
+
   async function selectSquad(code,{history='replace'}={}){
     if(!isSuperAdmin())return;const previousMonth=state.currentId,previousRange={start:state.analysisStartDate,end:state.analysisEndDate,preset:state.analysisPreset,mode:state.analysisMode,competenceId:state.analysisCompetenceId};state.squadCode=code;
     if(code==='all'){
@@ -1709,7 +1721,10 @@
     }
     else{rememberLastSquad(code);const ids=competenceIdsForSquad(code);state.currentId=ids.includes(previousMonth)?previousMonth:(ids[0]||null);chooseDefaultTech();state.theme=resolveLegacyTheme(state.squads[code]?.theme||loadThemeForSquad(code));applyTheme(state.theme);}
     const bounds=importedDateBounds(),hasOverlap=previousRange.start&&previousRange.end&&bounds.min&&bounds.max&&previousRange.end>=bounds.min&&previousRange.start<=bounds.max;
-    if(hasOverlap){const range=clampRangeToBounds(previousRange.start,previousRange.end,bounds);state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset=previousRange.preset||'custom';state.analysisMode=previousRange.mode||((analysisScopeCount(range.start,range.end)>1)?'free':'competence');const availableIds=competenceIdsForSquad(),preferredCompetence=previousRange.competenceId||monthIdForDate(range.end);state.analysisCompetenceId=availableIds.includes(preferredCompetence)?preferredCompetence:monthIdForDate(range.end);if(state.analysisMode==='competence'&&!availableIds.includes(state.analysisCompetenceId))state.analysisMode='free';syncAnalysisModeFromRange({mode:state.analysisMode,competenceId:state.analysisCompetenceId});if(topFilterVisibility(state.currentView,state.adminSection).period)syncCurrentMonthToAnalysisEnd();}else resetAnalysisRange(true);refreshSelectors();render();applyPermissions();updateBreadcrumbs();
+    if(hasOverlap){const range=clampRangeToBounds(previousRange.start,previousRange.end,bounds);state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset=previousRange.preset||'custom';state.analysisMode=previousRange.mode||((analysisScopeCount(range.start,range.end)>1)?'free':'competence');const availableIds=competenceIdsForSquad(),preferredCompetence=previousRange.competenceId||monthIdForDate(range.end);state.analysisCompetenceId=availableIds.includes(preferredCompetence)?preferredCompetence:monthIdForDate(range.end);if(state.analysisMode==='competence'&&!availableIds.includes(state.analysisCompetenceId))state.analysisMode='free';syncAnalysisModeFromRange({mode:state.analysisMode,competenceId:state.analysisCompetenceId});if(topFilterVisibility(state.currentView,state.adminSection).period)syncCurrentMonthToAnalysisEnd();}else resetAnalysisRange(true);
+    const waitForIndicatorScope=state.currentView==='indicators'&&indicatorSquadFilterRequiresFullData(state.indicatorSection);
+    if(waitForIndicatorScope){await ensureIndicatorSquadFilterReady(code);if(state.squadCode!==code)return;}
+    refreshSelectors();render();applyPermissions();updateBreadcrumbs();
     if(state.supabase&&state.currentView!=='home')hydrateCurrentViewAsync(state.currentView,state.adminSection);
     if(history!=='none')syncPersistentUrl({replace:history==='replace'});
   }
@@ -2528,7 +2543,11 @@ function renderIndicatorSafely(label,renderFn,targetIds=[]){
 function setIndicatorSection(section,{history='push'}={}){
   const allowed=new Set(['performance','quality','financial-impact','business-days','detail']);
   state.indicatorSection=allowed.has(section)?section:'performance';
-  if(state.currentView==='indicators'){syncTopFiltersForView('indicators',state.adminSection);renderIndicators();}
+  if(state.currentView==='indicators'){
+    syncTopFiltersForView('indicators',state.adminSection);
+    renderIndicators();
+    if(state.supabase&&indicatorSquadFilterRequiresFullData(state.indicatorSection)) hydrateCurrentViewAsync('indicators',state.adminSection);
+  }
   updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});
 }
 function syncIndicatorSectionUi(){
