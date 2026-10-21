@@ -1,3 +1,14 @@
+## V2.56.7 — Média diária dinâmica por Squad
+
+- O gráfico diário passa a respeitar o filtro global de Squad antes de agrupar atendimentos por data.
+- Com Squad específico, a média considera somente os dias com atendimento daquele Squad no período selecionado.
+- Com Todos os Squads, soma A+B+D+E por dia e calcula a média sobre o consolidado diário, sem fazer média das médias.
+- Título, legenda e resumo do gráfico passam a indicar dinamicamente o escopo selecionado.
+- Mantém a exclusão de dias zerados do denominador e não altera RPCs ou banco de dados.
+- Frontend-only; sem migration.
+
+Detalhes: `docs/MEDIA_DIARIA_SQUAD_V2.56.7.md`.
+
 ## V2.56.6 — Visibilidade correta das subabas de Indicadores
 
 - Corrige o conflito entre `hidden` e `personal-layout-root` que podia reexibir o painel de Desempenho dentro da aba Qualidade.
@@ -202,7 +213,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.56.6`<br>
+**Versão atual:** `2.56.7`<br>
 
 
 

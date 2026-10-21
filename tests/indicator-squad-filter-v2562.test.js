@@ -45,8 +45,8 @@ test('regressao: Qualidade usa o mesmo ciclo de hidratacao das demais subabas',(
 });
 
 test('cache-bust acompanha a versao atual',()=>{
-  assert.equal(pkg.version,'2.56.6');
-  assert.ok(index.includes('js/app.js?v=2.56.6'));
-  assert.ok(index.includes('css/styles.css?v=2.56.6'));
-  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.6.sql')));
+  assert.equal(pkg.version,'2.56.7');
+  assert.ok(index.includes('js/app.js?v=2.56.7'));
+  assert.ok(index.includes('css/styles.css?v=2.56.7'));
+  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
 });
