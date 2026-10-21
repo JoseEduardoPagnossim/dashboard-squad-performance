@@ -14,27 +14,39 @@ function blockBetween(start,end){
   return app.slice(a,b);
 }
 
-test('regressao V2.56.2: Qualidade limpa os valores enquanto o mes do novo Squad ainda esta resumido',()=>{
-  assert.equal(pkg.version,'2.56.3');
-  const quality=blockBetween('function renderQualityIndicators','function monthServiceTechnicianTotals');
-  assert.match(quality,/pending=indicatorScopeHasPendingFullData\(state\.squadCode,rangeIds\)/);
-  assert.match(quality,/if\(pending\)\{renderQualityScopePending\(squads,rangeIds\);return;\}/);
+test('regressao: selectSquad renderiza o novo escopo e depois aguarda sua carga completa',()=>{
+  const select=blockBetween('async function selectSquad','function requireSpecificSquad');
+  const firstRender=select.indexOf('refreshSelectors();render();applyPermissions();updateBreadcrumbs();');
+  const awaitedLoad=select.indexOf('await ensureViewData(state.currentView,state.adminSection,{strict:true})');
+  assert.ok(firstRender>=0,'render imediato ausente');
+  assert.ok(awaitedLoad>firstRender,'carga completa deve ocorrer apos refletir a selecao visual');
+  assert.match(select,/selectionSeq=\+\+state\.squadSelectionSeq/);
+});
+
+test('regressao: Qualidade limpa valores enquanto faltam dados completos do novo Squad',()=>{
+  assert.match(app,/function renderQualityScopePending\(squads,rangeIds,\{error=false\}=\{\}\)/);
+  assert.match(app,/pending=indicatorScopeHasPendingFullData\(state\.squadCode,rangeIds\)/);
+  assert.match(app,/if\(state\.squadSelectionLoadError\)\{renderQualityScopePending\(squads,rangeIds,\{error:true\}\);return;\}/);
   assert.match(app,/qualityServiceTotal'\)\.textContent='—'/);
-  assert.match(app,/Atualizando dados de \$\{scope\}/);
 });
 
-test('regressao V2.56.2: respostas antigas continuam protegidas pelo token global da tela',()=>{
-  const hydrate=blockBetween('function hydrateCurrentViewAsync','function schedulePostLoginHydration');
-  assert.match(hydrate,/state\.indicatorSection\|\|'performance'/);
-  assert.match(hydrate,/state\.squadCode/);
-  assert.match(hydrate,/state\.currentId\|\|''/);
-  assert.match(hydrate,/state\.analysisStartDate\|\|''/);
-  assert.match(hydrate,/state\.analysisEndDate\|\|''/);
-  assert.match(hydrate,/if\(current!==token\)return/);
+test('regressao: carregamento explicito do filtro nao engole erro mensal',()=>{
+  const months=blockBetween('async function ensureMonthsLoaded','function orgDailyRequestedRange');
+  assert.match(months,/\{silent=false,strict=false\}/);
+  assert.match(months,/jobs\.push\(strict\?job:job\.catch\(err=>null\)\)/);
+  const view=blockBetween('async function ensureViewData','function hydrateCurrentViewAsync');
+  assert.match(view,/ensureMonthsLoaded\(codes,ids,\{silent:true,strict\}\)/);
 });
 
-test('regressao V2.56.2: cache-bust permanece alinhado com a versao atual',()=>{
-  assert.ok(index.includes('js/app.js?v=2.56.3'));
-  assert.ok(index.includes('css/styles.css?v=2.56.3'));
-  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.3.sql')));
+test('regressao: Qualidade usa o mesmo ciclo de hidratacao das demais subabas',()=>{
+  const section=blockBetween('function setIndicatorSection','function syncIndicatorSectionUi');
+  assert.match(section,/hydrateCurrentViewAsync\('indicators',state\.adminSection\)/);
+  assert.doesNotMatch(section,/hydrateIndicatorSquadFilter/);
+});
+
+test('cache-bust acompanha a versao atual',()=>{
+  assert.equal(pkg.version,'2.56.4');
+  assert.ok(index.includes('js/app.js?v=2.56.4'));
+  assert.ok(index.includes('css/styles.css?v=2.56.4'));
+  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.4.sql')));
 });

@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.56.3';
+  const APP_VERSION = '2.56.4';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -163,6 +163,8 @@
     allTechniciansRangeIds:[],
     dailyTechniciansMetric:'points',
     indicatorSection:'performance',
+    squadSelectionSeq:0,
+    squadSelectionLoadError:false,
     businessDaysBaseId:null,
     businessDaysCompareCount:6,
     businessDaysCutoff:null,
@@ -1199,7 +1201,7 @@
 
   async function enterApp(user){
     const canonicalRole=normalizeAccessRole(user?.role);state.user={...user,role:canonicalRole,squadCode:canonicalRole==='super_admin'?null:(user?.squadCode||null),permissions:canonicalRole==='super_admin'?{}:(user?.permissions||{})};loadUserUiPreferences(state.user);
-    state.dataPromises={};state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
+    state.dataPromises={};state.squadSelectionSeq=0;state.squadSelectionLoadError=false;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.internalNotifications=[];state.notificationReadIds=[];state.notificationsLoaded=false;state.notificationsLoading=false;state.notificationsRemoteAvailable=true;state.notificationsError='';state.notificationPopoverOpen=false;state.notificationFilters={status:'all',source:'all',severity:'all',category:'all',search:''};state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
     state.businessCalendarRows=[];state.businessCalendarLoaded=false;state.businessCalendarLoading=null;state.businessCalendarRemoteAvailable=true;state.businessCalendarYear=new Date().getFullYear();state.businessCalendarDraft=null;
     await ensureBusinessCalendarLoaded(false);
@@ -1708,7 +1710,11 @@
   }
 
   async function selectSquad(code,{history='replace'}={}){
-    if(!isSuperAdmin())return;const previousMonth=state.currentId,previousRange={start:state.analysisStartDate,end:state.analysisEndDate,preset:state.analysisPreset,mode:state.analysisMode,competenceId:state.analysisCompetenceId};state.squadCode=code;
+    if(!isSuperAdmin())return;
+    code=String(code||'all');if(code!=='all')code=code.toUpperCase();
+    if(code!=='all'&&!state.squads?.[code])return;
+    const selectionSeq=++state.squadSelectionSeq,previousMonth=state.currentId,previousRange={start:state.analysisStartDate,end:state.analysisEndDate,preset:state.analysisPreset,mode:state.analysisMode,competenceId:state.analysisCompetenceId};
+    state.squadSelectionLoadError=false;state.squadCode=code;
     if(code==='all'){
       const ids=competenceIdsForSquad('all');state.currentId=ids.includes(previousMonth)?previousMonth:(ids[0]||null);state.techName='';
       // A visão consolidada preserva a identidade visual do último Squad selecionado.
@@ -1719,13 +1725,25 @@
     else{rememberLastSquad(code);const ids=competenceIdsForSquad(code);state.currentId=ids.includes(previousMonth)?previousMonth:(ids[0]||null);chooseDefaultTech();state.theme=resolveLegacyTheme(state.squads[code]?.theme||loadThemeForSquad(code));applyTheme(state.theme);}
     const bounds=importedDateBounds(),hasOverlap=previousRange.start&&previousRange.end&&bounds.min&&bounds.max&&previousRange.end>=bounds.min&&previousRange.start<=bounds.max;
     if(hasOverlap){const range=clampRangeToBounds(previousRange.start,previousRange.end,bounds);state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset=previousRange.preset||'custom';state.analysisMode=previousRange.mode||((analysisScopeCount(range.start,range.end)>1)?'free':'competence');const availableIds=competenceIdsForSquad(),preferredCompetence=previousRange.competenceId||monthIdForDate(range.end);state.analysisCompetenceId=availableIds.includes(preferredCompetence)?preferredCompetence:monthIdForDate(range.end);if(state.analysisMode==='competence'&&!availableIds.includes(state.analysisCompetenceId))state.analysisMode='free';syncAnalysisModeFromRange({mode:state.analysisMode,competenceId:state.analysisCompetenceId});if(topFilterVisibility(state.currentView,state.adminSection).period)syncCurrentMonthToAnalysisEnd();}else resetAnalysisRange(true);
-    // Um unico fluxo de hidratação para qualquer aba. A Qualidade não possui mais
-    // controlador paralelo: trocar o Squad aqui segue exatamente o mesmo caminho
-    // usado pela aba Desempenho.
+
+    // A troca visual acontece de imediato. Quando a tela depende do detalhe mensal,
+    // renderQualityIndicators exibe o estado de carregamento até os dados completos chegarem.
     refreshSelectors();render();applyPermissions();updateBreadcrumbs();
-    if(state.supabase&&state.currentView!=='home')hydrateCurrentViewAsync(state.currentView,state.adminSection);
     if(history!=='none')syncPersistentUrl({replace:history==='replace'});
+
+    if(!state.supabase||state.currentView==='home')return;
+    try{
+      // Importante: esta chamada é aguardada. Qualidade e Desempenho passam pelo mesmo
+      // carregador e a renderização final só ocorre depois de concluir o Squad selecionado.
+      await ensureViewData(state.currentView,state.adminSection,{strict:true});
+      if(selectionSeq!==state.squadSelectionSeq||state.squadCode!==code)return;
+      state.squadSelectionLoadError=false;refreshSelectors();render();applyPermissions();updateBreadcrumbs();
+    }catch(err){
+      if(selectionSeq!==state.squadSelectionSeq||state.squadCode!==code)return;
+      state.squadSelectionLoadError=true;console.error('Falha ao carregar o Squad selecionado.',err);refreshSelectors();render();toast('Não foi possível carregar todos os dados deste Squad. Tente novamente.');
+    }
   }
+
   function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
 
   function resetViewScroll(){
@@ -2544,9 +2562,7 @@ function setIndicatorSection(section,{history='push'}={}){
   if(state.currentView==='indicators'){
     syncTopFiltersForView('indicators',state.adminSection);
     renderIndicators();
-    // Ao entrar em Qualidade/Dias úteis/Detalhamento, reaproveita o mesmo ciclo
-    // assíncrono da visão de Desempenho em vez de iniciar uma hidratação própria.
-    if(state.supabase&&state.indicatorSection!=='financial-impact')hydrateCurrentViewAsync('indicators',state.adminSection);
+    if(state.supabase)hydrateCurrentViewAsync('indicators',state.adminSection);
   }
   updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});
 }
@@ -2974,9 +2990,8 @@ function renderQualityScopePending(squads,rangeIds,{error=false}={}){
   if($('#qualityServiceChartNote'))$('#qualityServiceChartNote').textContent=message;if($('#qualityProductChartNote'))$('#qualityProductChartNote').textContent=message;if($('#qualityCompanyChartNote'))$('#qualityCompanyChartNote').textContent=message;
 }
 function renderQualityIndicators(squads,rangeIds){
-  // Enquanto o mês do Squad selecionado ainda está em modo resumo, não reutiliza
-  // números do escopo anterior. A própria hidratação global redesenha a tela ao fim.
   const pending=indicatorScopeHasPendingFullData(state.squadCode,rangeIds);
+  if(state.squadSelectionLoadError){renderQualityScopePending(squads,rangeIds,{error:true});return;}
   if(pending){renderQualityScopePending(squads,rangeIds);return;}
   if(!$('#indicatorQualityPanel'))return;$('#qualitySquadPeriod').textContent=analysisRangeLabel();
   const ids=[...(rangeIds||[])],labels=qualityMonthlyLabels(ids),serviceRows=qualityMonthlySummary('service',squads,ids),productRows=qualityMonthlySummary('product',squads,ids),companyRows=qualityMonthlySummary('company',squads,ids),service=qualityPeriodSummary('service',squads,ids),product=qualityPeriodSummary('product',squads,ids),company=qualityPeriodSummary('company',squads,ids),source=qualitySourceInfo(squads,ids);
@@ -5192,8 +5207,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const promiseKey=`month:${code}:${id}`;if(state.dataPromises[promiseKey])return state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(true,`Carregando ${monthLabelFromId(id)}...`);
     state.dataPromises[promiseKey]=(async()=>{const started=performance.now();try{let query=state.supabase.from('squad_months').select(FULL_MONTH_SELECT);if(existing?.dbId)query=query.eq('id',existing.dbId);else{const [year,month]=String(id).split('-').map(Number);query=query.eq('squad_id',squad.dbId).eq('year',year).eq('month',month);}const {data,error}=await query.single();if(error)throw error;const m=normalizeSupabaseMonthRow(data,'full');if(!m.isClosed&&!isTechnician())recalculateMonth(m);squad.months[id]=m;writePerformanceCache(scope,key,m,5*60*1000);recordRuntimePerformance('module','month_load',performance.now()-started,{squad:code,period:id},true,'supabase');return m;}catch(err){recordRuntimePerformance('module','month_load',performance.now()-started,{squad:code,period:id,message:String(err?.message||err||'').slice(0,180)},false,'supabase');console.error('Falha ao carregar competencia sob demanda.',code,id,err);throw err;}finally{delete state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(false);}})();return state.dataPromises[promiseKey];
   }
-  async function ensureMonthsLoaded(codes,ids,{silent=false}={}){
-    const jobs=[];for(const code of [...new Set(codes||[])])for(const id of [...new Set(ids||[])])if(state.squads?.[code]?.months?.[id]&&!isPerformanceFullMonth(state.squads[code].months[id]))jobs.push(ensureMonthLoaded(code,id,{silent:true}).catch(err=>null));if(!jobs.length)return[];if(!silent)setDataLoadIndicator(true,`Carregando ${jobs.length} competencia(s)...`);try{return await Promise.all(jobs);}finally{if(!silent)setDataLoadIndicator(false);}
+  async function ensureMonthsLoaded(codes,ids,{silent=false,strict=false}={}){
+    const jobs=[];
+    for(const code of [...new Set(codes||[])])for(const id of [...new Set(ids||[])]){
+      if(!state.squads?.[code]?.months?.[id]||isPerformanceFullMonth(state.squads[code].months[id]))continue;
+      const job=ensureMonthLoaded(code,id,{silent:true});jobs.push(strict?job:job.catch(err=>null));
+    }
+    if(!jobs.length)return[];if(!silent)setDataLoadIndicator(true,`Carregando ${jobs.length} competencia(s)...`);try{return await Promise.all(jobs);}finally{if(!silent)setDataLoadIndicator(false);}
   }
   function orgDailyRequestedRange(){
     let start=state.analysisStartDate||null,end=state.analysisEndDate||null;
@@ -5244,10 +5264,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,amount,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin')]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Administrador']));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Administrador',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;}catch(err){console.warn('Comissoes de Administrador indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
   }
   function viewNeedsFullMonth(name,section){return['individual','team','indicators','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
-  async function ensureViewData(name=state.currentView,section=state.adminSection){
+  async function ensureViewData(name=state.currentView,section=state.adminSection,{strict=false}={}){
     if(!state.supabase||name==='home'||['alerts','users','audit','settings','profile','my-feedbacks','help'].includes(name))return;
     const ids=(['indicators','team','individual','presentation'].includes(name))?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
-    if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true}));
+    if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true,strict}));
     if(name==='presentation')jobs.push(ensurePresentationDailyOverview());
     else if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
     if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());
