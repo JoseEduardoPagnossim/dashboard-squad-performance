@@ -1,3 +1,15 @@
+## V2.56.0 — Gestão preditiva por Squad
+
+- Corrige e protege o escopo da Gestão Preditiva para que cards, alertas, tabela por Squad e técnicos em risco respeitem o Squad selecionado.
+- Adiciona validação defensiva de escopo no `predictive-engine`, evitando exibir consolidado global quando a tela estiver em um Squad específico.
+- Cards preditivos passam a destacar Projeção/Tendência como informação principal, mantendo Realizado e Meta como contexto.
+- O card de risco passa a exibir `técnicos sob risco`, `quantidade de total`, representatividade e critério de 2+ sinais, sem tratar o total da equipe como meta.
+- O chip da competência mostra também o escopo atual do Squad.
+- Melhora a mensagem de Notas 5 quando a meta já foi atingida ou a projeção supera o objetivo.
+- Frontend-only; sem migration e sem alteração nas regras de Desempenho, bonificação ou importação.
+
+Detalhes: `docs/GESTAO_PREDITIVA_V2.56.0.md`.
+
 ## V2.55.0 — Preparação inteligente de CSV
 
 - Produto/Empresa e Qualidade Completa podem usar o mesmo relatório bruto exportado do CRM.
@@ -123,7 +135,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.55.0`<br>
+**Versão atual:** `2.56.0`<br>
 
 
 

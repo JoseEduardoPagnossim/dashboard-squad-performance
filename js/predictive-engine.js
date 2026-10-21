@@ -9,6 +9,12 @@
     const m=String(id||'').match(/^(\d{4})-(\d{2})$/);if(!m)return null;
     let y=Number(m[1]),mo=Number(m[2])-1;if(mo<1){mo=12;y--;}return `${y}-${String(mo).padStart(2,'0')}`;
   }
+  function scopeSquads(squads=[],squadCode='all'){
+    const rows=(Array.isArray(squads)?squads:[]).filter(Boolean);
+    const code=String(squadCode||'all').trim().toUpperCase();
+    if(!code||code==='ALL')return rows;
+    return rows.filter(s=>String(s?.code||'').trim().toUpperCase()===code);
+  }
   function projectCount(realized,elapsedDays,totalDays){
     const r=Math.max(0,safe(realized)),e=Math.max(0,safe(elapsedDays)),t=Math.max(0,safe(totalDays));
     if(!e||!t)return r;
@@ -64,5 +70,5 @@
     if(confidenceLevel==='low')add('info','low_confidence','Projeção ainda inicial','Poucos dias úteis foram realizados; interprete a projeção como tendência preliminar.');
     const order={critical:0,warning:1,info:2,positive:3};return items.sort((a,b)=>(order[a.severity]??9)-(order[b.severity]??9)).slice(0,8);
   }
-  return{safe,previousMonthId,projectCount,confidence,countMetric,rateMetric,compare,technicianRisk,buildAlerts};
+  return{safe,previousMonthId,scopeSquads,projectCount,confidence,countMetric,rateMetric,compare,technicianRisk,buildAlerts};
 });

@@ -13,9 +13,9 @@ const migration=readFileSync(migrationPath,'utf8');
 const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
 
  test('V2.53.0 publica a importacao exclusiva e os dois pontos de visualizacao',()=>{
-  assert.equal(pkg.version,'2.55.0');
+  assert.equal(pkg.version,'2.56.0');
   assert.ok(index.includes('id="adminQualityFullImportBtn"'));
-  assert.ok(index.includes('Importar CSV Atendimento com avaliação entre "Periodo" - Completa'));
+  assert.ok(index.includes('Importar Qualidade Completa'));
   assert.ok(index.includes('id="portfolioQualityFullChart"'));
   assert.ok(index.includes('id="teamQualityFullChart"'));
   assert.ok(index.includes('Qualidade Atendimento × Produto × Empresa'));
@@ -31,7 +31,7 @@ test('V2.53.0 usa fonte separada sem alterar a importacao Produto Empresa existe
   assert.match(app,/Fonte: Qualidade Completa/);
   assert.match(app,/focusNumeric:true/);
   assert.ok(index.includes('<b>Produto/Empresa e Qualidade Completa:</b>'));
-  assert.ok(index.includes('◆ Importar CSV Atendimento com avaliação entre "Periodo" - Completa'));
+  assert.ok(index.includes('◆ Importar Qualidade Completa'));
 });
 
 test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
@@ -49,8 +49,8 @@ test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
 });
 
 test('V2.53.0 atualiza cache de assets e scripts',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.55.0'));
-  assert.ok(index.includes('js/import-engine.js?v=2.55.0'));
-  assert.ok(index.includes('js/app.js?v=2.55.0'));
-  assert.ok(index.includes('V2.55.0'));
+  assert.ok(index.includes('css/styles.css?v=2.56.0'));
+  assert.ok(index.includes('js/import-engine.js?v=2.56.0'));
+  assert.ok(index.includes('js/app.js?v=2.56.0'));
+  assert.ok(index.includes('V2.56.0'));
 });
