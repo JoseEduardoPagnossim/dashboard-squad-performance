@@ -41,12 +41,14 @@
     function setComparison(value){state={...state,comparison:normalizeComparison(value)};return getState()}
     function getState(){return{...state,access:{...state.access}}}
     function getContext(){const comps=availableCompetences(context,financial);return{squads:context.squads.map(row=>({...row,competences:[...row.competences]})),operationalCompetences:[...context.competences],financialCompetences:financial.competences.map(row=>row.competence),competences:comps,latestCompetence:comps.at(-1)||context.latestCompetence}}
-    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),summary:{...financial.summary}}}
+    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),summary:{...financial.summary},operationalCosts:financial.operationalCosts.map(row=>({...row})),allocations:financial.allocations.map(row=>({...row})),operationalSummary:{...financial.operationalSummary,categories:{...(financial.operationalSummary?.categories||{})}},allocationBasis:financial.allocationBasis.map(row=>({...row}))}}
     function selectedCompetenceRecord(){return financial.competences.find(row=>row.competence===state.competence)||null}
     function viewModel(){
-      const snapshot=getState(),ctx=getContext(),fin=getFinancialData(),meta=SECTION_META[snapshot.section];
-      const detailed=accessEngine.normalizeAccess(snapshot.access).canViewPeopleCosts&&fin.costs.length?costEngine.summarizePeopleCosts(fin.costs,{squadCode:snapshot.squadCode}):null;
-      const base=detailed||fin.summary||{};const summary=costEngine.mergePeopleSummary(base,{competence:snapshot.competence,squadCode:snapshot.squadCode});
+      const snapshot=getState(),ctx=getContext(),fin=getFinancialData(),meta=SECTION_META[snapshot.section],normalizedAccess=accessEngine.normalizeAccess(snapshot.access);
+      const detailedPeople=normalizedAccess.canViewPeopleCosts&&fin.costs.length?costEngine.summarizePeopleCosts(fin.costs,{squadCode:snapshot.squadCode}):null;
+      const detailedOperational=normalizedAccess.canEditCosts&&fin.operationalCosts.length?costEngine.summarizeOperationalCosts(fin.operationalCosts,fin.allocations,{squadCode:snapshot.squadCode}):null;
+      const peopleBase=detailedPeople||fin.summary||{},operationalBase=detailedOperational||fin.operationalSummary||{};
+      const summary=costEngine.mergeFinancialSummary(peopleBase,operationalBase,{competence:snapshot.competence,squadCode:snapshot.squadCode});
       return{state:snapshot,context:ctx,financial:fin,competenceRecord:selectedCompetenceRecord(),meta,summary,insights:insightEngine.foundationInsights(),accessStatus:accessEngine.accessStatus(snapshot.access)};
     }
     return{setAccess,initializeContext,setFinancialData,setFinancialLoading,setFinancialError,setSection,setSquadCode,setCompetence,setComparison,getState,getContext,getFinancialData,viewModel};

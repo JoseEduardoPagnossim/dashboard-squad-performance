@@ -203,3 +203,9 @@ O acesso é independente dos papéis operacionais e vem de `strategy_access`. A 
 ## V2.57.2 — Domínio de competências e custos pessoais
 
 O módulo estratégico mantém duas fotografias distintas: `strategy_people` representa a pessoa atual e seus padrões; `strategy_employee_costs` representa a fotografia mensal da competência, incluindo Squad e FTE. Essa separação evita que uma troca futura de Squad, FTE ou salário reescreva meses anteriores. O operacional continua sendo somente fonte de contexto para a Gestão Estratégica.
+
+## V2.57.3 — Custos operacionais e fotografia de rateios
+
+A Gestão Estratégica adiciona dois objetos próprios: `strategy_operational_costs` e `strategy_cost_allocations`. O custo é cadastrado por competência e a distribuição por Squad é persistida separadamente. Rateios automáticos consultam apenas bases agregadas de FTE e atendimentos e gravam a base utilizada, evitando acoplamento ao estado operacional no momento da leitura futura.
+
+O `strategy-cost-engine.js` continua puro e passa a calcular os quatro métodos de rateio. O controller estratégico combina os resumos de pessoas e operação somente na camada de apresentação; os motores e persistências continuam independentes.

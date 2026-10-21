@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.57.2" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.57.2" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.57.2" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.57.2" />
+  <link rel="stylesheet" href="css/styles.css?v=2.57.3" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.57.3" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.57.3" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.57.3" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.57.2 • Competências e custos pessoais</small>
+        <small class="login-version">V2.57.3 • Custos operacionais e rateios</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.57.2 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.57.3 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.57.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.57.3</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1370,7 +1370,7 @@
 
           <article class="card how-mini help-searchable" data-help-search="perfil senha conta recuperação login segurança"><div class="how-section-title"><span class="how-icon blue">◉</span><div><span class="eyebrow">CONTA</span><h3>Perfil e senha</h3></div></div><ul><li>Em <b>Meu perfil</b>, qualquer usuário pode alterar a própria senha informando a senha atual.</li><li>A recuperação por e-mail continua disponível na tela de login.</li><li>Administradores não visualizam a senha do usuário.</li><li>Inativação de usuário bloqueia o acesso sem apagar os resultados históricos.</li></ul></article>
 
-          <article class="card how-mini admin-help help-searchable" data-help-search="persistência supabase migration migração histórico memória tv layout importação"><div class="how-section-title"><span class="how-icon purple">DB</span><div><span class="eyebrow">PERSISTÊNCIA</span><h3>Recursos que dependem das migrations</h3></div></div><ul><li><b>V2.36</b>: histórico compartilhado de importações.</li><li><b>V2.38</b>: layout por usuário e permissões específicas persistentes.</li><li><b>V2.39</b>: memória financeira compartilhada e imutável.</li><li><b>V2.40</b>: playlists, múltiplas TVs e monitor compartilhado.</li><li><b>V2.46</b>: notificações internas, segmentação de público e leitura individual.</li><li><b>V2.57</b>: autorização independente da Gestão Estratégica, sem criar salários ou custos nesta etapa.</li><li>Sem a migration correspondente, alguns recursos usam fallback local no navegador e podem não sincronizar entre dispositivos.</li></ul></article>
+          <article class="card how-mini admin-help help-searchable" data-help-search="persistência supabase migration migração histórico memória tv layout importação"><div class="how-section-title"><span class="how-icon purple">DB</span><div><span class="eyebrow">PERSISTÊNCIA</span><h3>Recursos que dependem das migrations</h3></div></div><ul><li><b>V2.36</b>: histórico compartilhado de importações.</li><li><b>V2.38</b>: layout por usuário e permissões específicas persistentes.</li><li><b>V2.39</b>: memória financeira compartilhada e imutável.</li><li><b>V2.40</b>: playlists, múltiplas TVs e monitor compartilhado.</li><li><b>V2.46</b>: notificações internas, segmentação de público e leitura individual.</li><li><b>V2.57</b>: Gestão Estratégica com acesso opt-in, competências, custos pessoais, custos operacionais e rateios isolados do operacional.</li><li>Sem a migration correspondente, alguns recursos usam fallback local no navegador e podem não sincronizar entre dispositivos.</li></ul></article>
         </div>
 
         <article id="helpNoResults" class="card help-no-results hidden"><span>⌕</span><div><b>Nenhum tópico encontrado</b><p>Tente uma palavra mais curta, como “meta”, “TV”, “férias”, “CSV” ou “senha”.</p></div></article>
@@ -1385,17 +1385,17 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 2</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>Camada estratégica isolada do operacional. A V2.57.2 adiciona competências financeiras, cadastro de pessoas e custos pessoais mensais sem alterar os dados de atendimento, qualidade ou bonificação.</p>
+              <p>Camada estratégica isolada do operacional. A V2.57.3 adiciona custos operacionais e rateios por Squad, mantendo folha, atendimentos, qualidade e bonificação em domínios independentes.</p>
             </div>
-            <span class="strategy-foundation-badge">Custos pessoais ativos</span>
+            <span class="strategy-foundation-badge">Custos + rateios ativos</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.2</strong> no Supabase e valide as permissões de acesso.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.3</strong> no Supabase e valide as permissões de acesso.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
             <article class="strategy-status-card"><span>Competência financeira</span><strong id="strategyContextStatus">—</strong></article>
-            <article class="strategy-status-card"><span>Custo de pessoas</span><strong id="strategyCostStatus">—</strong></article>
+            <article class="strategy-status-card"><span>Custo estratégico total</span><strong id="strategyCostStatus">—</strong></article>
             <article class="strategy-status-card"><span>Integração operacional</span><strong id="strategyIsolationStatus">—</strong></article>
           </section>
 
@@ -1414,36 +1414,53 @@
           <div class="strategy-panel" data-strategy-panel="executive">
             <article class="strategy-placeholder-card strategy-wide-card">
               <span class="eyebrow" id="strategySectionEyebrow">VISÃO EXECUTIVA</span>
-              <div class="strategy-section-heading"><div><h3>Primeira leitura financeira da operação</h3><p>Esta etapa apresenta somente custos de pessoas. Custos operacionais, rateios e custo por atendimento entram nas próximas versões.</p></div><span id="strategyExecutiveStatus" class="strategy-mini-badge">—</span></div>
+              <div class="strategy-section-heading"><div><h3>Composição financeira da operação</h3><p>Pessoas e custos operacionais já são consolidados na mesma competência, mantendo as fontes e os rateios auditáveis.</p></div><span id="strategyExecutiveStatus" class="strategy-mini-badge">—</span></div>
               <div class="strategy-metric-grid">
                 <div class="strategy-metric"><span>Custo de pessoas</span><strong id="strategyExecutivePeopleCost">—</strong><small>salários + encargos + benefícios + variáveis</small></div>
+                <div class="strategy-metric"><span>Custo operacional</span><strong id="strategyExecutiveOperationalCost">—</strong><small>tecnologia, comunicação, infraestrutura e outros</small></div>
+                <div class="strategy-metric"><span>Custo estratégico total</span><strong id="strategyExecutiveTotalCost">—</strong><small>pessoas + operação</small></div>
                 <div class="strategy-metric"><span>FTE atribuído</span><strong id="strategyExecutiveFte">—</strong><small>força de trabalho equivalente</small></div>
-                <div class="strategy-metric"><span>Pessoas com custo</span><strong id="strategyExecutiveHeadcount">—</strong><small>na competência selecionada</small></div>
-                <div class="strategy-metric"><span>Custo operacional</span><strong>—</strong><small>próxima etapa do MVP</small></div>
               </div>
               <div class="strategy-roadmap">
                 <div class="strategy-roadmap-row"><i>1</i><strong>Fundação isolada</strong><span>V2.57.0 • concluída</span></div>
                 <div class="strategy-roadmap-row"><i>2</i><strong>Acesso opt-in</strong><span>V2.57.1 • concluída</span></div>
-                <div class="strategy-roadmap-row"><i>3</i><strong>Competências, pessoas e custos pessoais</strong><span>V2.57.2 • atual</span></div>
-                <div class="strategy-roadmap-row"><i>4</i><strong>Custos operacionais e rateios</strong><span>próxima etapa</span></div>
+                <div class="strategy-roadmap-row"><i>3</i><strong>Competências, pessoas e custos pessoais</strong><span>V2.57.2 • concluída</span></div>
+                <div class="strategy-roadmap-row"><i>4</i><strong>Custos operacionais e rateios</strong><span>V2.57.3 • atual</span></div>
               </div>
             </article>
-            <aside class="strategy-insight"><strong id="strategyFoundationInsightTitle">Custos pessoais separados do operacional</strong><p id="strategyFoundationInsightText">A competência financeira preserva a fotografia mensal de salário, encargos, benefícios e demais custos pessoais.</p></aside>
+            <aside class="strategy-insight"><strong id="strategyFoundationInsightTitle">Custos estratégicos separados do operacional</strong><p id="strategyFoundationInsightText">Folha e custos operacionais são consolidados sem alterar os dados de produção, qualidade ou bonificação.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
             <article class="strategy-placeholder-card strategy-wide-card">
               <span class="eyebrow">CUSTOS E EFICIÊNCIA</span>
-              <div class="strategy-section-heading"><div><h3>Composição do custo de pessoas</h3><p>Valores agregados da competência e do Squad estratégico selecionados. Usuários com acesso básico veem somente estes totais; os valores individuais permanecem protegidos.</p></div></div>
+              <div class="strategy-section-heading"><div><h3>Composição do custo estratégico</h3><p>Valores agregados da competência e do Squad selecionados. Rateios compartilhados são aplicados antes da consolidação por Squad.</p></div></div>
+              <div class="strategy-metric-grid strategy-cost-breakdown">
+                <div class="strategy-metric"><span>Custo de pessoas</span><strong id="strategyPeopleTotal">—</strong></div>
+                <div class="strategy-metric"><span>Custo operacional</span><strong id="strategyOperationalTotal">—</strong></div>
+                <div class="strategy-metric"><span>Direto ao Squad</span><strong id="strategyDirectOperationalCost">—</strong></div>
+                <div class="strategy-metric"><span>Compartilhado / rateado</span><strong id="strategySharedOperationalCost">—</strong></div>
+              </div>
+              <div class="strategy-total-strip"><span>Custo estratégico total</span><strong id="strategyGrandTotal">—</strong></div>
+              <div id="strategyOperationalInvalidNotice" class="strategy-access-warning hidden"></div>
+              <div class="strategy-section-heading strategy-cost-subheading"><div><span class="eyebrow">PESSOAS</span><h3>Composição da folha atribuída</h3></div></div>
               <div class="strategy-metric-grid strategy-cost-breakdown">
                 <div class="strategy-metric"><span>Salários</span><strong id="strategySalaryTotal">—</strong></div>
                 <div class="strategy-metric"><span>Encargos</span><strong id="strategyChargesTotal">—</strong></div>
                 <div class="strategy-metric"><span>Benefícios</span><strong id="strategyBenefitsTotal">—</strong></div>
                 <div class="strategy-metric"><span>Variáveis + extras + outros</span><strong id="strategyOtherPeopleTotal">—</strong></div>
               </div>
-              <div class="strategy-total-strip"><span>Custo total de pessoas</span><strong id="strategyPeopleTotal">—</strong></div>
+              <div class="strategy-section-heading strategy-cost-subheading"><div><span class="eyebrow">OPERAÇÃO</span><h3>Custos por categoria</h3><p><span id="strategyOperationalCostCount">—</span> lançamentos rateados na competência.</p></div></div>
+              <div class="strategy-category-grid">
+                <div class="strategy-metric"><span>Tecnologia</span><strong id="strategyCategory_technology">—</strong></div>
+                <div class="strategy-metric"><span>Comunicação</span><strong id="strategyCategory_communication">—</strong></div>
+                <div class="strategy-metric"><span>Infraestrutura</span><strong id="strategyCategory_infrastructure">—</strong></div>
+                <div class="strategy-metric"><span>Terceiros</span><strong id="strategyCategory_third_party">—</strong></div>
+                <div class="strategy-metric"><span>Treinamento</span><strong id="strategyCategory_training">—</strong></div>
+                <div class="strategy-metric"><span>Outros</span><strong id="strategyCategory_other">—</strong></div>
+              </div>
             </article>
-            <aside class="strategy-insight"><strong>Domínio separado</strong><p>Bonificação operacional e custos estratégicos continuam com motores, estado e persistência independentes.</p></aside>
+            <aside class="strategy-insight"><strong>Rateio fotografado</strong><p>Direto, FTE, atendimentos ou manual: o percentual utilizado fica gravado na competência e não muda silenciosamente com o histórico operacional.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="assumptions">
@@ -1480,8 +1497,33 @@
                 </div>
                 <div class="strategy-editor-footer"><span id="strategyPeopleHint" class="muted">Os valores são registrados por competência e não alteram o cadastro operacional.</span><button class="btn primary" id="strategySavePeopleCostsBtn" type="button">Salvar pessoas e custos</button></div>
               </article>
+
+              <div id="strategyOperationalPermissionNotice" class="strategy-access-warning hidden">Os totais operacionais podem ser vistos de forma agregada, mas os lançamentos e rateios detalhados ficam disponíveis somente para usuários com <strong>can_edit_costs</strong>.</div>
+
+              <article id="strategyOperationalEditor" class="strategy-placeholder-card">
+                <div class="strategy-section-heading"><div><span class="eyebrow">CUSTOS OPERACIONAIS E RATEIOS</span><h3>Custos compartilhados e diretos por competência</h3><p>Cadastre ferramentas, comunicação, infraestrutura, terceiros e outros custos. Cada lançamento precisa ser distribuído integralmente entre os Squads.</p></div><span id="strategyOperationalEditorMode" class="strategy-mini-badge">Somente leitura</span></div>
+                <div id="strategyAllocationBasisStatus" class="strategy-allocation-basis muted">Base da competência: —</div>
+                <div id="strategyOperationalCreate" class="strategy-operational-create">
+                  <label><span>Descrição</span><input id="strategyNewOperationalDescription" type="text" maxlength="160" placeholder="Ex.: Chat, CRM, servidor"></label>
+                  <label><span>Categoria</span><select id="strategyNewOperationalCategory"><option value="technology">Tecnologia</option><option value="communication">Comunicação</option><option value="infrastructure">Infraestrutura</option><option value="third_party">Terceiros</option><option value="training">Treinamento</option><option value="other">Outros</option></select></label>
+                  <label><span>Subcategoria</span><input id="strategyNewOperationalSubcategory" type="text" maxlength="120" placeholder="Opcional"></label>
+                  <label><span>Valor</span><input id="strategyNewOperationalAmount" type="number" min="0.01" step="0.01" placeholder="0,00"></label>
+                  <label><span>Método de rateio</span><select id="strategyNewOperationalAllocationMethod" data-strategy-operational-method><option value="direct">Direto</option><option value="headcount" selected>FTE</option><option value="attendance">Atendimentos</option><option value="manual">Manual</option></select></label>
+                  <label data-strategy-operational-direct class="hidden"><span>Squad direto</span><select id="strategyNewOperationalDirectSquad"></select></label>
+                  <label class="strategy-checkbox strategy-operational-recurring"><input id="strategyNewOperationalRecurring" type="checkbox"><span>Custo recorrente</span></label>
+                  <div data-strategy-operational-manual class="strategy-manual-allocation hidden"><span>Rateio manual</span><div id="strategyNewOperationalManualAllocations"></div></div>
+                  <button class="btn secondary" id="strategyAddOperationalCostBtn" type="button">+ Adicionar custo</button>
+                </div>
+                <div class="table-wrap strategy-operational-table-wrap">
+                  <table class="strategy-operational-table">
+                    <thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Método</th><th>Squad direto</th><th>Rateio</th><th>Recorrência</th><th>Base</th><th></th></tr></thead>
+                    <tbody id="strategyOperationalRows"><tr><td colspan="9" class="muted">Carregando custos operacionais...</td></tr></tbody>
+                  </table>
+                </div>
+                <div class="strategy-editor-footer"><span id="strategyOperationalHint" class="muted">FTE e atendimentos usam a base agregada da competência. Rateio manual deve totalizar 100%.</span><button class="btn primary" id="strategySaveOperationalCostsBtn" type="button">Salvar custos e rateios</button></div>
+              </article>
             </div>
-            <aside class="strategy-insight"><strong>Histórico preservado</strong><p>Squad, FTE e valores ficam fotografados na competência. Alterações futuras não devem reescrever meses anteriores.</p></aside>
+            <aside class="strategy-insight"><strong>Histórico preservado</strong><p>Squad, FTE, valores e percentuais de rateio ficam fotografados na competência. Mudanças futuras não reescrevem o mês anterior.</p></aside>
           </div>
         </div>
       </section>
@@ -1888,29 +1930,29 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.57.2"></script>
-  <script src="js/finance-rules.js?v=2.57.2"></script>
-  <script src="js/finance-advanced.js?v=2.57.2"></script>
-  <script src="js/tv-engine.js?v=2.57.2"></script>
-  <script src="js/presentation.js?v=2.57.2"></script>
-  <script src="js/chart-engine.js?v=2.57.2"></script>
-  <script src="js/chart-export.js?v=2.57.2"></script>
-  <script src="js/import-engine.js?v=2.57.2"></script>
-  <script src="js/predictive-engine.js?v=2.57.2"></script>
-  <script src="js/alert-engine.js?v=2.57.2"></script>
-  <script src="js/settings-engine.js?v=2.57.2"></script>
-  <script src="js/performance-engine.js?v=2.57.2"></script>
-  <script src="js/navigation-engine.js?v=2.57.2"></script>
-  <script src="js/workspace-engine.js?v=2.57.2"></script>
-  <script src="js/filter-system.js?v=2.57.2"></script>
-  <script src="js/comparison-engine.js?v=2.57.2"></script>
-  <script src="js/finance-report-engine.js?v=2.57.2"></script>
-  <script src="js/design-system.js?v=2.57.2"></script>
-  <script src="js/strategy-access.js?v=2.57.2"></script>
-  <script src="js/strategy-data.js?v=2.57.2"></script>
-  <script src="js/strategy-cost-engine.js?v=2.57.2"></script>
-  <script src="js/strategy-insights.js?v=2.57.2"></script>
-  <script src="js/strategy.js?v=2.57.2"></script>
-  <script src="js/app.js?v=2.57.2"></script>
+  <script src="js/business-calendar.js?v=2.57.3"></script>
+  <script src="js/finance-rules.js?v=2.57.3"></script>
+  <script src="js/finance-advanced.js?v=2.57.3"></script>
+  <script src="js/tv-engine.js?v=2.57.3"></script>
+  <script src="js/presentation.js?v=2.57.3"></script>
+  <script src="js/chart-engine.js?v=2.57.3"></script>
+  <script src="js/chart-export.js?v=2.57.3"></script>
+  <script src="js/import-engine.js?v=2.57.3"></script>
+  <script src="js/predictive-engine.js?v=2.57.3"></script>
+  <script src="js/alert-engine.js?v=2.57.3"></script>
+  <script src="js/settings-engine.js?v=2.57.3"></script>
+  <script src="js/performance-engine.js?v=2.57.3"></script>
+  <script src="js/navigation-engine.js?v=2.57.3"></script>
+  <script src="js/workspace-engine.js?v=2.57.3"></script>
+  <script src="js/filter-system.js?v=2.57.3"></script>
+  <script src="js/comparison-engine.js?v=2.57.3"></script>
+  <script src="js/finance-report-engine.js?v=2.57.3"></script>
+  <script src="js/design-system.js?v=2.57.3"></script>
+  <script src="js/strategy-access.js?v=2.57.3"></script>
+  <script src="js/strategy-data.js?v=2.57.3"></script>
+  <script src="js/strategy-cost-engine.js?v=2.57.3"></script>
+  <script src="js/strategy-insights.js?v=2.57.3"></script>
+  <script src="js/strategy.js?v=2.57.3"></script>
+  <script src="js/app.js?v=2.57.3"></script>
 </body>
 </html>

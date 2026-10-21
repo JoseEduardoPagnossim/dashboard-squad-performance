@@ -6,7 +6,7 @@
   'use strict';
   function foundationInsights(){
     return Object.freeze([
-      Object.freeze({code:'STRATEGY_PEOPLE_COSTS_READY',tone:'info',title:'Custos pessoais separados do operacional',text:'A competência financeira preserva salário, encargos, benefícios, FTE e demais custos pessoais sem alterar atendimentos, qualidade ou bonificação.'})
+      Object.freeze({code:'STRATEGY_PEOPLE_COSTS_READY',tone:'info',title:'Custos estratégicos separados do operacional',text:'Pessoas e custos operacionais são consolidados por competência e Squad sem alterar atendimentos, qualidade ou bonificação; os percentuais de rateio ficam fotografados para auditoria.'})
     ]);
   }
   return{foundationInsights};
