@@ -151,3 +151,7 @@ A migration também amplia `import_batches.kind` com `quality-full`. Leitura seg
 `MIGRACAO_V2.53.1.sql` adiciona `get_org_daily_attendance_overview_range(date,date)` e `get_org_technician_daily_overview_range(date,date)`. As novas RPCs restringem o consolidado diário ao período solicitado pelo frontend e preservam o isolamento por organização do usuário autenticado. O frontend também pagina os resultados, evitando truncamento em 1.000 linhas quando o período possui muitos técnicos/dias.
 
 Não é necessário republicar Edge Functions.
+
+### V2.57.0 — Fundação da Gestão Estratégica
+
+Execute `MIGRACAO_V2.57.0.sql` para criar a autorização estratégica independente (`strategy_access` e `has_strategy_access`). Esta etapa não cria dados de salário ou custos.

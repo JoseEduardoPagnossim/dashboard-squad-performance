@@ -43,6 +43,17 @@
   if(!filterSystem) throw new Error('SoftenFilterSystem não carregado. Verifique js/filter-system.js.');
   const comparisonEngine = window.SoftenComparisonEngine;
   if(!comparisonEngine) throw new Error('SoftenComparisonEngine não carregado. Verifique js/comparison-engine.js.');
+  const strategyAccessEngine = window.SoftenStrategyAccess;
+  if(!strategyAccessEngine) throw new Error('SoftenStrategyAccess não carregado. Verifique js/strategy-access.js.');
+  const strategyDataEngine = window.SoftenStrategyData;
+  if(!strategyDataEngine) throw new Error('SoftenStrategyData não carregado. Verifique js/strategy-data.js.');
+  const strategyCostEngine = window.SoftenStrategyCostEngine;
+  if(!strategyCostEngine) throw new Error('SoftenStrategyCostEngine não carregado. Verifique js/strategy-cost-engine.js.');
+  const strategyInsightsEngine = window.SoftenStrategyInsights;
+  if(!strategyInsightsEngine) throw new Error('SoftenStrategyInsights não carregado. Verifique js/strategy-insights.js.');
+  const strategyEngine = window.SoftenStrategy;
+  if(!strategyEngine) throw new Error('SoftenStrategy não carregado. Verifique js/strategy.js.');
+  const strategyController = strategyEngine.createController();
   const financeReportEngine = window.SoftenFinanceReportEngine;
   if(!financeReportEngine) throw new Error('SoftenFinanceReportEngine não carregado. Verifique js/finance-report-engine.js.');
   const {normalizeConfig:normalizeFinanceReportConfig,defaultConfig:defaultFinanceReportConfig,presetConfig:financeReportPresetConfig,selectedColumns:financeReportSelectedColumns,moveColumn:moveFinanceReportColumn,stepColumn:stepFinanceReportColumn,setVisible:setFinanceReportColumnVisible,columnById:financeReportColumnById,computedValue:financeReportComputedValue}=financeReportEngine;
@@ -56,7 +67,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.56.7';
+  const APP_VERSION = '2.57.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -237,6 +248,7 @@
   };
 
   const ADMIN_SECTION_META={operation:{label:'Operação',icon:'↻'},finance:{label:'Bonificação',icon:'R$'},costs:{label:'Custos',icon:'⏱'},appearance:{label:'Aparência',icon:'✦'}};
+  const STRATEGY_SECTION_META=strategyEngine.SECTION_META;
   const INDICATOR_SECTION_META={performance:{label:'Indicadores gerais',icon:'◔'},quality:{label:'Qualidade',icon:'★'},'financial-impact':{label:'Impacto financeiro',icon:'R$'},'business-days':{label:'Dias úteis',icon:'▤'},detail:{label:'Detalhamento de qualidade',icon:'≡'}};
   const GLOBAL_NAV_COMMANDS=[
     {id:'home',label:'Início',description:'Resumo e atalhos do Performance Hub',group:'Navegação',icon:'⌂',view:'home',keywords:'home começo resumo dashboard'},
@@ -252,6 +264,9 @@
     {id:'admin-operation',label:'Operação',description:'Importação, metas e fechamento mensal',group:'Gestão',icon:'↻',view:'admin',adminSection:'operation',adminOnly:true,keywords:'operação importação metas mês'},
     {id:'admin-finance',label:'Bonificação',description:'Financeiro e memória de cálculo',group:'Gestão',icon:'R$',view:'admin',adminSection:'finance',permission:'finance.view',adminOnly:true,keywords:'financeiro bonificação comissão férias'},
     {id:'admin-costs',label:'Custos',description:'Custos operacionais do suporte',group:'Gestão',icon:'⏱',view:'admin',adminSection:'costs',permission:'costs.view',adminOnly:true,keywords:'custos folha horas operação'},
+    {id:'strategy-executive',label:'Gestão Estratégica',description:'Resultado executivo, custos e eficiência econômica',group:'Estratégia',icon:'◇',view:'strategy',strategySection:'executive',strategyAccess:true,keywords:'estratégia resultado executivo custos eficiência diretoria'},
+    {id:'strategy-costs',label:'Estratégia · Custos & Eficiência',description:'Fundação da análise econômica do suporte',group:'Estratégia',icon:'R$',view:'strategy',strategySection:'costs',strategyAccess:true,keywords:'estratégia custos eficiência financeiro'},
+    {id:'strategy-assumptions',label:'Estratégia · Premissas',description:'Base de competências, pessoas, custos e rateios',group:'Estratégia',icon:'▤',view:'strategy',strategySection:'assumptions',strategyAccess:true,keywords:'estratégia premissas competência pessoas rateio'},
     {id:'feedbacks',label:'Feedbacks',description:'Gestão de feedbacks dos técnicos',group:'Pessoas',icon:'✎',view:'feedbacks',permission:'feedback.manage',adminOnly:true,keywords:'feedback pessoas técnico avaliação'},
     {id:'users',label:'Usuários',description:'Usuários, perfis e permissões',group:'Pessoas',icon:'♟',view:'users',permission:'users.manage',adminOnly:true,keywords:'usuários acessos permissões perfil'},
     {id:'audit',label:'Auditoria',description:'Histórico de ações administrativas',group:'Governança',icon:'⌁',view:'audit',permission:'audit.view',adminOnly:true,keywords:'auditoria histórico alterações ações'},
@@ -268,7 +283,7 @@
     {id:'help',label:'Como usar',description:'Ajuda e guia do Performance Hub',group:'Conta',icon:'?',view:'help',keywords:'ajuda guia manual como usar'}
   ];
   function commandAllowed(command){
-    if(command.adminOnly&&!isAdmin())return false;if(command.techOnly&&!isTechnician())return false;if(command.permission&&!hasPermission(command.permission))return false;
+    if(command.adminOnly&&!isAdmin())return false;if(command.techOnly&&!isTechnician())return false;if(command.permission&&!hasPermission(command.permission))return false;if(command.strategyAccess&&!canViewStrategy())return false;
     if(command.view==='admin'){
       if(!isAdmin())return false;
       if(command.adminSection==='operation'&&!hasPermission('data.import')&&!hasPermission('goals.manage')&&!hasPermission('month.manage'))return false;
@@ -292,15 +307,16 @@
     return commands;
   }
   function routeAccessible(route){
-    const target={view:route?.page||'home',adminSection:route?.section||null,settingsModule:route?.module||null,indicatorSection:route?.indicator||null};
+    const page=route?.page||'home',target={view:page,adminSection:page==='admin'?(route?.section||null):null,strategySection:page==='strategy'?(route?.section||null):null,settingsModule:route?.module||null,indicatorSection:route?.indicator||null};
     if(target.view==='home')return true;
-    const candidates=GLOBAL_NAV_COMMANDS.filter(c=>c.view===target.view).filter(c=>!target.adminSection||c.adminSection===target.adminSection).filter(c=>!target.settingsModule||c.settingsModule===target.settingsModule).filter(c=>!target.indicatorSection||c.indicatorSection===target.indicatorSection);
+    const candidates=GLOBAL_NAV_COMMANDS.filter(c=>c.view===target.view).filter(c=>!target.adminSection||c.adminSection===target.adminSection).filter(c=>!target.strategySection||c.strategySection===target.strategySection).filter(c=>!target.settingsModule||c.settingsModule===target.settingsModule).filter(c=>!target.indicatorSection||c.indicatorSection===target.indicatorSection);
     if(candidates.length)return candidates.some(commandAllowed);
-    return !['admin','users','feedbacks','audit','indicators','presentation','alerts','my-feedbacks'].includes(target.view);
+    return !['admin','strategy','users','feedbacks','audit','indicators','presentation','alerts','my-feedbacks'].includes(target.view);
   }
   function currentPersistentRoute(){
     const page=state.currentView||'home',route={page};
     if(page==='admin')route.section=state.adminSection||'operation';
+    if(page==='strategy')route.section=strategyController.getState().section||'executive';
     if(page==='settings'&&state.settingsModule&&state.settingsModule!=='all')route.module=state.settingsModule;
     if(page==='indicators')route.indicator=state.indicatorSection||'performance';
     const visible=topFilterVisibility(page,state.adminSection);
@@ -328,8 +344,9 @@
       if(target.page==='indicators'&&target.indicator&&INDICATOR_SECTION_META[target.indicator])state.indicatorSection=target.indicator;
       if(target.page==='settings')state.settingsModule=target.module&&SETTINGS_MODULES[target.module]&&settingsModuleAllowed(target.module)?target.module:'all';
       if(target.page==='admin'&&target.section&&ADMIN_SECTION_META[target.section])state.adminSection=target.section;
+      if(target.page==='strategy'&&target.section&&STRATEGY_SECTION_META[target.section])strategyController.setSection(target.section);
       if(target.page==='individual'&&target.tech){const found=routeTechnicianName(target.tech);if(found)state.techName=found;}
-      refreshSelectors();showView(target.page||'home',target.page==='admin'?state.adminSection:null,{history:'none'});if(target.page==='settings')applySettingsModuleFilter({scroll:false});updateBreadcrumbs();
+      refreshSelectors();showView(target.page||'home',target.page==='admin'?state.adminSection:(target.page==='strategy'?strategyController.getState().section:null),{history:'none'});if(target.page==='settings')applySettingsModuleFilter({scroll:false});updateBreadcrumbs();
     }finally{state.routeApplying=false;if(canonicalize)syncPersistentUrl({replace:true});}
   }
   function breadcrumbRoute(label,target=null,icon=''){return{label,target,icon}}
@@ -342,6 +359,7 @@
     else if(page==='team')items.push(breadcrumbRoute('Visão do Squad'));
     else if(page==='presentation')items.push(breadcrumbRoute('Apresentação'));
     else if(page==='indicators'){items.push(breadcrumbRoute('Indicadores',{view:'indicators',indicatorSection:'performance'}));items.push(breadcrumbRoute(INDICATOR_SECTION_META[state.indicatorSection]?.label||'Indicadores gerais'));}
+    else if(page==='strategy'){items.push(breadcrumbRoute('Gestão Estratégica',{view:'strategy',strategySection:'executive'},'◇'));items.push(breadcrumbRoute(STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Resultado Executivo'));}
     else if(page==='admin'){
       items.push(breadcrumbRoute('Gestão'));
       if(['finance','costs'].includes(state.adminSection))items.push(breadcrumbRoute('Financeiro'));
@@ -370,7 +388,8 @@
       if(resolved.indicatorSection&&INDICATOR_SECTION_META[resolved.indicatorSection])state.indicatorSection=resolved.indicatorSection;
       if(resolved.settingsModule&&SETTINGS_MODULES[resolved.settingsModule]&&settingsModuleAllowed(resolved.settingsModule))state.settingsModule=resolved.settingsModule;
       if(resolved.adminSection&&ADMIN_SECTION_META[resolved.adminSection])state.adminSection=resolved.adminSection;
-      refreshSelectors();showView(resolved.view||'home',resolved.view==='admin'?state.adminSection:null,{history:'none'});if(resolved.view==='settings')applySettingsModuleFilter({scroll:true});
+      if(resolved.strategySection&&STRATEGY_SECTION_META[resolved.strategySection])strategyController.setSection(resolved.strategySection);
+      refreshSelectors();showView(resolved.view||'home',resolved.view==='admin'?state.adminSection:(resolved.view==='strategy'?strategyController.getState().section:null),{history:'none'});if(resolved.view==='settings')applySettingsModuleFilter({scroll:true});
     }finally{state.routeApplying=previousApplying;}
     updateBreadcrumbs();syncPersistentUrl({replace:false});
   }
@@ -448,6 +467,21 @@
   function saveLocalUiPreferences(prefs=state.uiPreferences,user=state.user){try{localStorage.setItem(userPreferenceStorageKey(user),JSON.stringify(normalizeUiPreferences(prefs)))}catch(e){console.warn('Não foi possível salvar o layout local.',e)}}
   function effectivePermissionsFor(user=state.user){return settingsEffectivePermissions(user?.role||'technician',user?.permissions||{})}
   function hasPermission(key,user=state.user){return effectivePermissionsFor(user)[key]===true}
+  function strategyAccess(){return strategyController.getState().access}
+  function canViewStrategy(){return strategyAccessEngine.canView(strategyAccess())}
+  async function loadStrategyAccess(){
+    if(!state.user){strategyController.setAccess(strategyAccessEngine.EMPTY_ACCESS);return strategyAccess()}
+    if(!state.supabase){strategyController.setAccess(strategyAccessEngine.demoAccessForRole(state.user.role));return strategyAccess()}
+    try{
+      const {data,error}=await state.supabase.from('strategy_access').select('can_view_strategy,can_view_aggregates,can_view_people_costs,can_edit_costs,can_close_competence,can_manage_access').eq('organization_id',state.user.organizationId).eq('user_id',state.user.userId).maybeSingle();
+      if(error)throw error;
+      strategyController.setAccess(strategyAccessEngine.normalizeAccess(data||{},{source:'supabase',remoteAvailable:true}));
+    }catch(err){
+      console.warn('Acesso da Gestão Estratégica indisponível. Execute a migração V2.57.0.',err);
+      strategyController.setAccess(strategyAccessEngine.normalizeAccess({},{source:'supabase',remoteAvailable:false}));
+    }
+    return strategyAccess();
+  }
   function requirePermission(key,message='Você não possui permissão para esta ação.'){if(hasPermission(key))return true;toast(message);return false}
   function loadUserUiPreferences(user=state.user){
     const localRaw=readLocalUiPreferences(user),remoteRaw=user?.uiPreferences&&typeof user.uiPreferences==='object'?user.uiPreferences:null,source=remoteRaw||localRaw,needsMigration=Number(source?.version||0)<5;
@@ -477,16 +511,16 @@
     if(render)syncWorkspaceToolbar();if(persist)scheduleUiPreferencePersist();else saveLocalUiPreferences(state.uiPreferences);return next;
   }
   function navigationTargetFromRoute(route={}){
-    const r=workspaceEngine.copyRoute(route);return{view:r.page||'home',adminSection:r.section||null,settingsModule:r.module||null,indicatorSection:r.indicator||null,squad:r.squad||null,month:r.month||null,tech:r.tech||null,from:r.from||null,to:r.to||null};
+    const r=workspaceEngine.copyRoute(route),page=r.page||'home';return{view:page,adminSection:page==='admin'?(r.section||null):null,strategySection:page==='strategy'?(r.section||null):null,settingsModule:r.module||null,indicatorSection:r.indicator||null,squad:r.squad||null,month:r.month||null,tech:r.tech||null,from:r.from||null,to:r.to||null};
   }
   function navigationRouteFromTarget(target={}){
-    return workspaceEngine.copyRoute({page:target.view||target.page||'home',section:target.adminSection||target.section||null,module:target.settingsModule||target.module||null,indicator:target.indicatorSection||target.indicator||null,squad:target.squad||null,month:target.month||null,tech:target.tech||null,from:target.from||null,to:target.to||null});
+    const page=target.view||target.page||'home',section=page==='admin'?(target.adminSection||target.section||null):page==='strategy'?(target.strategySection||target.section||null):(target.section||null);return workspaceEngine.copyRoute({page,section,module:target.settingsModule||target.module||null,indicator:target.indicatorSection||target.indicator||null,squad:target.squad||null,month:target.month||null,tech:target.tech||null,from:target.from||null,to:target.to||null});
   }
   function liveGlobalFilterRoute(){return{page:state.currentView||'home',squad:state.squadCode||null,from:state.analysisStartDate||null,to:state.analysisEndDate||null}}
   function routeFilterVisibility(route={}){const r=workspaceEngine.copyRoute(route);return filterSystem.visibility({view:r.page||state.currentView,adminSection:r.section||state.adminSection,settingsModule:r.module||state.settingsModule,indicatorSection:r.indicator||state.indicatorSection,isSuperAdmin:isSuperAdmin(),isTechnician:isTechnician(),squadCode:state.squadCode})}
   function routeUsesAnalysisPeriod(route={}){return!!routeFilterVisibility(route).period}
   function rememberedRoute(route={},options={}){
-    const ws=workspacePreferences(),preferLive=options.preferLive!==false,base=workspaceEngine.copyRoute(route),live=preferLive?liveGlobalFilterRoute():{};
+    const ws=workspacePreferences(),preferLive=options.preferLive!==false,base=workspaceEngine.copyRoute(route);if(base.page==='strategy')return base;const live=preferLive?liveGlobalFilterRoute():{};
     if(preferLive){if(!base.squad&&live.squad)base.squad=live.squad;if(!base.from&&live.from)base.from=live.from;if(!base.to&&live.to)base.to=live.to;}
     return mergeWorkspaceRememberedFilters(base,ws.filterMemory,ws.persistentFilters,ws.globalContext);
   }
@@ -497,6 +531,7 @@
   function workspaceRouteTitle(route={}){
     const r=workspaceEngine.copyRoute(route),page=r.page||'home';
     if(page==='admin')return ADMIN_SECTION_META[r.section]?.label||'Gestão';
+    if(page==='strategy')return r.section&&STRATEGY_SECTION_META[r.section]?`Estratégia · ${STRATEGY_SECTION_META[r.section].label}`:'Gestão Estratégica';
     if(page==='settings')return r.module&&SETTINGS_MODULES[r.module]?`Configurações · ${SETTINGS_MODULES[r.module].label}`:'Configurações';
     if(page==='indicators')return r.indicator&&INDICATOR_SECTION_META[r.indicator]?`Indicadores · ${INDICATOR_SECTION_META[r.indicator].label.replace(/^Indicadores\s*/i,'')}`:'Indicadores';
     const labels={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
@@ -885,7 +920,7 @@
     $('#forgotPasswordBtn').addEventListener('click',handleForgotPassword);
     $('#recoveryForm').addEventListener('submit',handleRecoveryPassword);
     $('#logoutBtn').addEventListener('click',logout);
-    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>executeNavigationTarget({view:btn.dataset.view||'home',adminSection:btn.dataset.adminSection||null,settingsModule:btn.dataset.settingsModule||null})));
+    $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>executeNavigationTarget({view:btn.dataset.view||'home',adminSection:btn.dataset.adminSection||null,strategySection:btn.dataset.strategySection||null,settingsModule:btn.dataset.settingsModule||null}))); 
     $('#globalSearchTrigger')?.addEventListener('click',openGlobalSearch);
     $('#globalSearchBackdrop')?.addEventListener('click',closeGlobalSearch);
     $('#currentFavoriteBtn')?.addEventListener('click',e=>{e.stopPropagation();toggleCurrentFavorite();});
@@ -896,10 +931,11 @@
     $('#globalSearchInput')?.addEventListener('input',()=>{state.globalSearchIndex=0;renderGlobalSearch();});
     $('#globalSearchResults')?.addEventListener('mousemove',e=>{const btn=e.target.closest('[data-global-command]');if(!btn)return;const index=state.globalSearchResults.findIndex(x=>x.id===btn.dataset.globalCommand);if(index>=0&&index!==state.globalSearchIndex){state.globalSearchIndex=index;renderGlobalSearch();}});
     $('#globalSearchResults')?.addEventListener('click',e=>{const btn=e.target.closest('[data-global-command]');if(btn)activateGlobalSearch(btn.dataset.globalCommand);});
-    $('#appBreadcrumbs')?.addEventListener('click',e=>{const btn=e.target.closest('[data-breadcrumb-view]');if(!btn)return;executeNavigationTarget({view:btn.dataset.breadcrumbView,adminSection:btn.dataset.breadcrumbAdminSection||null,settingsModule:btn.dataset.breadcrumbSettingsModule||null,indicatorSection:btn.dataset.breadcrumbIndicatorSection||null});});
+    $('#appBreadcrumbs')?.addEventListener('click',e=>{const btn=e.target.closest('[data-breadcrumb-view]');if(!btn)return;executeNavigationTarget({view:btn.dataset.breadcrumbView,adminSection:btn.dataset.breadcrumbAdminSection||null,strategySection:btn.dataset.breadcrumbStrategySection||null,settingsModule:btn.dataset.breadcrumbSettingsModule||null,indicatorSection:btn.dataset.breadcrumbIndicatorSection||null});});
     document.addEventListener('keydown',handleGlobalSearchKeydown);
     window.addEventListener('popstate',()=>{if(state.user&&!PRESENTATION_ROUTE.enabled)restorePersistentRoute(readNavigationRoute(window.location),{canonicalize:true}).catch(err=>console.error('Falha ao restaurar rota do navegador.',err));});
     if($('#view-home'))$('#view-home').addEventListener('click',handleHomeClick);
+    if($('#view-strategy')){$('#view-strategy').addEventListener('click',handleStrategyClick);$('#view-strategy').addEventListener('change',handleStrategyChange);}
     $('#saveHomeLayoutBtn')?.addEventListener('click',saveHomeLayoutEdit);
     $('#cancelHomeLayoutBtn')?.addEventListener('click',cancelHomeLayoutEdit);
     $('#resetHomeLayoutBtn')?.addEventListener('click',resetHomeLayoutDraft);
@@ -1196,7 +1232,7 @@
   }
   function showLogin(message=''){ hideBoot();$('#loginScreen').classList.remove('hidden');$('#appShell').classList.add('hidden');if(message)$('#loginError').textContent=message; }
   async function logout(){
-    closeGlobalSearch();stopThemeAudio();clearInterval(state.notificationRefreshTimer);state.notificationRefreshTimer=null;const cacheScope=performanceScope();clearPerformanceCacheScope(cacheScope);clearPerformanceCacheScope('initial');if(state.supabase) await state.supabase.auth.signOut();sessionStorage.removeItem('squadDemoSession');state.user=null;state.backgroundHydrationStarted=false;showLogin();
+    closeGlobalSearch();stopThemeAudio();clearInterval(state.notificationRefreshTimer);state.notificationRefreshTimer=null;const cacheScope=performanceScope();clearPerformanceCacheScope(cacheScope);clearPerformanceCacheScope('initial');if(state.supabase) await state.supabase.auth.signOut();sessionStorage.removeItem('squadDemoSession');state.user=null;strategyController.setAccess(strategyAccessEngine.EMPTY_ACCESS);state.backgroundHydrationStarted=false;showLogin();
   }
 
   async function enterApp(user){
@@ -1205,6 +1241,7 @@
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.internalNotifications=[];state.notificationReadIds=[];state.notificationsLoaded=false;state.notificationsLoading=false;state.notificationsRemoteAvailable=true;state.notificationsError='';state.notificationPopoverOpen=false;state.notificationFilters={status:'all',source:'all',severity:'all',category:'all',search:''};state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
     state.businessCalendarRows=[];state.businessCalendarLoaded=false;state.businessCalendarLoading=null;state.businessCalendarRemoteAvailable=true;state.businessCalendarYear=new Date().getFullYear();state.businessCalendarDraft=null;
     await ensureBusinessCalendarLoaded(false);
+    await loadStrategyAccess();
     if(PRESENTATION_ROUTE.enabled)await preparePresentationRouteContext();
     const requestedPresentationSquad=PRESENTATION_ROUTE.enabled?String(PRESENTATION_ROUTE.squad||'').toUpperCase():'';
     if(PRESENTATION_ROUTE.enabled){
@@ -1223,6 +1260,7 @@
     }
     if((window.APP_CONFIG?.mode||'demo')==='demo'){state.orgOverview=buildOrgOverviewFromState();state.orgTechnicianOverview=buildOrgTechnicianOverviewFromState();state.orgDailyOverview=buildOrgDailyOverviewFromState();state.orgTechnicianDailyOverview=buildOrgTechnicianDailyOverviewFromState();}
     resetAnalysisRange(true);
+    strategyController.initializeContext({squads:state.squads});
     applyPermissions();applyNavigationPreferences();refreshSelectors();render();
     if(!PRESENTATION_ROUTE.enabled)await restorePersistentRoute(readNavigationRoute(window.location),{canonicalize:true});
     hideBoot();$('#loginScreen').classList.add('hidden');$('#appShell').classList.remove('hidden');
@@ -1241,6 +1279,7 @@
     $$('.tech-only').forEach(el=>el.classList.toggle('hidden',!isTechnician()));
     $$('.admin-help').forEach(el=>el.classList.toggle('hidden',!admin));
     $$('.super-help').forEach(el=>el.classList.toggle('hidden',!superAdmin));
+    $$('[data-strategy-access]').forEach(el=>el.classList.toggle('hidden',!canViewStrategy()));
     $$('[data-permission]').forEach(el=>{const allowed=hasPermission(el.dataset.permission);el.classList.toggle('permission-hidden',!allowed);if('disabled' in el)el.disabled=!allowed;});
     if($('#operationNavBtn'))$('#operationNavBtn').classList.toggle('permission-hidden',!(hasPermission('data.import')||hasPermission('goals.manage')||hasPermission('month.manage')));
     const permissionButtons={
@@ -1782,7 +1821,7 @@
     const technicianControl=$('.technician-control');if(technicianControl)technicianControl.classList.toggle('hidden',!visibility.technician);
     if(!visibility.period&&analysisPeriodUi.open&&analysisPeriodUi.target==='state')closeAnalysisPeriodPicker();
     const eyebrow=$('#squadEyebrow');
-    if(eyebrow&&name!=='home')eyebrow.textContent=(name==='indicators'&&state.indicatorSection==='financial-impact')?'SUPORTE TÉCNICO COMPLETO':(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`);
+    if(eyebrow&&name!=='home')eyebrow.textContent=name==='strategy'?'GESTÃO ESTRATÉGICA':((name==='indicators'&&state.indicatorSection==='financial-impact')?'SUPORTE TÉCNICO COMPLETO':(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`));
     syncFilterDrawer(visibility);
     return visibility;
   }
@@ -1793,6 +1832,7 @@
     if(name==='alerts'&&!hasPermission('notifications.view'))return toast('Você não possui permissão para visualizar a Central de Alertas.');
     if(name==='indicators'&&!hasPermission('indicators.view'))return toast('Você não possui permissão para visualizar Indicadores.');
     if(name==='presentation'&&!hasPermission('presentation.view'))return toast('Você não possui permissão para visualizar a Apresentação.');
+    if(name==='strategy'&&!canViewStrategy())return toast('Você não possui acesso à Gestão Estratégica.');
     if(name==='users'&&!hasPermission('users.manage'))return toast('Você não possui permissão para gerenciar usuários.');
     if(name==='feedbacks'&&!hasPermission('feedback.manage'))return toast('Você não possui permissão para gerenciar feedbacks.');
     if(name==='audit'&&!hasPermission('audit.view'))return toast('Você não possui permissão para visualizar a auditoria.');
@@ -1803,13 +1843,14 @@
     if(name==='individual'&&state.squadCode==='all')name='team';
     if(name!=='home'&&state.homeLayoutEditMode)cancelHomeLayoutEdit();
     if(name==='admin'&&adminSection)state.adminSection=adminSection;
+    if(name==='strategy'&&adminSection)strategyController.setSection(adminSection);
     state.currentView=name;
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;const sameSettings=name!=='settings'||(b.dataset.settingsModule?b.dataset.settingsModule===state.settingsModule:!b.dataset.settingsModule);b.classList.toggle('active',sameView&&sameSection&&sameSettings)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
-    const titles={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const titles={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',strategy:STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Gestão Estratégica',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';document.title=`${titles[name]||'Performance Hub'} • Soften Performance Hub`;
-    if($('#squadEyebrow'))$('#squadEyebrow').textContent=name==='home'?(isSuperAdmin()?'PERFORMANCE HUB':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`):(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`);
+    if($('#squadEyebrow'))$('#squadEyebrow').textContent=name==='home'?(isSuperAdmin()?'PERFORMANCE HUB':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`):(name==='strategy'?'GESTÃO ESTRATÉGICA':(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`));
     syncTopFiltersForView(name,state.adminSection);
     syncAnalysisDateControls();
     $('.sidebar').classList.remove('open');
@@ -1852,6 +1893,7 @@
     if(state.currentView==='audit'){renderAuditLogView().catch(err=>{console.error(err);toast('Não foi possível carregar a auditoria.')});return;}
     if(state.currentView==='help')renderHelp();
     if(state.currentView==='settings'){renderSettings();return;}
+    if(state.currentView==='strategy'){renderStrategy();return;}
     if(state.currentView==='profile')renderProfile();
     if(state.currentView==='indicators'){renderIndicators();applyPersonalLayout('indicators');}
     if(state.currentView==='presentation'){renderPresentation();return;}
@@ -3510,6 +3552,32 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
   }
+  function strategyCompetenceOptions(vm){
+    if(!vm.context.competences.length)return'<option value="">Sem competências disponíveis</option>';
+    return vm.context.competences.slice().reverse().map(id=>`<option value="${escapeHtml(id)}" ${id===vm.state.competence?'selected':''}>${escapeHtml(strategyDataEngine.competenceLabel(id))}</option>`).join('');
+  }
+  function strategySquadOptions(vm){return[`<option value="all" ${vm.state.squadCode==='all'?'selected':''}>Todos os Squads</option>`,...vm.context.squads.map(s=>`<option value="${escapeHtml(s.code)}" ${vm.state.squadCode===s.code?'selected':''}>Squad ${escapeHtml(s.code)}${s.name&&s.name!==`Squad ${s.code}`?` · ${escapeHtml(s.name)}`:''}</option>`)].join('')}
+  function renderStrategy(){
+    if(!canViewStrategy())return;
+    strategyController.initializeContext({squads:state.squads});const vm=strategyController.viewModel(),section=vm.state.section;
+    $$('#view-strategy [data-strategy-section]').forEach(btn=>{const active=btn.dataset.strategySection===section;btn.classList.toggle('is-active',active);btn.setAttribute('aria-selected',active?'true':'false')});
+    $$('#view-strategy [data-strategy-panel]').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.strategyPanel!==section));
+    if($('#strategyCompetenceSelect'))$('#strategyCompetenceSelect').innerHTML=strategyCompetenceOptions(vm);
+    if($('#strategySquadSelect'))$('#strategySquadSelect').innerHTML=strategySquadOptions(vm);
+    if($('#strategyComparisonSelect'))$('#strategyComparisonSelect').value=vm.state.comparison;
+    if($('#strategySectionEyebrow'))$('#strategySectionEyebrow').textContent=vm.meta.eyebrow;
+    if($('#strategySectionTitle'))$('#strategySectionTitle').textContent=vm.meta.label;
+    if($('#strategyAccessStatus'))$('#strategyAccessStatus').textContent=vm.accessStatus.label;
+    if($('#strategyContextStatus'))$('#strategyContextStatus').textContent=`${vm.context.squads.length} Squads · ${vm.context.competences.length} competências lidas`;
+    if($('#strategyCostStatus'))$('#strategyCostStatus').textContent='Aguardando V2.57.1';
+    if($('#strategyIsolationStatus'))$('#strategyIsolationStatus').textContent='Somente leitura';
+    if($('#strategyMigrationWarning'))$('#strategyMigrationWarning').classList.toggle('hidden',vm.state.access.remoteAvailable!==false);
+    const insight=vm.insights[0];if($('#strategyFoundationInsightTitle'))$('#strategyFoundationInsightTitle').textContent=insight?.title||'Fundação estratégica ativa';if($('#strategyFoundationInsightText'))$('#strategyFoundationInsightText').textContent=insight?.text||'';
+  }
+  function setStrategySection(section,{history='push'}={}){strategyController.setSection(section);if(state.currentView==='strategy'){renderStrategy();$('#pageTitle').textContent=STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Gestão Estratégica';updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});}}
+  function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}}
+  function handleStrategyChange(e){if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);renderStrategy();return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);renderStrategy();return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
+
   function renderHelp(){
     if(!state.user)return;
     $('#helpRoleName').textContent=roleLabel(state.user.role);
@@ -5274,7 +5342,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function viewNeedsFullMonth(name,section){return['individual','team','indicators','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
   async function ensureViewData(name=state.currentView,section=state.adminSection,{strict=false,forceMonths=false}={}){
-    if(!state.supabase||name==='home'||['alerts','users','audit','settings','profile','my-feedbacks','help'].includes(name))return;
+    if(!state.supabase||name==='home'||['alerts','users','audit','strategy','settings','profile','my-feedbacks','help'].includes(name))return;
     const ids=(['indicators','team','individual','presentation'].includes(name))?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
     if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true,strict,force:forceMonths}));
     if(name==='presentation')jobs.push(ensurePresentationDailyOverview());

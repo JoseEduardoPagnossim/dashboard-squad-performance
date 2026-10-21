@@ -61,7 +61,7 @@ test('navegacao normaliza sidebar, grupos e submodulos sem perder compatibilidad
 test('preferencias padrao deixam navegacao expandida', () => {
   const prefs = engine.defaultPreferences();
   assert.equal(prefs.navigation.sidebarCollapsed, false);
-  assert.deepEqual(prefs.navigation.groups, {performance:false,management:false,account:false});
+  assert.deepEqual(prefs.navigation.groups, {performance:false,management:false,account:false,strategy:false});
 });
 
 

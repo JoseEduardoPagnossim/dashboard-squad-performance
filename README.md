@@ -1,3 +1,14 @@
+## V2.57.0 — Fundação da Gestão Estratégica
+
+- cria a nova área `Gestão Estratégica` sem alterar o fluxo operacional existente;
+- adiciona rotas independentes para Resultado Executivo, Custos & Eficiência e Premissas;
+- mantém estado e filtros estratégicos fora do `state` operacional;
+- adiciona autorização específica em `strategy_access`, com acesso a custos individuais desligado no bootstrap;
+- adiciona módulos `strategy-*` e stylesheet próprio;
+- a tela nasce funcional, porém propositalmente sem valores financeiros até a V2.57.1.
+
+Detalhes: `docs/GESTAO_ESTRATEGICA_FUNDACAO_V2.57.0.md`.
+
 ## V2.56.7 — Média diária dinâmica por Squad
 
 - O gráfico diário passa a respeitar o filtro global de Squad antes de agrupar atendimentos por data.

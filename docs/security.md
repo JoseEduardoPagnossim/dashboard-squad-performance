@@ -61,3 +61,9 @@ Mesmo sem secrets, um repositório público expõe fórmulas, regras internas, e
 - confirme que arquivos de exportação/importação com dados de clientes não foram adicionados ao Git;
 - revise `git diff` antes do commit;
 - publique migrations, Edge Functions e frontend em etapas controladas.
+## V2.57.0 — Autorização estratégica separada
+
+A Gestão Estratégica não usa `super_admin` como sinônimo de acesso irrestrito a informação financeira. A tabela `strategy_access` define capacidades específicas. Cada usuário autenticado pode ler somente o próprio registro; quem possui `can_manage_access` pode administrar registros da mesma organização.
+
+O bootstrap da migration libera aos administradores existentes apenas a fundação, agregados e gestão de acesso. `can_view_people_costs`, `can_edit_costs` e `can_close_competence` permanecem desabilitados. Essa separação deve ser preservada quando custos pessoais forem adicionados na V2.57.1: telas agregadas não devem baixar salários individuais desnecessariamente.
+

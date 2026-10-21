@@ -112,3 +112,9 @@ Após a migration, republique `create-user` e `manage-user`, pois as versões V2
 ## V2.46.0 — Notificações internas
 
 A Central de Alertas adiciona duas tabelas: `internal_notifications`, que armazena comunicados segmentados por organização/público/Squad, e `internal_notification_reads`, que registra leitura individual por usuário. RLS mantém publicação e encerramento restritos a Administradores e isola as leituras ao próprio usuário.
+## V2.57.0 — Acesso da Gestão Estratégica
+
+Execute `supabase/migrations/MIGRACAO_V2.57.0.sql` antes de habilitar a nova área no ambiente Supabase. A migration cria somente `strategy_access` e `has_strategy_access(text)`. Nenhuma tabela de salário, folha ou custo é criada nesta etapa.
+
+`strategy_access` separa autorização estratégica do papel operacional: visualizar a área, visualizar agregados, visualizar custos individuais, editar custos, fechar competências e gerenciar acessos são capacidades distintas. Administradores existentes recebem por bootstrap apenas `can_view_strategy`, `can_view_aggregates` e `can_manage_access`; as capacidades financeiras sensíveis permanecem `false`.
+

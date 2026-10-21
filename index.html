@@ -15,9 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.56.7" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.56.7" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.56.7" />
+  <link rel="stylesheet" href="css/styles.css?v=2.57.0" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.57.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.57.0" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.57.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -74,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.56.7 • Média diária dinâmica por Squad</small>
+        <small class="login-version">V2.57.0 • Média diária dinâmica por Squad</small>
       </section>
     </div>
   </section>
@@ -137,6 +138,12 @@
             </div>
           </div>
         </div>
+        <div class="nav-group" data-nav-group="strategy" data-strategy-access="view">
+          <button class="nav-group-toggle" type="button" data-nav-group-toggle="strategy" aria-expanded="true"><span class="nav-group-label">ESTRATÉGIA</span><span class="nav-chevron">⌄</span></button>
+          <div class="nav-group-items">
+            <button class="nav-btn" id="strategyNavBtn" data-view="strategy" data-strategy-section="executive"><span class="nav-icon">◇</span><span class="nav-text">Gestão Estratégica</span></button>
+          </div>
+        </div>
         <div class="nav-group" data-nav-group="account">
           <button class="nav-group-toggle" type="button" data-nav-group-toggle="account" aria-expanded="true"><span class="nav-group-label">CONTA</span><span class="nav-chevron">⌄</span></button>
           <div class="nav-group-items">
@@ -163,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.56.7 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.57.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1211,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.56.7</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.57.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1363,7 +1370,7 @@
 
           <article class="card how-mini help-searchable" data-help-search="perfil senha conta recuperação login segurança"><div class="how-section-title"><span class="how-icon blue">◉</span><div><span class="eyebrow">CONTA</span><h3>Perfil e senha</h3></div></div><ul><li>Em <b>Meu perfil</b>, qualquer usuário pode alterar a própria senha informando a senha atual.</li><li>A recuperação por e-mail continua disponível na tela de login.</li><li>Administradores não visualizam a senha do usuário.</li><li>Inativação de usuário bloqueia o acesso sem apagar os resultados históricos.</li></ul></article>
 
-          <article class="card how-mini admin-help help-searchable" data-help-search="persistência supabase migration migração histórico memória tv layout importação"><div class="how-section-title"><span class="how-icon purple">DB</span><div><span class="eyebrow">PERSISTÊNCIA</span><h3>Recursos que dependem das migrations</h3></div></div><ul><li><b>V2.36</b>: histórico compartilhado de importações.</li><li><b>V2.38</b>: layout por usuário e permissões específicas persistentes.</li><li><b>V2.39</b>: memória financeira compartilhada e imutável.</li><li><b>V2.40</b>: playlists, múltiplas TVs e monitor compartilhado.</li><li><b>V2.46</b>: notificações internas, segmentação de público e leitura individual.</li><li>Sem a migration correspondente, alguns recursos usam fallback local no navegador e podem não sincronizar entre dispositivos.</li></ul></article>
+          <article class="card how-mini admin-help help-searchable" data-help-search="persistência supabase migration migração histórico memória tv layout importação"><div class="how-section-title"><span class="how-icon purple">DB</span><div><span class="eyebrow">PERSISTÊNCIA</span><h3>Recursos que dependem das migrations</h3></div></div><ul><li><b>V2.36</b>: histórico compartilhado de importações.</li><li><b>V2.38</b>: layout por usuário e permissões específicas persistentes.</li><li><b>V2.39</b>: memória financeira compartilhada e imutável.</li><li><b>V2.40</b>: playlists, múltiplas TVs e monitor compartilhado.</li><li><b>V2.46</b>: notificações internas, segmentação de público e leitura individual.</li><li><b>V2.57</b>: autorização independente da Gestão Estratégica, sem criar salários ou custos nesta etapa.</li><li>Sem a migration correspondente, alguns recursos usam fallback local no navegador e podem não sincronizar entre dispositivos.</li></ul></article>
         </div>
 
         <article id="helpNoResults" class="card help-no-results hidden"><span>⌕</span><div><b>Nenhum tópico encontrado</b><p>Tente uma palavra mais curta, como “meta”, “TV”, “férias”, “CSV” ou “senha”.</p></div></article>
@@ -1371,6 +1378,71 @@
         <div class="house-motto"><strong id="houseMottoTitle">DISCIPLINA • FOCO • RESULTADO</strong><span id="houseMottoText">Casa do Dragão — grandes conquistas nascem da constância.</span></div>
       </section>
 
+
+      <section id="view-strategy" class="view" data-strategy-access="view">
+        <div class="strategy-shell">
+          <section class="strategy-hero">
+            <div>
+              <span class="eyebrow">GESTÃO ESTRATÉGICA • FUNDAÇÃO V2.57.0</span>
+              <h2 id="strategySectionTitle">Resultado Executivo</h2>
+              <p>Nova camada de gestão isolada do operacional. Nesta fundação, o módulo apenas lê o contexto existente para preparar competências e Squads; nenhum salário, custo ou rateio é gravado ainda.</p>
+            </div>
+            <span class="strategy-foundation-badge">Fundação ativa</span>
+          </section>
+
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">A autorização estratégica não pôde ser carregada do Supabase. Execute a migração <strong>V2.57.0</strong> antes de liberar esta área em produção.</div>
+
+          <section class="strategy-status-grid" aria-label="Status da fundação estratégica">
+            <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
+            <article class="strategy-status-card"><span>Contexto operacional</span><strong id="strategyContextStatus">—</strong></article>
+            <article class="strategy-status-card"><span>Dados financeiros</span><strong id="strategyCostStatus">—</strong></article>
+            <article class="strategy-status-card"><span>Integração operacional</span><strong id="strategyIsolationStatus">—</strong></article>
+          </section>
+
+          <nav class="strategy-tabs" role="tablist" aria-label="Seções da Gestão Estratégica">
+            <button type="button" class="strategy-tab is-active" data-strategy-section="executive" role="tab" aria-selected="true">Resultado Executivo</button>
+            <button type="button" class="strategy-tab" data-strategy-section="costs" role="tab" aria-selected="false">Custos &amp; Eficiência</button>
+            <button type="button" class="strategy-tab" data-strategy-section="assumptions" role="tab" aria-selected="false">Premissas</button>
+          </nav>
+
+          <section class="strategy-controls" aria-label="Contexto estratégico isolado">
+            <label><span>Competência estratégica</span><select id="strategyCompetenceSelect"></select></label>
+            <label><span>Squad estratégico</span><select id="strategySquadSelect"></select></label>
+            <label><span>Comparação</span><select id="strategyComparisonSelect"><option value="previous">Mês anterior</option><option value="3m">3 meses</option><option value="6m">6 meses</option><option value="12m">12 meses</option></select></label>
+          </section>
+
+          <div class="strategy-panel" data-strategy-panel="executive">
+            <article class="strategy-placeholder-card">
+              <span class="eyebrow" id="strategySectionEyebrow">VISÃO EXECUTIVA</span>
+              <h3>Resultado Executivo será conectado ao motor de custos nas próximas etapas</h3>
+              <p>A fundação já possui rota, acesso e filtros independentes. A V2.57.1 adicionará competências estratégicas e custos de pessoas; a tela executiva permanecerá vazia de valores até existirem dados financeiros válidos.</p>
+              <div class="strategy-roadmap">
+                <div class="strategy-roadmap-row"><i>1</i><strong>Fundação isolada</strong><span>V2.57.0 • concluída</span></div>
+                <div class="strategy-roadmap-row"><i>2</i><strong>Competências e pessoas</strong><span>V2.57.1 • próxima</span></div>
+                <div class="strategy-roadmap-row"><i>3</i><strong>Custos operacionais e rateios</strong><span>V2.57.2</span></div>
+                <div class="strategy-roadmap-row"><i>4</i><strong>Motor financeiro e consolidação</strong><span>V2.57.3+</span></div>
+              </div>
+            </article>
+            <aside class="strategy-insight"><strong id="strategyFoundationInsightTitle">Fundação estratégica ativa</strong><p id="strategyFoundationInsightText">—</p></aside>
+          </div>
+
+          <div class="strategy-panel hidden" data-strategy-panel="costs">
+            <article class="strategy-placeholder-card">
+              <span class="eyebrow">CUSTOS E EFICIÊNCIA</span><h3>Estrutura pronta, sem números financeiros nesta versão</h3>
+              <p>Esta área receberá custo de pessoas, custo operacional, custo por atendimento e comparativos de eficiência. A V2.57.0 não reutiliza nem altera o Financeiro/Bonificação já existente.</p>
+            </article>
+            <aside class="strategy-insight"><strong>Domínio separado</strong><p>Bonificação operacional e custos estratégicos continuam com motores, estado e persistência independentes.</p></aside>
+          </div>
+
+          <div class="strategy-panel hidden" data-strategy-panel="assumptions">
+            <article class="strategy-placeholder-card">
+              <span class="eyebrow">PREMISSAS E DADOS</span><h3>Ponto de entrada para os dados manuais da Fase 2</h3>
+              <p>Nas próximas versões, esta seção receberá competências, pessoas, encargos, benefícios, custos operacionais e rateios. Os controles acima já usam estado estratégico próprio para não contaminar os filtros do dashboard atual.</p>
+            </article>
+            <aside class="strategy-insight"><strong>Origem preparada</strong><p>A arquitetura foi separada para evoluir de preenchimento manual para CSV e depois API sem trocar o motor de análise.</p></aside>
+          </div>
+        </div>
+      </section>
 
       <section id="view-admin" class="view admin-only">
         <div class="admin-context card"><span class="eyebrow">ESCOPO DE ADMINISTRAÇÃO</span><div><h2 id="adminScopeTitle">Squad D</h2><p id="adminScopeText">Tudo o que você alterar abaixo será aplicado somente a este Squad.</p></div></div>
@@ -1774,24 +1846,29 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.56.7"></script>
-  <script src="js/finance-rules.js?v=2.56.7"></script>
-  <script src="js/finance-advanced.js?v=2.56.7"></script>
-  <script src="js/tv-engine.js?v=2.56.7"></script>
-  <script src="js/presentation.js?v=2.56.7"></script>
-  <script src="js/chart-engine.js?v=2.56.7"></script>
-  <script src="js/chart-export.js?v=2.56.7"></script>
-  <script src="js/import-engine.js?v=2.56.7"></script>
-  <script src="js/predictive-engine.js?v=2.56.7"></script>
-  <script src="js/alert-engine.js?v=2.56.7"></script>
-  <script src="js/settings-engine.js?v=2.56.7"></script>
-  <script src="js/performance-engine.js?v=2.56.7"></script>
-  <script src="js/navigation-engine.js?v=2.56.7"></script>
-  <script src="js/workspace-engine.js?v=2.56.7"></script>
-  <script src="js/filter-system.js?v=2.56.7"></script>
-  <script src="js/comparison-engine.js?v=2.56.7"></script>
-  <script src="js/finance-report-engine.js?v=2.56.7"></script>
-  <script src="js/design-system.js?v=2.56.7"></script>
-  <script src="js/app.js?v=2.56.7"></script>
+  <script src="js/business-calendar.js?v=2.57.0"></script>
+  <script src="js/finance-rules.js?v=2.57.0"></script>
+  <script src="js/finance-advanced.js?v=2.57.0"></script>
+  <script src="js/tv-engine.js?v=2.57.0"></script>
+  <script src="js/presentation.js?v=2.57.0"></script>
+  <script src="js/chart-engine.js?v=2.57.0"></script>
+  <script src="js/chart-export.js?v=2.57.0"></script>
+  <script src="js/import-engine.js?v=2.57.0"></script>
+  <script src="js/predictive-engine.js?v=2.57.0"></script>
+  <script src="js/alert-engine.js?v=2.57.0"></script>
+  <script src="js/settings-engine.js?v=2.57.0"></script>
+  <script src="js/performance-engine.js?v=2.57.0"></script>
+  <script src="js/navigation-engine.js?v=2.57.0"></script>
+  <script src="js/workspace-engine.js?v=2.57.0"></script>
+  <script src="js/filter-system.js?v=2.57.0"></script>
+  <script src="js/comparison-engine.js?v=2.57.0"></script>
+  <script src="js/finance-report-engine.js?v=2.57.0"></script>
+  <script src="js/design-system.js?v=2.57.0"></script>
+  <script src="js/strategy-access.js?v=2.57.0"></script>
+  <script src="js/strategy-data.js?v=2.57.0"></script>
+  <script src="js/strategy-cost-engine.js?v=2.57.0"></script>
+  <script src="js/strategy-insights.js?v=2.57.0"></script>
+  <script src="js/strategy.js?v=2.57.0"></script>
+  <script src="js/app.js?v=2.57.0"></script>
 </body>
 </html>

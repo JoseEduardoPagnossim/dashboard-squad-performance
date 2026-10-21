@@ -7,7 +7,7 @@
   const FILTER_KEYS=['squad','month','tech','from','to'];
   const GLOBAL_FILTER_KEYS=['squad','from','to'];
   const LOCAL_FILTER_KEYS=['month','tech'];
-  const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','settings','profile','my-feedbacks','help']);
+  const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','strategy','settings','profile','my-feedbacks','help']);
   const MAX_SAVED_VIEWS=30;
   const MAX_FAVORITES=20;
   const MAX_FILTER_CONTEXTS=40;
@@ -29,15 +29,17 @@
     if(section)out.section=section.slice(0,80);
     if(module)out.module=module.slice(0,80);
     if(indicator)out.indicator=indicator.slice(0,80);
-    if(squad)out.squad=squad;
-    if(month)out.month=month;
-    if(tech)out.tech=tech;
-    if(from)out.from=from;
-    if(to)out.to=to;
+    if(page!=='strategy'){
+      if(squad)out.squad=squad;
+      if(month)out.month=month;
+      if(tech)out.tech=tech;
+      if(from)out.from=from;
+      if(to)out.to=to;
+    }
     return out;
   }
   function routeContextKey(route={}){
-    const r=copyRoute(route),detail=r.page==='admin'?r.section:r.page==='settings'?r.module:r.page==='indicators'?r.indicator:'';
+    const r=copyRoute(route),detail=r.page==='admin'||r.page==='strategy'?r.section:r.page==='settings'?r.module:r.page==='indicators'?r.indicator:'';
     return detail?`${r.page}:${detail}`:r.page;
   }
   function filterSnapshot(route={}){

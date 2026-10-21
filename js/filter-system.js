@@ -15,6 +15,7 @@
     feedbacks:{squad:true,competence:true,period:false,technician:false},
     users:EMPTY,
     audit:EMPTY,
+    strategy:EMPTY,
     alerts:EMPTY,
     profile:EMPTY,
     'my-feedbacks':EMPTY,

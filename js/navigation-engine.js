@@ -4,8 +4,9 @@
   root.SoftenNavigationEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   const ROUTE_PARAMS=['page','section','module','indicator','squad','month','tech','from','to'];
-  const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','settings','profile','my-feedbacks','help']);
+  const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','strategy','settings','profile','my-feedbacks','help']);
   const VALID_ADMIN_SECTIONS=new Set(['operation','finance','costs','appearance']);
+  const VALID_STRATEGY_SECTIONS=new Set(['executive','costs','assumptions']);
   const VALID_SETTINGS_MODULES=new Set(['all','personalization','operation','finance','appearance','presentation','access','system']);
   const VALID_INDICATOR_SECTIONS=new Set(['performance','quality','financial-impact','business-days','detail']);
   function text(value){return String(value??'').trim()}
@@ -15,13 +16,14 @@
     const page=safePage(input.page),route={page};
     const section=text(input.section),module=text(input.module),indicator=text(input.indicator),squad=text(input.squad).toUpperCase(),month=text(input.month),tech=text(input.tech),from=text(input.from),to=text(input.to);
     if(page==='admin'&&VALID_ADMIN_SECTIONS.has(section))route.section=section;
+    if(page==='strategy'&&VALID_STRATEGY_SECTIONS.has(section))route.section=section;
     if(page==='settings'&&VALID_SETTINGS_MODULES.has(module)&&module!=='all')route.module=module;
     if(page==='indicators'&&VALID_INDICATOR_SECTIONS.has(indicator))route.indicator=indicator;
-    if(squad&&(/^[A-Z]$/.test(squad)||squad==='ALL'))route.squad=squad==='ALL'?'all':squad;
-    if(/^\d{4}-\d{2}$/.test(month))route.month=month;
-    if(tech)route.tech=tech.slice(0,160);
-    if(/^\d{4}-\d{2}-\d{2}$/.test(from))route.from=from;
-    if(/^\d{4}-\d{2}-\d{2}$/.test(to))route.to=to;
+    if(page!=='strategy'&&squad&&(/^[A-Z]$/.test(squad)||squad==='ALL'))route.squad=squad==='ALL'?'all':squad;
+    if(page!=='strategy'&&/^\d{4}-\d{2}$/.test(month))route.month=month;
+    if(page!=='strategy'&&tech)route.tech=tech.slice(0,160);
+    if(page!=='strategy'&&/^\d{4}-\d{2}-\d{2}$/.test(from))route.from=from;
+    if(page!=='strategy'&&/^\d{4}-\d{2}-\d{2}$/.test(to))route.to=to;
     return route;
   }
   function routeFromSearch(search=''){
@@ -60,5 +62,5 @@
   function searchCommands(commands=[],query='',limit=14){
     return (commands||[]).map((command,index)=>({command,index,score:scoreCommand(command,query)})).filter(x=>x.score>=0).sort((a,b)=>b.score-a.score||Number(b.command?.priority||0)-Number(a.command?.priority||0)||a.index-b.index).slice(0,Math.max(1,Number(limit)||14)).map(x=>x.command);
   }
-  return{ROUTE_PARAMS,normalizeText,normalizeRoute,routeFromSearch,routeFromLocation,routeUrl,scoreCommand,searchCommands};
+  return{ROUTE_PARAMS,VALID_STRATEGY_SECTIONS,normalizeText,normalizeRoute,routeFromSearch,routeFromLocation,routeUrl,scoreCommand,searchCommands};
 });

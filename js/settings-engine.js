@@ -26,7 +26,7 @@
 
   const NAVIGATION_DEFAULTS={
     sidebarCollapsed:false,
-    groups:{performance:false,management:false,account:false},
+    groups:{performance:false,management:false,strategy:false,account:false},
     subgroups:{finance:false,people:false,governance:false}
   };
 
