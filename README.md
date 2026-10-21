@@ -1,3 +1,14 @@
+## V2.56.2 — Filtro de Squad reativo na Qualidade
+
+- Corrige o comportamento em que a aba **Qualidade** podia continuar exibindo os números do Squad anterior enquanto aguardava a carga do novo escopo.
+- A troca de Squad agora atualiza imediatamente o contexto visual; os dados antigos são removidos e a tela mostra **Atualizando dados do Squad...** enquanto o Supabase carrega as competências necessárias.
+- Adiciona proteção contra respostas assíncronas antigas: somente a hidratação correspondente à mesma subaba, Squad e período pode redesenhar a tela.
+- A Qualidade passa a reutilizar o mesmo carregador de dados da aba Desempenho, eliminando caminhos paralelos de atualização do Squad.
+- Mantém inalteradas as fórmulas de Qualidade, Desempenho, Gestão Preditiva, bonificação e importações.
+- Frontend-only; sem migration e sem alteração de schema.
+
+Detalhes: `docs/FILTRO_SQUAD_QUALIDADE_V2.56.2.md`.
+
 ## V2.56.1 — Filtro de Squad consistente em Indicadores
 
 - Corrige a troca de Squad feita diretamente na aba **Qualidade**, sem exigir passagem prévia por **Desempenho**.
@@ -146,7 +157,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.56.1`<br>
+**Versão atual:** `2.56.2`<br>
 
 
 

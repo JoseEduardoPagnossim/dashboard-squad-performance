@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.56.1';
+  const APP_VERSION = '2.56.2';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -163,6 +163,9 @@
     allTechniciansRangeIds:[],
     dailyTechniciansMetric:'points',
     indicatorSection:'performance',
+    indicatorHydrationSeq:0,
+    indicatorHydrationKey:'',
+    indicatorHydrationErrorKey:'',
     businessDaysBaseId:null,
     businessDaysCompareCount:6,
     businessDaysCutoff:null,
@@ -1199,7 +1202,7 @@
 
   async function enterApp(user){
     const canonicalRole=normalizeAccessRole(user?.role);state.user={...user,role:canonicalRole,squadCode:canonicalRole==='super_admin'?null:(user?.squadCode||null),permissions:canonicalRole==='super_admin'?{}:(user?.permissions||{})};loadUserUiPreferences(state.user);
-    state.dataPromises={};state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
+    state.dataPromises={};state.indicatorHydrationSeq=0;state.indicatorHydrationKey='';state.indicatorHydrationErrorKey='';state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.internalNotifications=[];state.notificationReadIds=[];state.notificationsLoaded=false;state.notificationsLoading=false;state.notificationsRemoteAvailable=true;state.notificationsError='';state.notificationPopoverOpen=false;state.notificationFilters={status:'all',source:'all',severity:'all',category:'all',search:''};state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
     state.businessCalendarRows=[];state.businessCalendarLoaded=false;state.businessCalendarLoading=null;state.businessCalendarRemoteAvailable=true;state.businessCalendarYear=new Date().getFullYear();state.businessCalendarDraft=null;
     await ensureBusinessCalendarLoaded(false);
@@ -1701,13 +1704,28 @@
   function indicatorSquadFilterRequiresFullData(section=state.indicatorSection){
     return ['quality','business-days','detail'].includes(section);
   }
-  async function ensureIndicatorSquadFilterReady(code=state.squadCode){
-    if(!state.supabase||state.currentView!=='indicators'||!indicatorSquadFilterRequiresFullData(state.indicatorSection))return;
-    const requested=String(code||state.squadCode||'all').toUpperCase(),codes=requested==='ALL'?Object.keys(state.squads||{}).sort():[requested].filter(item=>!!state.squads?.[item]),ids=analysisMonthIds().filter(Boolean);
-    if(!codes.length||!ids.length)return;
-    setDataLoadIndicator(true,'Atualizando dados do filtro de Squad...');
-    try{await ensureMonthsLoaded(codes,ids,{silent:true});}
-    finally{setDataLoadIndicator(false);}
+  function indicatorScopeCodes(code=state.squadCode){
+    const requested=String(code||state.squadCode||'all').toUpperCase();
+    return requested==='ALL'?Object.keys(state.squads||{}).sort():[requested].filter(item=>!!state.squads?.[item]);
+  }
+  function indicatorScopeContextKey(section=state.indicatorSection,code=state.squadCode){
+    return `${section}|${String(code||'all').toUpperCase()}|${state.analysisStartDate||''}|${state.analysisEndDate||''}`;
+  }
+  function indicatorScopeHasPendingFullData(code=state.squadCode,ids=analysisMonthIds()){
+    if(!state.supabase)return false;const codes=indicatorScopeCodes(code);
+    return codes.some(squadCode=>(ids||[]).some(id=>{const month=state.squads?.[squadCode]?.months?.[id];return !!month&&!isPerformanceFullMonth(month);}));
+  }
+  function hydrateIndicatorSquadFilter(code=state.squadCode,{section=state.indicatorSection}={}){
+    if(!state.supabase||state.currentView!=='indicators'||!indicatorSquadFilterRequiresFullData(section))return Promise.resolve();
+    const key=indicatorScopeContextKey(section,code),seq=++state.indicatorHydrationSeq;state.indicatorHydrationKey=key;state.indicatorHydrationErrorKey='';
+    // Usa exatamente o mesmo carregador de dados da aba Desempenho. Assim Qualidade nao
+    // mantem um caminho paralelo de hidratacao quando o Squad e alterado diretamente nela.
+    return ensureViewData('indicators',state.adminSection).then(()=>{
+      if(seq!==state.indicatorHydrationSeq||state.currentView!=='indicators'||state.indicatorSection!==section||state.squadCode!==code||indicatorScopeContextKey(section,code)!==key)return;
+      state.indicatorHydrationKey='';state.indicatorHydrationErrorKey='';refreshSelectors();render();
+    }).catch(err=>{
+      console.error('Falha ao atualizar o escopo dos Indicadores.',err);if(seq===state.indicatorHydrationSeq){state.indicatorHydrationKey='';state.indicatorHydrationErrorKey=key;render();toast('Não foi possível atualizar todos os dados deste Squad. Tente novamente.');}
+    }).finally(()=>{if(seq===state.indicatorHydrationSeq)setDataLoadIndicator(false);});
   }
 
   async function selectSquad(code,{history='replace'}={}){
@@ -1722,10 +1740,15 @@
     else{rememberLastSquad(code);const ids=competenceIdsForSquad(code);state.currentId=ids.includes(previousMonth)?previousMonth:(ids[0]||null);chooseDefaultTech();state.theme=resolveLegacyTheme(state.squads[code]?.theme||loadThemeForSquad(code));applyTheme(state.theme);}
     const bounds=importedDateBounds(),hasOverlap=previousRange.start&&previousRange.end&&bounds.min&&bounds.max&&previousRange.end>=bounds.min&&previousRange.start<=bounds.max;
     if(hasOverlap){const range=clampRangeToBounds(previousRange.start,previousRange.end,bounds);state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset=previousRange.preset||'custom';state.analysisMode=previousRange.mode||((analysisScopeCount(range.start,range.end)>1)?'free':'competence');const availableIds=competenceIdsForSquad(),preferredCompetence=previousRange.competenceId||monthIdForDate(range.end);state.analysisCompetenceId=availableIds.includes(preferredCompetence)?preferredCompetence:monthIdForDate(range.end);if(state.analysisMode==='competence'&&!availableIds.includes(state.analysisCompetenceId))state.analysisMode='free';syncAnalysisModeFromRange({mode:state.analysisMode,competenceId:state.analysisCompetenceId});if(topFilterVisibility(state.currentView,state.adminSection).period)syncCurrentMonthToAnalysisEnd();}else resetAnalysisRange(true);
-    const waitForIndicatorScope=state.currentView==='indicators'&&indicatorSquadFilterRequiresFullData(state.indicatorSection);
-    if(waitForIndicatorScope){await ensureIndicatorSquadFilterReady(code);if(state.squadCode!==code)return;}
+    const indicatorSectionAtChange=state.indicatorSection,hydrateIndicatorScope=!!state.supabase&&state.currentView==='indicators'&&indicatorSquadFilterRequiresFullData(indicatorSectionAtChange);
+    // O filtro precisa responder visualmente antes da rede. Marca o novo contexto como em
+    // atualizacao para impedir que a Qualidade mantenha numeros do Squad anterior na tela.
+    if(hydrateIndicatorScope){state.indicatorHydrationKey=indicatorScopeContextKey(indicatorSectionAtChange,code);state.indicatorHydrationErrorKey='';}
     refreshSelectors();render();applyPermissions();updateBreadcrumbs();
-    if(state.supabase&&state.currentView!=='home')hydrateCurrentViewAsync(state.currentView,state.adminSection);
+    if(state.supabase&&state.currentView!=='home'){
+      if(hydrateIndicatorScope)void hydrateIndicatorSquadFilter(code,{section:indicatorSectionAtChange});
+      else hydrateCurrentViewAsync(state.currentView,state.adminSection);
+    }
     if(history!=='none')syncPersistentUrl({replace:history==='replace'});
   }
   function requireSpecificSquad(){if(state.squadCode==='all'){toast('Selecione um Squad específico primeiro.');return false}return true}
@@ -2546,7 +2569,7 @@ function setIndicatorSection(section,{history='push'}={}){
   if(state.currentView==='indicators'){
     syncTopFiltersForView('indicators',state.adminSection);
     renderIndicators();
-    if(state.supabase&&indicatorSquadFilterRequiresFullData(state.indicatorSection)) hydrateCurrentViewAsync('indicators',state.adminSection);
+    if(state.supabase&&indicatorSquadFilterRequiresFullData(state.indicatorSection))void hydrateIndicatorSquadFilter(state.squadCode,{section:state.indicatorSection});
   }
   updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});
 }
@@ -2960,7 +2983,22 @@ function qualityDistributionSeries(rows){
 }
 function qualityMonthlyLabels(rangeIds){return (rangeIds||[]).map(shortHistoryMonth)}
 function qualitySquadServiceSummary(squad,rangeIds){return qualityMonthlySummary('service',[squad],rangeIds)}
+function renderQualityScopePending(squads,rangeIds,{error=false}={}){
+  const scope=state.squadCode==='all'?'Todos os Squads':`Squad ${state.squadCode}`,message=error?'Não foi possível carregar todos os dados deste escopo. Tente trocar o Squad novamente.':`Atualizando dados de ${scope}...`,empty=`<div class="chart-empty">${escapeHtml(message)}</div>`;
+  $('#qualitySquadPeriod').textContent=analysisRangeLabel();$('#qualityImportStatus').textContent=message;
+  $('#qualityServiceTotal').textContent='—';$('#qualityServiceRate').textContent='Aguardando dados';$('#qualityServiceAvg').textContent='Nota média —';
+  $('#qualityProductAvg').textContent='—';$('#qualityProductTotal').textContent='Aguardando dados';$('#qualityProductLow').textContent='—';
+  $('#qualityCompanyAvg').textContent='—';$('#qualityCompanyTotal').textContent='Aguardando dados';$('#qualityCompanyLow').textContent='—';
+  $('#qualityOverallStatus').textContent=error?'ERRO':'ATUALIZANDO';$('#qualityOverallStatus').className=error?'period-status-below':'period-status-tie';$('#qualityOverallDetail').textContent=message;
+  if($('#qualityReconciliationSummary'))$('#qualityReconciliationSummary').innerHTML=`<div class="reconciliation-empty">${escapeHtml(message)}</div>`;
+  if($('#qualityReconciliationRows'))$('#qualityReconciliationRows').innerHTML=`<tr><td colspan="8" class="muted">${escapeHtml(message)}</td></tr>`;
+  if($('#qualitySquadCharts'))$('#qualitySquadCharts').innerHTML=(squads||[]).map(sq=>`<article class="card chart-card quality-squad-card"><div class="section-title"><div><span class="eyebrow">SQUAD ${escapeHtml(sq.code)}</span><h3>Avaliação x Qtd. Atendimento</h3></div></div>${empty}</article>`).join('')||empty;
+  ['qualityBenchmarkChart','qualityServiceNotesChart','qualityProductNotesChart','qualityCompanyNotesChart'].forEach(id=>{const el=$('#'+id);if(el)el.innerHTML=empty;});
+  if($('#qualityServiceChartNote'))$('#qualityServiceChartNote').textContent=message;if($('#qualityProductChartNote'))$('#qualityProductChartNote').textContent=message;if($('#qualityCompanyChartNote'))$('#qualityCompanyChartNote').textContent=message;
+}
 function renderQualityIndicators(squads,rangeIds){
+  const scopeKey=indicatorScopeContextKey('quality',state.squadCode),pending=state.indicatorHydrationKey===scopeKey||indicatorScopeHasPendingFullData(state.squadCode,rangeIds);
+  if(pending){renderQualityScopePending(squads,rangeIds,{error:state.indicatorHydrationErrorKey===scopeKey});return;}
   if(!$('#indicatorQualityPanel'))return;$('#qualitySquadPeriod').textContent=analysisRangeLabel();
   const ids=[...(rangeIds||[])],labels=qualityMonthlyLabels(ids),serviceRows=qualityMonthlySummary('service',squads,ids),productRows=qualityMonthlySummary('product',squads,ids),companyRows=qualityMonthlySummary('company',squads,ids),service=qualityPeriodSummary('service',squads,ids),product=qualityPeriodSummary('product',squads,ids),company=qualityPeriodSummary('company',squads,ids),source=qualitySourceInfo(squads,ids);
   $('#qualityImportStatus').textContent=source?`${source.files.length===1?'CSV Produto/Empresa importado':'CSVs Produto/Empresa importados'}${source.last?` • ${new Date(source.last).toLocaleDateString('pt-BR')}`:''}`:'Aguardando importação Produto/Empresa';
@@ -5237,7 +5275,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!jobs.length)return;const metricName=`view:${name}${section?`:${section}`:''}`,started=performance.now();setDataLoadIndicator(true,'Atualizando dados da tela...');try{const result=await Promise.all(jobs);recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,squad:state.squadCode||'',period:state.currentId||''},true,'lazy');return result;}catch(err){recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,message:String(err?.message||err||'').slice(0,180)},false,'lazy');throw err;}finally{setDataLoadIndicator(false);}
   }
   function hydrateCurrentViewAsync(name=state.currentView,section=state.adminSection){
-    const token=`${name}:${section||''}:${state.squadCode}:${state.currentId||''}`;ensureViewData(name,section).then(()=>{const current=`${state.currentView}:${state.adminSection||''}:${state.squadCode}:${state.currentId||''}`;if(current!==token)return;refreshSelectors();render();}).catch(err=>{console.error(err);toast('Nao foi possivel carregar todos os dados desta tela.');});
+    const indicator=name==='indicators'?(state.indicatorSection||'performance'):'',token=`${name}:${section||''}:${indicator}:${state.squadCode}:${state.currentId||''}:${state.analysisStartDate||''}:${state.analysisEndDate||''}`;ensureViewData(name,section).then(()=>{const currentIndicator=state.currentView==='indicators'?(state.indicatorSection||'performance'):'',current=`${state.currentView}:${state.adminSection||''}:${currentIndicator}:${state.squadCode}:${state.currentId||''}:${state.analysisStartDate||''}:${state.analysisEndDate||''}`;if(current!==token)return;refreshSelectors();render();}).catch(err=>{console.error(err);toast('Nao foi possivel carregar todos os dados desta tela.');});
   }
   function schedulePostLoginHydration(authUser){
     if(state.backgroundHydrationStarted)return;state.backgroundHydrationStarted=true;schedulePerformanceIdle(()=>{
