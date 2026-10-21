@@ -1,3 +1,14 @@
+## V2.56.5 — Filtro de Squad da Qualidade com recarga confirmada
+
+- Corrige a troca direta de Squad em **Indicadores > Qualidade** sem exigir passagem pela aba Desempenho.
+- A renderização da Qualidade recalcula o escopo diretamente do estado global no momento do desenho, evitando reutilização de arrays de um Squad anterior.
+- A troca explícita de Squad força a revalidação dos meses completos da Qualidade no Supabase, ignorando cache mensal potencialmente obsoleto.
+- O mesmo `ensureViewData` continua sendo usado por Desempenho e Qualidade; apenas a troca direta na Qualidade solicita `forceMonths`.
+- Restaura e atualiza o teste `indicator-squad-filter-v2563.test.js`, que existia no repositório e não estava no pacote V2.56.4, eliminando os 3 falsos negativos do CI.
+- Frontend-only; sem migration.
+
+Detalhes: `docs/FILTRO_SQUAD_QUALIDADE_V2.56.5.md`.
+
 ## V2.56.4 — Filtro de Squad sincronizado nos Indicadores
 
 - Corrige a troca direta de Squad em **Indicadores > Qualidade** sem exigir passagem prévia por Desempenho.
@@ -181,7 +192,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.56.4`<br>
+**Versão atual:** `2.56.5`<br>
 
 
 

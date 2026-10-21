@@ -14,31 +14,31 @@ function blockBetween(start,end){
   return app.slice(a,b);
 }
 
-test('V2.56.4 torna a troca de Squad deterministica',()=>{
-  assert.equal(pkg.version,'2.56.4');
+test('V2.56.5 torna a troca de Squad deterministica',()=>{
+  assert.equal(pkg.version,'2.56.5');
   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
   assert.match(select,/selectionSeq=\+\+state\.squadSelectionSeq/);
-  assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true\}\)/);
+  assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
   assert.match(select,/if\(selectionSeq!==state\.squadSelectionSeq\|\|state\.squadCode!==code\)return;/);
   assert.match(select,/state\.squadSelectionLoadError=false;refreshSelectors\(\);render\(\);applyPermissions\(\);updateBreadcrumbs\(\);/);
 });
 
-test('V2.56.4 remove o fluxo paralelo que mascarava o bug da Qualidade',()=>{
+test('V2.56.5 remove o fluxo paralelo que mascarava o bug da Qualidade',()=>{
   for(const token of ['hydrateIndicatorSquadFilter','indicatorHydrationSeq','indicatorHydrationKey','indicatorHydrationErrorKey','indicatorScopeContextKey','indicatorSquadFilterRequiresFullData']) assert.ok(!app.includes(token),token);
 });
 
-test('V2.56.4 propaga falha mensal somente na troca explicita',()=>{
+test('V2.56.5 propaga falha mensal somente na troca explicita',()=>{
   const months=blockBetween('async function ensureMonthsLoaded','function orgDailyRequestedRange');
   assert.match(months,/strict\?job:job\.catch\(err=>null\)/);
   const view=blockBetween('async function ensureViewData','function hydrateCurrentViewAsync');
-  assert.match(view,/\{strict=false\}=\{\}/);
-  assert.match(view,/ensureMonthsLoaded\(codes,ids,\{silent:true,strict\}\)/);
+  assert.match(view,/\{strict=false,forceMonths=false\}=\{\}/);
+  assert.match(view,/ensureMonthsLoaded\(codes,ids,\{silent:true,strict,force:forceMonths\}\)/);
 });
 
-test('V2.56.4 publica todos os assets com o mesmo cache-bust',()=>{
+test('V2.56.5 publica todos os assets com o mesmo cache-bust',()=>{
   const refs=[...index.matchAll(/(?:href|src)="((?:css|js)\/[^"]+)\?v=([^"]+)"/g)].map(m=>({asset:m[1],version:m[2]}));
   const current=refs.filter(x=>x.asset!=='js/audit-utils.js');
   assert.ok(current.length>5);
-  assert.deepEqual([...new Set(current.map(x=>x.version))],['2.56.4']);
-  assert.ok(index.includes('V2.56.4'));
+  assert.deepEqual([...new Set(current.map(x=>x.version))],['2.56.5']);
+  assert.ok(index.includes('V2.56.5'));
 });

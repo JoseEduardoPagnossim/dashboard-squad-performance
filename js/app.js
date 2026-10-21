@@ -56,7 +56,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.56.4';
+  const APP_VERSION = '2.56.5';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -1735,7 +1735,8 @@
     try{
       // Importante: esta chamada é aguardada. Qualidade e Desempenho passam pelo mesmo
       // carregador e a renderização final só ocorre depois de concluir o Squad selecionado.
-      await ensureViewData(state.currentView,state.adminSection,{strict:true});
+      const forceQualityScope=state.currentView==='indicators'&&state.indicatorSection==='quality';
+      await ensureViewData(state.currentView,state.adminSection,{strict:true,forceMonths:forceQualityScope});
       if(selectionSeq!==state.squadSelectionSeq||state.squadCode!==code)return;
       state.squadSelectionLoadError=false;refreshSelectors();render();applyPermissions();updateBreadcrumbs();
     }catch(err){
@@ -2989,8 +2990,13 @@ function renderQualityScopePending(squads,rangeIds,{error=false}={}){
   ['qualityBenchmarkChart','qualityServiceNotesChart','qualityProductNotesChart','qualityCompanyNotesChart'].forEach(id=>{const el=$('#'+id);if(el)el.innerHTML=empty;});
   if($('#qualityServiceChartNote'))$('#qualityServiceChartNote').textContent=message;if($('#qualityProductChartNote'))$('#qualityProductChartNote').textContent=message;if($('#qualityCompanyChartNote'))$('#qualityCompanyChartNote').textContent=message;
 }
-function renderQualityIndicators(squads,rangeIds){
-  const pending=indicatorScopeHasPendingFullData(state.squadCode,rangeIds);
+function qualityCurrentRenderScope(){
+  const squads=indicatorScopeSquads(),rangeIds=analysisMonthIds().filter(id=>indicatorMonthIds(squads).includes(id));
+  return{code:state.squadCode,squads,rangeIds};
+}
+function renderQualityIndicators(_squads,_rangeIds){
+  const scope=qualityCurrentRenderScope(),squads=scope.squads,rangeIds=scope.rangeIds;
+  const pending=indicatorScopeHasPendingFullData(scope.code,rangeIds);
   if(state.squadSelectionLoadError){renderQualityScopePending(squads,rangeIds,{error:true});return;}
   if(pending){renderQualityScopePending(squads,rangeIds);return;}
   if(!$('#indicatorQualityPanel'))return;$('#qualitySquadPeriod').textContent=analysisRangeLabel();
@@ -5207,11 +5213,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const promiseKey=`month:${code}:${id}`;if(state.dataPromises[promiseKey])return state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(true,`Carregando ${monthLabelFromId(id)}...`);
     state.dataPromises[promiseKey]=(async()=>{const started=performance.now();try{let query=state.supabase.from('squad_months').select(FULL_MONTH_SELECT);if(existing?.dbId)query=query.eq('id',existing.dbId);else{const [year,month]=String(id).split('-').map(Number);query=query.eq('squad_id',squad.dbId).eq('year',year).eq('month',month);}const {data,error}=await query.single();if(error)throw error;const m=normalizeSupabaseMonthRow(data,'full');if(!m.isClosed&&!isTechnician())recalculateMonth(m);squad.months[id]=m;writePerformanceCache(scope,key,m,5*60*1000);recordRuntimePerformance('module','month_load',performance.now()-started,{squad:code,period:id},true,'supabase');return m;}catch(err){recordRuntimePerformance('module','month_load',performance.now()-started,{squad:code,period:id,message:String(err?.message||err||'').slice(0,180)},false,'supabase');console.error('Falha ao carregar competencia sob demanda.',code,id,err);throw err;}finally{delete state.dataPromises[promiseKey];if(!silent)setDataLoadIndicator(false);}})();return state.dataPromises[promiseKey];
   }
-  async function ensureMonthsLoaded(codes,ids,{silent=false,strict=false}={}){
+  async function ensureMonthsLoaded(codes,ids,{silent=false,strict=false,force=false}={}){
     const jobs=[];
     for(const code of [...new Set(codes||[])])for(const id of [...new Set(ids||[])]){
-      if(!state.squads?.[code]?.months?.[id]||isPerformanceFullMonth(state.squads[code].months[id]))continue;
-      const job=ensureMonthLoaded(code,id,{silent:true});jobs.push(strict?job:job.catch(err=>null));
+      const month=state.squads?.[code]?.months?.[id];
+      if(!month||(!force&&isPerformanceFullMonth(month)))continue;
+      const job=ensureMonthLoaded(code,id,{silent:true,force});jobs.push(strict?job:job.catch(err=>null));
     }
     if(!jobs.length)return[];if(!silent)setDataLoadIndicator(true,`Carregando ${jobs.length} competencia(s)...`);try{return await Promise.all(jobs);}finally{if(!silent)setDataLoadIndicator(false);}
   }
@@ -5264,10 +5271,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,amount,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin')]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Administrador']));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Administrador',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;}catch(err){console.warn('Comissoes de Administrador indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
   }
   function viewNeedsFullMonth(name,section){return['individual','team','indicators','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
-  async function ensureViewData(name=state.currentView,section=state.adminSection,{strict=false}={}){
+  async function ensureViewData(name=state.currentView,section=state.adminSection,{strict=false,forceMonths=false}={}){
     if(!state.supabase||name==='home'||['alerts','users','audit','settings','profile','my-feedbacks','help'].includes(name))return;
     const ids=(['indicators','team','individual','presentation'].includes(name))?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
-    if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true,strict}));
+    if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true,strict,force:forceMonths}));
     if(name==='presentation')jobs.push(ensurePresentationDailyOverview());
     else if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
     if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());

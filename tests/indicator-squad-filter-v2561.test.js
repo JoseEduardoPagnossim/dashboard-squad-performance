@@ -12,7 +12,7 @@ test('regressao: Qualidade nao possui controlador paralelo de hidratacao',()=>{
 });
 
 test('regressao: troca direta de Squad usa o carregador comum da tela',()=>{
-  assert.match(app,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true\}\)/);
+  assert.match(app,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
   assert.match(app,/if\(selectionSeq!==state\.squadSelectionSeq\|\|state\.squadCode!==code\)return;/);
-  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.4.sql')));
+  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.5.sql')));
 });
