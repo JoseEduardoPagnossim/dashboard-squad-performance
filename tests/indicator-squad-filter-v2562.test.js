@@ -14,43 +14,27 @@ function blockBetween(start,end){
   return app.slice(a,b);
 }
 
-test('V2.56.2 troca o Squad visualmente antes de iniciar a hidratação da Qualidade',()=>{
-  assert.equal(pkg.version,'2.56.2');
-  const select=blockBetween('async function selectSquad','function requireSpecificSquad');
-  const renderPos=select.indexOf('refreshSelectors();render();applyPermissions();updateBreadcrumbs();');
-  const hydratePos=select.indexOf('hydrateIndicatorSquadFilter(code,{section:indicatorSectionAtChange})');
-  assert.ok(renderPos>=0,'render imediato ausente');
-  assert.ok(hydratePos>renderPos,'a hidratação não pode bloquear a troca visual do filtro');
-  assert.doesNotMatch(select,/await\s+ensureIndicatorSquadFilterReady/);
-});
-
-test('V2.56.2 Qualidade limpa valores anteriores enquanto o novo Squad carrega',()=>{
-  assert.match(app,/function renderQualityScopePending\(squads,rangeIds,\{error=false\}=\{\}\)/);
-  assert.match(app,/pending=state\.indicatorHydrationKey===scopeKey\|\|indicatorScopeHasPendingFullData\(state\.squadCode,rangeIds\)/);
-  assert.match(app,/if\(pending\)\{renderQualityScopePending\(squads,rangeIds,\{error:state\.indicatorHydrationErrorKey===scopeKey\}\);return;\}/);
-  assert.match(app,/state\.indicatorHydrationKey=indicatorScopeContextKey\(indicatorSectionAtChange,code\)/);
+test('regressao V2.56.2: Qualidade limpa os valores enquanto o mes do novo Squad ainda esta resumido',()=>{
+  assert.equal(pkg.version,'2.56.3');
+  const quality=blockBetween('function renderQualityIndicators','function monthServiceTechnicianTotals');
+  assert.match(quality,/pending=indicatorScopeHasPendingFullData\(state\.squadCode,rangeIds\)/);
+  assert.match(quality,/if\(pending\)\{renderQualityScopePending\(squads,rangeIds\);return;\}/);
   assert.match(app,/qualityServiceTotal'\)\.textContent='—'/);
   assert.match(app,/Atualizando dados de \$\{scope\}/);
 });
 
-test('V2.56.2 descarta hidratações antigas por Squad, seção e período',()=>{
-  assert.match(app,/seq=\+\+state\.indicatorHydrationSeq/);
-  assert.match(app,/indicatorScopeContextKey\(section,code\)!==key/);
-  assert.match(app,/state\.indicatorSection!==section\|\|state\.squadCode!==code/);
-  assert.match(app,/const indicator=name==='indicators'\?\(state\.indicatorSection\|\|'performance'\):''/);
-  assert.match(app,/state\.analysisStartDate\|\|''/);
-  assert.match(app,/state\.analysisEndDate\|\|''/);
+test('regressao V2.56.2: respostas antigas continuam protegidas pelo token global da tela',()=>{
+  const hydrate=blockBetween('function hydrateCurrentViewAsync','function schedulePostLoginHydration');
+  assert.match(hydrate,/state\.indicatorSection\|\|'performance'/);
+  assert.match(hydrate,/state\.squadCode/);
+  assert.match(hydrate,/state\.currentId\|\|''/);
+  assert.match(hydrate,/state\.analysisStartDate\|\|''/);
+  assert.match(hydrate,/state\.analysisEndDate\|\|''/);
+  assert.match(hydrate,/if\(current!==token\)return/);
 });
 
-test('V2.56.2 usa na Qualidade o mesmo carregador de dados da aba Desempenho',()=>{
-  const hydrate=blockBetween('function hydrateIndicatorSquadFilter','async function selectSquad');
-  assert.match(hydrate,/ensureViewData\('indicators',state\.adminSection\)/);
-  assert.doesNotMatch(hydrate,/ensureMonthsLoaded\(/);
-  assert.match(app,/async function ensureMonthsLoaded\(codes,ids,\{silent=false\}=\{\}\)/);
-});
-
-test('V2.56.2 mantém alteração frontend-only e cache-bust atualizado',()=>{
-  assert.ok(index.includes('js/app.js?v=2.56.2'));
-  assert.ok(index.includes('css/styles.css?v=2.56.2'));
-  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.2.sql')));
+test('regressao V2.56.2: cache-bust permanece alinhado com a versao atual',()=>{
+  assert.ok(index.includes('js/app.js?v=2.56.3'));
+  assert.ok(index.includes('css/styles.css?v=2.56.3'));
+  assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.3.sql')));
 });

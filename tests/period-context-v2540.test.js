@@ -9,28 +9,28 @@ const css=readFileSync(join(root,'css','styles.css'),'utf8');
 const workspace=readFileSync(join(root,'js','workspace-engine.js'),'utf8');
 const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
 
-test('V2.56.2 adiciona competencias inicial e final no intervalo livre',()=>{
-  assert.equal(pkg.version,'2.56.2');
+test('V2.56.3 adiciona competencias inicial e final no intervalo livre',()=>{
+  assert.equal(pkg.version,'2.56.3');
   assert.match(index,/id="periodFreeStartSelect"/);
   assert.match(index,/id="periodFreeEndSelect"/);
   assert.match(app,/function setFreeCompetenceBoundary\(which,id\)/);
   assert.match(app,/syncFreeDraftCompetenceIds\(\)/);
 });
 
-test('V2.56.2 oferece presets longos no intervalo livre',()=>{
+test('V2.56.3 oferece presets longos no intervalo livre',()=>{
   for(const preset of ['3m','6m','12m','year','prev-year','history'])assert.ok(index.includes(`data-free-period-preset="${preset}"`));
   assert.match(app,/function freePeriodPresetRange\(preset,target='state'\)/);
   assert.match(app,/function applyFreePeriodPreset\(preset\)/);
 });
 
-test('V2.56.2 permite saltar diretamente mes e ano no calendario',()=>{
+test('V2.56.3 permite saltar diretamente mes e ano no calendario',()=>{
   assert.match(index,/id="periodPickerMonthSelect"/);
   assert.match(index,/id="periodPickerYearSelect"/);
   assert.match(app,/function setPeriodCalendarView\(year,month\)/);
   assert.match(css,/\.period-picker-jump/);
 });
 
-test('V2.56.2 preserva Squad e periodo como contexto global',()=>{
+test('V2.56.3 preserva Squad e periodo como contexto global',()=>{
   assert.match(workspace,/GLOBAL_FILTER_KEYS=\['squad','from','to'\]/);
   assert.match(workspace,/function rememberGlobalContext\(/);
   assert.match(app,/function liveGlobalFilterRoute\(\)/);
@@ -41,8 +41,8 @@ test('V2.56.2 preserva Squad e periodo como contexto global',()=>{
   assert.match(app,/const previousMonth=state\.currentId,previousRange=\{start:state\.analysisStartDate/);
 });
 
-test('V2.56.2 atualiza os assets principais sem migration nova',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.56.2'));
-  assert.ok(index.includes('js/workspace-engine.js?v=2.56.2'));
-  assert.ok(index.includes('js/app.js?v=2.56.2'));
+test('V2.56.3 atualiza os assets principais sem migration nova',()=>{
+  assert.ok(index.includes('css/styles.css?v=2.56.3'));
+  assert.ok(index.includes('js/workspace-engine.js?v=2.56.3'));
+  assert.ok(index.includes('js/app.js?v=2.56.3'));
 });

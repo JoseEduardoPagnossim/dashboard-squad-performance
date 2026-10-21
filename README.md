@@ -1,3 +1,15 @@
+## V2.56.3 — Filtro de Squad unificado em Indicadores
+
+- Remove o controlador assíncrono exclusivo da aba **Qualidade**, que fazia a troca direta de Squad seguir um caminho diferente da aba **Desempenho**.
+- A troca de Squad passa a usar exclusivamente `hydrateCurrentViewAsync(...)` em todas as subabas de Indicadores, reaproveitando o mesmo ciclo de carregamento já validado em Desempenho.
+- Ao entrar em **Qualidade**, **Dias úteis** ou **Detalhamento**, a tela reutiliza o carregador global de Indicadores; não existe mais estado paralelo de hidratação por Squad.
+- Enquanto a competência do novo Squad ainda estiver apenas em modo resumo, a Qualidade limpa os valores anteriores e exibe o estado de atualização até a carga completa terminar.
+- O token global de renderização continua protegendo contra respostas atrasadas de outro Squad, período ou subaba.
+- Cache-bust atualizado integralmente para `2.56.3`.
+- Frontend-only; sem migration e sem alteração nas fórmulas de Qualidade, Desempenho, Gestão Preditiva, bonificação ou importações.
+
+Detalhes: `docs/FILTRO_SQUAD_QUALIDADE_V2.56.3.md`.
+
 ## V2.56.2 — Filtro de Squad reativo na Qualidade
 
 - Corrige o comportamento em que a aba **Qualidade** podia continuar exibindo os números do Squad anterior enquanto aguardava a carga do novo escopo.
@@ -157,7 +169,7 @@ Detalhes: `docs/IDENTIDADE_TECNICOS_V2.51.0.md`.
 
 Dashboard interno para acompanhamento de performance, qualidade, metas, gamificação, bonificação e indicadores dos Squads de Suporte da Soften Sistemas.
 
-**Versão atual:** `2.56.2`<br>
+**Versão atual:** `2.56.3`<br>
 
 
 
