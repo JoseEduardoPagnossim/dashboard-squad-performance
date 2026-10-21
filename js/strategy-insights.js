@@ -6,7 +6,7 @@
   'use strict';
   function foundationInsights(){
     return Object.freeze([
-      Object.freeze({code:'STRATEGY_FOUNDATION_READY',tone:'info',title:'Fundação estratégica ativa',text:'A nova área está isolada do operacional e pronta para receber custos por competência nas próximas etapas.'})
+      Object.freeze({code:'STRATEGY_PEOPLE_COSTS_READY',tone:'info',title:'Custos pessoais separados do operacional',text:'A competência financeira preserva salário, encargos, benefícios, FTE e demais custos pessoais sem alterar atendimentos, qualidade ou bonificação.'})
     ]);
   }
   return{foundationInsights};

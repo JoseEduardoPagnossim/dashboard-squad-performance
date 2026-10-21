@@ -1,3 +1,14 @@
+## V2.57.2 — Competências, pessoas e custos pessoais
+
+- Cria competências financeiras independentes do calendário operacional.
+- Adiciona cadastro estratégico de pessoas com Squad e FTE.
+- Adiciona custos pessoais mensais: salário, encargos, benefícios, variável, horas extras e outros.
+- Calcula custo atribuído considerando FTE.
+- Expõe totais agregados por competência/Squad via RPC segura, sem baixar salários individuais para usuários sem permissão.
+- Implementa editor manual em Premissas para usuários com permissões detalhadas.
+- Mantém o operacional, Qualidade e Bonificação sem alterações.
+- Adiciona `MIGRACAO_V2.57.2.sql`.
+
 ## V2.57.1 — Acesso à Gestão Estratégica por usuário
 
 - adiciona o checkbox **Gestão Estratégica** diretamente no Controle de Usuários;

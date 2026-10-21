@@ -67,3 +67,7 @@ A Gestão Estratégica não usa `super_admin` como sinônimo de acesso irrestrit
 
 O bootstrap da migration libera aos administradores existentes apenas a fundação, agregados e gestão de acesso. `can_view_people_costs`, `can_edit_costs` e `can_close_competence` permanecem desabilitados. Essa separação deve ser preservada quando custos pessoais forem adicionados na V2.57.1: telas agregadas não devem baixar salários individuais desnecessariamente.
 
+
+## V2.57.2 — Separação entre agregado e salário individual
+
+O acesso geral à Gestão Estratégica não concede acesso a salários. As tabelas `strategy_people` e `strategy_employee_costs` exigem `can_view_people_costs`; escrita exige também `can_edit_costs`. Usuários com acesso apenas agregado recebem totais por uma RPC `SECURITY DEFINER` que valida `has_strategy_access('aggregates')` e não retorna nomes ou linhas individuais.

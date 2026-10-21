@@ -21,37 +21,35 @@
 
   function normalizeSection(value){const section=String(value||'').trim();return VALID_SECTIONS.includes(section)?section:'executive'}
   function normalizeSquad(value,context){const code=String(value||'all').trim().toUpperCase();if(code==='ALL')return'all';return context.squads.some(row=>row.code===code)?code:'all'}
-  function normalizeCompetence(value,context){const id=String(value||'').trim();return context.competences.includes(id)?id:(context.latestCompetence||'')}
+  function availableCompetences(context,financial){return[...new Set([...(context.competences||[]),...(financial.competences||[]).map(row=>row.competence)])].filter(Boolean).sort()}
+  function normalizeCompetence(value,context,financial){const id=dataEngine.competenceId(value);const list=availableCompetences(context,financial);return list.includes(id)?id:(list.at(-1)||context.latestCompetence||'')}
   function normalizeComparison(value){const id=String(value||'').trim();return COMPARISONS.includes(id)?id:'previous'}
   function emptyContext(){return dataEngine.buildOperationalContext({squads:{}})}
+  function emptyFinancial(){return dataEngine.buildFinancialContext()}
 
   function createController(seed={}){
-    let context=emptyContext();
-    let state={
-      section:normalizeSection(seed.section),
-      competence:'',
-      squadCode:'all',
-      comparison:normalizeComparison(seed.comparison),
-      access:accessEngine.normalizeAccess(seed.access||{}),
-      initialized:false
-    };
+    let context=emptyContext(),financial=emptyFinancial();
+    let state={section:normalizeSection(seed.section),competence:'',squadCode:'all',comparison:normalizeComparison(seed.comparison),access:accessEngine.normalizeAccess(seed.access||{}),initialized:false,financialLoaded:false,financialLoading:false,financialError:''};
     function setAccess(access){state={...state,access:accessEngine.normalizeAccess(access)};return getState()}
-    function initializeContext(input={}){
-      context=dataEngine.buildOperationalContext(input);
-      state={...state,competence:normalizeCompetence(state.competence||seed.competence,context),squadCode:normalizeSquad(state.squadCode||seed.squadCode,context),initialized:true};
-      return getState();
-    }
+    function initializeContext(input={}){context=dataEngine.buildOperationalContext(input);state={...state,competence:normalizeCompetence(state.competence||seed.competence,context,financial),squadCode:normalizeSquad(state.squadCode||seed.squadCode,context),initialized:true};return getState()}
+    function setFinancialData(input={}){financial=dataEngine.buildFinancialContext(input);state={...state,competence:normalizeCompetence(state.competence||seed.competence,context,financial),financialLoaded:true,financialLoading:false,financialError:''};return getState()}
+    function setFinancialLoading(loading=true){state={...state,financialLoading:loading===true};return getState()}
+    function setFinancialError(message=''){state={...state,financialLoading:false,financialError:String(message||''),financialLoaded:false};return getState()}
     function setSection(section){state={...state,section:normalizeSection(section)};return getState()}
     function setSquadCode(code){state={...state,squadCode:normalizeSquad(code,context)};return getState()}
-    function setCompetence(id){state={...state,competence:normalizeCompetence(id,context)};return getState()}
+    function setCompetence(id){state={...state,competence:normalizeCompetence(id,context,financial)};return getState()}
     function setComparison(value){state={...state,comparison:normalizeComparison(value)};return getState()}
     function getState(){return{...state,access:{...state.access}}}
-    function getContext(){return{squads:context.squads.map(row=>({...row,competences:[...row.competences]})),competences:[...context.competences],latestCompetence:context.latestCompetence}}
+    function getContext(){const comps=availableCompetences(context,financial);return{squads:context.squads.map(row=>({...row,competences:[...row.competences]})),operationalCompetences:[...context.competences],financialCompetences:financial.competences.map(row=>row.competence),competences:comps,latestCompetence:comps.at(-1)||context.latestCompetence}}
+    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),summary:{...financial.summary}}}
+    function selectedCompetenceRecord(){return financial.competences.find(row=>row.competence===state.competence)||null}
     function viewModel(){
-      const snapshot=getState(),ctx=getContext(),meta=SECTION_META[snapshot.section],summary=costEngine.emptySummary(snapshot);
-      return{state:snapshot,context:ctx,meta,summary,insights:insightEngine.foundationInsights(),accessStatus:accessEngine.accessStatus(snapshot.access)};
+      const snapshot=getState(),ctx=getContext(),fin=getFinancialData(),meta=SECTION_META[snapshot.section];
+      const detailed=accessEngine.normalizeAccess(snapshot.access).canViewPeopleCosts&&fin.costs.length?costEngine.summarizePeopleCosts(fin.costs,{squadCode:snapshot.squadCode}):null;
+      const base=detailed||fin.summary||{};const summary=costEngine.mergePeopleSummary(base,{competence:snapshot.competence,squadCode:snapshot.squadCode});
+      return{state:snapshot,context:ctx,financial:fin,competenceRecord:selectedCompetenceRecord(),meta,summary,insights:insightEngine.foundationInsights(),accessStatus:accessEngine.accessStatus(snapshot.access)};
     }
-    return{setAccess,initializeContext,setSection,setSquadCode,setCompetence,setComparison,getState,getContext,viewModel};
+    return{setAccess,initializeContext,setFinancialData,setFinancialLoading,setFinancialError,setSection,setSquadCode,setCompetence,setComparison,getState,getContext,getFinancialData,viewModel};
   }
 
   return{VALID_SECTIONS,SECTION_META,COMPARISONS,normalizeSection,createController};

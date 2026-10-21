@@ -1,3 +1,18 @@
+## V2.57.2 — Competências, pessoas e custos pessoais
+
+A Gestão Estratégica passa a registrar competências financeiras, pessoas/FTE e a fotografia mensal de salário, encargos, benefícios, variável, horas extras e outros custos. A área executiva e Custos & Eficiência exibem somente totais agregados quando o usuário não possui permissão para custos individuais.
+
+Principais pontos:
+- novas tabelas `strategy_competences`, `strategy_people` e `strategy_employee_costs`;
+- RPC agregada `get_strategy_people_cost_summary` sem exposição de salários individuais;
+- edição manual em Premissas para usuários com `can_view_people_costs` + `can_edit_costs`;
+- custo pessoal atribuído por FTE e fotografado por competência;
+- nenhuma alteração nas tabelas ou cálculos operacionais existentes.
+
+Execute `supabase/migrations/MIGRACAO_V2.57.2.sql` após as migrations V2.57.0 e V2.57.1.
+
+Detalhes: `docs/GESTAO_ESTRATEGICA_CUSTOS_PESSOAIS_V2.57.2.md`.
+
 ## V2.57.1 — Acesso à Gestão Estratégica por usuário
 
 - adiciona o checkbox **Gestão Estratégica** diretamente no Controle de Usuários;

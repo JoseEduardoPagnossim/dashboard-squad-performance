@@ -159,3 +159,7 @@ Execute `MIGRACAO_V2.57.0.sql` para criar `strategy_access` e `has_strategy_acce
 ### V2.57.1 — Acesso estratégico opt-in
 
 Execute `MIGRACAO_V2.57.1.sql` depois da V2.57.0. Ela torna o acesso à Gestão Estratégica desmarcado por padrão, restringe a administração dos checkboxes ao Super Admin e revoga o bootstrap automático criado na fundação. Não é necessário republicar Edge Functions.
+
+### V2.57.2 — Competências, pessoas e custos pessoais
+
+Execute `MIGRACAO_V2.57.2.sql` depois da V2.57.1. A migration cria `strategy_competences`, `strategy_people`, `strategy_employee_costs` e a RPC agregada `get_strategy_people_cost_summary(date,text)`. Usuários com acesso estratégico básico continuam sem acesso aos salários individuais; a edição exige `can_view_people_costs` e `can_edit_costs`. Não é necessário republicar Edge Functions.

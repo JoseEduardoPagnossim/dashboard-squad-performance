@@ -49,12 +49,19 @@ test('controller rejeita Squad, competência e seção fora do contexto', () => 
   assert.equal(state.section, 'executive');
 });
 
-test('V2.57.1 ainda não calcula custos financeiros reais', () => {
-  const controller = strategy.createController();
+test('V2.57.2 mantém custos estratégicos separados e aceita contexto financeiro próprio', () => {
+  const controller = strategy.createController({access:{canViewStrategy:true,canViewAggregates:true,canViewPeopleCosts:true}});
   controller.initializeContext({squads:operationalFixture()});
+  controller.setFinancialData({
+    competences:[{id:'c1',competence:'2026-10-01',status:'draft'}],
+    people:[{id:'p1',name:'Pessoa A',default_squad_code:'D',default_fte:1}],
+    costs:[{person_id:'p1',competence_id:'c1',squad_code_snapshot:'D',fte:1,salary:3000,employer_charges:1800,benefits:600,variable_pay:100,overtime:0,other_costs:0}],
+    summary:{}
+  });
   const vm = controller.viewModel();
-  assert.equal(vm.summary.totalCost, null);
-  assert.equal(vm.summary.peopleCost, null);
+  assert.equal(vm.summary.peopleCost, 5500);
+  assert.equal(vm.summary.totalCost, 5500);
   assert.equal(vm.summary.operationalCost, null);
-  assert.ok(vm.insights.some(item=>item.code==='STRATEGY_FOUNDATION_READY'));
+  assert.equal(vm.competenceRecord.competence, '2026-10');
+  assert.ok(vm.insights.some(item=>item.code==='STRATEGY_PEOPLE_COSTS_READY'));
 });

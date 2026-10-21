@@ -118,3 +118,7 @@ Execute `supabase/migrations/MIGRACAO_V2.57.1.sql` antes de habilitar a nova ár
 
 `strategy_access` separa autorização estratégica do papel operacional: visualizar a área, visualizar agregados, visualizar custos individuais, editar custos, fechar competências e gerenciar acessos são capacidades distintas. Administradores existentes recebem por bootstrap apenas `can_view_strategy`, `can_view_aggregates` e `can_manage_access`; as capacidades financeiras sensíveis permanecem `false`.
 
+
+## V2.57.2 — Competências e custos pessoais estratégicos
+
+A camada estratégica passa a usar tabelas próprias (`strategy_competences`, `strategy_people`, `strategy_employee_costs`). Custos pessoais nunca são gravados nas tabelas operacionais de técnicos ou competências. `strategy_employee_costs.total_cost` é uma coluna gerada que aplica o FTE ao somatório dos componentes financeiros. A RPC `get_strategy_people_cost_summary` entrega somente agregados a usuários com `can_view_aggregates`.

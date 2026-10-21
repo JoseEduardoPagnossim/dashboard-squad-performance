@@ -54,6 +54,7 @@
   const strategyEngine = window.SoftenStrategy;
   if(!strategyEngine) throw new Error('SoftenStrategy não carregado. Verifique js/strategy.js.');
   const strategyController = strategyEngine.createController();
+  let strategyFinanceLoadSeq=0,strategyFinanceLoadedKey='',strategyFinanceLoadingKey='';
   const financeReportEngine = window.SoftenFinanceReportEngine;
   if(!financeReportEngine) throw new Error('SoftenFinanceReportEngine não carregado. Verifique js/finance-report-engine.js.');
   const {normalizeConfig:normalizeFinanceReportConfig,defaultConfig:defaultFinanceReportConfig,presetConfig:financeReportPresetConfig,selectedColumns:financeReportSelectedColumns,moveColumn:moveFinanceReportColumn,stepColumn:stepFinanceReportColumn,setVisible:setFinanceReportColumnVisible,columnById:financeReportColumnById,computedValue:financeReportComputedValue}=financeReportEngine;
@@ -67,7 +68,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.57.1';
+  const APP_VERSION = '2.57.2';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3552,31 +3553,151 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
   }
+  function strategyMoney(value){return Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+  function strategyNumber(value,digits=2){return Number(value||0).toLocaleString('pt-BR',{minimumFractionDigits:digits,maximumFractionDigits:digits})}
+  function strategyPeopleAccess(){return strategyAccessEngine.canViewPeopleCosts(strategyAccess())}
+  function strategyEditAccess(){return strategyAccessEngine.canEditCosts(strategyAccess())}
+  function strategyFinanceKey(){const st=strategyController.getState();return`${state.user?.userId||'anon'}:${st.competence||''}:${st.squadCode||'all'}:${strategyAccessEngine.canViewAggregates(st.access)?1:0}:${strategyPeopleAccess()?1:0}`}
+  function strategyInvalidateFinance(){strategyFinanceLoadedKey=''}
+  function strategyCompetenceStatusLabel(status){return status==='closed'?'Fechado':status==='provisional'?'Provisório':'Em preenchimento'}
   function strategyCompetenceOptions(vm){
     if(!vm.context.competences.length)return'<option value="">Sem competências disponíveis</option>';
-    return vm.context.competences.slice().reverse().map(id=>`<option value="${escapeHtml(id)}" ${id===vm.state.competence?'selected':''}>${escapeHtml(strategyDataEngine.competenceLabel(id))}</option>`).join('');
+    const financial=new Set(vm.context.financialCompetences||[]);
+    return vm.context.competences.slice().reverse().map(id=>`<option value="${escapeHtml(id)}" ${id===vm.state.competence?'selected':''}>${escapeHtml(strategyDataEngine.competenceLabel(id))}${financial.has(id)?' • Financeira':''}</option>`).join('');
   }
   function strategySquadOptions(vm){return[`<option value="all" ${vm.state.squadCode==='all'?'selected':''}>Todos os Squads</option>`,...vm.context.squads.map(s=>`<option value="${escapeHtml(s.code)}" ${vm.state.squadCode===s.code?'selected':''}>Squad ${escapeHtml(s.code)}${s.name&&s.name!==`Squad ${s.code}`?` · ${escapeHtml(s.name)}`:''}</option>`)].join('')}
-  function renderStrategy(){
+  function strategyPersonSquadOptions(vm,selected='',allowEmpty=true){return[allowEmpty?`<option value="" ${!selected?'selected':''}>Sem Squad / compartilhado</option>`:'',...vm.context.squads.map(s=>`<option value="${escapeHtml(s.code)}" ${String(selected||'').toUpperCase()===s.code?'selected':''}>Squad ${escapeHtml(s.code)}</option>`)].join('')}
+  function strategyParseNumber(value){const n=Number(String(value??'').replace(',','.'));return Number.isFinite(n)?Math.max(0,n):0}
+  async function loadStrategyFinanceData({force=false,renderAfter=true}={}){
     if(!canViewStrategy())return;
-    strategyController.initializeContext({squads:state.squads});const vm=strategyController.viewModel(),section=vm.state.section;
+    strategyController.initializeContext({squads:state.squads});
+    const requestedKey=strategyFinanceKey();
+    if(!force&&(strategyFinanceLoadedKey===requestedKey||strategyFinanceLoadingKey===requestedKey))return;
+    const seq=++strategyFinanceLoadSeq;strategyFinanceLoadingKey=requestedKey;strategyController.setFinancialLoading(true);
+    try{
+      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],summary:{}});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
+      const org=state.user?.organizationId;if(!org)throw new Error('Organização não identificada para a Gestão Estratégica.');
+      const {data:competenceRows,error:competenceError}=await state.supabase.from('strategy_competences').select('id,competence,status,notes,created_at,updated_at').eq('organization_id',org).order('competence',{ascending:true});
+      if(competenceError)throw competenceError;
+      if(seq!==strategyFinanceLoadSeq)return;
+      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],summary:{}});
+      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);
+      let summary={};
+      if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
+        const {data,error}=await state.supabase.rpc('get_strategy_people_cost_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode});if(error)throw error;summary=data||{};
+      }
+      let people=[],costs=[];
+      if(strategyPeopleAccess()){
+        const {data:peopleRows,error:peopleError}=await state.supabase.from('strategy_people').select('id,user_id,name,role_label,default_squad_code,default_fte,active,source,created_at,updated_at').eq('organization_id',org).order('name',{ascending:true});if(peopleError)throw peopleError;people=peopleRows||[];
+        const comp=(competenceRows||[]).find(row=>strategyDataEngine.competenceId(row.competence)===st.competence);
+        if(comp?.id){const {data:costRows,error:costError}=await state.supabase.from('strategy_employee_costs').select('id,competence_id,person_id,squad_code_snapshot,fte,salary,employer_charges,benefits,variable_pay,overtime,other_costs,total_cost,source,notes,created_at,updated_at').eq('organization_id',org).eq('competence_id',comp.id);if(costError)throw costError;costs=costRows||[];}
+      }
+      if(seq!==strategyFinanceLoadSeq)return;
+      strategyController.setFinancialData({competences:competenceRows||[],people,costs,summary});
+      strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
+    }catch(err){
+      console.error('Falha ao carregar Gestão Estratégica V2.57.2',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));
+    }
+    if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
+  }
+  function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
+  function renderStrategyPeopleRows(vm){
+    const tbody=$('#strategyPeopleRows');if(!tbody)return;
+    if(!strategyPeopleAccess()){tbody.innerHTML='<tr><td colspan="11" class="muted">Custos individuais protegidos para este usuário.</td></tr>';return;}
+    const editable=strategyEditAccess(),selected=vm.state.squadCode;
+    const people=vm.financial.people.filter(p=>p.active!==false).filter(p=>selected==='all'||String((strategyCostForPerson(vm,p.id)?.squadCode||p.squadCode)||'').toUpperCase()===selected);
+    if(!people.length){tbody.innerHTML='<tr><td colspan="11" class="muted">Nenhuma pessoa cadastrada neste escopo. Use “Adicionar pessoa” para começar.</td></tr>';return;}
+    tbody.innerHTML=people.map(person=>{
+      const cost=strategyCostForPerson(vm,person.id)||{},calc=strategyCostEngine.calculatePersonCost({fte:cost.fte??person.defaultFte,salary:cost.salary,employerCharges:cost.employerCharges,benefits:cost.benefits,variablePay:cost.variablePay,overtime:cost.overtime,otherCosts:cost.otherCosts}),disabled=editable?'':'disabled';
+      const val=n=>Number(n||0).toFixed(2);
+      return `<tr data-strategy-person-row="${escapeHtml(person.id)}"><td><input ${disabled} data-strategy-person-field="name" value="${escapeHtml(person.name)}"></td><td><input ${disabled} data-strategy-person-field="roleLabel" value="${escapeHtml(person.roleLabel||'')}"></td><td><select ${disabled} data-strategy-person-field="squadCode">${strategyPersonSquadOptions(vm,cost.squadCode||person.squadCode,true)}</select></td><td><input ${disabled} data-strategy-cost-field="fte" type="number" min="0" max="1" step="0.01" value="${val(calc.fte)}"></td><td><input ${disabled} data-strategy-cost-field="salary" type="number" min="0" step="0.01" value="${val(calc.salary)}"></td><td><input ${disabled} data-strategy-cost-field="employerCharges" type="number" min="0" step="0.01" value="${val(calc.employerCharges)}"></td><td><input ${disabled} data-strategy-cost-field="benefits" type="number" min="0" step="0.01" value="${val(calc.benefits)}"></td><td><input ${disabled} data-strategy-cost-field="variablePay" type="number" min="0" step="0.01" value="${val(calc.variablePay)}"></td><td><input ${disabled} data-strategy-cost-field="overtime" type="number" min="0" step="0.01" value="${val(calc.overtime)}"></td><td><input ${disabled} data-strategy-cost-field="otherCosts" type="number" min="0" step="0.01" value="${val(calc.otherCosts)}"></td><td class="strategy-row-total" data-strategy-row-total>${strategyMoney(calc.totalCost)}</td></tr>`;
+    }).join('');
+  }
+  function updateStrategyRowTotal(target){const row=target?.closest?.('[data-strategy-person-row]');if(!row)return;const get=name=>strategyParseNumber(row.querySelector(`[data-strategy-cost-field="${name}"]`)?.value);const calc=strategyCostEngine.calculatePersonCost({fte:get('fte'),salary:get('salary'),employerCharges:get('employerCharges'),benefits:get('benefits'),variablePay:get('variablePay'),overtime:get('overtime'),otherCosts:get('otherCosts')});const total=row.querySelector('[data-strategy-row-total]');if(total)total.textContent=strategyMoney(calc.totalCost)}
+  function renderStrategy({skipLoad=false}={}){
+    if(!canViewStrategy())return;
+    strategyController.initializeContext({squads:state.squads});const vm=strategyController.viewModel(),section=vm.state.section,canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),displayAggregate=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError,canPeople=strategyPeopleAccess(),canEdit=strategyEditAccess();
     $$('#view-strategy [data-strategy-section]').forEach(btn=>{const active=btn.dataset.strategySection===section;btn.classList.toggle('is-active',active);btn.setAttribute('aria-selected',active?'true':'false')});
     $$('#view-strategy [data-strategy-panel]').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.strategyPanel!==section));
     if($('#strategyCompetenceSelect'))$('#strategyCompetenceSelect').innerHTML=strategyCompetenceOptions(vm);
     if($('#strategySquadSelect'))$('#strategySquadSelect').innerHTML=strategySquadOptions(vm);
     if($('#strategyComparisonSelect'))$('#strategyComparisonSelect').value=vm.state.comparison;
+    if($('#strategyNewPersonSquad'))$('#strategyNewPersonSquad').innerHTML=strategyPersonSquadOptions(vm,vm.state.squadCode==='all'?'':vm.state.squadCode,true);
+    if($('#strategyNewCompetenceInput')&&!$('#strategyNewCompetenceInput').value)$('#strategyNewCompetenceInput').value=vm.state.competence||'';
     if($('#strategySectionEyebrow'))$('#strategySectionEyebrow').textContent=vm.meta.eyebrow;
     if($('#strategySectionTitle'))$('#strategySectionTitle').textContent=vm.meta.label;
     if($('#strategyAccessStatus'))$('#strategyAccessStatus').textContent=vm.accessStatus.label;
-    if($('#strategyContextStatus'))$('#strategyContextStatus').textContent=`${vm.context.squads.length} Squads · ${vm.context.competences.length} competências lidas`;
-    if($('#strategyCostStatus'))$('#strategyCostStatus').textContent='Aguardando V2.57.1';
-    if($('#strategyIsolationStatus'))$('#strategyIsolationStatus').textContent='Somente leitura';
-    if($('#strategyMigrationWarning'))$('#strategyMigrationWarning').classList.toggle('hidden',vm.state.access.remoteAvailable!==false);
-    const insight=vm.insights[0];if($('#strategyFoundationInsightTitle'))$('#strategyFoundationInsightTitle').textContent=insight?.title||'Fundação estratégica ativa';if($('#strategyFoundationInsightText'))$('#strategyFoundationInsightText').textContent=insight?.text||'';
+    const compLabel=vm.state.competence?strategyDataEngine.competenceLabel(vm.state.competence):'Sem competência',compStatus=vm.competenceRecord?strategyCompetenceStatusLabel(vm.competenceRecord.status):'Não criada';
+    if($('#strategyContextStatus'))$('#strategyContextStatus').textContent=`${compLabel} • ${compStatus}`;
+    if($('#strategyCostStatus'))$('#strategyCostStatus').textContent=vm.state.financialLoading?'Carregando...':displayAggregate?strategyMoney(vm.summary.peopleCost):(canAggregate?'Carregando...':'Sem permissão agregada');
+    if($('#strategyIsolationStatus'))$('#strategyIsolationStatus').textContent='Operacional somente leitura';
+    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError)$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>V2.57.2</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}
+    const insight=vm.insights[0];if($('#strategyFoundationInsightTitle'))$('#strategyFoundationInsightTitle').textContent=insight?.title||'Custos pessoais separados do operacional';if($('#strategyFoundationInsightText'))$('#strategyFoundationInsightText').textContent=insight?.text||'';
+    if($('#strategyExecutivePeopleCost'))$('#strategyExecutivePeopleCost').textContent=displayAggregate?strategyMoney(vm.summary.peopleCost):'—';
+    if($('#strategyExecutiveFte'))$('#strategyExecutiveFte').textContent=displayAggregate?strategyNumber(vm.summary.fte,2):'—';
+    if($('#strategyExecutiveHeadcount'))$('#strategyExecutiveHeadcount').textContent=displayAggregate?String(vm.summary.peopleCount||0):'—';
+    if($('#strategyExecutiveStatus'))$('#strategyExecutiveStatus').textContent=compStatus;
+    if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
+    if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
+    if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';
+    if($('#strategyOtherPeopleTotal'))$('#strategyOtherPeopleTotal').textContent=displayAggregate?strategyMoney(vm.summary.variablePay+vm.summary.overtime+vm.summary.otherCosts):'—';
+    if($('#strategyPeopleTotal'))$('#strategyPeopleTotal').textContent=displayAggregate?strategyMoney(vm.summary.peopleCost):'—';
+    if($('#strategyCompetenceBadge'))$('#strategyCompetenceBadge').textContent=compStatus;
+    if($('#strategyCompetenceStatusSelect')){$('#strategyCompetenceStatusSelect').value=vm.competenceRecord?.status||'draft';$('#strategyCompetenceStatusSelect').disabled=!canEdit||!vm.competenceRecord||vm.competenceRecord.status==='closed';}
+    if($('#strategyCompetenceNotes')){$('#strategyCompetenceNotes').value=vm.competenceRecord?.notes||'';$('#strategyCompetenceNotes').disabled=!canEdit||!vm.competenceRecord||vm.competenceRecord.status==='closed';}
+    if($('#strategyCreateCompetenceBtn'))$('#strategyCreateCompetenceBtn').disabled=!canEdit||!state.supabase;
+    if($('#strategySaveCompetenceBtn'))$('#strategySaveCompetenceBtn').disabled=!canEdit||!vm.competenceRecord||vm.competenceRecord.status==='closed'||!state.supabase;
+    if($('#strategyPeoplePermissionNotice'))$('#strategyPeoplePermissionNotice').classList.toggle('hidden',canPeople);
+    if($('#strategyPeopleEditor')){$('#strategyPeopleEditor').classList.toggle('hidden',!canPeople);$('#strategyPeopleEditor').classList.toggle('strategy-readonly',!canEdit);}
+    if($('#strategyPeopleEditorMode'))$('#strategyPeopleEditorMode').textContent=canEdit?'Edição habilitada':'Somente leitura';
+    for(const id of ['strategyNewPersonName','strategyNewPersonRole','strategyNewPersonSquad','strategyNewPersonFte','strategyAddPersonBtn','strategySavePeopleCostsBtn'])if($("#"+id))$("#"+id).disabled=!canEdit||!state.supabase;
+    renderStrategyPeopleRows(vm);
+    if($('#strategyPeopleHint'))$('#strategyPeopleHint').textContent=canPeople?(vm.competenceRecord?'Valores vinculados à competência selecionada.':'Crie a competência financeira para registrar os custos mensais.'):'Custos individuais protegidos para este usuário.';
+    if(!skipLoad&&state.supabase&&!vm.state.financialLoading&&strategyFinanceLoadedKey!==strategyFinanceKey())loadStrategyFinanceData().catch(err=>console.error(err));
+  }
+  async function ensureStrategyCompetenceRecord(competenceId){
+    if(!strategyEditAccess())throw new Error('Seu usuário não possui permissão para editar custos estratégicos.');
+    if(!state.supabase)throw new Error('Persistência estratégica disponível somente no modo Supabase.');
+    const id=strategyDataEngine.competenceId(competenceId);if(!id)throw new Error('Competência inválida.');
+    const vm=strategyController.viewModel(),existing=vm.financial.competences.find(row=>row.competence===id);if(existing)return existing;
+    const payload={organization_id:state.user.organizationId,competence:strategyDataEngine.competenceDate(id),status:'draft',created_by:state.user.userId,updated_by:state.user.userId,updated_at:new Date().toISOString()};
+    const {data,error}=await state.supabase.from('strategy_competences').upsert(payload,{onConflict:'organization_id,competence'}).select('id,competence,status,notes,created_at,updated_at').single();if(error)throw error;
+    await logAuditEvent('strategy.competence_create',{entityType:'strategy_competence',entityId:data?.id||id,description:`Competência estratégica ${id} criada.`,metadata:{competence:id}});
+    return strategyDataEngine.normalizeCompetenceRow(data||payload);
+  }
+  async function createStrategyCompetence(){
+    const input=$('#strategyNewCompetenceInput'),id=strategyDataEngine.competenceId(input?.value||strategyController.getState().competence);if(!id)return toast('Informe uma competência válida.');
+    try{await ensureStrategyCompetenceRecord(id);strategyInvalidateFinance();await loadStrategyFinanceData({force:true,renderAfter:false});strategyController.setCompetence(id);strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Competência ${strategyDataEngine.competenceLabel(id)} criada.`);}catch(err){console.error(err);toast(/strategy_competences|row-level security|permission/i.test(String(err?.message||err))?'Não foi possível criar a competência. Execute a migração V2.57.2 e valide can_edit_costs.':String(err?.message||err));}
+  }
+  async function saveStrategyCompetence(){
+    const vm=strategyController.viewModel();if(!vm.competenceRecord)return toast('Crie a competência financeira antes de salvar.');if(!strategyEditAccess())return toast('Seu usuário não possui permissão para editar custos estratégicos.');
+    const status=$('#strategyCompetenceStatusSelect')?.value||'draft',notes=String($('#strategyCompetenceNotes')?.value||'').trim();if(status==='closed')return toast('O fechamento de competência será habilitado em etapa posterior.');
+    try{const {error}=await state.supabase.from('strategy_competences').update({status,notes:notes||null,updated_by:state.user.userId,updated_at:new Date().toISOString()}).eq('id',vm.competenceRecord.id).eq('organization_id',state.user.organizationId);if(error)throw error;await logAuditEvent('strategy.competence_update',{entityType:'strategy_competence',entityId:vm.competenceRecord.id,description:`Competência estratégica ${vm.state.competence} atualizada.`,metadata:{competence:vm.state.competence,status}});strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast('Competência estratégica salva.');}catch(err){console.error(err);toast(String(err?.message||err));}
+  }
+  async function addStrategyPerson(){
+    if(!strategyEditAccess())return toast('Seu usuário não possui permissão para editar custos pessoais.');
+    const name=String($('#strategyNewPersonName')?.value||'').trim(),role=String($('#strategyNewPersonRole')?.value||'').trim(),squad=String($('#strategyNewPersonSquad')?.value||'').trim().toUpperCase(),fte=Math.min(1,strategyParseNumber($('#strategyNewPersonFte')?.value||1));if(!name)return toast('Informe o nome da pessoa.');
+    try{const payload={organization_id:state.user.organizationId,name,role_label:role||null,default_squad_code:squad||null,default_fte:fte,active:true,source:'manual',created_by:state.user.userId,updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('strategy_people').insert(payload).select('id').single();if(error)throw error;await logAuditEvent('strategy.person_create',{entityType:'strategy_person',entityId:data?.id||'',description:`Pessoa adicionada à Gestão Estratégica: ${name}.`,metadata:{squadCode:squad||null}});$('#strategyNewPersonName').value='';$('#strategyNewPersonRole').value='';$('#strategyNewPersonFte').value='1';strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`${name} adicionado à base estratégica.`);}catch(err){console.error(err);toast(/strategy_people|row-level security|permission/i.test(String(err?.message||err))?'Não foi possível cadastrar a pessoa. Valide a migração V2.57.2 e can_edit_costs.':String(err?.message||err));}
+  }
+  async function saveStrategyPeopleCosts(){
+    if(!strategyEditAccess())return toast('Seu usuário não possui permissão para editar custos pessoais.');
+    const competence=strategyController.getState().competence;if(!competence)return toast('Selecione uma competência.');
+    const rows=[...$$('#strategyPeopleRows [data-strategy-person-row]')];if(!rows.length)return toast('Nenhuma pessoa disponível para salvar.');
+    try{
+      const comp=await ensureStrategyCompetenceRecord(competence),costRows=[];
+      for(const row of rows){const personId=row.dataset.strategyPersonRow,name=String(row.querySelector('[data-strategy-person-field="name"]')?.value||'').trim(),roleLabel=String(row.querySelector('[data-strategy-person-field="roleLabel"]')?.value||'').trim(),squadCode=String(row.querySelector('[data-strategy-person-field="squadCode"]')?.value||'').trim().toUpperCase(),get=f=>strategyParseNumber(row.querySelector(`[data-strategy-cost-field="${f}"]`)?.value),fte=Math.min(1,get('fte'));
+        if(!name)throw new Error('Todas as pessoas precisam ter nome.');
+        const {error:personError}=await state.supabase.from('strategy_people').update({name,role_label:roleLabel||null,default_squad_code:squadCode||null,default_fte:fte,updated_by:state.user.userId,updated_at:new Date().toISOString()}).eq('id',personId).eq('organization_id',state.user.organizationId);if(personError)throw personError;
+        costRows.push({organization_id:state.user.organizationId,competence_id:comp.id,person_id:personId,squad_code_snapshot:squadCode||null,fte,salary:get('salary'),employer_charges:get('employerCharges'),benefits:get('benefits'),variable_pay:get('variablePay'),overtime:get('overtime'),other_costs:get('otherCosts'),source:'manual',updated_by:state.user.userId,updated_at:new Date().toISOString()});
+      }
+      const {error:costError}=await state.supabase.from('strategy_employee_costs').upsert(costRows,{onConflict:'organization_id,competence_id,person_id'});if(costError)throw costError;
+      await logAuditEvent('strategy.people_costs_update',{entityType:'strategy_competence',entityId:comp.id,description:`Custos pessoais atualizados na competência ${competence}.`,metadata:{competence,peopleCount:costRows.length}});
+      strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Custos de ${costRows.length} pessoa${costRows.length===1?'':'s'} salvos.`);
+    }catch(err){console.error(err);toast(/strategy_employee_costs|row-level security|permission/i.test(String(err?.message||err))?'Não foi possível salvar os custos. Valide a migração V2.57.2 e can_edit_costs.':String(err?.message||err));}
   }
   function setStrategySection(section,{history='push'}={}){strategyController.setSection(section);if(state.currentView==='strategy'){renderStrategy();$('#pageTitle').textContent=STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Gestão Estratégica';updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});}}
-  function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}}
-  function handleStrategyChange(e){if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);renderStrategy();return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);renderStrategy();return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
+  async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();}
+  async function handleStrategyChange(e){if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
 
   function renderHelp(){
     if(!state.user)return;

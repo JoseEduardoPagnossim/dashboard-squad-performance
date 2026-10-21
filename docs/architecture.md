@@ -199,3 +199,7 @@ O frontend estratégico é dividido em `strategy-access.js`, `strategy-data.js`,
 
 O acesso é independente dos papéis operacionais e vem de `strategy_access`. A migration concede aos administradores existentes apenas acesso à fundação/agregados e gestão de acesso; custos individuais, edição e fechamento permanecem desligados até as etapas financeiras seguintes.
 
+
+## V2.57.2 — Domínio de competências e custos pessoais
+
+O módulo estratégico mantém duas fotografias distintas: `strategy_people` representa a pessoa atual e seus padrões; `strategy_employee_costs` representa a fotografia mensal da competência, incluindo Squad e FTE. Essa separação evita que uma troca futura de Squad, FTE ou salário reescreva meses anteriores. O operacional continua sendo somente fonte de contexto para a Gestão Estratégica.
