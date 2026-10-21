@@ -1,4 +1,4 @@
-/* V2.57.0 — Fundação da Gestão Estratégica. Escopo intencionalmente isolado. */
+/* V2.57.1 — Fundação da Gestão Estratégica. Escopo intencionalmente isolado. */
 #view-strategy{min-width:0}
 .strategy-shell{display:flex;flex-direction:column;gap:18px;min-width:0}
 .strategy-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:22px 24px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--panel) 92%,var(--accent) 8%),var(--panel));box-shadow:var(--shadow)}

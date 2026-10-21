@@ -61,7 +61,7 @@ Mesmo sem secrets, um repositório público expõe fórmulas, regras internas, e
 - confirme que arquivos de exportação/importação com dados de clientes não foram adicionados ao Git;
 - revise `git diff` antes do commit;
 - publique migrations, Edge Functions e frontend em etapas controladas.
-## V2.57.0 — Autorização estratégica separada
+## V2.57.1 — Autorização estratégica separada
 
 A Gestão Estratégica não usa `super_admin` como sinônimo de acesso irrestrito a informação financeira. A tabela `strategy_access` define capacidades específicas. Cada usuário autenticado pode ler somente o próprio registro; quem possui `can_manage_access` pode administrar registros da mesma organização.
 

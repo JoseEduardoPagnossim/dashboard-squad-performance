@@ -154,4 +154,8 @@ Não é necessário republicar Edge Functions.
 
 ### V2.57.0 — Fundação da Gestão Estratégica
 
-Execute `MIGRACAO_V2.57.0.sql` para criar a autorização estratégica independente (`strategy_access` e `has_strategy_access`). Esta etapa não cria dados de salário ou custos.
+Execute `MIGRACAO_V2.57.0.sql` para criar `strategy_access` e `has_strategy_access`. Esta etapa não cria salário ou custos.
+
+### V2.57.1 — Acesso estratégico opt-in
+
+Execute `MIGRACAO_V2.57.1.sql` depois da V2.57.0. Ela torna o acesso à Gestão Estratégica desmarcado por padrão, restringe a administração dos checkboxes ao Super Admin e revoga o bootstrap automático criado na fundação. Não é necessário republicar Edge Functions.

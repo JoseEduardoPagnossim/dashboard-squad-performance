@@ -45,12 +45,11 @@
     out.remoteAvailable=meta.remoteAvailable!==false&&source.remoteAvailable!==false;
     return out;
   }
-  function demoAccessForRole(role){
-    const admin=String(role||'').trim()==='super_admin'||String(role||'').trim()==='squad_admin';
-    return normalizeAccess(admin?{
+  function demoAccessForRole(role,enabled=false){
+    const allowed=enabled===true;
+    return normalizeAccess(allowed?{
       canViewStrategy:true,
-      canViewAggregates:true,
-      canManageAccess:true
+      canViewAggregates:true
     }:{},{source:'demo',remoteAvailable:true});
   }
   function canView(access){return normalizeAccess(access).canViewStrategy}

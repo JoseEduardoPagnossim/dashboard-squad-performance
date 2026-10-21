@@ -191,7 +191,7 @@ Favoritos e visões salvas são convertidos em comandos dinâmicos e entram na m
 ## V2.48.1 — Sidebar com áreas flexíveis por altura
 
 A sidebar desktop passa a ser um flex container restrito a `100dvh`. O cabeçalho, a campanha, o player e a versão são elementos não encolhíveis; `sidebar-nav` recebe `flex: 1`, `min-height: 0` e `overflow-y: auto`. Em alturas menores, a campanha é compactada por media query em vez de ser removida.
-## V2.57.0 — Fundação da Gestão Estratégica
+## V2.57.1 — Fundação da Gestão Estratégica
 
 A Gestão Estratégica é um domínio independente do dashboard operacional. A rota `page=strategy` possui seções próprias (`executive`, `costs` e `assumptions`), estado interno em `js/strategy.js` e filtros locais. Os parâmetros operacionais de Squad, competência, técnico e período são descartados pela navegação/workspace quando a rota é estratégica, evitando vazamento bidirecional de contexto.
 

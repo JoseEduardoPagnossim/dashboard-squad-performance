@@ -12,7 +12,7 @@ const engine = require(join(root, 'js', 'import-engine.js'));
 const pkg = require(join(root, 'package.json'));
 
 test('V2.53.0 adiciona aliases historicos ao cadastro do tecnico',()=>{
-  assert.equal(pkg.version,'2.57.0');
+  assert.equal(pkg.version,'2.57.1');
   assert.ok(index.includes('id="editUserAliases"'));
   assert.match(index,/Nomes anteriores \/ aliases do CSV/);
   assert.match(app,/async function persistTechnicianAliasesForUser\(/);

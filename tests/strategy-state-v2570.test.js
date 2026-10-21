@@ -49,7 +49,7 @@ test('controller rejeita Squad, competência e seção fora do contexto', () => 
   assert.equal(state.section, 'executive');
 });
 
-test('V2.57.0 ainda não calcula custos financeiros reais', () => {
+test('V2.57.1 ainda não calcula custos financeiros reais', () => {
   const controller = strategy.createController();
   controller.initializeContext({squads:operationalFixture()});
   const vm = controller.viewModel();

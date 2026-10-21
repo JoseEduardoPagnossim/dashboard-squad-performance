@@ -1,11 +1,23 @@
+## V2.57.1 — Acesso à Gestão Estratégica por usuário
+
+- adiciona o checkbox **Gestão Estratégica** diretamente no Controle de Usuários;
+- o acesso passa a ser **opt-in**: Administrador/Super Admin não recebe a área estratégica automaticamente;
+- somente `super_admin` pode liberar ou revogar o checkbox, inclusive o próprio acesso;
+- marcar o checkbox libera apenas visualização da Estratégia e indicadores agregados; permissões futuras de custos individuais, edição e fechamento permanecem desligadas;
+- altera a RLS de `strategy_access` para que o Super Admin possa administrar os acessos mesmo sem possuir acesso estratégico para si;
+- revoga somente o bootstrap automático de Super Admin criado pela V2.57.0;
+- não adiciona salários, encargos ou custos: o MVP financeiro continua para a próxima etapa.
+
+Detalhes: `docs/ACESSO_GESTAO_ESTRATEGICA_V2.57.1.md`.
+
 ## V2.57.0 — Fundação da Gestão Estratégica
 
 - cria a nova área `Gestão Estratégica` sem alterar o fluxo operacional existente;
 - adiciona rotas independentes para Resultado Executivo, Custos & Eficiência e Premissas;
 - mantém estado e filtros estratégicos fora do `state` operacional;
-- adiciona autorização específica em `strategy_access`, com acesso a custos individuais desligado no bootstrap;
+- adiciona autorização específica em `strategy_access`, sem custos financeiros reais;
 - adiciona módulos `strategy-*` e stylesheet próprio;
-- a tela nasce funcional, porém propositalmente sem valores financeiros até a V2.57.1.
+- a tela nasce funcional, porém propositalmente sem valores financeiros.
 
 Detalhes: `docs/GESTAO_ESTRATEGICA_FUNDACAO_V2.57.0.md`.
 

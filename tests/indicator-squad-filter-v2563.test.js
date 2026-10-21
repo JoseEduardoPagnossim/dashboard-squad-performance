@@ -12,33 +12,33 @@ function blockBetween(start,end){
   assert.ok(b>a,`fim nao encontrado: ${end}`);
   return app.slice(a,b);
 }
-test('V2.57.0 troca Squad em Qualidade pelo fluxo global aguardado',()=>{
-  assert.equal(pkg.version,'2.57.0');
+test('V2.57.1 troca Squad em Qualidade pelo fluxo global aguardado',()=>{
+  assert.equal(pkg.version,'2.57.1');
   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
   assert.doesNotMatch(select,/hydrateIndicatorSquadFilter|indicatorHydration/);
 });
-test('V2.57.0 entrar em Qualidade reutiliza o ciclo global de hidratacao de Indicadores',()=>{
+test('V2.57.1 entrar em Qualidade reutiliza o ciclo global de hidratacao de Indicadores',()=>{
   const section=blockBetween('function setIndicatorSection','function syncIndicatorSectionUi');
   assert.match(section,/hydrateCurrentViewAsync\('indicators',state\.adminSection\)/);
   assert.doesNotMatch(section,/hydrateIndicatorSquadFilter|indicatorHydration/);
 });
-test('V2.57.0 remove completamente o controlador paralelo antigo',()=>{
+test('V2.57.1 remove completamente o controlador paralelo antigo',()=>{
   for(const legacy of ['hydrateIndicatorSquadFilter','indicatorHydrationSeq','indicatorHydrationKey','indicatorHydrationErrorKey','indicatorScopeContextKey','indicatorSquadFilterRequiresFullData']){
     assert.equal(app.includes(legacy),false,legacy);
   }
 });
-test('V2.57.0 permite recarga forcada do mesmo carregador mensal',()=>{
+test('V2.57.1 permite recarga forcada do mesmo carregador mensal',()=>{
   const ensure=blockBetween('async function ensureViewData','function hydrateCurrentViewAsync');
   assert.match(ensure,/ensureMonthsLoaded\(codes,ids,\{silent:true,strict,force:forceMonths\}\)/);
   const months=blockBetween('async function ensureMonthsLoaded','function orgDailyRequestedRange');
   assert.match(months,/force=false/);
   assert.match(months,/ensureMonthLoaded\(code,id,\{silent:true,force\}\)/);
 });
-test('V2.57.0 publica cache-bust completo sem migration',()=>{
+test('V2.57.1 publica cache-bust completo sem migration',()=>{
   for(const asset of ['css/styles.css','css/design-system.css','css/presentation.css','js/performance-engine.js','js/filter-system.js','js/app.js']){
-    assert.ok(index.includes(`${asset}?v=2.57.0`),asset);
+    assert.ok(index.includes(`${asset}?v=2.57.1`),asset);
   }
-  assert.ok(index.includes('V2.57.0'));
+  assert.ok(index.includes('V2.57.1'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
 });

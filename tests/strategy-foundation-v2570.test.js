@@ -14,21 +14,21 @@ const migrationPath = join(root, 'supabase', 'migrations', 'MIGRACAO_V2.57.0.sql
 const migration = readFileSync(migrationPath, 'utf8');
 const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 
-test('V2.57.0 publica a fundação isolada da Gestão Estratégica', () => {
-  assert.equal(pkg.version, '2.57.0');
+test('V2.57.1 publica a fundação isolada da Gestão Estratégica', () => {
+  assert.equal(pkg.version, '2.57.1');
   assert.match(index, /id="view-strategy"/);
   assert.match(index, /data-view="strategy"/);
   assert.match(index, /data-strategy-section="executive"/);
   assert.match(index, /data-strategy-section="costs"/);
   assert.match(index, /data-strategy-section="assumptions"/);
-  assert.match(index, /css\/strategy\.css\?v=2\.57\.0/);
-  assert.match(index, /js\/strategy-access\.js\?v=2\.57\.0/);
-  assert.match(index, /js\/strategy-data\.js\?v=2\.57\.0/);
-  assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.57\.0/);
-  assert.match(index, /js\/strategy-insights\.js\?v=2\.57\.0/);
-  assert.match(index, /js\/strategy\.js\?v=2\.57\.0/);
-  assert.ok(index.indexOf('js/strategy.js?v=2.57.0') < index.indexOf('js/app.js?v=2.57.0'));
-  assert.match(app, /APP_VERSION = '2\.57\.0'/);
+  assert.match(index, /css\/strategy\.css\?v=2\.57\.1/);
+  assert.match(index, /js\/strategy-access\.js\?v=2\.57\.1/);
+  assert.match(index, /js\/strategy-data\.js\?v=2\.57\.1/);
+  assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.57\.1/);
+  assert.match(index, /js\/strategy-insights\.js\?v=2\.57\.1/);
+  assert.match(index, /js\/strategy\.js\?v=2\.57\.1/);
+  assert.ok(index.indexOf('js/strategy.js?v=2.57.1') < index.indexOf('js/app.js?v=2.57.1'));
+  assert.match(app, /APP_VERSION = '2\.57\.1'/);
 });
 
 test('rota estratégica descarta filtros operacionais da URL', () => {
@@ -60,7 +60,7 @@ test('filtros globais operacionais ficam ocultos na Gestão Estratégica', () =>
   assert.equal(filters.activeCount({view:'strategy', isSuperAdmin:true}), 0);
 });
 
-test('V2.57.0 cria somente a camada de acesso estratégico no banco', () => {
+test('a fundação V2.57.0 cria somente a camada de acesso estratégico no banco', () => {
   assert.equal(existsSync(migrationPath), true);
   assert.match(migration, /create table if not exists public\.strategy_access/i);
   assert.match(migration, /enable row level security/i);

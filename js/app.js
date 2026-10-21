@@ -67,7 +67,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.57.0';
+  const APP_VERSION = '2.57.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -471,13 +471,13 @@
   function canViewStrategy(){return strategyAccessEngine.canView(strategyAccess())}
   async function loadStrategyAccess(){
     if(!state.user){strategyController.setAccess(strategyAccessEngine.EMPTY_ACCESS);return strategyAccess()}
-    if(!state.supabase){strategyController.setAccess(strategyAccessEngine.demoAccessForRole(state.user.role));return strategyAccess()}
+    if(!state.supabase){strategyController.setAccess(strategyAccessEngine.demoAccessForRole(state.user.role,state.user.strategyAccess===true));return strategyAccess()}
     try{
       const {data,error}=await state.supabase.from('strategy_access').select('can_view_strategy,can_view_aggregates,can_view_people_costs,can_edit_costs,can_close_competence,can_manage_access').eq('organization_id',state.user.organizationId).eq('user_id',state.user.userId).maybeSingle();
       if(error)throw error;
       strategyController.setAccess(strategyAccessEngine.normalizeAccess(data||{},{source:'supabase',remoteAvailable:true}));
     }catch(err){
-      console.warn('Acesso da Gestão Estratégica indisponível. Execute a migração V2.57.0.',err);
+      console.warn('Acesso da Gestão Estratégica indisponível. Execute a migração V2.57.1.',err);
       strategyController.setAccess(strategyAccessEngine.normalizeAccess({},{source:'supabase',remoteAvailable:false}));
     }
     return strategyAccess();
@@ -3627,9 +3627,16 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         const {data:aliasRows,error:aliasError}=await state.supabase.from('technician_aliases').select('user_id,alias_name,alias_key,source,active').eq('organization_id',state.user.organizationId).eq('active',true).order('alias_name');if(aliasError)throw aliasError;
         for(const a of aliasRows||[]){const list=aliasesByUser.get(a.user_id)||[];list.push(a.alias_name);aliasesByUser.set(a.user_id,list)}state.technicianAliasesAvailable=true;
       }catch(err){state.technicianAliasesAvailable=false;console.warn('Aliases de técnico indisponíveis; execute a migração V2.51.0 para preservar nomes históricos do CSV.',err)}
-      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:normalizeAccessRole(p.role),squadCode:normalizeAccessRole(p.role)==='super_admin'?null:(p.squads?.code||null),techName:p.technician_name||'',aliases:normalizedAliasValues(aliasesByUser.get(p.user_id)||[]),active:p.active!==false,permissions:p.permissions||{}}));
+      const strategyAccessByUser=new Map();
+      if(isSuperAdmin()){
+        try{
+          const {data:strategyRows,error:strategyError}=await state.supabase.from('strategy_access').select('user_id,can_view_strategy,can_view_aggregates,can_view_people_costs,can_edit_costs,can_close_competence,can_manage_access').eq('organization_id',state.user.organizationId);if(strategyError)throw strategyError;
+          for(const row of strategyRows||[])strategyAccessByUser.set(row.user_id,strategyAccessEngine.normalizeAccess(row,{source:'supabase',remoteAvailable:true}));
+        }catch(err){console.warn('Acessos estratégicos da listagem indisponíveis. Execute a migração V2.57.1.',err)}
+      }
+      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:normalizeAccessRole(p.role),squadCode:normalizeAccessRole(p.role)==='super_admin'?null:(p.squads?.code||null),techName:p.technician_name||'',aliases:normalizedAliasValues(aliasesByUser.get(p.user_id)||[]),active:p.active!==false,permissions:p.permissions||{},strategyAccess:strategyAccessByUser.get(p.user_id)||strategyAccessEngine.normalizeAccess({},{source:'supabase',remoteAvailable:true})}));
     }else{
-      state.technicianAliasesAvailable=true;state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:normalizeAccessRole(u.role),squadCode:normalizeAccessRole(u.role)==='super_admin'?null:(u.squadCode||null),techName:u.techName||'',aliases:normalizedAliasValues(u.aliases||[]),active:u.active!==false,permissions:u.permissions||{}}));
+      state.technicianAliasesAvailable=true;state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:normalizeAccessRole(u.role),squadCode:normalizeAccessRole(u.role)==='super_admin'?null:(u.squadCode||null),techName:u.techName||'',aliases:normalizedAliasValues(u.aliases||[]),active:u.active!==false,permissions:u.permissions||{},strategyAccess:strategyAccessEngine.demoAccessForRole(u.role,u.strategyAccess===true)}));
     }
     state.userDirectoryLoaded=true;
   }
@@ -3647,11 +3654,32 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     $('#usersCountLabel').textContent=`${list.length} ${list.length===1?'usuário':'usuários'}`;
     const all=scopedUserDirectory(),counts={super_admin:0,technician:0};all.forEach(u=>{const role=normalizeAccessRole(u.role);if(counts[role]!=null)counts[role]++});
     $('#userStats').innerHTML=`<div class="card user-stat"><span>Total no escopo</span><strong>${all.length}</strong></div><div class="card user-stat"><span>Administradores</span><strong>${counts.super_admin}</strong></div><div class="card user-stat"><span>Técnicos</span><strong>${counts.technician}</strong></div>`;
-    if(!list.length){$('#userRows').innerHTML='<tr><td colspan="6"><div class="users-empty">Nenhum usuário encontrado neste filtro.</div></td></tr>';return}
-    $('#userRows').innerHTML=list.sort((a,b)=>String(a.fullName).localeCompare(String(b.fullName),'pt-BR')).map(u=>{const manageable=canManageDirectoryUser(u),deletable=canDeleteDirectoryUser(u),canToggle=manageable&&u.role!=='super_admin';return `<tr><td><div class="user-cell"><span class="user-avatar table-avatar">${escapeHtml((u.fullName||'U').charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(u.fullName||'Sem nome')}</strong><small>${escapeHtml(u.email||'E-mail não informado')}</small></div></div></td><td><span class="role-pill ${u.role}">${escapeHtml(roleLabel(u.role))}</span></td><td>${u.squadCode?`Squad ${escapeHtml(u.squadCode)}`:'Todos'}</td><td>${escapeHtml(u.techName||'—')}</td><td><span class="status-dot ${u.active?'on':'off'}"></span>${u.active?'Ativo':'Inativo'}</td><td><div class="user-actions"><button class="table-action" data-edit-user="${escapeHtml(u.userId)}" ${manageable?'':'disabled'}>Editar</button><button class="table-action ${u.active?'warning':'success'}" data-toggle-user="${escapeHtml(u.userId)}" ${canToggle?'':'disabled'}>${u.active?'Inativar':'Reativar'}</button><button class="table-action danger" data-delete-user="${escapeHtml(u.userId)}" ${deletable?'':'disabled'}>Excluir</button></div></td></tr>`}).join('');
+    if(!list.length){$('#userRows').innerHTML='<tr><td colspan="7"><div class="users-empty">Nenhum usuário encontrado neste filtro.</div></td></tr>';return}
+    $('#userRows').innerHTML=list.sort((a,b)=>String(a.fullName).localeCompare(String(b.fullName),'pt-BR')).map(u=>{const manageable=canManageDirectoryUser(u),deletable=canDeleteDirectoryUser(u),canToggle=manageable&&u.role!=='super_admin',strategyEnabled=strategyAccessEngine.canView(u.strategyAccess);return `<tr><td><div class="user-cell"><span class="user-avatar table-avatar">${escapeHtml((u.fullName||'U').charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(u.fullName||'Sem nome')}</strong><small>${escapeHtml(u.email||'E-mail não informado')}</small></div></div></td><td><span class="role-pill ${u.role}">${escapeHtml(roleLabel(u.role))}</span></td><td>${u.squadCode?`Squad ${escapeHtml(u.squadCode)}`:'Todos'}</td><td>${escapeHtml(u.techName||'—')}</td><td><span class="status-dot ${u.active?'on':'off'}"></span>${u.active?'Ativo':'Inativo'}</td><td><label class="strategy-user-access-toggle" title="Somente Super Admin pode liberar ou revogar a Gestão Estratégica"><input type="checkbox" data-strategy-user-access="${escapeHtml(u.userId)}" ${strategyEnabled?'checked':''} ${isSuperAdmin()?'':'disabled'}><span>${strategyEnabled?'Liberado':'Bloqueado'}</span></label></td><td><div class="user-actions"><button class="table-action" data-edit-user="${escapeHtml(u.userId)}" ${manageable?'':'disabled'}>Editar</button><button class="table-action ${u.active?'warning':'success'}" data-toggle-user="${escapeHtml(u.userId)}" ${canToggle?'':'disabled'}>${u.active?'Inativar':'Reativar'}</button><button class="table-action danger" data-delete-user="${escapeHtml(u.userId)}" ${deletable?'':'disabled'}>Excluir</button></div></td></tr>`}).join('');
+    $$('[data-strategy-user-access]').forEach(input=>input.addEventListener('change',()=>setDirectoryStrategyAccess(input.dataset.strategyUserAccess,input.checked,input)));
     $$('[data-edit-user]').forEach(b=>b.addEventListener('click',()=>openEditUser(b.dataset.editUser)));
     $$('[data-toggle-user]').forEach(b=>b.addEventListener('click',()=>toggleUserActive(b.dataset.toggleUser)));
     $$('[data-delete-user]').forEach(b=>b.addEventListener('click',()=>deleteUser(b.dataset.deleteUser)));
+  }
+  async function setDirectoryStrategyAccess(userId,enabled,input=null){
+    const u=directoryUserById(userId);if(!u||!isSuperAdmin()){if(input)input.checked=!enabled;return toast('Somente Super Admin pode alterar o acesso à Gestão Estratégica.');}
+    if(input)input.disabled=true;
+    try{
+      if(state.supabase){
+        const payload={organization_id:state.user.organizationId,user_id:u.userId,can_view_strategy:enabled===true,can_view_aggregates:enabled===true,can_view_people_costs:false,can_edit_costs:false,can_close_competence:false,can_manage_access:false,updated_at:new Date().toISOString()};
+        const {error}=await state.supabase.from('strategy_access').upsert(payload,{onConflict:'organization_id,user_id'});if(error)throw error;
+        u.strategyAccess=strategyAccessEngine.normalizeAccess(payload,{source:'supabase',remoteAvailable:true});
+      }else{
+        u.strategyAccess=strategyAccessEngine.demoAccessForRole(u.role,enabled===true);u.strategyAccessEnabled=enabled===true;
+      }
+      if(String(u.userId)===String(state.user?.userId)){
+        if(!state.supabase)state.user.strategyAccess=enabled===true;
+        strategyController.setAccess(u.strategyAccess);applyPermissions();
+      }
+      await logAuditEvent('strategy.access_update',{entityType:'user',entityId:u.userId,description:`Acesso à Gestão Estratégica ${enabled?'liberado':'revogado'} para ${u.fullName}.`,metadata:{targetUserId:u.userId,enabled:enabled===true}});
+      renderUserRows();toast(`Gestão Estratégica ${enabled?'liberada':'revogada'} para ${u.fullName}.`);
+    }catch(err){console.error(err);if(input)input.checked=!enabled;toast(/row-level security|permission|policy|strategy_access/i.test(String(err?.message||err))?'Não foi possível alterar o acesso. Execute a migração V2.57.1 e tente novamente.':humanManageUserError(err));}
+    finally{if(input)input.disabled=false;}
   }
   function directoryUserById(userId){return (state.userDirectory||[]).find(u=>String(u.userId)===String(userId))||null}
   function canManageDirectoryUser(u){

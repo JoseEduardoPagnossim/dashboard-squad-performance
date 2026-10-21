@@ -4617,3 +4617,65 @@ on conflict (organization_id, user_id) do nothing;
 notify pgrst, 'reload schema';
 
 commit;
+
+-- V2.57.1 - acesso estratégico opt-in administrado exclusivamente por Super Admin.
+drop policy if exists strategy_access_select on public.strategy_access;
+create policy strategy_access_select on public.strategy_access
+for select to authenticated
+using (
+  organization_id = (select (public.current_profile()).organization_id)
+  and (user_id = (select auth.uid()) or public.is_super_admin())
+);
+
+drop policy if exists strategy_access_insert on public.strategy_access;
+create policy strategy_access_insert on public.strategy_access
+for insert to authenticated
+with check (
+  organization_id = (select (public.current_profile()).organization_id)
+  and public.is_super_admin()
+);
+
+drop policy if exists strategy_access_update on public.strategy_access;
+create policy strategy_access_update on public.strategy_access
+for update to authenticated
+using (
+  organization_id = (select (public.current_profile()).organization_id)
+  and public.is_super_admin()
+)
+with check (
+  organization_id = (select (public.current_profile()).organization_id)
+  and public.is_super_admin()
+);
+
+drop policy if exists strategy_access_delete on public.strategy_access;
+create policy strategy_access_delete on public.strategy_access
+for delete to authenticated
+using (
+  organization_id = (select (public.current_profile()).organization_id)
+  and public.is_super_admin()
+);
+
+-- Remove somente a concessão automática criada pelo bootstrap da V2.57.0.
+-- Em instalações novas o acesso estratégico também nasce desmarcado.
+update public.strategy_access sa
+set
+  can_view_strategy = false,
+  can_view_aggregates = false,
+  can_view_people_costs = false,
+  can_edit_costs = false,
+  can_close_competence = false,
+  can_manage_access = false,
+  updated_at = now()
+where sa.can_view_strategy = true
+  and sa.can_view_aggregates = true
+  and sa.can_view_people_costs = false
+  and sa.can_edit_costs = false
+  and sa.can_close_competence = false
+  and sa.can_manage_access = true
+  and exists (
+    select 1 from public.profiles p
+    where p.organization_id = sa.organization_id
+      and p.user_id = sa.user_id
+      and p.active = true
+      and p.role = 'super_admin'
+  );

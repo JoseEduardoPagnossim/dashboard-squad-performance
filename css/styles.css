@@ -2893,3 +2893,10 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 @media(max-width:480px){
   .period-picker-jump .ds-select-trigger{font-size:8px!important;padding-left:7px!important;padding-right:7px!important}
 }
+
+/* V2.57.1 - acesso estrategico por usuario */
+.strategy-user-access-toggle{display:inline-flex;align-items:center;gap:8px;min-width:118px;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer}
+.strategy-user-access-toggle input{flex:0 0 auto}
+.strategy-user-access-toggle input:checked+span{color:var(--text)}
+.strategy-user-access-toggle input:disabled{cursor:not-allowed;opacity:.55}
+.strategy-user-access-toggle:has(input:disabled){cursor:not-allowed;opacity:.72}

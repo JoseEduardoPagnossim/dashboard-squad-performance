@@ -26,11 +26,18 @@ test('perfil técnico não recebe acesso estratégico implicitamente', () => {
   assert.equal(access.canViewAggregates(technician), false);
 });
 
-test('super_admin demo recebe somente acesso mínimo da fundação', () => {
+test('super_admin também fica sem acesso estratégico por padrão', () => {
   const admin = access.demoAccessForRole('super_admin');
+  assert.equal(admin.canViewStrategy, false);
+  assert.equal(admin.canViewAggregates, false);
+  assert.equal(admin.canManageAccess, false);
+});
+
+test('acesso estratégico explícito libera somente visão e agregados', () => {
+  const admin = access.demoAccessForRole('super_admin', true);
   assert.equal(admin.canViewStrategy, true);
   assert.equal(admin.canViewAggregates, true);
-  assert.equal(admin.canManageAccess, true);
+  assert.equal(admin.canManageAccess, false);
   assert.equal(admin.canViewPeopleCosts, false);
   assert.equal(admin.canEditCosts, false);
   assert.equal(admin.canCloseCompetence, false);
