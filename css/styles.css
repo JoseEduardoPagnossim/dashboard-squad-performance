@@ -1679,7 +1679,7 @@ th{font-size:10.5px!important;line-height:1.35}td{font-size:12px!important;line-
 
 /* ===== V2.38.0 • Configurações, layout e permissões ===== */
 .permission-hidden,.layout-user-hidden{display:none!important}
-.personal-layout-root:not(.home-widget-grid){display:flex!important;flex-direction:column;min-width:0}
+.personal-layout-root:not(.home-widget-grid):not(.hidden){display:flex!important;flex-direction:column;min-width:0}
 .personal-layout-root>[style*="order"]{min-width:0}
 .personal-layout-root:not(.home-widget-grid).layout-density-compact>.card,
 .personal-layout-root:not(.home-widget-grid).layout-density-compact>section,

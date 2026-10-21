@@ -96,7 +96,7 @@ test('V2.45 oferece drag-and-drop e fallback de ordenacao nas Configuracoes', ()
 
 
 test('V2.45.1 preserva CSS Grid da Home mesmo com layout pessoal ativo', () => {
-  assert.match(css, /\.personal-layout-root:not\(\.home-widget-grid\)\{display:flex!important/);
+  assert.match(css, /\.personal-layout-root:not\(\.home-widget-grid\):not\(\.hidden\)\{display:flex!important/);
   assert.match(css, /\.home-widget-grid\{display:grid!important/);
   assert.match(css, /\.home-widget-grid\.personal-layout-root\{display:grid!important/);
   assert.match(css, /width:100%;min-width:0/);

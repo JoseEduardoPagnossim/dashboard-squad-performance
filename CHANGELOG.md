@@ -1,3 +1,13 @@
+## V2.56.6 — Visibilidade correta das subabas de Indicadores
+
+- Corrige o conflito entre `hidden` e `personal-layout-root` que podia reexibir o painel de Desempenho dentro da aba Qualidade.
+- O layout pessoal só aplica `display:flex` quando a raiz não estiver oculta.
+- Mantém intactos filtros, cálculos, carregamento de dados e regras da Qualidade.
+- Adiciona regressão específica para impedir que uma subaba oculta seja reexibida pelo sistema de layout.
+- Frontend-only; sem migration.
+
+Detalhes: `docs/VISIBILIDADE_SUBABAS_V2.56.6.md`.
+
 ## V2.56.5 — Filtro de Squad da Qualidade com recarga confirmada
 
 - Corrige a troca direta de Squad em **Indicadores > Qualidade** sem exigir passagem pela aba Desempenho.
