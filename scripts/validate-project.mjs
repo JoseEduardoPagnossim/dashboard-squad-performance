@@ -36,6 +36,8 @@ const filterSystemScriptPosition = index.indexOf('js/filter-system.js');
 const comparisonEngineScriptPosition = index.indexOf('js/comparison-engine.js');
 const financeReportEngineScriptPosition = index.indexOf('js/finance-report-engine.js');
 const designSystemScriptPosition = index.indexOf('js/design-system.js');
+const strategyEfficiencyScriptPosition = index.indexOf('js/strategy-efficiency.js');
+const strategyScriptPosition = index.indexOf('js/strategy.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (businessCalendarScriptPosition < 0) errors.push('index.html não carrega js/business-calendar.js.');
 if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
@@ -54,6 +56,9 @@ if (filterSystemScriptPosition < 0) errors.push('index.html não carrega js/filt
 if (comparisonEngineScriptPosition < 0) errors.push('index.html não carrega js/comparison-engine.js.');
 if (financeReportEngineScriptPosition < 0) errors.push('index.html não carrega js/finance-report-engine.js.');
 if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
+if (strategyEfficiencyScriptPosition < 0) errors.push('index.html não carrega js/strategy-efficiency.js.');
+if (strategyEfficiencyScriptPosition >= 0 && strategyScriptPosition >= 0 && strategyEfficiencyScriptPosition > strategyScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/strategy.js.');
+if (strategyEfficiencyScriptPosition >= 0 && appScriptPosition >= 0 && strategyEfficiencyScriptPosition > appScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/app.js.');
 if (appScriptPosition >= 0 && businessCalendarScriptPosition > appScriptPosition) errors.push('js/business-calendar.js deve ser carregado antes de js/app.js.');
 if (financeScriptPosition >= 0 && businessCalendarScriptPosition >= 0 && businessCalendarScriptPosition > financeScriptPosition) errors.push('js/business-calendar.js deve carregar antes de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
@@ -86,6 +91,8 @@ for (const id of ['view-audit','auditRows','confirmDialogPhraseInput','view-aler
 for (const required of [
   '.github/workflows/quality.yml',
   'package.json',
+  'tests/strategy-hardening-v2579.test.js',
+  'docs/HARDENING_ESTRATEGIA_V2.57.9.md',
   'tests/finance-rules.test.js',
   'tests/finance-advanced.test.js',
   'tests/audit-utils.test.js',
@@ -211,6 +218,23 @@ for (const file of walk(join(root, 'js')).filter(f => f.endsWith('.js'))) {
 }
 
 const appText = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const packageLock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
+const releaseVersion = String(packageJson.version || '').trim();
+if (!releaseVersion) errors.push('package.json não informa versão da aplicação.');
+if (String(packageLock.version || '') !== releaseVersion) errors.push(`package-lock.json divergente do package.json: ${packageLock.version || 'sem versão'} != ${releaseVersion}.`);
+if (String(packageLock.packages?.['']?.version || '') !== releaseVersion) errors.push(`package-lock root divergente do package.json: ${packageLock.packages?.['']?.version || 'sem versão'} != ${releaseVersion}.`);
+const appVersionMatch = appText.match(/const APP_VERSION = ['"]([^'"]+)['"]/);
+if (!appVersionMatch) errors.push('js/app.js não declara APP_VERSION.');
+else if (appVersionMatch[1] !== releaseVersion) errors.push(`APP_VERSION divergente do package.json: ${appVersionMatch[1]} != ${releaseVersion}.`);
+for (const match of index.matchAll(/(?:src|href)=['"]([^'"]+)\?v=([^'"]+)['"]/g)) {
+  const asset = match[1], version = match[2];
+  if (asset === 'js/audit-utils.js') continue;
+  if (version !== releaseVersion) errors.push(`Cache-buster divergente em ${asset}: ${version} != ${releaseVersion}.`);
+}
+for (const marker of [`login-version">V${releaseVersion}`,`sidebar-footer">V${releaseVersion}`,`GUIA COMPLETO • V${releaseVersion}`]) {
+  if (!index.includes(marker)) errors.push(`index.html não apresenta o marcador de release esperado: ${marker}.`);
+}
 if (appText.includes('squad-dashboard-v2.1.0')) errors.push('Referência ao nome antigo do repositório encontrada em js/app.js.');
 if (!appText.includes('window.SoftenChartEngine')) errors.push('js/app.js não depende explicitamente do motor central de gráficos.');
 if (!appText.includes('window.SoftenImportEngine')) errors.push('js/app.js não depende explicitamente do motor de importação.');

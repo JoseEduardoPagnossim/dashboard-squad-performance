@@ -1,3 +1,26 @@
+# Changelog
+
+## V2.58.0 — Fundação da Eficiência
+
+- abre a Fase 3 com uma seção própria de Eficiência dentro da Gestão Estratégica;
+- adiciona o motor `strategy-efficiency.js` com contrato de dados e regra `EF-0.1.0-foundation`;
+- conecta competência, Squad e comparação ao novo módulo sem herdar filtros operacionais;
+- publica indicadores-base de custo consolidado, atendimentos, FTE e cobertura da base;
+- valida a prontidão das próximas métricas sem antecipar suas fórmulas;
+- mantém custo por resolução pendente até existir uma definição/fonte explícita de resolução;
+- não exige migration nova e não altera bonificação, ranking ou importações operacionais.
+
+## V2.57.9 — Hardening, segurança e regressões
+
+- torna a normalização de permissões estratégica fail-closed quando o campo oficial do banco está presente;
+- limpa dados financeiros em memória imediatamente após alteração/revogação de acesso;
+- bloqueia composição, consolidação, insights e gráficos agregados na UI sem `can_view_aggregates`;
+- normaliza custos negativos e percentuais de rateio fora de 0..1;
+- consolida aliases de Squad no rateio antes da distribuição de centavos;
+- atualiza o motor estratégico para `SC-0.6.1`;
+- adiciona regressões específicas e trava de consistência de versão no validador;
+- não exige migration nova.
+
 ## V2.57.8 — Reimportação operacional substitutiva
 
 - corrige reimportação que herdava técnicos ausentes do CSV atual;
@@ -6,7 +29,6 @@
 - preserva o saneamento de identidades inativas/excluídas da V2.57.7;
 - não exige migration nova.
 
-# Changelog
 
 ## V2.57.7 — Saneamento de técnicos excluídos na reimportação
 

@@ -1,3 +1,15 @@
+## V2.58.0 — Fundação da Eficiência
+
+A Fase 3 começa com uma seção própria de Eficiência, um motor puro (`EF-0.1.0-foundation`) e um contrato de dados que reaproveita custos estratégicos e produção operacional sem alterar os módulos existentes. A tela mostra as bases disponíveis e a prontidão dos próximos indicadores, mantendo custo por resolução pendente até a definição explícita da fonte de resolução.
+
+Não há migration nova. Detalhes: `docs/EFICIENCIA_FUNDACAO_V2.58.0.md`.
+
+## V2.57.9 — Hardening, segurança e regressões
+
+A Gestão Estratégica encerra a Fase 2 com permissões fail-closed, limpeza imediata de dados financeiros após revogação de acesso, proteção de renderização agregada, normalização defensiva de valores e regressões automáticas para o motor de rateio. O CI também passa a bloquear versões divergentes entre package, lock, APP_VERSION e cache-busters.
+
+Não há migration nova. Detalhes: `docs/HARDENING_ESTRATEGIA_V2.57.9.md`.
+
 ## V2.57.8 — Reimportação operacional substitutiva
 
 A reimportação de uma competência aberta agora substitui a fotografia operacional daquele Squad/mês. Técnicos que não existem no CSV novo deixam de ser herdados do estado anterior; a persistência remove as linhas antigas de `technician_monthly`, preservando apenas configurações dos técnicos que continuam presentes no arquivo.

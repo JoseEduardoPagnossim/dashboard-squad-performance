@@ -1,0 +1,19 @@
+Dashboard Squad Performance — V2.58.0
+Fundação da Eficiência
+
+Validação final:
+- npm run validate: OK
+- referências locais verificadas: 40
+- JavaScript sintaticamente válido: OK
+- npm test: 449/449 aprovados
+- npm run check: OK
+- migration nova: não
+- motor de eficiência: EF-0.1.0-foundation
+
+Escopo desta versão:
+- nova seção Eficiência na Gestão Estratégica;
+- filtros estratégicos de competência, Squad e comparação reaproveitados;
+- indicadores-base: custo consolidado, atendimentos válidos, FTE e cobertura da base;
+- prontidão das métricas V2.58.1–V2.58.4;
+- resolução permanece sem fonte inventada e, portanto, pendente;
+- permissões financeiras continuam respeitando can_view_aggregates.

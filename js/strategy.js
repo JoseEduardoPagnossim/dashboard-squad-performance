@@ -11,9 +11,10 @@
   'use strict';
   if(!accessEngine||!dataEngine||!costEngine||!insightEngine)throw new Error('Dependências da Gestão Estratégica não carregadas.');
 
-  const VALID_SECTIONS=Object.freeze(['executive','costs','assumptions']);
+  const VALID_SECTIONS=Object.freeze(['executive','efficiency','costs','assumptions']);
   const SECTION_META=Object.freeze({
     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
+    efficiency:Object.freeze({label:'Eficiência',eyebrow:'FUNDAÇÃO DA EFICIÊNCIA'}),
     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });
@@ -30,7 +31,7 @@
   function createController(seed={}){
     let context=emptyContext(),financial=emptyFinancial();
     let state={section:normalizeSection(seed.section),competence:'',squadCode:'all',comparison:normalizeComparison(seed.comparison),access:accessEngine.normalizeAccess(seed.access||{}),initialized:false,financialLoaded:false,financialLoading:false,financialError:''};
-    function setAccess(access){state={...state,access:accessEngine.normalizeAccess(access)};return getState()}
+    function setAccess(access){financial=emptyFinancial();state={...state,access:accessEngine.normalizeAccess(access),financialLoaded:false,financialLoading:false,financialError:''};return getState()}
     function initializeContext(input={}){context=dataEngine.buildOperationalContext(input);state={...state,competence:normalizeCompetence(state.competence||seed.competence,context,financial),squadCode:normalizeSquad(state.squadCode||seed.squadCode,context),initialized:true};return getState()}
     function setFinancialData(input={}){financial=dataEngine.buildFinancialContext(input);state={...state,competence:normalizeCompetence(state.competence||seed.competence,context,financial),financialLoaded:true,financialLoading:false,financialError:''};return getState()}
     function setFinancialLoading(loading=true){state={...state,financialLoading:loading===true};return getState()}

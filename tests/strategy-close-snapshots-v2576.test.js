@@ -14,7 +14,7 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.57.6.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.57.7 publica fechamento e snapshot revisionado',()=>{
-  assert.equal(pkg.version,'2.57.8');
+  assert.equal(pkg.version,'2.58.0');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/strategyCloseCompetenceBtn/);
   assert.match(index,/strategyReopenCompetenceBtn/);
@@ -55,7 +55,7 @@ test('insights sinalizam snapshot fechado antes dos desvios executivos',()=>{
 });
 
 test('motor financeiro identifica a regra usada no snapshot',()=>{
-  assert.equal(engine.RULE_VERSION,'SC-0.6.0-snapshot');
+  assert.equal(engine.RULE_VERSION,'SC-0.6.1');
 });
 
 test('migration mantém histórico de snapshots e não sobrescreve revisões',()=>{

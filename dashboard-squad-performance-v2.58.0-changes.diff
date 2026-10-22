@@ -1,0 +1,1282 @@
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/CHANGELOG.md /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/CHANGELOG.md
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/CHANGELOG.md	2026-10-22 15:31:30.638104590 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/CHANGELOG.md	2026-10-22 15:34:30.772009692 +0000
+@@ -1,5 +1,15 @@
+ # Changelog
+ 
++## V2.58.0 — Fundação da Eficiência
++
++- abre a Fase 3 com uma seção própria de Eficiência dentro da Gestão Estratégica;
++- adiciona o motor `strategy-efficiency.js` com contrato de dados e regra `EF-0.1.0-foundation`;
++- conecta competência, Squad e comparação ao novo módulo sem herdar filtros operacionais;
++- publica indicadores-base de custo consolidado, atendimentos, FTE e cobertura da base;
++- valida a prontidão das próximas métricas sem antecipar suas fórmulas;
++- mantém custo por resolução pendente até existir uma definição/fonte explícita de resolução;
++- não exige migration nova e não altera bonificação, ranking ou importações operacionais.
++
+ ## V2.57.9 — Hardening, segurança e regressões
+ 
+ - torna a normalização de permissões estratégica fail-closed quando o campo oficial do banco está presente;
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/README.md /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/README.md
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/README.md	2026-10-22 15:31:30.638104590 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/README.md	2026-10-22 15:34:30.772172949 +0000
+@@ -1,3 +1,9 @@
++## V2.58.0 — Fundação da Eficiência
++
++A Fase 3 começa com uma seção própria de Eficiência, um motor puro (`EF-0.1.0-foundation`) e um contrato de dados que reaproveita custos estratégicos e produção operacional sem alterar os módulos existentes. A tela mostra as bases disponíveis e a prontidão dos próximos indicadores, mantendo custo por resolução pendente até a definição explícita da fonte de resolução.
++
++Não há migration nova. Detalhes: `docs/EFICIENCIA_FUNDACAO_V2.58.0.md`.
++
+ ## V2.57.9 — Hardening, segurança e regressões
+ 
+ A Gestão Estratégica encerra a Fase 2 com permissões fail-closed, limpeza imediata de dados financeiros após revogação de acesso, proteção de renderização agregada, normalização defensiva de valores e regressões automáticas para o motor de rateio. O CI também passa a bloquear versões divergentes entre package, lock, APP_VERSION e cache-busters.
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/css/strategy.css /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/css/strategy.css
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/css/strategy.css	2026-10-22 12:03:44.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/css/strategy.css	2026-10-22 15:34:30.770990483 +0000
+@@ -137,3 +137,26 @@
+ .strategy-user-access-stack{display:grid;gap:5px;min-width:150px}
+ .strategy-user-access-toggle.compact{font-size:10px;min-width:0}
+ @media(max-width:680px){.strategy-competence-actions{justify-content:flex-start;width:100%}.strategy-competence-actions .btn{width:100%}.strategy-snapshot-meta{align-items:flex-start;flex-direction:column}.strategy-snapshot-meta span{text-align:left}}
++
++
++/* V2.58.0 — Fundação da Eficiência */
++.strategy-efficiency-foundation-panel{grid-template-columns:minmax(0,1fr) 300px}
++.strategy-efficiency-foundation-card{display:grid;gap:18px}
++.strategy-efficiency-context-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
++.strategy-efficiency-context-grid>div{padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}
++.strategy-efficiency-context-grid span{display:block;color:var(--muted);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
++.strategy-efficiency-context-grid strong{display:block;margin-top:5px;font-size:.9rem}
++.strategy-efficiency-base-grid{margin:0}
++.strategy-efficiency-source-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));border-radius:14px;background:color-mix(in srgb,var(--accent) 5%,var(--panel2))}
++.strategy-efficiency-source-card h3{margin:3px 0 4px}.strategy-efficiency-source-card p{margin:0;color:var(--muted)}
++.strategy-efficiency-source-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
++.strategy-efficiency-source-flow span,.strategy-efficiency-source-flow strong{padding:7px 10px;border:1px solid var(--border);border-radius:999px;background:var(--panel);font-size:.76rem;white-space:nowrap}
++.strategy-efficiency-source-flow b{color:var(--muted)}
++.strategy-efficiency-readiness{display:grid;gap:12px}.strategy-efficiency-readiness-table{min-width:760px}
++.strategy-readiness-pill{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:.7rem;font-weight:900;white-space:nowrap}
++.strategy-readiness-pill.ready{color:var(--success);background:color-mix(in srgb,var(--success) 11%,transparent);border:1px solid color-mix(in srgb,var(--success) 28%,var(--border))}
++.strategy-readiness-pill.pending{color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 28%,var(--border))}
++.strategy-efficiency-contract{padding:16px 18px;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}
++.strategy-efficiency-contract h3{margin:3px 0 8px}.strategy-efficiency-contract ul{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px}
++@media(max-width:1180px){.strategy-efficiency-foundation-panel{grid-template-columns:1fr}.strategy-efficiency-context-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-efficiency-source-card{align-items:flex-start;flex-direction:column}.strategy-efficiency-source-flow{justify-content:flex-start}}
++@media(max-width:620px){.strategy-efficiency-context-grid{grid-template-columns:1fr}.strategy-efficiency-source-flow{display:grid;grid-template-columns:1fr}.strategy-efficiency-source-flow b{display:none}.strategy-efficiency-source-flow span,.strategy-efficiency-source-flow strong{text-align:center}}
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/docs/EFICIENCIA_FUNDACAO_V2.58.0.md /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/docs/EFICIENCIA_FUNDACAO_V2.58.0.md
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/docs/EFICIENCIA_FUNDACAO_V2.58.0.md	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/docs/EFICIENCIA_FUNDACAO_V2.58.0.md	2026-10-22 15:34:30.771562087 +0000
+@@ -0,0 +1,43 @@
++# V2.58.0 — Fundação da Eficiência
++
++## Objetivo
++Abrir a Fase 3 do roadmap sem alterar o motor operacional nem antecipar as fórmulas das próximas versões. A versão cria a camada de eficiência, conecta os filtros estratégicos existentes e valida a disponibilidade das bases que alimentarão custo por atendimento, custo por resolução e produtividade econômica.
++
++## Estrutura
++- nova seção `Eficiência` dentro da Gestão Estratégica;
++- rota `?page=strategy&section=efficiency`;
++- novo motor puro `js/strategy-efficiency.js`;
++- regra da fundação `EF-0.1.0-foundation`;
++- reaproveitamento dos filtros estratégicos de competência, Squad e comparação;
++- nenhuma herança dos filtros operacionais globais.
++
++## Indicadores-base
++A V2.58.0 expõe somente as entradas consolidadas necessárias para a Fase 3:
++- custo consolidado;
++- atendimentos válidos;
++- FTE atribuído;
++- cobertura da base (financeiro, produção, FTE e qualidade).
++
++Os cálculos finais permanecem versionados no roadmap:
++- V2.58.1 — custo por atendimento;
++- V2.58.2 — custo por resolução;
++- V2.58.3 — produtividade econômica por técnico;
++- V2.58.4 — produtividade econômica por Squad.
++
++## Contrato de dados
++A fundação trata `resolutions` como fonte ainda indisponível. Isso é intencional: a V2.58.0 não inventa uma definição de resolução nem reaproveita atendimento como substituto. O indicador de custo por resolução permanece `pending` até a fonte e a regra serem formalizadas.
++
++## Segurança e isolamento
++- os valores financeiros continuam protegidos por `can_view_aggregates`;
++- a nova seção não cria acesso a custos individuais;
++- não há nova migration;
++- nenhum cálculo de bonificação, ranking, qualidade ou importação operacional é alterado;
++- a fundação usa somente dados já disponíveis nas camadas estratégica e operacional.
++
++## Critério de aceite
++1. A rota `strategy/efficiency` abre sem filtros operacionais globais.
++2. Competência, Squad e comparação alteram o mesmo estado estratégico já existente.
++3. Sem permissão agregada, o custo consolidado permanece protegido.
++4. Sem atendimentos/FTE/qualidade, a tela sinaliza base parcial sem fabricar valores.
++5. Custo por resolução permanece pendente até a V2.58.2.
++6. `npm run check` deve concluir sem falhas.
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/index.html /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/index.html
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/index.html	2026-10-22 15:31:30.634104504 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/index.html	2026-10-22 15:35:20.959066816 +0000
+@@ -15,10 +15,10 @@
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
+-  <link rel="stylesheet" href="css/styles.css?v=2.57.9" />
+-  <link rel="stylesheet" href="css/design-system.css?v=2.57.9" />
+-  <link rel="stylesheet" href="css/presentation.css?v=2.57.9" />
+-  <link rel="stylesheet" href="css/strategy.css?v=2.57.9" />
++  <link rel="stylesheet" href="css/styles.css?v=2.58.0" />
++  <link rel="stylesheet" href="css/design-system.css?v=2.58.0" />
++  <link rel="stylesheet" href="css/presentation.css?v=2.58.0" />
++  <link rel="stylesheet" href="css/strategy.css?v=2.58.0" />
+ </head>
+ <body>
+   <div class="bg-layer"></div>
+@@ -75,7 +75,7 @@
+           </form>
+           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
+         </div>
+-        <small class="login-version">V2.57.9 • Hardening, segurança e regressões</small>
++        <small class="login-version">V2.58.0 • Fundação da Eficiência</small>
+       </section>
+     </div>
+   </section>
+@@ -170,7 +170,7 @@
+         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
+       </div>
+       <audio id="themeAudio" loop preload="none"></audio>
+-      <div class="sidebar-footer">V2.57.9 • Squads A, B, D e E</div>
++      <div class="sidebar-footer">V2.58.0 • Squads A, B, D e E</div>
+     </aside>
+     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
+ 
+@@ -1218,7 +1218,7 @@
+       </section>
+       <section id="view-help" class="view">
+         <div class="how-header how-header-current">
+-          <div><span class="eyebrow">GUIA COMPLETO • V2.57.9</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
++          <div><span class="eyebrow">GUIA COMPLETO • V2.58.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
+         </div>
+ 
+@@ -1383,11 +1383,11 @@
+         <div class="strategy-shell">
+           <section class="strategy-hero">
+             <div>
+-              <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 2</span>
++              <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 3</span>
+               <h2 id="strategySectionTitle">Resultado Executivo</h2>
+-              <p>Camada estratégica isolada do operacional. A V2.57.9 reforça permissões, limpeza de dados sensíveis em memória, integridade dos rateios e regressões automáticas da Gestão Estratégica.</p>
++              <p>Camada estratégica isolada do operacional. A V2.58.0 abre a Fase 3 com a fundação dos indicadores de eficiência, reaproveitando custos e produção sem alterar o motor operacional.</p>
+             </div>
+-            <span class="strategy-foundation-badge">Resultado Executivo ativo</span>
++            <span class="strategy-foundation-badge">Fase 3 • Fundação da Eficiência</span>
+           </section>
+ 
+           <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.7</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
+@@ -1401,6 +1401,7 @@
+ 
+           <nav class="strategy-tabs" role="tablist" aria-label="Seções da Gestão Estratégica">
+             <button type="button" class="strategy-tab is-active" data-strategy-section="executive" role="tab" aria-selected="true">Resultado Executivo</button>
++            <button type="button" class="strategy-tab" data-strategy-section="efficiency" role="tab" aria-selected="false">Eficiência</button>
+             <button type="button" class="strategy-tab" data-strategy-section="costs" role="tab" aria-selected="false">Custos &amp; Eficiência</button>
+             <button type="button" class="strategy-tab" data-strategy-section="assumptions" role="tab" aria-selected="false">Premissas</button>
+           </nav>
+@@ -1460,6 +1461,40 @@
+             <aside class="strategy-insight strategy-executive-aside"><strong id="strategyFoundationInsightTitle">Resultado Executivo ativo</strong><p id="strategyFoundationInsightText">Custos, produção e qualidade passam a ser lidos no mesmo contexto para apoiar decisões sem alterar o operacional.</p></aside>
+           </div>
+ 
++          <div class="strategy-panel strategy-efficiency-foundation-panel hidden" data-strategy-panel="efficiency">
++            <article class="strategy-placeholder-card strategy-wide-card strategy-efficiency-foundation-card">
++              <span class="eyebrow">FUNDAÇÃO DA EFICIÊNCIA • V2.58.0</span>
++              <div class="strategy-section-heading"><div><h3>Base econômica da operação</h3><p>Esta versão estrutura as entradas, o contexto e a prontidão dos indicadores da Fase 3. Os cálculos finais de custo por atendimento, custo por resolução e produtividade econômica entram nas próximas versões.</p></div><span id="strategyEfficiencyFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
++
++              <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à eficiência">
++                <div><span>Competência</span><strong id="strategyEfficiencyContextCompetence">—</strong></div>
++                <div><span>Squad</span><strong id="strategyEfficiencyContextSquad">—</strong></div>
++                <div><span>Comparação</span><strong id="strategyEfficiencyContextComparison">—</strong></div>
++                <div><span>Regra</span><strong id="strategyEfficiencyRuleVersion">EF-0.1.0-foundation</strong></div>
++              </div>
++
++              <div class="strategy-metric-grid strategy-efficiency-base-grid">
++                <div class="strategy-metric"><span>Custo consolidado</span><strong id="strategyEfficiencyBaseCost">—</strong><small>base financeira existente</small></div>
++                <div class="strategy-metric"><span>Atendimentos válidos</span><strong id="strategyEfficiencyBaseAttendance">—</strong><small>produção no escopo estratégico</small></div>
++                <div class="strategy-metric"><span>FTE atribuído</span><strong id="strategyEfficiencyBaseFte">—</strong><small>base para produtividade econômica</small></div>
++                <div class="strategy-metric"><span>Cobertura da base</span><strong id="strategyEfficiencyCoverage">0%</strong><small id="strategyEfficiencyCoverageDetail">0 de 4 bases disponíveis</small></div>
++              </div>
++
++              <section class="strategy-efficiency-source-card">
++                <div><span class="eyebrow">INTEGRAÇÃO</span><h3>Fontes conectadas</h3><p id="strategyEfficiencySourceStatus">Aguardando leitura das bases.</p></div>
++                <div class="strategy-efficiency-source-flow"><span>Custos estratégicos</span><b>+</b><span>Produção operacional</span><b>→</b><strong>Eficiência</strong></div>
++              </section>
++
++              <section class="strategy-efficiency-readiness">
++                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Prontidão dos próximos indicadores</h3><p>A fundação valida se cada métrica futura já possui os dados mínimos necessários, sem antecipar sua fórmula final.</p></div></div>
++                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-efficiency-readiness-table"><thead><tr><th>Indicador</th><th>Versão</th><th>Base</th><th>Pendências</th></tr></thead><tbody id="strategyEfficiencyReadinessRows"><tr><td colspan="4" class="muted">Carregando prontidão...</td></tr></tbody></table></div>
++              </section>
++
++              <section class="strategy-efficiency-contract"><div><span class="eyebrow">CONTRATO DE DADOS</span><h3>Regras da fundação</h3></div><ul id="strategyEfficiencyWarnings"><li>Carregando validações da base.</li></ul></section>
++            </article>
++            <aside class="strategy-insight"><strong>Sem duplicar motores</strong><p>A Eficiência consome a consolidação financeira da Fase 2 e a produção operacional já existente. Nenhum cálculo de bonificação ou regra operacional é alterado nesta fundação.</p></aside>
++          </div>
++
+           <div class="strategy-panel hidden" data-strategy-panel="costs">
+             <article class="strategy-placeholder-card strategy-wide-card">
+               <span class="eyebrow">CUSTOS E EFICIÊNCIA</span>
+@@ -1936,29 +1971,30 @@
+   <script src="js/audit-utils.js?v=2.29.9"></script>
+   <script src="js/demo-users.js"></script>
+   <script src="js/default-data.js"></script>
+-  <script src="js/business-calendar.js?v=2.57.9"></script>
+-  <script src="js/finance-rules.js?v=2.57.9"></script>
+-  <script src="js/finance-advanced.js?v=2.57.9"></script>
+-  <script src="js/tv-engine.js?v=2.57.9"></script>
+-  <script src="js/presentation.js?v=2.57.9"></script>
+-  <script src="js/chart-engine.js?v=2.57.9"></script>
+-  <script src="js/chart-export.js?v=2.57.9"></script>
+-  <script src="js/import-engine.js?v=2.57.9"></script>
+-  <script src="js/predictive-engine.js?v=2.57.9"></script>
+-  <script src="js/alert-engine.js?v=2.57.9"></script>
+-  <script src="js/settings-engine.js?v=2.57.9"></script>
+-  <script src="js/performance-engine.js?v=2.57.9"></script>
+-  <script src="js/navigation-engine.js?v=2.57.9"></script>
+-  <script src="js/workspace-engine.js?v=2.57.9"></script>
+-  <script src="js/filter-system.js?v=2.57.9"></script>
+-  <script src="js/comparison-engine.js?v=2.57.9"></script>
+-  <script src="js/finance-report-engine.js?v=2.57.9"></script>
+-  <script src="js/design-system.js?v=2.57.9"></script>
+-  <script src="js/strategy-access.js?v=2.57.9"></script>
+-  <script src="js/strategy-data.js?v=2.57.9"></script>
+-  <script src="js/strategy-cost-engine.js?v=2.57.9"></script>
+-  <script src="js/strategy-insights.js?v=2.57.9"></script>
+-  <script src="js/strategy.js?v=2.57.9"></script>
+-  <script src="js/app.js?v=2.57.9"></script>
++  <script src="js/business-calendar.js?v=2.58.0"></script>
++  <script src="js/finance-rules.js?v=2.58.0"></script>
++  <script src="js/finance-advanced.js?v=2.58.0"></script>
++  <script src="js/tv-engine.js?v=2.58.0"></script>
++  <script src="js/presentation.js?v=2.58.0"></script>
++  <script src="js/chart-engine.js?v=2.58.0"></script>
++  <script src="js/chart-export.js?v=2.58.0"></script>
++  <script src="js/import-engine.js?v=2.58.0"></script>
++  <script src="js/predictive-engine.js?v=2.58.0"></script>
++  <script src="js/alert-engine.js?v=2.58.0"></script>
++  <script src="js/settings-engine.js?v=2.58.0"></script>
++  <script src="js/performance-engine.js?v=2.58.0"></script>
++  <script src="js/navigation-engine.js?v=2.58.0"></script>
++  <script src="js/workspace-engine.js?v=2.58.0"></script>
++  <script src="js/filter-system.js?v=2.58.0"></script>
++  <script src="js/comparison-engine.js?v=2.58.0"></script>
++  <script src="js/finance-report-engine.js?v=2.58.0"></script>
++  <script src="js/design-system.js?v=2.58.0"></script>
++  <script src="js/strategy-access.js?v=2.58.0"></script>
++  <script src="js/strategy-data.js?v=2.58.0"></script>
++  <script src="js/strategy-cost-engine.js?v=2.58.0"></script>
++  <script src="js/strategy-efficiency.js?v=2.58.0"></script>
++  <script src="js/strategy-insights.js?v=2.58.0"></script>
++  <script src="js/strategy.js?v=2.58.0"></script>
++  <script src="js/app.js?v=2.58.0"></script>
+ </body>
+ </html>
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/app.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/app.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/app.js	2026-10-22 15:31:30.634104504 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/app.js	2026-10-22 15:34:30.768167762 +0000
+@@ -49,6 +49,8 @@
+   if(!strategyDataEngine) throw new Error('SoftenStrategyData não carregado. Verifique js/strategy-data.js.');
+   const strategyCostEngine = window.SoftenStrategyCostEngine;
+   if(!strategyCostEngine) throw new Error('SoftenStrategyCostEngine não carregado. Verifique js/strategy-cost-engine.js.');
++  const strategyEfficiencyEngine = window.SoftenStrategyEfficiency;
++  if(!strategyEfficiencyEngine) throw new Error('SoftenStrategyEfficiency não carregado. Verifique js/strategy-efficiency.js.');
+   const strategyInsightsEngine = window.SoftenStrategyInsights;
+   if(!strategyInsightsEngine) throw new Error('SoftenStrategyInsights não carregado. Verifique js/strategy-insights.js.');
+   const strategyEngine = window.SoftenStrategy;
+@@ -68,7 +70,7 @@
+   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
+   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
+   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
+-  const APP_VERSION = '2.57.9';
++  const APP_VERSION = '2.58.0';
+   const AVATAR_BUCKET = 'user-avatars';
+   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
+   const AVATAR_TARGET_BYTES = 100*1024;
+@@ -266,6 +268,7 @@
+     {id:'admin-finance',label:'Bonificação',description:'Financeiro e memória de cálculo',group:'Gestão',icon:'R$',view:'admin',adminSection:'finance',permission:'finance.view',adminOnly:true,keywords:'financeiro bonificação comissão férias'},
+     {id:'admin-costs',label:'Custos',description:'Custos operacionais do suporte',group:'Gestão',icon:'⏱',view:'admin',adminSection:'costs',permission:'costs.view',adminOnly:true,keywords:'custos folha horas operação'},
+     {id:'strategy-executive',label:'Gestão Estratégica',description:'Resultado executivo, custos e eficiência econômica',group:'Estratégia',icon:'◇',view:'strategy',strategySection:'executive',strategyAccess:true,keywords:'estratégia resultado executivo custos eficiência diretoria'},
++    {id:'strategy-efficiency',label:'Estratégia · Eficiência',description:'Fundação dos indicadores econômicos da operação',group:'Estratégia',icon:'↗',view:'strategy',strategySection:'efficiency',strategyAccess:true,keywords:'estratégia eficiência custo atendimento resolução produtividade econômica'},
+     {id:'strategy-costs',label:'Estratégia · Custos & Eficiência',description:'Fundação da análise econômica do suporte',group:'Estratégia',icon:'R$',view:'strategy',strategySection:'costs',strategyAccess:true,keywords:'estratégia custos eficiência financeiro'},
+     {id:'strategy-assumptions',label:'Estratégia · Premissas',description:'Base de competências, pessoas, custos e rateios',group:'Estratégia',icon:'▤',view:'strategy',strategySection:'assumptions',strategyAccess:true,keywords:'estratégia premissas competência pessoas rateio'},
+     {id:'feedbacks',label:'Feedbacks',description:'Gestão de feedbacks dos técnicos',group:'Pessoas',icon:'✎',view:'feedbacks',permission:'feedback.manage',adminOnly:true,keywords:'feedback pessoas técnico avaliação'},
+@@ -3677,6 +3680,31 @@
+   async function addStrategyOperationalCost(){if(!strategyEditAccess())return toast('Seu usuário não possui permissão para editar custos estratégicos.');if(strategyCompetenceLocked())return toast('Esta competência está fechada. Reabra antes de alterar os custos.');const description=String($('#strategyNewOperationalDescription')?.value||'').trim(),category=$('#strategyNewOperationalCategory')?.value||'Outros',amount=strategyParseNumber($('#strategyNewOperationalAmount')?.value),scopeType=$('#strategyNewOperationalScope')?.value||'organization',squadCode=String($('#strategyNewOperationalSquad')?.value||'').trim().toUpperCase(),allocationMethod=scopeType==='squad'?'direct':($('#strategyNewOperationalAllocation')?.value||'fte');if(!description)return toast('Informe a descrição do custo operacional.');if(amount<=0)return toast('Informe um valor maior que zero.');if(scopeType==='squad'&&!squadCode)return toast('Selecione o Squad do custo direto.');try{const comp=await ensureStrategyCompetenceRecord(strategyController.getState().competence),payload={organization_id:state.user.organizationId,competence_id:comp.id,description,category,amount,scope_type:scopeType,squad_code:scopeType==='squad'?squadCode:null,allocation_method:allocationMethod,source:'manual',created_by:state.user.userId,updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('strategy_operational_costs').insert(payload).select('id,competence_id,description,category,amount,scope_type,squad_code,allocation_method,recurring,source,notes,created_at,updated_at').single();if(error)throw error;await persistStrategyOperationalAllocations(strategyDataEngine.normalizeOperationalCostRow(data));strategyInvalidateFinance();await loadStrategyFinanceData({force:true});$('#strategyNewOperationalDescription').value='';$('#strategyNewOperationalAmount').value='';toast('Custo operacional adicionado e rateado.');}catch(err){console.error(err);toast(/strategy_operational_costs|strategy_cost_allocations|permission|row-level/i.test(String(err?.message||err))?'Não foi possível salvar o custo operacional. Execute a migração V2.57.4 e valide o acesso estratégico.':String(err?.message||err));}}
+   async function saveStrategyOperationalCosts(){if(!strategyEditAccess())return toast('Seu usuário não possui permissão para editar custos estratégicos.');if(strategyCompetenceLocked())return toast('Esta competência está fechada. Reabra antes de alterar os custos.');const rows=[...$$('#strategyOperationalRows [data-strategy-operational-row]')];if(!rows.length)return toast('Nenhum custo operacional para salvar.');try{for(const tr of rows){const id=tr.dataset.strategyOperationalRow,get=f=>tr.querySelector(`[data-strategy-op-field="${f}"]`),description=String(get('description')?.value||'').trim(),category=get('category')?.value||'Outros',amount=strategyParseNumber(get('amount')?.value),scopeType=get('scopeType')?.value||'organization',squadCode=String(get('squadCode')?.value||'').trim().toUpperCase(),allocationMethod=scopeType==='squad'?'direct':(get('allocationMethod')?.value||'fte');if(!description||amount<=0)throw new Error('Descrição e valor são obrigatórios em todos os custos operacionais.');const payload={description,category,amount,scope_type:scopeType,squad_code:scopeType==='squad'?(squadCode||null):null,allocation_method:allocationMethod,updated_by:state.user.userId,updated_at:new Date().toISOString()};const {data,error}=await state.supabase.from('strategy_operational_costs').update(payload).eq('id',id).eq('organization_id',state.user.organizationId).select('id,competence_id,description,category,amount,scope_type,squad_code,allocation_method,recurring,source,notes,created_at,updated_at').single();if(error)throw error;await persistStrategyOperationalAllocations(strategyDataEngine.normalizeOperationalCostRow(data));}strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast('Custos operacionais e rateios recalculados.');}catch(err){console.error(err);toast(String(err?.message||err));}}
+ 
++  function strategyEfficiencyFoundation(vm,displayAggregate){
++    const operational=strategyOperationalSnapshot(vm.state.competence,vm.state.squadCode),history=strategyExecutiveHistory(vm),current=history.find(row=>row.competence===vm.state.competence),attendance=current?Number(current.attendance||0):Number(operational.attendance||0),evaluationRate=current&&current.evaluationRate!=null?Number(current.evaluationRate):(operational.evaluationRate!=null?Number(operational.evaluationRate):null),financialReady=displayAggregate&&vm.state.financialLoaded&&!vm.state.financialError;
++    return strategyEfficiencyEngine.buildFoundation({
++      scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison,competenceStatus:vm.competenceRecord?.status||'draft'},
++      metrics:{totalCost:financialReady?vm.summary.totalCost:0,peopleCost:financialReady?vm.summary.peopleCost:0,operationalCost:financialReady?vm.summary.operationalCost:0,attendance,fte:financialReady?vm.summary.fte:0,peopleCount:financialReady?vm.summary.peopleCount:0,evaluationRate},
++      availability:{financial:financialReady,attendance:attendance>0,fte:financialReady&&Number(vm.summary.fte||0)>0,quality:evaluationRate!=null,resolutions:false}
++    });
++  }
++  function strategyReadinessLabel(status){return status==='ready'?'Base pronta':'Aguardando dado'}
++  function renderStrategyEfficiency(vm,displayAggregate){
++    const foundation=strategyEfficiencyFoundation(vm,displayAggregate),set=(id,text)=>{const el=$(id);if(el)el.textContent=text},statusMap={ready:['BASE PRONTA','good'],partial:['BASE PARCIAL','warn'],blocked:['BASE BLOQUEADA','bad']},status=statusMap[foundation.status]||['SEM BASE','neutral'];
++    set('#strategyEfficiencyBaseCost',foundation.availability.financial?strategyMoney(foundation.metrics.totalCost):'—');
++    set('#strategyEfficiencyBaseAttendance',foundation.availability.attendance?Number(foundation.metrics.attendance).toLocaleString('pt-BR'):'—');
++    set('#strategyEfficiencyBaseFte',foundation.availability.fte?strategyNumber(foundation.metrics.fte,2):'—');
++    set('#strategyEfficiencyCoverage',`${Math.round(foundation.coverage.ratio*100)}%`);
++    set('#strategyEfficiencyCoverageDetail',`${foundation.coverage.count} de ${foundation.coverage.total} bases disponíveis`);
++    set('#strategyEfficiencyRuleVersion',foundation.ruleVersion);
++    set('#strategyEfficiencyContextCompetence',vm.state.competence?strategyDataEngine.competenceLabel(vm.state.competence):'Sem competência');
++    set('#strategyEfficiencyContextSquad',vm.state.squadCode==='all'?'Todos os Squads':`Squad ${vm.state.squadCode}`);
++    set('#strategyEfficiencyContextComparison',vm.state.comparison==='previous'?'Mês anterior':vm.state.comparison==='3m'?'3 meses':vm.state.comparison==='6m'?'6 meses':'12 meses');
++    const badge=$('#strategyEfficiencyFoundationStatus');if(badge){badge.textContent=status[0];badge.className=`strategy-efficiency-status ${status[1]}`;}
++    const readiness=$('#strategyEfficiencyReadinessRows');if(readiness)readiness.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status}">${strategyReadinessLabel(item.status)}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>({financial:'custo consolidado',attendance:'atendimentos',fte:'FTE',quality:'qualidade',resolutions:'resoluções'})[key]||key).join(', ')):'Base mínima disponível'}</td></tr>`).join('');
++    const warnings=$('#strategyEfficiencyWarnings');if(warnings)warnings.innerHTML=foundation.warnings.length?foundation.warnings.map(text=>`<li>${escapeHtml(text)}</li>`).join(''):'<li>As bases mínimas atuais estão disponíveis. Os cálculos derivados permanecem reservados às próximas versões da Fase 3.</li>';
++    const source=$('#strategyEfficiencySourceStatus');if(source)source.textContent=foundation.availability.financial&&foundation.availability.attendance?'Financeiro + operacional conectados':foundation.availability.financial?'Financeiro conectado; produção pendente':foundation.availability.attendance?'Produção conectada; financeiro pendente':'Bases ainda incompletas';
++  }
+   function renderStrategy({skipLoad=false}={}){
+     if(!canViewStrategy())return;
+     strategyController.initializeContext({squads:state.squads});const vm=strategyController.viewModel(),section=vm.state.section,canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),displayAggregate=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError,canPeople=strategyPeopleAccess(),canEdit=strategyEditAccess(),canClose=strategyCloseAccess(),locked=strategyCompetenceLocked(vm),effectiveEdit=canEdit&&!locked;
+@@ -3705,6 +3733,7 @@
+     if($('#strategyExecutiveHeadcount'))$('#strategyExecutiveHeadcount').textContent=displayAggregate?String(vm.summary.peopleCount||0):'—';
+     if($('#strategyExecutiveStatus'))$('#strategyExecutiveStatus').textContent=locked&&vm.competenceRecord?.snapshotRevision?`${compStatus} • Snapshot #${vm.competenceRecord.snapshotRevision}`:compStatus;
+     renderStrategyExecutive(vm,displayAggregate);
++    renderStrategyEfficiency(vm,displayAggregate);
+     if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
+     if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
+     if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/navigation-engine.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/navigation-engine.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/navigation-engine.js	2026-10-21 19:58:37.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/navigation-engine.js	2026-10-22 15:34:30.748410432 +0000
+@@ -6,7 +6,7 @@
+   const ROUTE_PARAMS=['page','section','module','indicator','squad','month','tech','from','to'];
+   const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','strategy','settings','profile','my-feedbacks','help']);
+   const VALID_ADMIN_SECTIONS=new Set(['operation','finance','costs','appearance']);
+-  const VALID_STRATEGY_SECTIONS=new Set(['executive','costs','assumptions']);
++  const VALID_STRATEGY_SECTIONS=new Set(['executive','efficiency','costs','assumptions']);
+   const VALID_SETTINGS_MODULES=new Set(['all','personalization','operation','finance','appearance','presentation','access','system']);
+   const VALID_INDICATOR_SECTIONS=new Set(['performance','quality','financial-impact','business-days','detail']);
+   function text(value){return String(value??'').trim()}
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/strategy-efficiency.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/strategy-efficiency.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/strategy-efficiency.js	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/strategy-efficiency.js	2026-10-22 15:33:20.064453410 +0000
+@@ -0,0 +1,72 @@
++(function(root,factory){
++  const api=factory();
++  if(typeof module==='object'&&module.exports)module.exports=api;
++  if(root)root.SoftenStrategyEfficiency=api;
++})(typeof window!=='undefined'?window:globalThis,function(){
++  'use strict';
++
++  const RULE_VERSION='EF-0.1.0-foundation';
++  const COVERAGE_KEYS=Object.freeze(['financial','attendance','fte','quality']);
++  const METRIC_CATALOG=Object.freeze([
++    Object.freeze({id:'cost-per-attendance',label:'Custo por atendimento',version:'V2.58.1',requires:Object.freeze(['financial','attendance'])}),
++    Object.freeze({id:'cost-per-resolution',label:'Custo por resolução',version:'V2.58.2',requires:Object.freeze(['financial','resolutions'])}),
++    Object.freeze({id:'economic-productivity-person',label:'Produtividade econômica por técnico',version:'V2.58.3',requires:Object.freeze(['financial','attendance','fte'])}),
++    Object.freeze({id:'economic-productivity-squad',label:'Produtividade econômica por Squad',version:'V2.58.4',requires:Object.freeze(['financial','attendance','fte'])})
++  ]);
++
++  function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
++  function bool(value){return value===true}
++  function text(value,fallback=''){const out=String(value??'').trim();return out||fallback}
++  function percent(value){return Math.max(0,Math.min(1,num(value)))}
++  function normalizeScope(raw={}){
++    const competence=text(raw.competence),squadCode=text(raw.squadCode,'all').toUpperCase();
++    return Object.freeze({competence,squadCode:squadCode==='ALL'?'all':squadCode,comparison:text(raw.comparison,'previous'),competenceStatus:text(raw.competenceStatus,'draft')});
++  }
++  function normalizeAvailability(raw={}){
++    return Object.freeze({
++      financial:bool(raw.financial),
++      attendance:bool(raw.attendance),
++      fte:bool(raw.fte),
++      quality:bool(raw.quality),
++      resolutions:bool(raw.resolutions)
++    });
++  }
++  function normalizeMetrics(raw={}){
++    const evaluation=Number(raw.evaluationRate);
++    return Object.freeze({
++      totalCost:Math.max(0,num(raw.totalCost)),
++      peopleCost:Math.max(0,num(raw.peopleCost)),
++      operationalCost:Math.max(0,num(raw.operationalCost)),
++      attendance:Math.max(0,num(raw.attendance)),
++      fte:Math.max(0,num(raw.fte)),
++      peopleCount:Math.max(0,Math.round(num(raw.peopleCount))),
++      evaluationRate:Number.isFinite(evaluation)?percent(evaluation):null,
++      resolutions:Math.max(0,num(raw.resolutions))
++    });
++  }
++  function coverageScore(availability={}){
++    const normalized=normalizeAvailability(availability),count=COVERAGE_KEYS.filter(key=>normalized[key]).length,total=COVERAGE_KEYS.length;
++    return Object.freeze({count,total,ratio:total?count/total:0,label:`${count}/${total}`});
++  }
++  function metricReadiness(metric,availability){
++    const missing=(metric.requires||[]).filter(key=>!availability[key]);
++    return Object.freeze({...metric,status:missing.length?'pending':'ready',missing:Object.freeze(missing)});
++  }
++  function warnings(scope,metrics,availability){
++    const out=[];
++    if(!scope.competence)out.push('Selecione uma competência estratégica.');
++    if(!availability.financial)out.push('A consolidação financeira da competência ainda não está disponível.');
++    if(!availability.attendance)out.push('Não há produção operacional válida no escopo selecionado.');
++    if(!availability.fte)out.push('O FTE estratégico ainda não está disponível no escopo selecionado.');
++    if(!availability.quality)out.push('A taxa de avaliação não está disponível para este escopo.');
++    if(metrics.totalCost>0&&metrics.peopleCost+metrics.operationalCost===0)out.push('O custo total existe sem composição de pessoas/operação; valide a consolidação.');
++    return Object.freeze(out);
++  }
++  function buildFoundation(input={}){
++    const scope=normalizeScope(input.scope||input),metrics=normalizeMetrics(input.metrics||input),availability=normalizeAvailability(input.availability||{}),coverage=coverageScore(availability),catalog=METRIC_CATALOG.map(metric=>metricReadiness(metric,availability)),notes=warnings(scope,metrics,availability);
++    const status=!scope.competence||!availability.financial?'blocked':coverage.ratio===1?'ready':'partial';
++    return Object.freeze({ruleVersion:RULE_VERSION,scope,metrics,availability,coverage,status,catalog:Object.freeze(catalog),warnings:notes});
++  }
++
++  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,coverageScore,metricReadiness,buildFoundation};
++});
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/strategy.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/strategy.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/js/strategy.js	2026-10-22 15:31:30.594103647 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/js/strategy.js	2026-10-22 15:34:30.748349640 +0000
+@@ -11,9 +11,10 @@
+   'use strict';
+   if(!accessEngine||!dataEngine||!costEngine||!insightEngine)throw new Error('Dependências da Gestão Estratégica não carregadas.');
+ 
+-  const VALID_SECTIONS=Object.freeze(['executive','costs','assumptions']);
++  const VALID_SECTIONS=Object.freeze(['executive','efficiency','costs','assumptions']);
+   const SECTION_META=Object.freeze({
+     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
++    efficiency:Object.freeze({label:'Eficiência',eyebrow:'FUNDAÇÃO DA EFICIÊNCIA'}),
+     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
+     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
+   });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/package-lock.json /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/package-lock.json
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/package-lock.json	2026-10-22 15:31:30.590103562 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/package-lock.json	2026-10-22 15:34:30.748232864 +0000
+@@ -1,12 +1,12 @@
+ {
+   "name": "dashboard-squad-performance",
+-  "version": "2.57.9",
++  "version": "2.58.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "dashboard-squad-performance",
+-      "version": "2.57.9",
++      "version": "2.58.0",
+       "engines": {
+         "node": ">=20"
+       }
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/package.json /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/package.json
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/package.json	2026-10-22 15:31:30.590103562 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/package.json	2026-10-22 15:34:30.748080844 +0000
+@@ -1,6 +1,6 @@
+ {
+   "name": "dashboard-squad-performance",
+-  "version": "2.57.9",
++  "version": "2.58.0",
+   "private": true,
+   "description": "Soften Performance Hub - validação e testes automatizados do dashboard.",
+   "scripts": {
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/scripts/validate-project.mjs /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/scripts/validate-project.mjs
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/scripts/validate-project.mjs	2026-10-22 15:31:30.638104590 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/scripts/validate-project.mjs	2026-10-22 15:34:30.771259119 +0000
+@@ -36,6 +36,8 @@
+ const comparisonEngineScriptPosition = index.indexOf('js/comparison-engine.js');
+ const financeReportEngineScriptPosition = index.indexOf('js/finance-report-engine.js');
+ const designSystemScriptPosition = index.indexOf('js/design-system.js');
++const strategyEfficiencyScriptPosition = index.indexOf('js/strategy-efficiency.js');
++const strategyScriptPosition = index.indexOf('js/strategy.js');
+ const appScriptPosition = index.indexOf('js/app.js');
+ if (businessCalendarScriptPosition < 0) errors.push('index.html não carrega js/business-calendar.js.');
+ if (financeScriptPosition < 0) errors.push('index.html não carrega js/finance-rules.js.');
+@@ -54,6 +56,9 @@
+ if (comparisonEngineScriptPosition < 0) errors.push('index.html não carrega js/comparison-engine.js.');
+ if (financeReportEngineScriptPosition < 0) errors.push('index.html não carrega js/finance-report-engine.js.');
+ if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
++if (strategyEfficiencyScriptPosition < 0) errors.push('index.html não carrega js/strategy-efficiency.js.');
++if (strategyEfficiencyScriptPosition >= 0 && strategyScriptPosition >= 0 && strategyEfficiencyScriptPosition > strategyScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/strategy.js.');
++if (strategyEfficiencyScriptPosition >= 0 && appScriptPosition >= 0 && strategyEfficiencyScriptPosition > appScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/app.js.');
+ if (appScriptPosition >= 0 && businessCalendarScriptPosition > appScriptPosition) errors.push('js/business-calendar.js deve ser carregado antes de js/app.js.');
+ if (financeScriptPosition >= 0 && businessCalendarScriptPosition >= 0 && businessCalendarScriptPosition > financeScriptPosition) errors.push('js/business-calendar.js deve carregar antes de js/finance-rules.js.');
+ if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/business-calendar-ui.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/business-calendar-ui.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/business-calendar-ui.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/business-calendar-ui.test.js	2026-10-22 15:35:07.294626608 +0000
+@@ -11,7 +11,7 @@
+ test('V2.48.7 publica o calendário operacional na área de bonificação',()=>{
+   assert.ok(index.includes('id="configBusinessCalendarCard"'));
+   for(const id of ['businessCalendarYearSelect','businessCalendarRows','businessCalendarDateInput','businessCalendarAddBtn','businessCalendarSaveBtn']) assert.ok(index.includes(`id="${id}"`));
+-  assert.ok(index.includes('js/business-calendar.js?v=2.57.8'));
++  assert.ok(index.includes('js/business-calendar.js?v=2.58.0'));
+   assert.ok(existsSync(join(root,'js','business-calendar.js')));
+ });
+ 
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/csv-preparation-v2550.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/csv-preparation-v2550.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/csv-preparation-v2550.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/csv-preparation-v2550.test.js	2026-10-22 15:35:07.290745248 +0000
+@@ -9,7 +9,7 @@
+ const pkg=require('../package.json');
+ 
+ test('V2.57.7 publica a preparação de CSV dentro da Central de Importação',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   for(const id of ['csvPreparationBlock','csvMapDate','csvMapTechnician','csvMapService','csvMapProduct','csvMapCompany','csvMapGroup','csvDedupeEnabled','csvDedupeColumns','csvDedupeKeep','applyCsvPreparationBtn']) assert.ok(index.includes(`id="${id}"`),id);
+   assert.match(app,/openCsvPreparation\(state\.pendingCsvSource\)/);
+   assert.match(app,/applyCsvPreparation/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/daily-active-days-v2532.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/daily-active-days-v2532.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/daily-active-days-v2532.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/daily-active-days-v2532.test.js	2026-10-22 15:36:21.897503092 +0000
+@@ -9,7 +9,7 @@
+ const index=readFileSync(join(root,'index.html'),'utf8');
+ 
+ test('V2.57.7 exclui dias zerados do grafico e da media diaria',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.match(app,/\.filter\(item=>item\.value>0\)/);
+   assert.match(app,/Média geral dos dias com atendimento/);
+   assert.match(app,/Média diária do \${scopeLabel}/);
+@@ -17,8 +17,8 @@
+ });
+ 
+ test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
+-  assert.ok(index.includes('V2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
++  assert.ok(index.includes('V2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/daily-range-v2531.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/daily-range-v2531.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/daily-range-v2531.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/daily-range-v2531.test.js	2026-10-22 15:36:21.897033884 +0000
+@@ -13,7 +13,7 @@
+ const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
+ 
+ test('V2.57.7 consulta consolidados diarios somente no periodo ativo e pagina a resposta',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.match(app,/function orgDailyRequestedRange\(\)/);
+   assert.match(app,/fetchRpcPaged\('get_org_daily_attendance_overview_range',params\)/);
+   assert.match(app,/fetchRpcPaged\('get_org_technician_daily_overview_range',params\)/);
+@@ -42,9 +42,9 @@
+ });
+ 
+ test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
+-  assert.ok(index.includes('V2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+-  assert.ok(index.includes('js/design-system.js?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
++  assert.ok(index.includes('V2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
++  assert.ok(index.includes('js/design-system.js?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/filter-system-v2490.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/filter-system-v2490.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/filter-system-v2490.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/filter-system-v2490.test.js	2026-10-22 15:36:21.897683705 +0000
+@@ -99,6 +99,6 @@
+ test('V2.49 é frontend-only e preserva a regra financeira',()=>{
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.49.0.sql')),false);
+   assert.match(finance,/FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
+-  assert.ok(index.includes('V2.57.8'));
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
++  assert.ok(index.includes('V2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/filter-system-v2491.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/filter-system-v2491.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/filter-system-v2491.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/filter-system-v2491.test.js	2026-10-22 15:35:07.297835183 +0000
+@@ -17,9 +17,9 @@
+ }
+ 
+ test('V2.49.1 identifica a versão correta',()=>{
+-  assert.equal(pkg.version,'2.57.8');
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
++  assert.equal(pkg.version,'2.58.0');
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+ });
+ 
+ test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
+@@ -81,5 +81,5 @@
+ test('R3 mantém menus customizados acima do Período de análise',()=>{
+   assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
+   assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/finance-report-v2501.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/finance-report-v2501.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/finance-report-v2501.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/finance-report-v2501.test.js	2026-10-22 15:36:21.896414168 +0000
+@@ -11,12 +11,12 @@
+ const pkg = require(join(root,'package.json'));
+ 
+ test('V2.53.0 carrega o configurador de relatório antes do app',()=>{
+-  assert.equal(pkg.version,'2.57.8');
+-  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.57.8');
+-  const appPos=index.indexOf('js/app.js?v=2.57.8');
++  assert.equal(pkg.version,'2.58.0');
++  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.58.0');
++  const appPos=index.indexOf('js/app.js?v=2.58.0');
+   assert.ok(enginePos>=0 && appPos>enginePos);
+   assert.match(app,/window\.SoftenFinanceReportEngine/);
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
+ });
+ 
+ test('catálogo mantém Técnico obrigatório e padrão compatível com o PDF anterior',()=>{
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/help-guide.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/help-guide.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/help-guide.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/help-guide.test.js	2026-10-22 15:36:21.896253936 +0000
+@@ -16,7 +16,7 @@
+ 
+ test('Como usar referencia o painel atual e remove a versao antiga do guia', () => {
+   const help=helpBlock();
+-  assert.match(help,/GUIA COMPLETO • V2\.57/);
++  assert.match(help,/GUIA COMPLETO • V2\.58/);
+   assert.equal(help.includes('GUIA COMPLETO • V2.20'),false);
+   for(const marker of ['Central de Importação','Gestão preditiva','Bonificação e Financeiro avançado','Central de Configurações','TV / Comunicação','Central de Alertas','NAVEGAÇÃO GLOBAL • V2.47','ATALHOS PESSOAIS • V2.48']){
+     assert.ok(help.includes(marker),`guia deve documentar ${marker}`);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/import-center-v24813.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/import-center-v24813.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/import-center-v24813.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/import-center-v24813.test.js	2026-10-22 15:36:21.897174256 +0000
+@@ -48,8 +48,8 @@
+ 
+ test('V2.48.13 é frontend-only e preserva regra financeira e schema', () => {
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.13.sql')), false);
+-  assert.match(app, /APP_VERSION = '2\.57\.8'/);
+-  assert.match(index, /V2\.57\.8/);
++  assert.match(app, /APP_VERSION = '2\.58\.0'/);
++  assert.match(index, /V2\.58\.0/);
+   const finance = readFileSync(join(root, 'js', 'finance-rules.js'), 'utf8');
+   assert.match(finance, /FR-2\.48\.8-1/);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2562.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2562.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2562.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2562.test.js	2026-10-22 15:35:07.297086643 +0000
+@@ -45,8 +45,8 @@
+ });
+ 
+ test('cache-bust acompanha a versao atual',()=>{
+-  assert.equal(pkg.version,'2.57.8');
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
++  assert.equal(pkg.version,'2.58.0');
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2563.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2563.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2563.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2563.test.js	2026-10-22 15:35:07.297263530 +0000
+@@ -13,7 +13,7 @@
+   return app.slice(a,b);
+ }
+ test('V2.57.7 troca Squad em Qualidade pelo fluxo global aguardado',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
+   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
+   assert.doesNotMatch(select,/hydrateIndicatorSquadFilter|indicatorHydration/);
+@@ -37,8 +37,8 @@
+ });
+ test('V2.57.7 publica cache-bust completo sem migration',()=>{
+   for(const asset of ['css/styles.css','css/design-system.css','css/presentation.css','js/performance-engine.js','js/filter-system.js','js/app.js']){
+-    assert.ok(index.includes(`${asset}?v=2.57.8`),asset);
++    assert.ok(index.includes(`${asset}?v=2.58.0`),asset);
+   }
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('V2.58.0'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2564.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2564.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2564.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2564.test.js	2026-10-22 15:35:07.291303140 +0000
+@@ -15,7 +15,7 @@
+ }
+ 
+ test('V2.57.7 torna a troca de Squad deterministica',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
+   assert.match(select,/selectionSeq=\+\+state\.squadSelectionSeq/);
+   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
+@@ -39,6 +39,6 @@
+   const refs=[...index.matchAll(/(?:href|src)="((?:css|js)\/[^"]+)\?v=([^"]+)"/g)].map(m=>({asset:m[1],version:m[2]}));
+   const current=refs.filter(x=>x.asset!=='js/audit-utils.js');
+   assert.ok(current.length>5);
+-  assert.deepEqual([...new Set(current.map(x=>x.version))],['2.57.8']);
+-  assert.ok(index.includes('V2.57.8'));
++  assert.deepEqual([...new Set(current.map(x=>x.version))],['2.58.0']);
++  assert.ok(index.includes('V2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2565.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2565.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-squad-filter-v2565.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-squad-filter-v2565.test.js	2026-10-22 15:35:07.298729012 +0000
+@@ -14,7 +14,7 @@
+ }
+ 
+ test('V2.57.7 força recarga mensal apenas na troca direta dentro de Qualidade',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
+   assert.match(select,/forceQualityScope=state\.currentView==='indicators'&&state\.indicatorSection==='quality'/);
+   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
+@@ -43,7 +43,7 @@
+ 
+ test('V2.57.7 inclui teste legado do GitHub e cache-bust coerente',()=>{
+   assert.ok(fs.existsSync(path.join(root,'tests','indicator-squad-filter-v2563.test.js')));
+-  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.57.8`),asset);
+-  assert.ok(index.includes('V2.57.8'));
++  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.58.0`),asset);
++  assert.ok(index.includes('V2.58.0'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-subtab-visibility-v2566.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-subtab-visibility-v2566.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicator-subtab-visibility-v2566.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicator-subtab-visibility-v2566.test.js	2026-10-22 15:35:07.294150850 +0000
+@@ -10,7 +10,7 @@
+ const pkg=require('../package.json');
+ 
+ test('V2.57.7 mantém subaba oculta mesmo com layout pessoal ativo',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.match(css,/\.hidden\{display:none!important\}/);
+   assert.match(css,/\.personal-layout-root:not\(\.home-widget-grid\):not\(\.hidden\)\{display:flex!important/);
+   assert.doesNotMatch(css,/\.personal-layout-root:not\(\.home-widget-grid\)\{display:flex!important/);
+@@ -24,8 +24,8 @@
+ 
+ test('V2.57.7 publica cache-bust coerente sem migration',()=>{
+   for(const asset of ['css/styles.css','js/app.js','js/design-system.js','js/filter-system.js']){
+-    assert.ok(index.includes(`${asset}?v=2.57.8`),asset);
++    assert.ok(index.includes(`${asset}?v=2.58.0`),asset);
+   }
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('V2.58.0'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicators-export-v2520.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicators-export-v2520.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/indicators-export-v2520.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/indicators-export-v2520.test.js	2026-10-22 15:35:07.293574239 +0000
+@@ -12,7 +12,7 @@
+ const exporter = require(join(root, 'js', 'chart-export.js'));
+ 
+ test('V2.52.0 otimiza os três papéis dos indicadores de avaliação', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(index, /Nota média das avaliações por Squad/);
+   assert.match(index, /% de avaliação dos Squads x meta/);
+   assert.match(index, /id="indicatorHistoryEvalTitle">% de avaliação/);
+@@ -51,8 +51,8 @@
+ });
+ 
+ test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
+-  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.57.8');
+-  const appIndex = index.indexOf('js/app.js?v=2.57.8');
++  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.58.0');
++  const appIndex = index.indexOf('js/app.js?v=2.58.0');
+   assert.ok(chartExportIndex >= 0 && appIndex > chartExportIndex, 'chart-export precisa carregar antes do app');
+   const svg = exporter.buildExportSvg({
+     title: 'Avaliação por Squad',
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/individual-comparison-v2500.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/individual-comparison-v2500.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/individual-comparison-v2500.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/individual-comparison-v2500.test.js	2026-10-22 15:36:21.897466527 +0000
+@@ -9,12 +9,12 @@
+ const pkg = require(join(root,'package.json'));
+ 
+ test('V2.50 identifica a versão e carrega o motor comparativo antes do app',()=>{
+-  assert.equal(pkg.version,'2.57.8');
+-  const comparePos=index.indexOf('js/comparison-engine.js?v=2.57.8');
+-  const appPos=index.indexOf('js/app.js?v=2.57.8');
++  assert.equal(pkg.version,'2.58.0');
++  const comparePos=index.indexOf('js/comparison-engine.js?v=2.58.0');
++  const appPos=index.indexOf('js/app.js?v=2.58.0');
+   assert.ok(comparePos>=0 && appPos>comparePos);
+   assert.match(app,/window\.SoftenComparisonEngine/);
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
+ });
+ 
+ test('Meu desempenho oferece comparação opcional sem criar outro filtro global',()=>{
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/individual-rhythm-v24814.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/individual-rhythm-v24814.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/individual-rhythm-v24814.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/individual-rhythm-v24814.test.js	2026-10-22 15:36:21.896742754 +0000
+@@ -62,7 +62,7 @@
+ 
+ test('V2.48.14 é frontend-only e preserva regra financeira',()=>{
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.14.sql')),false);
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
+-  assert.match(index,/V2\.57\.8/);
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
++  assert.match(index,/V2\.58\.0/);
+   assert.match(finance,/FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/org-daily-squad-average-v2567.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/org-daily-squad-average-v2567.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/org-daily-squad-average-v2567.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/org-daily-squad-average-v2567.test.js	2026-10-22 15:35:07.296129958 +0000
+@@ -9,7 +9,7 @@
+ const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ 
+ test('V2.57.7 filtra o consolidado diario pelo Squad global antes de calcular a media',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.match(app,/function orgDailyScopeCode\(\)\{return state\.squadCode==='all'\?null:String\(state\.squadCode\|\|''\)\.toUpperCase\(\);\}/);
+   assert.match(app,/function filteredOrgDailyRows\(\).*dateBetween\(date\)&&\(!code\|\|rowCode===code\)/s);
+ });
+@@ -31,8 +31,8 @@
+ 
+ test('V2.57.7 publica cache-bust coerente sem migration',()=>{
+   for(const asset of ['css/styles.css','js/app.js','js/chart-engine.js']){
+-    assert.ok(index.includes(`${asset}?v=2.57.8`),asset);
++    assert.ok(index.includes(`${asset}?v=2.58.0`),asset);
+   }
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('V2.58.0'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/period-context-v2540.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/period-context-v2540.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/period-context-v2540.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/period-context-v2540.test.js	2026-10-22 15:35:07.297205462 +0000
+@@ -10,7 +10,7 @@
+ const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
+ 
+ test('V2.57.7 adiciona competencias inicial e final no intervalo livre',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.match(index,/id="periodFreeStartSelect"/);
+   assert.match(index,/id="periodFreeEndSelect"/);
+   assert.match(app,/function setFreeCompetenceBoundary\(which,id\)/);
+@@ -42,7 +42,7 @@
+ });
+ 
+ test('V2.57.7 atualiza os assets principais sem migration nova',()=>{
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+-  assert.ok(index.includes('js/workspace-engine.js?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
++  assert.ok(index.includes('js/workspace-engine.js?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/period-picker-layout-v2541.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/period-picker-layout-v2541.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/period-picker-layout-v2541.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/period-picker-layout-v2541.test.js	2026-10-22 15:35:07.291914063 +0000
+@@ -9,14 +9,14 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.57.7 mantém mês e ano visíveis dentro da navegação do calendário', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(css, /\.period-picker-jump \.ds-select-proxy\{[\s\S]*width:100%!important/);
+   assert.match(css, /\.period-picker-jump \.ds-select-trigger\{[\s\S]*width:100%!important[\s\S]*height:34px!important/);
+   assert.match(css, /grid-template-columns:minmax\(0,1fr\) 18px!important/);
+ });
+ 
+ test('V2.57.7 atualiza cache-bust principal sem migration nova', () => {
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('V2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/portfolio-benchmark-v2523.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/portfolio-benchmark-v2523.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/portfolio-benchmark-v2523.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/portfolio-benchmark-v2523.test.js	2026-10-22 15:35:07.297511154 +0000
+@@ -10,7 +10,7 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.52.3 adiciona benchmark consolidado abaixo dos cards de Squad', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(index, /id="portfolioBenchmarkCard"/);
+   assert.match(index, /Taxa consolidada de avaliação × benchmark/);
+   assert.match(index, /Objetivo 60% • limite mínimo 20%/);
+@@ -44,7 +44,7 @@
+ });
+ 
+ test('V2.52.3 atualiza cache e permanece frontend-only', () => {
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/predictive-scope-v2560.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/predictive-scope-v2560.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/predictive-scope-v2560.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/predictive-scope-v2560.test.js	2026-10-22 15:35:07.291255729 +0000
+@@ -33,9 +33,9 @@
+ });
+ 
+ test('V2.57.7 é frontend-only e preserva o motor financeiro e as demais abas',()=>{
+-  assert.equal(pkg.version,'2.57.8');
+-  assert.ok(index.includes('js/predictive-engine.js?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
++  assert.equal(pkg.version,'2.58.0');
++  assert.ok(index.includes('js/predictive-engine.js?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+   assert.match(app,/function periodGoalForTechnician\(/);
+   assert.match(app,/function periodTeamGoal\(/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/presentation-refresh-v2491.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/presentation-refresh-v2491.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/presentation-refresh-v2491.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/presentation-refresh-v2491.test.js	2026-10-22 15:35:07.293011109 +0000
+@@ -54,6 +54,6 @@
+   assert.match(refresh,/backupMeta=clone\(state\.presentationDataMeta\|\|null\)/);
+   assert.match(refresh,/state\.orgTechnicianDailyOverview=backup/);
+   assert.match(refresh,/state\.presentationDataMeta=backupMeta/);
+-  assert.ok(index.includes('js/presentation.js?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
++  assert.ok(index.includes('js/presentation.js?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/project-structure.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/project-structure.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/project-structure.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/project-structure.test.js	2026-10-22 15:35:07.295734030 +0000
+@@ -414,7 +414,7 @@
+ test('V2.47 é frontend-only e não exige migration nova', () => {
+   const { existsSync } = require('node:fs');
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.47.0.sql')), false);
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('V2.58.0'));
+ });
+ 
+ 
+@@ -449,7 +449,7 @@
+   const { existsSync } = require('node:fs');
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.0.sql')),false);
+   assert.match(app,/save_my_ui_preferences/);
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('V2.58.0'));
+ });
+ 
+ 
+@@ -464,5 +464,5 @@
+ test('V2.48.1 e frontend-only e nao exige migration nova', () => {
+   const { existsSync } = require('node:fs');
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.1.sql')),false);
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('V2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/quality-full-v2530.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/quality-full-v2530.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/quality-full-v2530.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/quality-full-v2530.test.js	2026-10-22 15:35:07.298094284 +0000
+@@ -13,7 +13,7 @@
+ const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
+ 
+  test('V2.53.0 publica a importacao exclusiva e os dois pontos de visualizacao',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.ok(index.includes('id="adminQualityFullImportBtn"'));
+   assert.ok(index.includes('Importar Qualidade Completa'));
+   assert.ok(index.includes('id="portfolioQualityFullChart"'));
+@@ -49,8 +49,8 @@
+ });
+ 
+ test('V2.53.0 atualiza cache de assets e scripts',()=>{
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+-  assert.ok(index.includes('js/import-engine.js?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('V2.57.8'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
++  assert.ok(index.includes('js/import-engine.js?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('V2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/service-reimport-replacement-v2578.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/service-reimport-replacement-v2578.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/service-reimport-replacement-v2578.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/service-reimport-replacement-v2578.test.js	2026-10-22 15:35:07.290272114 +0000
+@@ -8,7 +8,7 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.57.8 trata reimportacao operacional como fotografia substitutiva',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.match(app,/Reimportação operacional é uma fotografia substitutiva da competência aberta/);
+   assert.doesNotMatch(app,/Preserva quem teve produção na competência mas não veio na extração atual/);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-close-snapshots-v2576.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-close-snapshots-v2576.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-close-snapshots-v2576.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-close-snapshots-v2576.test.js	2026-10-22 15:36:21.897110840 +0000
+@@ -14,7 +14,7 @@
+ const migration=readFileSync(migrationPath,'utf8');
+ 
+ test('V2.57.7 publica fechamento e snapshot revisionado',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/strategyCloseCompetenceBtn/);
+   assert.match(index,/strategyReopenCompetenceBtn/);
+@@ -55,7 +55,7 @@
+ });
+ 
+ test('motor financeiro identifica a regra usada no snapshot',()=>{
+-  assert.equal(engine.RULE_VERSION,'SC-0.6.0-snapshot');
++  assert.equal(engine.RULE_VERSION,'SC-0.6.1');
+ });
+ 
+ test('migration mantém histórico de snapshots e não sobrescreve revisões',()=>{
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-efficiency-v2580.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-efficiency-v2580.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-efficiency-v2580.test.js	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-efficiency-v2580.test.js	2026-10-22 15:35:07.502781562 +0000
+@@ -0,0 +1,68 @@
++const test=require('node:test');
++const assert=require('node:assert/strict');
++const {readFileSync,existsSync}=require('node:fs');
++const {join}=require('node:path');
++
++const root=join(__dirname,'..');
++const pkg=require(join(root,'package.json'));
++const efficiency=require(join(root,'js','strategy-efficiency.js'));
++const navigation=require(join(root,'js','navigation-engine.js'));
++const filters=require(join(root,'js','filter-system.js'));
++const index=readFileSync(join(root,'index.html'),'utf8');
++const app=readFileSync(join(root,'js','app.js'),'utf8');
++
++test('V2.58.0 publica a Fundação da Eficiência isolada do operacional',()=>{
++  assert.equal(pkg.version,'2.58.0');
++  assert.match(index,/data-strategy-section="efficiency"/);
++  assert.match(index,/data-strategy-panel="efficiency"/);
++  assert.match(index,/strategyEfficiencyBaseCost/);
++  assert.match(index,/strategyEfficiencyReadinessRows/);
++  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.0/);
++  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.0')<index.indexOf('js/strategy.js?v=2.58.0'));
++  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.0')<index.indexOf('js/app.js?v=2.58.0'));
++  assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
++});
++
++test('rota de eficiência preserva o isolamento e descarta filtros operacionais',()=>{
++  const route=navigation.routeFromSearch('?page=strategy&section=efficiency&squad=D&month=2026-10&tech=Arthur&from=2026-10-01&to=2026-10-22');
++  assert.deepEqual(route,{page:'strategy',section:'efficiency'});
++  assert.equal(filters.activeCount({view:'strategy',isSuperAdmin:true}),0);
++});
++
++test('fundação identifica base pronta sem calcular antecipadamente custo unitário',()=>{
++  const foundation=efficiency.buildFoundation({
++    scope:{competence:'2026-10',squadCode:'D',comparison:'previous',competenceStatus:'draft'},
++    metrics:{totalCost:40000,peopleCost:35000,operationalCost:5000,attendance:2500,fte:7,evaluationRate:.41},
++    availability:{financial:true,attendance:true,fte:true,quality:true,resolutions:false}
++  });
++  assert.equal(foundation.ruleVersion,'EF-0.1.0-foundation');
++  assert.equal(foundation.status,'ready');
++  assert.equal(foundation.coverage.ratio,1);
++  assert.equal(foundation.metrics.totalCost,40000);
++  assert.equal(Object.prototype.hasOwnProperty.call(foundation.metrics,'costPerAttendance'),false);
++  assert.equal(foundation.catalog.find(x=>x.id==='cost-per-attendance').status,'ready');
++  const resolution=foundation.catalog.find(x=>x.id==='cost-per-resolution');
++  assert.equal(resolution.status,'pending');
++  assert.deepEqual(resolution.missing,['resolutions']);
++});
++
++test('fundação sinaliza base parcial sem fabricar valores ausentes',()=>{
++  const foundation=efficiency.buildFoundation({scope:{competence:'2026-10',squadCode:'all'},metrics:{attendance:0,fte:0},availability:{financial:true}});
++  assert.equal(foundation.status,'partial');
++  assert.equal(foundation.metrics.attendance,0);
++  assert.equal(foundation.metrics.fte,0);
++  assert.equal(foundation.availability.attendance,false);
++  assert.equal(foundation.availability.resolutions,false);
++  assert.ok(foundation.warnings.some(x=>/produção operacional/i.test(x)));
++});
++
++test('UI da eficiência respeita a permissão agregada e mantém resolução pendente',()=>{
++  const start=app.indexOf('function strategyEfficiencyFoundation(vm,displayAggregate)');
++  const end=app.indexOf('function renderStrategy({skipLoad=false}',start);
++  assert.ok(start>=0&&end>start);
++  const block=app.slice(start,end);
++  assert.match(block,/financialReady=displayAggregate/);
++  assert.match(block,/resolutions:false/);
++  assert.match(block,/strategyEfficiencyEngine\.buildFoundation/);
++  assert.doesNotMatch(block,/costPerResolution\s*[:=]/);
++});
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-executive-v2575.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-executive-v2575.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-executive-v2575.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-executive-v2575.test.js	2026-10-22 15:35:07.291830657 +0000
+@@ -12,7 +12,7 @@
+ const migration=readFileSync(migrationPath,'utf8');
+ 
+ test('V2.57.7 publica Resultado Executivo com histórico e comparação',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.equal(existsSync(migrationPath),true);
+   for(const id of ['strategyExecutiveUnitCostChart','strategyExecutiveEfficiencyChart','strategyExecutiveComposition','strategyExecutiveInsights','strategyExecutiveSquadRows','strategyEfficiencySpread'])assert.match(index,new RegExp(id));
+   assert.match(app,/get_strategy_financial_history/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-financial-engine-v2574.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-financial-engine-v2574.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-financial-engine-v2574.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-financial-engine-v2574.test.js	2026-10-22 15:36:21.895865410 +0000
+@@ -11,7 +11,7 @@
+ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.57.4.sql');
+ const migration=readFileSync(migrationPath,'utf8');
+ 
+-test('V2.57.7 publica motor financeiro e consolidação por Squad',()=>{assert.equal(pkg.version,'2.57.8');assert.equal(existsSync(migrationPath),true);assert.match(index,/strategySquadCostRows/);assert.match(index,/strategyOperationalRows/);assert.match(app,/get_strategy_financial_summary/);assert.match(app,/get_strategy_squad_cost_summary/);});
++test('V2.57.7 publica motor financeiro e consolidação por Squad',()=>{assert.equal(pkg.version,'2.58.0');assert.equal(existsSync(migrationPath),true);assert.match(index,/strategySquadCostRows/);assert.match(index,/strategyOperationalRows/);assert.match(app,/get_strategy_financial_summary/);assert.match(app,/get_strategy_squad_cost_summary/);});
+ 
+ test('checkbox estratégico do MVP habilita custos pessoais e edição',()=>{const demo=access.demoAccessForRole('super_admin',true);assert.equal(demo.canViewStrategy,true);assert.equal(demo.canViewPeopleCosts,true);assert.equal(demo.canEditCosts,true);assert.match(app,/can_view_people_costs:enabled===true,can_edit_costs:enabled===true/);assert.match(migration,/where can_view_strategy = true/i);});
+ 
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-foundation-v2570.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-foundation-v2570.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-foundation-v2570.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-foundation-v2570.test.js	2026-10-22 15:36:21.897385535 +0000
+@@ -15,20 +15,20 @@
+ const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
+ 
+ test('V2.57.7 publica a fundação isolada da Gestão Estratégica', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(index, /id="view-strategy"/);
+   assert.match(index, /data-view="strategy"/);
+   assert.match(index, /data-strategy-section="executive"/);
+   assert.match(index, /data-strategy-section="costs"/);
+   assert.match(index, /data-strategy-section="assumptions"/);
+-  assert.match(index, /css\/strategy\.css\?v=2\.57\.8/);
+-  assert.match(index, /js\/strategy-access\.js\?v=2\.57\.8/);
+-  assert.match(index, /js\/strategy-data\.js\?v=2\.57\.8/);
+-  assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.57\.8/);
+-  assert.match(index, /js\/strategy-insights\.js\?v=2\.57\.8/);
+-  assert.match(index, /js\/strategy\.js\?v=2\.57\.8/);
+-  assert.ok(index.indexOf('js/strategy.js?v=2.57.8') < index.indexOf('js/app.js?v=2.57.8'));
+-  assert.match(app, /APP_VERSION = '2\.57\.8'/);
++  assert.match(index, /css\/strategy\.css\?v=2\.58\.0/);
++  assert.match(index, /js\/strategy-access\.js\?v=2\.58\.0/);
++  assert.match(index, /js\/strategy-data\.js\?v=2\.58\.0/);
++  assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.58\.0/);
++  assert.match(index, /js\/strategy-insights\.js\?v=2\.58\.0/);
++  assert.match(index, /js\/strategy\.js\?v=2\.58\.0/);
++  assert.ok(index.indexOf('js/strategy.js?v=2.58.0') < index.indexOf('js/app.js?v=2.58.0'));
++  assert.match(app, /APP_VERSION = '2\.58\.0'/);
+ });
+ 
+ test('rota estratégica descarta filtros operacionais da URL', () => {
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-operational-costs-v2573.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-operational-costs-v2573.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-operational-costs-v2573.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-operational-costs-v2573.test.js	2026-10-22 15:35:07.294361979 +0000
+@@ -16,7 +16,7 @@
+ // removidas do motor atual.
+ 
+ test('compatibilidade: custos operacionais usam o motor financeiro atual da V2.57.7',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(typeof costEngine.calculateOperationalAllocations,'function');
+   assert.equal(typeof costEngine.summarizeOperationalCosts,'function');
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-people-costs-v2572.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-people-costs-v2572.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-people-costs-v2572.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-people-costs-v2572.test.js	2026-10-22 15:35:07.296581901 +0000
+@@ -15,7 +15,7 @@
+ const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
+ 
+ test('V2.57.7 publica competências, pessoas e custos pessoais', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.equal(existsSync(migrationPath), true);
+   assert.match(index, /id="strategyNewCompetenceInput"/);
+   assert.match(index, /id="strategyPeopleRows"/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-user-access-v2571.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-user-access-v2571.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/strategy-user-access-v2571.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/strategy-user-access-v2571.test.js	2026-10-22 15:35:07.294944048 +0000
+@@ -12,7 +12,7 @@
+ const migration2574 = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.57.4.sql'), 'utf8');
+ 
+ test('V2.57.1 adiciona checkbox de Gestão Estratégica no Controle de Usuários', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(index, /<th>Gestão Estratégica<\/th>/);
+   assert.match(app, /data-strategy-user-access/);
+   assert.match(app, /setDirectoryStrategyAccess/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/team-portfolio-v2521.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/team-portfolio-v2521.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/team-portfolio-v2521.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/team-portfolio-v2521.test.js	2026-10-22 15:35:07.295112081 +0000
+@@ -11,7 +11,7 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.52.1 adiciona evolução combinada nos cards de Todos os Squads', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(app, /function squadPortfolioTrendBuckets\(/);
+   assert.match(app, /days<=15\?'daily':days<=45\?'weekly':'monthly'/);
+   assert.match(app, /function renderSquadPortfolioTrendChart\(/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/team-portfolio-v2522.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/team-portfolio-v2522.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/team-portfolio-v2522.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/team-portfolio-v2522.test.js	2026-10-22 15:35:07.297571164 +0000
+@@ -11,7 +11,7 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.52.2 habilita exportação nos gráficos de Volume x avaliação dos cards', () => {
+-  assert.equal(pkg.version, '2.57.8');
++  assert.equal(pkg.version, '2.58.0');
+   assert.match(app, /fullscreen-chart-modal,.squad-card-with-trend/);
+   assert.match(app, /shell\.querySelector\('\.squad-trend-head'\)/);
+   assert.match(app, /event\.stopPropagation\(\);openChartExport\(chart\)/);
+@@ -54,8 +54,8 @@
+ });
+ 
+ test('V2.52.2 atualiza cache e continua frontend-only', () => {
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
+-  assert.ok(index.includes('js/chart-export.js?v=2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
++  assert.ok(index.includes('js/chart-export.js?v=2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/technician-deleted-reimport-v2577.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/technician-deleted-reimport-v2577.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/technician-deleted-reimport-v2577.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/technician-deleted-reimport-v2577.test.js	2026-10-22 15:35:07.299433947 +0000
+@@ -11,7 +11,7 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.57.7 publica saneamento de tecnicos excluidos na reimportacao',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(app,/function activeTechnicianDirectoryByUserId\(userId\)/);
+   assert.match(app,/u\.role!==\'technician\'\|\|u\.active===false/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/technician-identity-v2510.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/technician-identity-v2510.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/technician-identity-v2510.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/technician-identity-v2510.test.js	2026-10-22 15:35:07.291355399 +0000
+@@ -12,7 +12,7 @@
+ const pkg = require(join(root, 'package.json'));
+ 
+ test('V2.53.0 adiciona aliases historicos ao cadastro do tecnico',()=>{
+-  assert.equal(pkg.version,'2.57.8');
++  assert.equal(pkg.version,'2.58.0');
+   assert.ok(index.includes('id="editUserAliases"'));
+   assert.match(index,/Nomes anteriores \/ aliases do CSV/);
+   assert.match(app,/async function persistTechnicianAliasesForUser\(/);
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/topbar-calendar-v24811.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/topbar-calendar-v24811.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/topbar-calendar-v24811.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/topbar-calendar-v24811.test.js	2026-10-22 15:36:21.897551976 +0000
+@@ -39,6 +39,6 @@
+ test('V2.48.11 e somente frontend e nao altera regra financeira', () => {
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.48.11.sql')), false);
+   assert.match(finance, /FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
+-  assert.match(app, /APP_VERSION = '2\.57\.8'/);
+-  assert.ok(index.includes('V2.57.8'));
++  assert.match(app, /APP_VERSION = '2\.58\.0'/);
++  assert.ok(index.includes('V2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/topbar-stability-v24812.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/topbar-stability-v24812.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/topbar-stability-v24812.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/topbar-stability-v24812.test.js	2026-10-22 15:36:21.896138792 +0000
+@@ -43,8 +43,8 @@
+ });
+ 
+ test('V2.48.12 atualiza somente versão de frontend', () => {
+-  assert.match(app,/APP_VERSION = '2\.57\.8'/);
+-  assert.ok(index.includes('V2.57.8'));
+-  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+-  assert.ok(index.includes('js/app.js?v=2.57.8'));
++  assert.match(app,/APP_VERSION = '2\.58\.0'/);
++  assert.ok(index.includes('V2.58.0'));
++  assert.ok(index.includes('css/styles.css?v=2.58.0'));
++  assert.ok(index.includes('js/app.js?v=2.58.0'));
+ });
+diff -ruN '--exclude=node_modules' '--exclude=.git' /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/ui-controls-v2484.test.js /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/ui-controls-v2484.test.js
+--- /mnt/data/v2580-work/base/dashboard-squad-performance-v2.57.8/tests/ui-controls-v2484.test.js	2026-10-22 13:46:15.000000000 +0000
++++ /mnt/data/v2580-work/dashboard-squad-performance-v2.58.0/tests/ui-controls-v2484.test.js	2026-10-22 15:35:07.290447018 +0000
+@@ -83,6 +83,6 @@
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.6.sql')),false);
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.7.sql')),true);
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.8.sql')),true);
+-  assert.ok(index.includes('V2.57.8'));
+-  assert.ok(app.includes("APP_VERSION = '2.57.8'"));
++  assert.ok(index.includes('V2.58.0'));
++  assert.ok(app.includes("APP_VERSION = '2.58.0'"));
+ });

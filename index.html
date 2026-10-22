@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.57.8" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.57.8" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.57.8" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.57.8" />
+  <link rel="stylesheet" href="css/styles.css?v=2.58.0" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.58.0" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.58.0" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.58.0" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.57.8 • Reimportação substitutiva e saneamento</small>
+        <small class="login-version">V2.58.0 • Fundação da Eficiência</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.57.8 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.58.0 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.57.8</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.58.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1383,11 +1383,11 @@
         <div class="strategy-shell">
           <section class="strategy-hero">
             <div>
-              <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 2</span>
+              <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 3</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>Camada estratégica isolada do operacional. A V2.57.8 mantém fechamento seguro e passa a tratar a reimportação operacional como fotografia substitutiva da competência aberta.</p>
+              <p>Camada estratégica isolada do operacional. A V2.58.0 abre a Fase 3 com a fundação dos indicadores de eficiência, reaproveitando custos e produção sem alterar o motor operacional.</p>
             </div>
-            <span class="strategy-foundation-badge">Resultado Executivo ativo</span>
+            <span class="strategy-foundation-badge">Fase 3 • Fundação da Eficiência</span>
           </section>
 
           <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.7</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
@@ -1401,6 +1401,7 @@
 
           <nav class="strategy-tabs" role="tablist" aria-label="Seções da Gestão Estratégica">
             <button type="button" class="strategy-tab is-active" data-strategy-section="executive" role="tab" aria-selected="true">Resultado Executivo</button>
+            <button type="button" class="strategy-tab" data-strategy-section="efficiency" role="tab" aria-selected="false">Eficiência</button>
             <button type="button" class="strategy-tab" data-strategy-section="costs" role="tab" aria-selected="false">Custos &amp; Eficiência</button>
             <button type="button" class="strategy-tab" data-strategy-section="assumptions" role="tab" aria-selected="false">Premissas</button>
           </nav>
@@ -1458,6 +1459,40 @@
               </section>
             </article>
             <aside class="strategy-insight strategy-executive-aside"><strong id="strategyFoundationInsightTitle">Resultado Executivo ativo</strong><p id="strategyFoundationInsightText">Custos, produção e qualidade passam a ser lidos no mesmo contexto para apoiar decisões sem alterar o operacional.</p></aside>
+          </div>
+
+          <div class="strategy-panel strategy-efficiency-foundation-panel hidden" data-strategy-panel="efficiency">
+            <article class="strategy-placeholder-card strategy-wide-card strategy-efficiency-foundation-card">
+              <span class="eyebrow">FUNDAÇÃO DA EFICIÊNCIA • V2.58.0</span>
+              <div class="strategy-section-heading"><div><h3>Base econômica da operação</h3><p>Esta versão estrutura as entradas, o contexto e a prontidão dos indicadores da Fase 3. Os cálculos finais de custo por atendimento, custo por resolução e produtividade econômica entram nas próximas versões.</p></div><span id="strategyEfficiencyFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
+
+              <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à eficiência">
+                <div><span>Competência</span><strong id="strategyEfficiencyContextCompetence">—</strong></div>
+                <div><span>Squad</span><strong id="strategyEfficiencyContextSquad">—</strong></div>
+                <div><span>Comparação</span><strong id="strategyEfficiencyContextComparison">—</strong></div>
+                <div><span>Regra</span><strong id="strategyEfficiencyRuleVersion">EF-0.1.0-foundation</strong></div>
+              </div>
+
+              <div class="strategy-metric-grid strategy-efficiency-base-grid">
+                <div class="strategy-metric"><span>Custo consolidado</span><strong id="strategyEfficiencyBaseCost">—</strong><small>base financeira existente</small></div>
+                <div class="strategy-metric"><span>Atendimentos válidos</span><strong id="strategyEfficiencyBaseAttendance">—</strong><small>produção no escopo estratégico</small></div>
+                <div class="strategy-metric"><span>FTE atribuído</span><strong id="strategyEfficiencyBaseFte">—</strong><small>base para produtividade econômica</small></div>
+                <div class="strategy-metric"><span>Cobertura da base</span><strong id="strategyEfficiencyCoverage">0%</strong><small id="strategyEfficiencyCoverageDetail">0 de 4 bases disponíveis</small></div>
+              </div>
+
+              <section class="strategy-efficiency-source-card">
+                <div><span class="eyebrow">INTEGRAÇÃO</span><h3>Fontes conectadas</h3><p id="strategyEfficiencySourceStatus">Aguardando leitura das bases.</p></div>
+                <div class="strategy-efficiency-source-flow"><span>Custos estratégicos</span><b>+</b><span>Produção operacional</span><b>→</b><strong>Eficiência</strong></div>
+              </section>
+
+              <section class="strategy-efficiency-readiness">
+                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Prontidão dos próximos indicadores</h3><p>A fundação valida se cada métrica futura já possui os dados mínimos necessários, sem antecipar sua fórmula final.</p></div></div>
+                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-efficiency-readiness-table"><thead><tr><th>Indicador</th><th>Versão</th><th>Base</th><th>Pendências</th></tr></thead><tbody id="strategyEfficiencyReadinessRows"><tr><td colspan="4" class="muted">Carregando prontidão...</td></tr></tbody></table></div>
+              </section>
+
+              <section class="strategy-efficiency-contract"><div><span class="eyebrow">CONTRATO DE DADOS</span><h3>Regras da fundação</h3></div><ul id="strategyEfficiencyWarnings"><li>Carregando validações da base.</li></ul></section>
+            </article>
+            <aside class="strategy-insight"><strong>Sem duplicar motores</strong><p>A Eficiência consome a consolidação financeira da Fase 2 e a produção operacional já existente. Nenhum cálculo de bonificação ou regra operacional é alterado nesta fundação.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -1936,29 +1971,30 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.57.8"></script>
-  <script src="js/finance-rules.js?v=2.57.8"></script>
-  <script src="js/finance-advanced.js?v=2.57.8"></script>
-  <script src="js/tv-engine.js?v=2.57.8"></script>
-  <script src="js/presentation.js?v=2.57.8"></script>
-  <script src="js/chart-engine.js?v=2.57.8"></script>
-  <script src="js/chart-export.js?v=2.57.8"></script>
-  <script src="js/import-engine.js?v=2.57.8"></script>
-  <script src="js/predictive-engine.js?v=2.57.8"></script>
-  <script src="js/alert-engine.js?v=2.57.8"></script>
-  <script src="js/settings-engine.js?v=2.57.8"></script>
-  <script src="js/performance-engine.js?v=2.57.8"></script>
-  <script src="js/navigation-engine.js?v=2.57.8"></script>
-  <script src="js/workspace-engine.js?v=2.57.8"></script>
-  <script src="js/filter-system.js?v=2.57.8"></script>
-  <script src="js/comparison-engine.js?v=2.57.8"></script>
-  <script src="js/finance-report-engine.js?v=2.57.8"></script>
-  <script src="js/design-system.js?v=2.57.8"></script>
-  <script src="js/strategy-access.js?v=2.57.8"></script>
-  <script src="js/strategy-data.js?v=2.57.8"></script>
-  <script src="js/strategy-cost-engine.js?v=2.57.8"></script>
-  <script src="js/strategy-insights.js?v=2.57.8"></script>
-  <script src="js/strategy.js?v=2.57.8"></script>
-  <script src="js/app.js?v=2.57.8"></script>
+  <script src="js/business-calendar.js?v=2.58.0"></script>
+  <script src="js/finance-rules.js?v=2.58.0"></script>
+  <script src="js/finance-advanced.js?v=2.58.0"></script>
+  <script src="js/tv-engine.js?v=2.58.0"></script>
+  <script src="js/presentation.js?v=2.58.0"></script>
+  <script src="js/chart-engine.js?v=2.58.0"></script>
+  <script src="js/chart-export.js?v=2.58.0"></script>
+  <script src="js/import-engine.js?v=2.58.0"></script>
+  <script src="js/predictive-engine.js?v=2.58.0"></script>
+  <script src="js/alert-engine.js?v=2.58.0"></script>
+  <script src="js/settings-engine.js?v=2.58.0"></script>
+  <script src="js/performance-engine.js?v=2.58.0"></script>
+  <script src="js/navigation-engine.js?v=2.58.0"></script>
+  <script src="js/workspace-engine.js?v=2.58.0"></script>
+  <script src="js/filter-system.js?v=2.58.0"></script>
+  <script src="js/comparison-engine.js?v=2.58.0"></script>
+  <script src="js/finance-report-engine.js?v=2.58.0"></script>
+  <script src="js/design-system.js?v=2.58.0"></script>
+  <script src="js/strategy-access.js?v=2.58.0"></script>
+  <script src="js/strategy-data.js?v=2.58.0"></script>
+  <script src="js/strategy-cost-engine.js?v=2.58.0"></script>
+  <script src="js/strategy-efficiency.js?v=2.58.0"></script>
+  <script src="js/strategy-insights.js?v=2.58.0"></script>
+  <script src="js/strategy.js?v=2.58.0"></script>
+  <script src="js/app.js?v=2.58.0"></script>
 </body>
 </html>
