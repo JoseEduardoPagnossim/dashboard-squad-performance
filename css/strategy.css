@@ -200,3 +200,12 @@
 .strategy-resolution-input:disabled{opacity:.65;cursor:not-allowed}
 @media(max-width:1180px){.strategy-resolution-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.strategy-resolution-kpis{grid-template-columns:1fr}.strategy-resolution-editor .strategy-section-heading{align-items:stretch;flex-direction:column}.strategy-resolution-editor .btn{width:100%}}
+
+
+/* V2.58.3 — Produtividade econômica por técnico */
+.strategy-technician-productivity-block{display:grid;gap:16px;padding:18px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 5%,var(--panel)),var(--panel))}
+.strategy-productivity-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.strategy-productivity-kpis .strategy-metric{margin:0}
+.strategy-productivity-explainer{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}.strategy-productivity-explainer strong{white-space:nowrap}.strategy-productivity-explainer span{color:var(--muted);font-size:.78rem;line-height:1.45}
+.strategy-technician-productivity-table{min-width:1420px}.strategy-productivity-rank{display:inline-flex;min-width:34px;justify-content:center;padding:5px 7px;border-radius:999px;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));color:var(--accent)}
+@media(max-width:1180px){.strategy-productivity-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.strategy-productivity-kpis{grid-template-columns:1fr}.strategy-productivity-explainer{align-items:flex-start;flex-direction:column}.strategy-productivity-explainer strong{white-space:normal}}

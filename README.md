@@ -1,3 +1,11 @@
+## V2.58.3 — Produtividade econômica por técnico
+
+A Fase 3 passa a relacionar resoluções e custo pessoal por técnico. O indicador principal é **resoluções por R$ 1.000 de custo pessoal**, acompanhado por FTE, atendimentos, taxa de resolução, nota média e custo por resolução. Qualidade permanece visível como guardrail e não altera o índice por peso oculto.
+
+Não há migration nova; execute a migration da V2.58.2 para dispor da base explícita de resoluções.
+
+Detalhes: `docs/EFICIENCIA_PRODUTIVIDADE_TECNICO_V2.58.3.md`.
+
 ## V2.58.2 — Custo por Resolução
 
 A Fase 3 passa a separar atendimento de resolução. A versão cria uma base explícita de resoluções por técnico/competência, calcula custo por resolução e taxa de resolução na operação, por Squad e por técnico, e preserva o histórico ao fechar a competência. Execute `supabase/migrations/MIGRACAO_V2.58.2.sql` antes de usar o indicador.

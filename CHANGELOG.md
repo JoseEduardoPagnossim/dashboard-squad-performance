@@ -1,3 +1,15 @@
+## V2.58.3 — Produtividade econômica por técnico
+
+- calcula produtividade econômica individual como `resoluções / custo pessoal × R$ 1.000`;
+- mantém custos compartilhados fora do técnico para evitar rateio individual arbitrário;
+- adiciona ranking por técnico na competência e no Squad selecionado;
+- exibe FTE, atendimentos, resoluções, taxa de resolução, nota média e custo pessoal por resolução;
+- usa qualidade como guardrail visível, sem multiplicador oculto no índice;
+- mantém linhas incompletas visíveis sem posição no ranking;
+- protege a visão individual com a permissão de custos pessoais;
+- atualiza o motor de eficiência para `EF-0.4.0-economic-productivity-person`;
+- não exige migration nova e depende da base de resoluções da V2.58.2.
+
 ## V2.58.2 — Custo por Resolução
 
 - cria uma base estratégica explícita de resoluções por técnico, competência e Squad;
