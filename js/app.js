@@ -68,7 +68,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.57.7';
+  const APP_VERSION = '2.57.8';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -5178,20 +5178,15 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       if(r.originalName)t.sourceAliases.add(r.originalName);t.sourceAliases.add(r.name);if(r.linkSource)t.linkSources.add(r.linkSource);t.att+=r.att;t.notes5+=r.notes5;t.notes4+=r.notes4;t.notes3+=r.notes3;t.notes2+=r.notes2;t.notes1+=r.notes1;let d=t.dailyMap.get(r.day)||{day:r.day,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:false};d.att+=r.att;d.notes5+=r.notes5;d.notes4+=r.notes4;d.notes3+=r.notes3;d.notes2+=r.notes2;d.notes1+=r.notes1;t.dailyMap.set(r.day,d)
     }
     const previousTechs=previous?.technicians||[],previousByIdentity=new Map();for(const prev of previousTechs){const identity=existingTechnicianIdentity(prev,squadCode,aliasMap),list=previousByIdentity.get(identity.key)||[];list.push(prev);previousByIdentity.set(identity.key,list)}
-    const daysInMonth=new Date(year,month,0).getDate(),presentKeys=new Set(byTech.keys());
+    const daysInMonth=new Date(year,month,0).getDate();
     const technicians=[...byTech.values()].map(raw=>{
       const linked=raw.userId?technicianDirectoryByUserId(raw.userId):null,canonical=normalizeName(linked?.techName||raw.name),prevRows=previousByIdentity.get(raw.identityKey)||[],prev=preferredPreviousTechnician(prevRows,canonical,raw.userId),daily=[];for(let d=1;d<=daysInMonth;d++)daily.push(raw.dailyMap.get(d)||{day:d,att:0,notes5:0,notes4:0,notes3:0,notes2:0,notes1:0,off:new Date(year,month-1,d).getDay()===0});
       const historicalUnlinked=!raw.userId&&raw.linkSources.has('histórico sem usuário ativo');return{dbId:prev.dbId||null,userId:raw.userId||prev.userId||null,name:canonical,sourceAliases:[...raw.sourceAliases],linkSource:[...raw.linkSources][0]||'',identityStatus:historicalUnlinked?'historical_unlinked':'linked',att:raw.att,notes5:raw.notes5,notes4:raw.notes4,notes3:raw.notes3,notes2:raw.notes2,notes1:raw.notes1,totalEval:0,avg:0,evalPct:0,status:prev.status||'',goalsHit:safe(prev.goalsHit),points:safe(prev.points),rank:prev.rank||null,discount:safe(prev.discount),pointBonus:safe(prev.pointBonus),goalAtt:safe(prev.goalAtt),goalEval:safe(prev.goalEval),financeManualBonus:safe(prev.financeManualBonus),salesCommission:safe(prev.salesCommission),vacation:!!prev.vacation,waiveBelowDiscount:!!prev.waiveBelowDiscount,excludeFromGroupCount:!!prev.excludeFromGroupCount,evaluationExcludedAtt:safe(prev.evaluationExcludedAtt),eligibleAtt:0,financeData:prev.financeData?clone(prev.financeData):{},qualityDaily:prev.qualityDaily?clone(prev.qualityDaily):[],daily};
     });
 
-    // Preserva quem teve produção na competência mas não veio na extração atual. A V2.51.0
-    // preserva por identidade (user_id/alias), e não por texto do nome, evitando manter duas
-    // linhas da mesma pessoa quando o nome do CRM muda.
-    for(const [identityKey,prevRows] of previousByIdentity){
-      if(presentKeys.has(identityKey)||!prevRows.some(isOperationalTechnicianRow))continue;
-      const first=prevRows[0],identity=existingTechnicianIdentity(first,squadCode,aliasMap),linked=identity.userId?technicianDirectoryByUserId(identity.userId):null,canonical=normalizeName(linked?.techName||identity.canonical||first?.name),preserved=preferredPreviousTechnician(prevRows,canonical,identity.userId);
-      preserved.daily=(preserved.daily||[]).map(d=>({...d}));preserved.userId=identity.userId||null;preserved.identityStatus=identity.userId?'linked':'historical_unlinked';preserved.name=canonical;technicians.push(preserved);latest=Math.max(latest,...(preserved.daily||[]).filter(d=>safe(d.att)>0||safe(d.notes5)>0).map(d=>safe(d.day)),1);
-    }
+    // Reimportação operacional é uma fotografia substitutiva da competência aberta.
+    // Técnicos ausentes do CSV novo NÃO são herdados do mês salvo anteriormente.
+    // Apenas configurações/identidade dos técnicos que continuam presentes são reaproveitadas acima.
     technicians.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
     const data={id,month,monthName:MONTHS_PT[month-1],year,sourceFile:fileName,latestDay:latest,importedAt:new Date().toISOString(),teamResult:previous?.teamResult||'',redistributed:safe(previous?.redistributed),settings:previous?.settings?{...previous.settings}:undefined,scoreSettings:previous?.scoreSettings?{...previous.scoreSettings}:{},financeSettings:previous?.financeSettings?clone(previous.financeSettings):clone(DEFAULT_FINANCE_SETTINGS),financeMonthData:previous?.financeMonthData?clone(previous.financeMonthData):{},financeModel:previous?.financeModel||'squad',financeCompare:previous?.financeCompare!==false,financeTechCompare:previous?.financeTechCompare===true,financeIndividualCap:Number.isFinite(Number(previous?.financeIndividualCap))?safe(previous.financeIndividualCap):7000,financeComparison:previous?.financeComparison?clone(previous.financeComparison):{},isClosed:!!previous?.isClosed,closedAt:previous?.closedAt||null,closedBy:previous?.closedBy||null,closedSnapshot:previous?.closedSnapshot?clone(previous.closedSnapshot):{},qualityExternal:previous?.qualityExternal?clone(previous.qualityExternal):[],technicians};recalculateMonth(data);return data;
   }

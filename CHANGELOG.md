@@ -1,3 +1,11 @@
+## V2.57.8 — Reimportação operacional substitutiva
+
+- corrige reimportação que herdava técnicos ausentes do CSV atual;
+- mantém metas e configurações apenas dos técnicos que continuam presentes no arquivo;
+- permite que `persistImportedMonth()` exclua corretamente linhas antigas não presentes na nova fotografia;
+- preserva o saneamento de identidades inativas/excluídas da V2.57.7;
+- não exige migration nova.
+
 # Changelog
 
 ## V2.57.7 — Saneamento de técnicos excluídos na reimportação

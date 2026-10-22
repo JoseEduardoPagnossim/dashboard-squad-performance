@@ -13,7 +13,7 @@ const migration=readFileSync(migrationPath,'utf8');
 const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
 
  test('V2.53.0 publica a importacao exclusiva e os dois pontos de visualizacao',()=>{
-  assert.equal(pkg.version,'2.57.7');
+  assert.equal(pkg.version,'2.57.8');
   assert.ok(index.includes('id="adminQualityFullImportBtn"'));
   assert.ok(index.includes('Importar Qualidade Completa'));
   assert.ok(index.includes('id="portfolioQualityFullChart"'));
@@ -49,8 +49,8 @@ test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
 });
 
 test('V2.53.0 atualiza cache de assets e scripts',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.57.7'));
-  assert.ok(index.includes('js/import-engine.js?v=2.57.7'));
-  assert.ok(index.includes('js/app.js?v=2.57.7'));
-  assert.ok(index.includes('V2.57.7'));
+  assert.ok(index.includes('css/styles.css?v=2.57.8'));
+  assert.ok(index.includes('js/import-engine.js?v=2.57.8'));
+  assert.ok(index.includes('js/app.js?v=2.57.8'));
+  assert.ok(index.includes('V2.57.8'));
 });

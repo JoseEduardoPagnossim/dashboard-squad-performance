@@ -1,3 +1,11 @@
+## V2.57.8 — Reimportação operacional substitutiva
+
+A reimportação de uma competência aberta agora substitui a fotografia operacional daquele Squad/mês. Técnicos que não existem no CSV novo deixam de ser herdados do estado anterior; a persistência remove as linhas antigas de `technician_monthly`, preservando apenas configurações dos técnicos que continuam presentes no arquivo.
+
+A proteção da V2.57.7 contra `user_id` inativo/excluído permanece ativa. Não há migration nova nesta versão.
+
+Detalhes: `docs/REIMPORTACAO_SUBSTITUTIVA_V2.57.8.md`.
+
 ## V2.57.7 — Saneamento de técnicos excluídos na reimportação
 
 A importação operacional passa a separar **produção histórica** de **identidade ativa**. Se um chamado vier no nome de um técnico já excluído/inativo, a linha continua compondo atendimentos e avaliações do Squad, porém é gravada sem `user_id` e não participa de ranking, headcount, pontuação ou bonificação individual enquanto a competência estiver aberta.
