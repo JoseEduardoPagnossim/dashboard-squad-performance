@@ -170,3 +170,7 @@ Execute `MIGRACAO_V2.57.2.sql` depois da V2.57.1. A migration cria `strategy_com
 Execute `MIGRACAO_V2.57.4.sql` depois da V2.57.2. A migration alinha o checkbox estratégico ao MVP atual (`can_view_people_costs` + `can_edit_costs`), cria `strategy_operational_costs`, `strategy_cost_allocations` e as RPCs agregadas `get_strategy_financial_summary(date,text)` e `get_strategy_squad_cost_summary(date)`. Não é necessário republicar Edge Functions.
 
 - `MIGRACAO_V2.57.6.sql`: fechamento de competências, snapshots versionados e proteção de competências fechadas.
+
+### V2.57.7 — Saneamento de identidade na reimportação
+
+Execute `MIGRACAO_V2.57.7.sql` depois da V2.57.6. A migration remove `user_id` inválido de competências operacionais abertas, instala uma proteção para impedir novos vínculos com técnico inativo/excluído e atualiza o ranking individual do próprio Squad para ignorar esses registros enquanto a competência estiver aberta. A produção histórica permanece nos totais do Squad. Não é necessário republicar Edge Functions.

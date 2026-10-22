@@ -1,5 +1,16 @@
 # Changelog
 
+## V2.57.7 — Saneamento de técnicos excluídos na reimportação
+
+- revalida `user_id` somente contra técnicos ativos antes de consolidar o CSV operacional;
+- histórico/alias de técnico excluído continua reconhecendo o nome, mas grava `user_id = null`;
+- reimportação corrige vínculos inválidos já salvos em competências abertas;
+- preserva atendimentos e avaliações do técnico histórico nos totais do Squad;
+- exclui registros sem usuário ativo de headcount, ranking, pontuação, bonificação e demais métricas individuais da competência aberta;
+- ranking por período usa apenas identidades ativas, enquanto os totais do Squad continuam considerando toda a produção;
+- adiciona trigger de banco para impedir que um usuário inativo/excluído seja reatribuído a `technician_monthly`;
+- adiciona `MIGRACAO_V2.57.7.sql`.
+
 ## V2.57.6 — Insights, fechamento e snapshots
 
 - adiciona permissão separada **Fechar competências** no Controle de Usuários;

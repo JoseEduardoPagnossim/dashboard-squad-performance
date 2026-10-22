@@ -11,7 +11,7 @@ const exporter = require(join(root, 'js', 'chart-export.js'));
 const pkg = require(join(root, 'package.json'));
 
 test('V2.52.1 adiciona evolução combinada nos cards de Todos os Squads', () => {
-  assert.equal(pkg.version, '2.57.6');
+  assert.equal(pkg.version, '2.57.7');
   assert.match(app, /function squadPortfolioTrendBuckets\(/);
   assert.match(app, /days<=15\?'daily':days<=45\?'weekly':'monthly'/);
   assert.match(app, /function renderSquadPortfolioTrendChart\(/);

@@ -12,7 +12,7 @@ const engine = require(join(root, 'js', 'import-engine.js'));
 const pkg = require(join(root, 'package.json'));
 
 test('V2.53.0 adiciona aliases historicos ao cadastro do tecnico',()=>{
-  assert.equal(pkg.version,'2.57.6');
+  assert.equal(pkg.version,'2.57.7');
   assert.ok(index.includes('id="editUserAliases"'));
   assert.match(index,/Nomes anteriores \/ aliases do CSV/);
   assert.match(app,/async function persistTechnicianAliasesForUser\(/);
@@ -48,11 +48,11 @@ test('CSV operacional resolve nome para user_id antes de consolidar a competênc
 });
 
 test('persistência reconcilia linhas mensais duplicadas pela identidade estável',()=>{
-  assert.match(app,/function existingMonthlyIdentity\(row,userMap\)/);
+  assert.match(app,/function existingMonthlyIdentity\(row,userMap,activeUserIds=new Set\(\)\)/);
   assert.match(app,/function chooseExistingMonthlyPrimary\(/);
   assert.match(app,/duplicates=matches\.filter\(x=>x\.id!==primary\?\.id\)/);
   assert.match(app,/from\('technician_monthly'\)\.delete\(\)\.eq\('id',duplicate\.id\)/);
-  assert.match(app,/return\{reconciledDuplicates\}/);
+  assert.match(app,/return\{reconciledDuplicates,unlinkedHistorical\}/);
   assert.match(app,/identityDuplicatesReconciled:identityReconciled/);
 });
 
