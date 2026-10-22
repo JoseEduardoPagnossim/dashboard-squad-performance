@@ -12,7 +12,7 @@ const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2
 const migration2574 = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.57.4.sql'), 'utf8');
 
 test('V2.57.1 adiciona checkbox de Gestão Estratégica no Controle de Usuários', () => {
-  assert.equal(pkg.version, '2.57.5');
+  assert.equal(pkg.version, '2.57.6');
   assert.match(index, /<th>Gestão Estratégica<\/th>/);
   assert.match(app, /data-strategy-user-access/);
   assert.match(app, /setDirectoryStrategyAccess/);
@@ -35,7 +35,8 @@ test('marcar libera o MVP estratégico atual e mantém fechamento separado', () 
   assert.match(app, /can_view_aggregates:enabled===true/);
   assert.match(app, /can_view_people_costs:enabled===true/);
   assert.match(app, /can_edit_costs:enabled===true/);
-  assert.match(app, /can_close_competence:false/);
+  assert.match(app, /can_close_competence:enabled===true&&strategyAccessEngine\.canCloseCompetence/);
+  assert.match(app, /data-strategy-close-access/);
   assert.match(app, /can_manage_access:false/);
   assert.match(migration2574, /where can_view_strategy = true/i);
 });

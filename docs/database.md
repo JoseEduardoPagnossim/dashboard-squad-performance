@@ -127,3 +127,7 @@ A camada estratégica passa a usar tabelas próprias (`strategy_competences`, `s
 ## V2.57.4 — Custos operacionais e consolidação
 
 Novas tabelas: `strategy_operational_costs` e `strategy_cost_allocations`. Novas RPCs agregadas: `get_strategy_financial_summary` e `get_strategy_squad_cost_summary`.
+
+## V2.57.6 — Snapshots de competência
+`strategy_competence_snapshots` preserva revisões imutáveis do fechamento. `strategy_competences` guarda metadados de fechamento/reabertura e revisão. As RPCs `close_strategy_competence` e `reopen_strategy_competence` controlam as transições.
+

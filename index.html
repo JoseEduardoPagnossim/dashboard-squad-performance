@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.57.5" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.57.5" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.57.5" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.57.5" />
+  <link rel="stylesheet" href="css/styles.css?v=2.57.6" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.57.6" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.57.6" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.57.6" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.57.5 • Resultado Executivo</small>
+        <small class="login-version">V2.57.6 • Insights, Fechamento e Snapshots</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.57.5 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.57.6 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1048,7 +1048,7 @@
           <div class="section-title"><div><span class="eyebrow">USUÁRIOS</span><h3>Cadastros e permissões</h3></div><span class="muted" id="usersCountLabel">0 usuários</span></div>
           <div class="users-toolbar"><label class="search-field"><span>Buscar</span><input id="userSearchInput" type="search" placeholder="Nome, e-mail ou técnico"></label><label class="filter-field"><span>Perfil</span><select id="userRoleFilter"><option value="all">Todos</option><option value="super_admin">Administrador</option><option value="technician">Técnico</option></select></label></div>
           <div class="table-wrap users-table-wrap"><table class="users-table"><thead><tr><th>Usuário</th><th>Perfil</th><th>Squad</th><th>Técnico vinculado</th><th>Status</th><th>Gestão Estratégica</th><th>Ações</th></tr></thead><tbody id="userRows"></tbody></table></div>
-          <div class="admin-note">O acesso à <b>Gestão Estratégica</b> fica desmarcado por padrão e somente o <b>Super Admin</b> pode liberar ou revogar pelo checkbox da listagem. Isso é independente do perfil operacional do usuário.</div><div class="admin-note">Por segurança, a criação real no Supabase é feita por uma Edge Function no servidor. A chave <code>service_role</code> nunca fica exposta no navegador.</div>
+          <div class="admin-note">O acesso à <b>Gestão Estratégica</b> fica desmarcado por padrão e somente o <b>Super Admin</b> pode liberar ou revogar. A permissão <b>Fechar competências</b> é separada e também controlada pelo Super Admin.</div><div class="admin-note">Por segurança, a criação real no Supabase é feita por uma Edge Function no servidor. A chave <code>service_role</code> nunca fica exposta no navegador.</div>
         </article>
       </section>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.57.5</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.57.6</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1385,12 +1385,12 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 2</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>Camada estratégica isolada do operacional. A V2.57.5 transforma custos consolidados em leitura executiva de eficiência, produtividade e qualidade sem alterar o operacional.</p>
+              <p>Camada estratégica isolada do operacional. A V2.57.6 adiciona fechamento seguro, snapshots revisionados e insights executivos estáveis sem alterar o operacional.</p>
             </div>
             <span class="strategy-foundation-badge">Resultado Executivo ativo</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.5</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.6</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1481,16 +1481,17 @@
           <div class="strategy-panel hidden" data-strategy-panel="assumptions">
             <div class="strategy-assumptions-stack">
               <article class="strategy-placeholder-card">
-                <div class="strategy-section-heading"><div><span class="eyebrow">COMPETÊNCIA FINANCEIRA</span><h3>Controle mensal do custo estratégico</h3><p>Crie a competência financeira sem alterar as competências operacionais. O fechamento definitivo será implementado em etapa posterior.</p></div><span id="strategyCompetenceBadge" class="strategy-mini-badge">Não criada</span></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">COMPETÊNCIA FINANCEIRA</span><h3>Controle mensal do custo estratégico</h3><p>Crie a competência financeira sem alterar as competências operacionais. Ao fechar, custos, rateios, produção e qualidade são congelados em um snapshot oficial e revisionado.</p></div><span id="strategyCompetenceBadge" class="strategy-mini-badge">Não criada</span></div>
                 <div class="strategy-competence-create">
                   <label><span>Nova competência</span><input id="strategyNewCompetenceInput" type="month"></label>
                   <button class="btn secondary" id="strategyCreateCompetenceBtn" type="button">+ Criar competência</button>
                 </div>
                 <div class="strategy-competence-meta" id="strategyCompetenceMeta">
-                  <label><span>Status</span><select id="strategyCompetenceStatusSelect"><option value="draft">Em preenchimento</option><option value="provisional">Provisório</option><option value="closed" disabled>Fechado (etapa futura)</option></select></label>
+                  <label><span>Status</span><select id="strategyCompetenceStatusSelect"><option value="draft">Em preenchimento</option><option value="provisional">Provisório</option><option value="closed" disabled>Fechado via snapshot</option></select></label>
                   <label class="strategy-notes-field"><span>Observações</span><textarea id="strategyCompetenceNotes" rows="2" placeholder="Observações sobre a competência"></textarea></label>
-                  <button class="btn primary" id="strategySaveCompetenceBtn" type="button">Salvar competência</button>
+                  <div class="strategy-competence-actions"><button class="btn primary" id="strategySaveCompetenceBtn" type="button">Salvar competência</button><button class="btn secondary" id="strategyCloseCompetenceBtn" type="button">🔒 Fechar competência</button><button class="btn secondary hidden" id="strategyReopenCompetenceBtn" type="button">↻ Reabrir competência</button></div>
                 </div>
+                <div id="strategySnapshotMeta" class="strategy-snapshot-meta hidden"></div>
               </article>
 
               <div id="strategyPeoplePermissionNotice" class="strategy-access-warning hidden">O checkbox <strong>Acesso à Gestão Estratégica</strong> precisa estar marcado para consultar e editar os custos do MVP. A V2.57.4 atualiza automaticamente os acessos já marcados.</div>
@@ -1514,7 +1515,7 @@
               </article>
 
               <article id="strategyOperationalEditor" class="strategy-placeholder-card">
-                <div class="strategy-section-heading"><div><span class="eyebrow">CUSTOS OPERACIONAIS E RATEIOS</span><h3>Custos compartilhados da operação</h3><p>Cadastre tecnologia, comunicação, infraestrutura e outros custos. Custos gerais podem ser rateados por FTE ou por atendimentos; custos de Squad são diretos.</p></div><span class="strategy-mini-badge">Motor SC-0.4.0</span></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">CUSTOS OPERACIONAIS E RATEIOS</span><h3>Custos compartilhados da operação</h3><p>Cadastre tecnologia, comunicação, infraestrutura e outros custos. Custos gerais podem ser rateados por FTE ou por atendimentos; custos de Squad são diretos.</p></div><span class="strategy-mini-badge">Motor SC-0.6.0</span></div>
                 <div class="strategy-operational-create">
                   <label><span>Descrição</span><input id="strategyNewOperationalDescription" type="text" maxlength="160" placeholder="Ex.: Chat, CRM, servidor"></label>
                   <label><span>Categoria</span><select id="strategyNewOperationalCategory"><option>Tecnologia</option><option>Comunicação</option><option>Infraestrutura</option><option>Terceiros</option><option>Treinamento</option><option>Outros</option></select></label>
@@ -1525,7 +1526,7 @@
                   <button class="btn secondary" id="strategyAddOperationalCostBtn" type="button">+ Adicionar custo</button>
                 </div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-operational-table"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Escopo</th><th>Squad</th><th>Rateio</th><th>Total</th></tr></thead><tbody id="strategyOperationalRows"><tr><td colspan="7" class="muted">Nenhum custo operacional lançado.</td></tr></tbody></table></div>
-                <div class="strategy-editor-footer"><span class="muted">Ao salvar, os rateios por FTE/atendimentos são recalculados e fotografados na competência.</span><button class="btn primary" id="strategySaveOperationalCostsBtn" type="button">Salvar custos operacionais</button></div>
+                <div class="strategy-editor-footer"><span class="muted">Ao salvar, os rateios por FTE/atendimentos são recalculados. No fechamento, a fotografia oficial fica congelada no snapshot.</span><button class="btn primary" id="strategySaveOperationalCostsBtn" type="button">Salvar custos operacionais</button></div>
               </article>
             </div>
             <aside class="strategy-insight"><strong>Histórico preservado</strong><p>Squad, FTE, custos e rateios ficam fotografados na competência. Alterações futuras não devem reescrever meses anteriores.</p></aside>
@@ -1935,29 +1936,29 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.57.5"></script>
-  <script src="js/finance-rules.js?v=2.57.5"></script>
-  <script src="js/finance-advanced.js?v=2.57.5"></script>
-  <script src="js/tv-engine.js?v=2.57.5"></script>
-  <script src="js/presentation.js?v=2.57.5"></script>
-  <script src="js/chart-engine.js?v=2.57.5"></script>
-  <script src="js/chart-export.js?v=2.57.5"></script>
-  <script src="js/import-engine.js?v=2.57.5"></script>
-  <script src="js/predictive-engine.js?v=2.57.5"></script>
-  <script src="js/alert-engine.js?v=2.57.5"></script>
-  <script src="js/settings-engine.js?v=2.57.5"></script>
-  <script src="js/performance-engine.js?v=2.57.5"></script>
-  <script src="js/navigation-engine.js?v=2.57.5"></script>
-  <script src="js/workspace-engine.js?v=2.57.5"></script>
-  <script src="js/filter-system.js?v=2.57.5"></script>
-  <script src="js/comparison-engine.js?v=2.57.5"></script>
-  <script src="js/finance-report-engine.js?v=2.57.5"></script>
-  <script src="js/design-system.js?v=2.57.5"></script>
-  <script src="js/strategy-access.js?v=2.57.5"></script>
-  <script src="js/strategy-data.js?v=2.57.5"></script>
-  <script src="js/strategy-cost-engine.js?v=2.57.5"></script>
-  <script src="js/strategy-insights.js?v=2.57.5"></script>
-  <script src="js/strategy.js?v=2.57.5"></script>
-  <script src="js/app.js?v=2.57.5"></script>
+  <script src="js/business-calendar.js?v=2.57.6"></script>
+  <script src="js/finance-rules.js?v=2.57.6"></script>
+  <script src="js/finance-advanced.js?v=2.57.6"></script>
+  <script src="js/tv-engine.js?v=2.57.6"></script>
+  <script src="js/presentation.js?v=2.57.6"></script>
+  <script src="js/chart-engine.js?v=2.57.6"></script>
+  <script src="js/chart-export.js?v=2.57.6"></script>
+  <script src="js/import-engine.js?v=2.57.6"></script>
+  <script src="js/predictive-engine.js?v=2.57.6"></script>
+  <script src="js/alert-engine.js?v=2.57.6"></script>
+  <script src="js/settings-engine.js?v=2.57.6"></script>
+  <script src="js/performance-engine.js?v=2.57.6"></script>
+  <script src="js/navigation-engine.js?v=2.57.6"></script>
+  <script src="js/workspace-engine.js?v=2.57.6"></script>
+  <script src="js/filter-system.js?v=2.57.6"></script>
+  <script src="js/comparison-engine.js?v=2.57.6"></script>
+  <script src="js/finance-report-engine.js?v=2.57.6"></script>
+  <script src="js/design-system.js?v=2.57.6"></script>
+  <script src="js/strategy-access.js?v=2.57.6"></script>
+  <script src="js/strategy-data.js?v=2.57.6"></script>
+  <script src="js/strategy-cost-engine.js?v=2.57.6"></script>
+  <script src="js/strategy-insights.js?v=2.57.6"></script>
+  <script src="js/strategy.js?v=2.57.6"></script>
+  <script src="js/app.js?v=2.57.6"></script>
 </body>
 </html>

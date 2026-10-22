@@ -127,3 +127,13 @@
 @media(max-width:1180px){.strategy-executive-panel{grid-template-columns:1fr}.strategy-executive-aside{position:static}.strategy-executive-chart-grid,.strategy-executive-lower-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.strategy-efficiency-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.strategy-efficiency-grid{grid-template-columns:1fr}.strategy-executive-context{align-items:flex-start;flex-direction:column}}
+
+/* V2.57.6 — Insights, fechamento e snapshots */
+.strategy-competence-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.strategy-snapshot-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--success) 32%,var(--border));border-radius:12px;background:color-mix(in srgb,var(--success) 7%,var(--panel2))}
+.strategy-snapshot-meta strong{font-size:.82rem;color:var(--success)}
+.strategy-snapshot-meta span{font-size:.76rem;color:var(--muted);text-align:right}
+.strategy-readonly .strategy-operational-create,.strategy-readonly #strategySaveOperationalCostsBtn{display:none}
+.strategy-user-access-stack{display:grid;gap:5px;min-width:150px}
+.strategy-user-access-toggle.compact{font-size:10px;min-width:0}
+@media(max-width:680px){.strategy-competence-actions{justify-content:flex-start;width:100%}.strategy-competence-actions .btn{width:100%}.strategy-snapshot-meta{align-items:flex-start;flex-direction:column}.strategy-snapshot-meta span{text-align:left}}

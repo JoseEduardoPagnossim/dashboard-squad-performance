@@ -49,7 +49,7 @@ test('controller rejeita Squad, competência e seção fora do contexto', () => 
   assert.equal(state.section, 'executive');
 });
 
-test('V2.57.5 mantém custos estratégicos separados e aceita contexto financeiro próprio', () => {
+test('V2.57.6 mantém custos estratégicos separados e aceita contexto financeiro próprio', () => {
   const controller = strategy.createController({access:{canViewStrategy:true,canViewAggregates:true,canViewPeopleCosts:true}});
   controller.initializeContext({squads:operationalFixture()});
   controller.setFinancialData({

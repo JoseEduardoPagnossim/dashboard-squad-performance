@@ -1,20 +1,18 @@
-## V2.57.5 — Resultado Executivo
+## V2.57.6 — Insights, fechamento e snapshots
 
-A Gestão Estratégica passa a transformar o motor financeiro da V2.57.4 em uma visão de Diretoria, cruzando custo, produção e qualidade sem alterar o operacional.
+A Gestão Estratégica passa a permitir fechamento controlado das competências financeiras. O fechamento congela uma fotografia auditável dos custos, rateios, produção e qualidade daquele mês, sem alterar o operacional.
 
 ### Principais entregas
-- cards executivos de custo total, pessoas, operação, custo por atendimento, produção, FTE, produtividade e avaliação;
-- comparação contra mês anterior ou média das 3/6/12 competências anteriores;
-- spread de eficiência: variação da produção menos variação do custo;
-- trava de qualidade para evitar leitura positiva de produtividade com deterioração relevante da avaliação;
-- evolução do custo por atendimento;
-- gráfico Custo x Produção em índice base 100;
-- composição do custo entre Pessoas e Operação;
-- comparativo executivo por Squad;
-- insights determinísticos e explicáveis;
-- RPC estratégica agregada de histórico, sem expor salários individuais.
+- permissão separada **Fechar competências**, administrada pelo Super Admin e desmarcada por padrão;
+- fechamento por RPC, com validação de custos não alocados e rateios inconsistentes;
+- snapshot versionado por competência, com revisão, fingerprint e versões das regras;
+- competências fechadas passam a ser somente leitura e os resumos executivo/histórico passam a ler o snapshot;
+- reabertura controlada sem apagar snapshots anteriores;
+- novo fechamento após reabertura cria uma nova revisão;
+- insights executivos passam a sinalizar competência provisória, rascunho e snapshot fechado;
+- bloqueio de INSERT/UPDATE/DELETE em custos e rateios de competências fechadas via RLS.
 
 ### Banco
-Execute `supabase/migrations/MIGRACAO_V2.57.5.sql` após as migrações anteriores da série 2.57.x.
+Execute `supabase/migrations/MIGRACAO_V2.57.6.sql` após as migrações anteriores da série 2.57.x.
 
-Detalhes: `docs/GESTAO_ESTRATEGICA_RESULTADO_EXECUTIVO_V2.57.5.md`.
+Detalhes: `docs/GESTAO_ESTRATEGICA_FECHAMENTO_SNAPSHOTS_V2.57.6.md`.

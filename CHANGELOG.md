@@ -1,13 +1,16 @@
 # Changelog
 
-## V2.57.5 — Resultado Executivo
-- adiciona visão executiva com custo, produção, FTE, produtividade e qualidade;
-- ativa comparação com mês anterior e médias móveis de 3/6/12 competências;
-- calcula spread de eficiência com trava de qualidade;
-- adiciona evolução do custo por atendimento e Custo x Produção em índice base 100;
-- adiciona composição de custos, comparativo por Squad e insights determinísticos;
-- cria `get_strategy_financial_history` e amplia a consolidação agregada por Squad;
-- mantém custos individuais protegidos e o operacional somente leitura.
+## V2.57.6 — Insights, fechamento e snapshots
+
+- adiciona permissão separada **Fechar competências** no Controle de Usuários;
+- cria snapshots imutáveis por competência com revisão, fingerprint e versão das regras;
+- fechamento valida custos operacionais não alocados e divergências de rateio;
+- competências fechadas passam a bloquear alterações de custos e rateios também no banco;
+- Resultado Executivo, histórico e consolidação por Squad passam a ler o snapshot quando o mês está fechado;
+- reabertura preserva snapshots anteriores e um novo fechamento cria nova revisão;
+- insights passam a identificar rascunho, competência provisória e snapshot fechado;
+- atualiza motor estratégico para `SC-0.6.0-snapshot` e insights para `SI-1.1.0`;
+- adiciona `MIGRACAO_V2.57.6.sql`.
 
 ## V2.57.4 — Motor financeiro + consolidação por Squad
 

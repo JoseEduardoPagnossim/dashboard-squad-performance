@@ -4,7 +4,7 @@
   if(root)root.SoftenStrategyCostEngine=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const RULE_VERSION='SC-0.5.0-executive';
+  const RULE_VERSION='SC-0.6.0-snapshot';
   function num(value){const n=Number(value);return Number.isFinite(n)?n:0}
   function money(value){return Math.round(Math.max(0,num(value))*100)/100}
   function clampFte(value){return Math.max(0,Math.min(1,num(value)||0))}
@@ -51,19 +51,20 @@
     return Object.freeze({operationalCost:money((allocations||[]).filter(a=>cleanCode(a.squadCode||a.squad_code)===code).reduce((s,a)=>s+money(a.allocatedAmount??a.allocated_amount),0)),unallocatedCost:0});
   }
   function emptySummary({competence='',squadCode='all'}={}){
-    return Object.freeze({ruleVersion:RULE_VERSION,competence:String(competence||''),squadCode:String(squadCode||'all'),status:'financial-consolidated',peopleCount:0,fte:0,salary:0,employerCharges:0,benefits:0,variablePay:0,overtime:0,otherCosts:0,peopleCost:0,operationalCost:0,unallocatedOperationalCost:0,totalCost:0,attendance:0,costPerAttendance:null,attendancePerFte:null});
+    return Object.freeze({ruleVersion:RULE_VERSION,competence:String(competence||''),squadCode:String(squadCode||'all'),status:'financial-consolidated',peopleCount:0,fte:0,salary:0,employerCharges:0,benefits:0,variablePay:0,overtime:0,otherCosts:0,peopleCost:0,operationalCost:0,unallocatedOperationalCost:0,totalCost:0,attendance:0,evaluationRate:null,qualityTarget:null,costPerAttendance:null,attendancePerFte:null});
   }
   function mergeFinancialSummary(base={},meta={}){
     const peopleCost=money(base.peopleCost??base.people_cost??base.totalPeopleCost??base.people_total??base.total_cost_people??base.totalCostPeople??base.total_cost??0),operationalCost=money(base.operationalCost??base.operational_cost),explicitTotal=Number(base.totalCost??base.total_cost),totalCost=Number.isFinite(explicitTotal)&&('operationalCost' in base||'operational_cost' in base||'peopleCost' in base||'people_cost' in base)?money(explicitTotal):money(peopleCost+operationalCost),attendance=Math.max(0,num(base.attendance));
     const fte=Math.max(0,num(base.fte));
-    return Object.freeze({...emptySummary(meta),peopleCount:Math.max(0,num(base.peopleCount??base.people_count)),fte,salary:money(base.salary),employerCharges:money(base.employerCharges??base.employer_charges),benefits:money(base.benefits),variablePay:money(base.variablePay??base.variable_pay),overtime:money(base.overtime),otherCosts:money(base.otherCosts??base.other_costs),peopleCost,operationalCost,unallocatedOperationalCost:money(base.unallocatedOperationalCost??base.unallocated_operational_cost),totalCost,attendance,costPerAttendance:attendance>0?money(totalCost/attendance):null,attendancePerFte:fte>0?Math.round((attendance/fte)*100)/100:null});
+    const evaluationRaw=Number(base.evaluationRate??base.evaluation_rate),qualityTargetRaw=Number(base.qualityTarget??base.quality_target);
+    return Object.freeze({...emptySummary(meta),peopleCount:Math.max(0,num(base.peopleCount??base.people_count)),fte,salary:money(base.salary),employerCharges:money(base.employerCharges??base.employer_charges),benefits:money(base.benefits),variablePay:money(base.variablePay??base.variable_pay),overtime:money(base.overtime),otherCosts:money(base.otherCosts??base.other_costs),peopleCost,operationalCost,unallocatedOperationalCost:money(base.unallocatedOperationalCost??base.unallocated_operational_cost),totalCost,attendance,evaluationRate:Number.isFinite(evaluationRaw)?evaluationRaw:null,qualityTarget:Number.isFinite(qualityTargetRaw)?qualityTargetRaw:null,costPerAttendance:attendance>0?money(totalCost/attendance):null,attendancePerFte:fte>0?Math.round((attendance/fte)*100)/100:null});
   }
   function mergePeopleSummary(base={},meta={}){return mergeFinancialSummary({...base,peopleCost:base.peopleCost??base.totalCost??base.total_cost,operationalCost:0,totalCost:base.peopleCost??base.totalCost??base.total_cost},meta)}
 
   function changeRatio(current,previous){const prev=num(previous),cur=num(current);return prev>0?(cur-prev)/prev:null}
   function averageRows(rows=[]){
     const valid=(rows||[]).filter(Boolean);if(!valid.length)return null;
-    const keys=['peopleCount','fte','salary','employerCharges','benefits','variablePay','overtime','otherCosts','peopleCost','operationalCost','unallocatedOperationalCost','totalCost','attendance','evaluationRate','costPerAttendance','attendancePerFte'];
+    const keys=['peopleCount','fte','salary','employerCharges','benefits','variablePay','overtime','otherCosts','peopleCost','operationalCost','unallocatedOperationalCost','totalCost','attendance','evaluationRate','qualityTarget','costPerAttendance','attendancePerFte'];
     const out={};for(const key of keys){const vals=valid.map(r=>Number(r[key])).filter(Number.isFinite);out[key]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;}return out;
   }
   function comparisonWindow(history=[],currentCompetence='',mode='previous'){

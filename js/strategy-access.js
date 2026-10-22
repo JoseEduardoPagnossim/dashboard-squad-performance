@@ -58,11 +58,12 @@
   function canViewAggregates(access){const a=normalizeAccess(access);return a.canViewStrategy&&a.canViewAggregates}
   function canViewPeopleCosts(access){const a=normalizeAccess(access);return a.canViewStrategy&&a.canViewPeopleCosts}
   function canEditCosts(access){const a=normalizeAccess(access);return a.canViewStrategy&&a.canEditCosts&&a.canViewPeopleCosts}
+  function canCloseCompetence(access){const a=normalizeAccess(access);return a.canViewStrategy&&a.canCloseCompetence}
   function accessStatus(access){
     const a=normalizeAccess(access);
     if(!a.remoteAvailable)return{tone:'warning',label:'Migração pendente'};
     if(a.canViewStrategy)return{tone:'success',label:'Acesso estratégico ativo'};
     return{tone:'neutral',label:'Sem acesso estratégico'};
   }
-  return{ACCESS_KEYS,EMPTY_ACCESS,DB_FIELD_MAP,normalizeAccess,demoAccessForRole,canView,canViewAggregates,canViewPeopleCosts,canEditCosts,accessStatus};
+  return{ACCESS_KEYS,EMPTY_ACCESS,DB_FIELD_MAP,normalizeAccess,demoAccessForRole,canView,canViewAggregates,canViewPeopleCosts,canEditCosts,canCloseCompetence,accessStatus};
 });

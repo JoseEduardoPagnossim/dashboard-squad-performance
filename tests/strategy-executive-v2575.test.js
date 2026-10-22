@@ -11,8 +11,8 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.57.5.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
-test('V2.57.5 publica Resultado Executivo com histórico e comparação',()=>{
-  assert.equal(pkg.version,'2.57.5');
+test('V2.57.6 publica Resultado Executivo com histórico e comparação',()=>{
+  assert.equal(pkg.version,'2.57.6');
   assert.equal(existsSync(migrationPath),true);
   for(const id of ['strategyExecutiveUnitCostChart','strategyExecutiveEfficiencyChart','strategyExecutiveComposition','strategyExecutiveInsights','strategyExecutiveSquadRows','strategyEfficiencySpread'])assert.match(index,new RegExp(id));
   assert.match(app,/get_strategy_financial_history/);

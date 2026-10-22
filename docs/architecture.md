@@ -208,3 +208,7 @@ O módulo estratégico mantém duas fotografias distintas: `strategy_people` rep
 ## V2.57.4 — Motor financeiro estratégico
 
 `strategy-cost-engine.js` consolida pessoas e operação; rateios são persistidos por competência e o operacional continua somente leitura.
+
+## V2.57.6 — Fechamento estratégico
+Competências fechadas deixam de ser recalculadas ao vivo. As RPCs estratégicas detectam `status=closed` e usam a revisão mais recente de `strategy_competence_snapshots`; competências abertas continuam usando o motor financeiro ao vivo.
+

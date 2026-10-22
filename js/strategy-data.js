@@ -42,6 +42,13 @@
       competenceDate:competenceDate(id),
       status:['draft','provisional','closed'].includes(row.status)?row.status:'draft',
       notes:cleanText(row.notes),
+      closedAt:row.closed_at||null,
+      closedBy:cleanText(row.closed_by)||null,
+      reopenedAt:row.reopened_at||null,
+      reopenedBy:cleanText(row.reopened_by)||null,
+      snapshotRevision:Math.max(0,num(row.snapshot_revision)),
+      snapshotVersion:cleanText(row.snapshot_version),
+      ruleVersion:cleanText(row.rule_version),
       createdAt:row.created_at||null,
       updatedAt:row.updated_at||null
     };
@@ -98,10 +105,11 @@
     const peopleCost=Math.max(0,num(source.people_cost??source.peopleCost??source.total_cost_people??source.totalCostPeople??source.total_cost??source.totalCost));
     const operationalCost=Math.max(0,num(source.operational_cost??source.operationalCost));
     const explicitTotal=Number(source.total_cost??source.totalCost);
-    return{competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code||source.squadCode)||'ALL',peopleCount:Math.max(0,num(source.people_count??source.peopleCount)),fte:Math.max(0,num(source.fte)),salary:Math.max(0,num(source.salary)),employerCharges:Math.max(0,num(source.employer_charges??source.employerCharges)),benefits:Math.max(0,num(source.benefits)),variablePay:Math.max(0,num(source.variable_pay??source.variablePay)),overtime:Math.max(0,num(source.overtime)),otherCosts:Math.max(0,num(source.other_costs??source.otherCosts)),peopleCost,operationalCost,unallocatedOperationalCost:Math.max(0,num(source.unallocated_operational_cost??source.unallocatedOperationalCost)),totalCost:Number.isFinite(explicitTotal)?Math.max(0,explicitTotal):peopleCost+operationalCost};
+    const evaluationRaw=Number(source.evaluation_rate??source.evaluationRate),qualityTargetRaw=Number(source.quality_target??source.qualityTarget),attendance=Math.max(0,num(source.attendance));
+    return{competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code||source.squadCode)||'ALL',peopleCount:Math.max(0,num(source.people_count??source.peopleCount)),fte:Math.max(0,num(source.fte)),salary:Math.max(0,num(source.salary)),employerCharges:Math.max(0,num(source.employer_charges??source.employerCharges)),benefits:Math.max(0,num(source.benefits)),variablePay:Math.max(0,num(source.variable_pay??source.variablePay)),overtime:Math.max(0,num(source.overtime)),otherCosts:Math.max(0,num(source.other_costs??source.otherCosts)),peopleCost,operationalCost,unallocatedOperationalCost:Math.max(0,num(source.unallocated_operational_cost??source.unallocatedOperationalCost)),totalCost:Number.isFinite(explicitTotal)?Math.max(0,explicitTotal):peopleCost+operationalCost,attendance,evaluationRate:Number.isFinite(evaluationRaw)?evaluationRaw:null,qualityTarget:Number.isFinite(qualityTargetRaw)?qualityTargetRaw:null};
   }
-  function normalizeSquadFinancialRow(row={}){const attendance=Math.max(0,num(row.attendance));const evaluationRaw=Number(row.evaluation_rate??row.evaluationRate);return{squadCode:cleanCode(row.squad_code||row.squadCode),peopleCount:Math.max(0,num(row.people_count??row.peopleCount)),fte:Math.max(0,num(row.fte)),peopleCost:Math.max(0,num(row.people_cost??row.peopleCost)),operationalCost:Math.max(0,num(row.operational_cost??row.operationalCost)),totalCost:Math.max(0,num(row.total_cost??row.totalCost)),attendance,evaluationRate:Number.isFinite(evaluationRaw)?evaluationRaw:null};}
-  function normalizeFinancialHistoryRow(row={}){const base=normalizeFinancialSummary(row),attendance=Math.max(0,num(row.attendance)),evaluationRaw=Number(row.evaluation_rate??row.evaluationRate);return{...base,status:['draft','provisional','closed'].includes(row.status)?row.status:'draft',attendance,evaluationRate:Number.isFinite(evaluationRaw)?evaluationRaw:null,costPerAttendance:attendance>0?base.totalCost/attendance:null,attendancePerFte:base.fte>0?attendance/base.fte:null};}
+  function normalizeSquadFinancialRow(row={}){const base=normalizeFinancialSummary(row);return{...base,squadCode:cleanCode(row.squad_code||row.squadCode),costPerAttendance:base.attendance>0?base.totalCost/base.attendance:null,attendancePerFte:base.fte>0?base.attendance/base.fte:null};}
+  function normalizeFinancialHistoryRow(row={}){const base=normalizeFinancialSummary(row);return{...base,status:['draft','provisional','closed'].includes(row.status)?row.status:'draft',costPerAttendance:base.attendance>0?base.totalCost/base.attendance:null,attendancePerFte:base.fte>0?base.attendance/base.fte:null};}
 
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};

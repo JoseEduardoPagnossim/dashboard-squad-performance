@@ -76,3 +76,7 @@ O acesso geral à Gestão Estratégica não concede acesso a salários. As tabel
 ## V2.57.4 — Checkbox funcional do MVP
 
 Somente Super Admin altera o checkbox. Quando marcado, ele habilita `can_view_strategy`, `can_view_aggregates`, `can_view_people_costs` e `can_edit_costs`. Fechamento de competência permanece separado.
+
+## V2.57.6 — Segurança do fechamento
+`can_close_competence` é independente de `can_edit_costs`. Após o fechamento, políticas RLS bloqueiam mutações nos custos e rateios da competência. Snapshots são consumidos por RPCs agregadas e não possuem política direta de leitura para usuários comuns.
+
