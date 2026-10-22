@@ -1,0 +1,12 @@
+V2.57.9 - validação isolada
+Data: 2026-10-22
+
+Resultado dos testes específicos de hardening:
+- 8 testes executados
+- 8 aprovados
+- 0 falhas
+
+Também foram executados `node --check` nos módulos alterados dentro da fixture de validação.
+
+Limite desta validação:
+O repositório GitHub completo não estava disponível como checkout local neste ambiente, portanto `npm run check` de toda a suíte existente deve ser executado após aplicar o pacote no repositório real.
