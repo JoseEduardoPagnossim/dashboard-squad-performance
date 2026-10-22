@@ -41,3 +41,10 @@ A fundação trata `resolutions` como fonte ainda indisponível. Isso é intenci
 4. Sem atendimentos/FTE/qualidade, a tela sinaliza base parcial sem fabricar valores.
 5. Custo por resolução permanece pendente até a V2.58.2.
 6. `npm run check` deve concluir sem falhas.
+
+## Revisão R2 — persistência e base de pessoas
+- Competências e pessoas passam a usar confirmação de escrita pelo retorno do Supabase antes do toast de sucesso.
+- A tela exibe as competências financeiras já cadastradas e permite selecioná-las por chips.
+- Se `strategy_people` estiver vazia, técnicos ativos já cadastrados no operacional são pré-carregados como fonte `api`; o botão **Sincronizar técnicos** traz inclusões posteriores.
+- O grupo estratégico `PRE` representa Pré-atendimento sem exigir cadastro no módulo operacional. Pessoas manuais continuam com `user_id = null` e não entram em ranking/bonificação operacional.
+- Nenhuma migration nova é necessária.

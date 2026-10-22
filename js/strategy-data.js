@@ -42,49 +42,49 @@
       competenceDate:competenceDate(id),
       status:['draft','provisional','closed'].includes(row.status)?row.status:'draft',
       notes:cleanText(row.notes),
-      closedAt:row.closed_at||null,
-      closedBy:cleanText(row.closed_by)||null,
-      reopenedAt:row.reopened_at||null,
-      reopenedBy:cleanText(row.reopened_by)||null,
-      snapshotRevision:Math.max(0,num(row.snapshot_revision)),
-      snapshotVersion:cleanText(row.snapshot_version),
-      ruleVersion:cleanText(row.rule_version),
-      createdAt:row.created_at||null,
-      updatedAt:row.updated_at||null
+      closedAt:row.closed_at??row.closedAt??null,
+      closedBy:cleanText(row.closed_by??row.closedBy)||null,
+      reopenedAt:row.reopened_at??row.reopenedAt??null,
+      reopenedBy:cleanText(row.reopened_by??row.reopenedBy)||null,
+      snapshotRevision:Math.max(0,num(row.snapshot_revision??row.snapshotRevision)),
+      snapshotVersion:cleanText(row.snapshot_version??row.snapshotVersion),
+      ruleVersion:cleanText(row.rule_version??row.ruleVersion),
+      createdAt:row.created_at??row.createdAt??null,
+      updatedAt:row.updated_at??row.updatedAt??null
     };
   }
   function normalizePersonRow(row={}){
     return{
       id:cleanText(row.id),
-      userId:cleanText(row.user_id)||null,
-      name:cleanText(row.name||row.full_name),
-      roleLabel:cleanText(row.role_label),
-      squadCode:cleanCode(row.default_squad_code||row.squad_code)||'',
-      defaultFte:Math.max(0,Math.min(1,num(row.default_fte,1))),
+      userId:cleanText(row.user_id??row.userId)||null,
+      name:cleanText(row.name||row.full_name||row.fullName),
+      roleLabel:cleanText(row.role_label??row.roleLabel),
+      squadCode:cleanCode(row.default_squad_code||row.squad_code||row.squadCode)||'',
+      defaultFte:Math.max(0,Math.min(1,num(row.default_fte??row.defaultFte,1))),
       active:row.active!==false,
       source:cleanText(row.source)||'manual',
-      createdAt:row.created_at||null,
-      updatedAt:row.updated_at||null
+      createdAt:row.created_at??row.createdAt??null,
+      updatedAt:row.updated_at??row.updatedAt??null
     };
   }
   function normalizeEmployeeCostRow(row={}){
     const fte=Math.max(0,Math.min(1,num(row.fte,1)));
     const salary=Math.max(0,num(row.salary));
-    const employerCharges=Math.max(0,num(row.employer_charges));
+    const employerCharges=Math.max(0,num(row.employer_charges??row.employerCharges));
     const benefits=Math.max(0,num(row.benefits));
-    const variablePay=Math.max(0,num(row.variable_pay));
+    const variablePay=Math.max(0,num(row.variable_pay??row.variablePay));
     const overtime=Math.max(0,num(row.overtime));
-    const otherCosts=Math.max(0,num(row.other_costs));
+    const otherCosts=Math.max(0,num(row.other_costs??row.otherCosts));
     const gross=salary+employerCharges+benefits+variablePay+overtime+otherCosts;
     return{
       id:cleanText(row.id),
-      competenceId:cleanText(row.competence_id),
-      personId:cleanText(row.person_id),
-      squadCode:cleanCode(row.squad_code_snapshot),
+      competenceId:cleanText(row.competence_id??row.competenceId),
+      personId:cleanText(row.person_id??row.personId),
+      squadCode:cleanCode(row.squad_code_snapshot??row.squadCode),
       fte,
       salary,employerCharges,benefits,variablePay,overtime,otherCosts,
       grossCost:gross,
-      totalCost:Number.isFinite(Number(row.total_cost))?Number(row.total_cost):gross*fte,
+      totalCost:Number.isFinite(Number(row.total_cost??row.totalCost))?Math.max(0,Number(row.total_cost??row.totalCost)):gross*fte,
       source:cleanText(row.source)||'manual',
       notes:cleanText(row.notes),
       createdAt:row.created_at||null,
@@ -98,7 +98,7 @@
     };
   }
   function normalizeAllocationRow(row={}){
-    return{id:cleanText(row.id),operationalCostId:cleanText(row.operational_cost_id),squadCode:cleanCode(row.squad_code),allocationMethod:cleanText(row.allocation_method_snapshot)||'fte',basisValue:Math.max(0,num(row.basis_value)),percentage:Math.max(0,num(row.percentage)),allocatedAmount:Math.max(0,num(row.allocated_amount)),createdAt:row.created_at||null,updatedAt:row.updated_at||null};
+    return{id:cleanText(row.id),operationalCostId:cleanText(row.operational_cost_id),squadCode:cleanCode(row.squad_code),allocationMethod:cleanText(row.allocation_method_snapshot)||'fte',basisValue:Math.max(0,num(row.basis_value)),percentage:Math.max(0,Math.min(1,num(row.percentage))),allocatedAmount:Math.max(0,num(row.allocated_amount)),createdAt:row.created_at||null,updatedAt:row.updated_at||null};
   }
   function normalizeFinancialSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};

@@ -4,7 +4,7 @@
   if(root)root.SoftenStrategyCostEngine=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const RULE_VERSION='SC-0.6.0-snapshot';
+  const RULE_VERSION='SC-0.6.1';
   function num(value){const n=Number(value);return Number.isFinite(n)?n:0}
   function money(value){return Math.round(Math.max(0,num(value))*100)/100}
   function clampFte(value){return Math.max(0,Math.min(1,num(value)||0))}
@@ -23,12 +23,18 @@
     return Object.freeze({ruleVersion:RULE_VERSION,peopleCount:people.size,fte:Math.round(fte*100)/100,salary:money(salary),employerCharges:money(employerCharges),benefits:money(benefits),variablePay:money(variablePay),overtime:money(overtime),otherCosts:money(otherCosts),totalCost:money(totalCost)});
   }
   function allocateCents(amount,weights={}){
-    const totalCents=Math.round(money(amount)*100),entries=Object.entries(weights||{}).map(([code,value])=>[cleanCode(code),Math.max(0,num(value))]).filter(([code,value])=>code&&value>0),basis=entries.reduce((s,[,v])=>s+v,0);
-    if(totalCents<=0||basis<=0)return{allocations:{},percentages:{},basis};
+    const normalizedWeights={};
+    for(const [rawCode,rawValue] of Object.entries(weights||{})){
+      const code=cleanCode(rawCode),value=Math.max(0,num(rawValue));
+      if(!code||value<=0)continue;
+      normalizedWeights[code]=(normalizedWeights[code]||0)+value;
+    }
+    const totalCents=Math.round(money(amount)*100),entries=Object.entries(normalizedWeights),basis=entries.reduce((s,[,v])=>s+v,0);
+    if(totalCents<=0||basis<=0)return{allocations:{},percentages:{},basis,weights:normalizedWeights};
     const raw=entries.map(([code,value])=>{const exact=totalCents*(value/basis),floor=Math.floor(exact);return{code,value,exact,floor,frac:exact-floor}}),used=raw.reduce((s,r)=>s+r.floor,0),remaining=totalCents-used;
     raw.sort((a,b)=>b.frac-a.frac||a.code.localeCompare(b.code));for(let i=0;i<remaining;i++)raw[i%raw.length].floor++;
     raw.sort((a,b)=>a.code.localeCompare(b.code));const allocations={},percentages={};for(const row of raw){allocations[row.code]=row.floor/100;percentages[row.code]=row.value/basis;}
-    return{allocations,percentages,basis};
+    return{allocations,percentages,basis,weights:normalizedWeights};
   }
   function calculateOperationalAllocations(cost={},basis={}){
     const amount=money(cost.amount),scope=String(cost.scopeType||cost.scope_type||'organization').toLowerCase(),method=String(cost.allocationMethod||cost.allocation_method||'fte').toLowerCase(),directCode=cleanCode(cost.squadCode||cost.squad_code);
@@ -43,7 +49,7 @@
     else weights=basis.fteBySquad||{};
     const distributed=allocateCents(amount,weights),codes=Object.keys(distributed.allocations);
     if(!codes.length)return Object.freeze([Object.freeze({squadCode:'UNALLOCATED',percentage:1,basisValue:0,allocatedAmount:amount,allocationMethod:method,unallocated:true})]);
-    return Object.freeze(codes.map(code=>Object.freeze({squadCode:code,percentage:distributed.percentages[code]||0,basisValue:Math.max(0,num(weights[code])),allocatedAmount:money(distributed.allocations[code]),allocationMethod:method,unallocated:false})));
+    return Object.freeze(codes.map(code=>Object.freeze({squadCode:code,percentage:distributed.percentages[code]||0,basisValue:Math.max(0,num(distributed.weights?.[code]??weights[code])),allocatedAmount:money(distributed.allocations[code]),allocationMethod:method,unallocated:false})));
   }
   function summarizeOperationalCosts(costs=[],allocations=[],{squadCode='all'}={}){
     const code=cleanCode(squadCode||'ALL');

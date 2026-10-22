@@ -2,6 +2,10 @@
 
 ## V2.58.0 — Fundação da Eficiência
 
+- corrige confirmação de persistência de competências, pessoas e custos para não exibir sucesso quando o banco não confirma a gravação;
+- adiciona lista visível de competências financeiras cadastradas;
+- pré-carrega técnicos ativos do cadastro operacional na base estratégica quando ela está vazia e oferece sincronização manual posterior;
+- adiciona o grupo estratégico `PRE` (Pré-atendimento), sem criar técnicos no módulo operacional;
 - abre a Fase 3 com uma seção própria de Eficiência dentro da Gestão Estratégica;
 - adiciona o motor `strategy-efficiency.js` com contrato de dados e regra `EF-0.1.0-foundation`;
 - conecta competência, Squad e comparação ao novo módulo sem herdar filtros operacionais;

@@ -19,9 +19,11 @@
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });
   const COMPARISONS=Object.freeze(['previous','3m','6m','12m']);
+  const STRATEGIC_GROUPS=Object.freeze([Object.freeze({code:'PRE',name:'Pré-atendimento',competences:Object.freeze([]),strategicOnly:true})]);
 
   function normalizeSection(value){const section=String(value||'').trim();return VALID_SECTIONS.includes(section)?section:'executive'}
-  function normalizeSquad(value,context){const code=String(value||'all').trim().toUpperCase();if(code==='ALL')return'all';return context.squads.some(row=>row.code===code)?code:'all'}
+  function availableSquads(context){const rows=[...(context.squads||[]),...STRATEGIC_GROUPS],seen=new Set();return rows.filter(row=>{const code=String(row?.code||'').toUpperCase();if(!code||seen.has(code))return false;seen.add(code);return true;});}
+  function normalizeSquad(value,context){const code=String(value||'all').trim().toUpperCase();if(code==='ALL')return'all';return availableSquads(context).some(row=>row.code===code)?code:'all'}
   function availableCompetences(context,financial){return[...new Set([...(context.competences||[]),...(financial.competences||[]).map(row=>row.competence)])].filter(Boolean).sort()}
   function normalizeCompetence(value,context,financial){const id=dataEngine.competenceId(value);const list=availableCompetences(context,financial);return list.includes(id)?id:(list.at(-1)||context.latestCompetence||'')}
   function normalizeComparison(value){const id=String(value||'').trim();return COMPARISONS.includes(id)?id:'previous'}
@@ -41,7 +43,7 @@
     function setCompetence(id){state={...state,competence:normalizeCompetence(id,context,financial)};return getState()}
     function setComparison(value){state={...state,comparison:normalizeComparison(value)};return getState()}
     function getState(){return{...state,access:{...state.access}}}
-    function getContext(){const comps=availableCompetences(context,financial);return{squads:context.squads.map(row=>({...row,competences:[...row.competences]})),operationalCompetences:[...context.competences],financialCompetences:financial.competences.map(row=>row.competence),competences:comps,latestCompetence:comps.at(-1)||context.latestCompetence}}
+    function getContext(){const comps=availableCompetences(context,financial);return{squads:availableSquads(context).map(row=>({...row,competences:[...(row.competences||[])]})),operationalCompetences:[...context.competences],financialCompetences:financial.competences.map(row=>row.competence),competences:comps,latestCompetence:comps.at(-1)||context.latestCompetence}}
     function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),operationalCosts:financial.operationalCosts.map(row=>({...row})),allocations:financial.allocations.map(row=>({...row})),summary:{...financial.summary},squadSummary:financial.squadSummary.map(row=>({...row})),history:financial.history.map(row=>({...row}))}}
     function selectedCompetenceRecord(){return financial.competences.find(row=>row.competence===state.competence)||null}
     function viewModel(){
@@ -57,5 +59,5 @@
     return{setAccess,initializeContext,setFinancialData,setFinancialLoading,setFinancialError,setSection,setSquadCode,setCompetence,setComparison,getState,getContext,getFinancialData,viewModel};
   }
 
-  return{VALID_SECTIONS,SECTION_META,COMPARISONS,normalizeSection,createController};
+  return{VALID_SECTIONS,SECTION_META,COMPARISONS,STRATEGIC_GROUPS,normalizeSection,createController};
 });

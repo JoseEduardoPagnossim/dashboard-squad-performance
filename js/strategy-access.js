@@ -34,12 +34,13 @@
   });
 
   function bool(value){return value===true}
+  function hasOwn(source,key){return Object.prototype.hasOwnProperty.call(source,key)}
   function normalizeAccess(raw={},meta={}){
     const source=raw&&typeof raw==='object'?raw:{};
     const out={...EMPTY_ACCESS};
     for(const key of ACCESS_KEYS){
       const dbKey=DB_FIELD_MAP[key];
-      out[key]=bool(source[key])||bool(source[dbKey]);
+      out[key]=hasOwn(source,dbKey)?bool(source[dbKey]):bool(source[key]);
     }
     out.source=String(meta.source||source.source||'remote');
     out.remoteAvailable=meta.remoteAvailable!==false&&source.remoteAvailable!==false;

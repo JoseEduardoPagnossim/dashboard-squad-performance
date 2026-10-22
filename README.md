@@ -1,5 +1,7 @@
 ## V2.58.0 — Fundação da Eficiência
 
+A revisão R2 da V2.58.0 reforça a persistência da área estratégica: competências e pessoas só exibem confirmação após retorno do banco, competências cadastradas ficam visíveis na própria tela e técnicos ativos do módulo operacional podem ser sincronizados para `strategy_people`. Pessoas de Pré-atendimento podem ser mantidas apenas no Estratégico usando o grupo `PRE`, sem entrar no ranking ou nas métricas operacionais.
+
 A Fase 3 começa com uma seção própria de Eficiência, um motor puro (`EF-0.1.0-foundation`) e um contrato de dados que reaproveita custos estratégicos e produção operacional sem alterar os módulos existentes. A tela mostra as bases disponíveis e a prontidão dos próximos indicadores, mantendo custo por resolução pendente até a definição explícita da fonte de resolução.
 
 Não há migration nova. Detalhes: `docs/EFICIENCIA_FUNDACAO_V2.58.0.md`.

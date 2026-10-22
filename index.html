@@ -1408,7 +1408,7 @@
 
           <section class="strategy-controls" aria-label="Contexto estratégico isolado">
             <label><span>Competência estratégica</span><select id="strategyCompetenceSelect"></select></label>
-            <label><span>Squad estratégico</span><select id="strategySquadSelect"></select></label>
+            <label><span>Grupo/Squad estratégico</span><select id="strategySquadSelect"></select></label>
             <label><span>Comparação</span><select id="strategyComparisonSelect"><option value="previous">Mês anterior</option><option value="3m">3 meses</option><option value="6m">6 meses</option><option value="12m">12 meses</option></select></label>
           </section>
 
@@ -1527,22 +1527,24 @@
                   <div class="strategy-competence-actions"><button class="btn primary" id="strategySaveCompetenceBtn" type="button">Salvar competência</button><button class="btn secondary" id="strategyCloseCompetenceBtn" type="button">🔒 Fechar competência</button><button class="btn secondary hidden" id="strategyReopenCompetenceBtn" type="button">↻ Reabrir competência</button></div>
                 </div>
                 <div id="strategySnapshotMeta" class="strategy-snapshot-meta hidden"></div>
+                <div class="strategy-competence-directory"><span>Competências financeiras cadastradas</span><div id="strategyCompetenceList" class="strategy-competence-list"><em>Nenhuma competência criada.</em></div></div>
               </article>
 
               <div id="strategyPeoplePermissionNotice" class="strategy-access-warning hidden">O checkbox <strong>Acesso à Gestão Estratégica</strong> precisa estar marcado para consultar e editar os custos do MVP. A V2.57.4 atualiza automaticamente os acessos já marcados.</div>
 
               <article id="strategyPeopleEditor" class="strategy-placeholder-card">
-                <div class="strategy-section-heading"><div><span class="eyebrow">PESSOAS E CUSTOS PESSOAIS</span><h3>Fotografia da equipe por competência</h3><p>Cadastre pessoas que compõem o custo do Suporte, inclusive liderança ou apoio sem atendimento operacional. FTE permite atribuição parcial à operação.</p></div><span id="strategyPeopleEditorMode" class="strategy-mini-badge">Somente leitura</span></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">PESSOAS E CUSTOS PESSOAIS</span><h3>Fotografia da equipe por competência</h3><p>Os técnicos do cadastro operacional podem ser sincronizados sem duplicar métricas. Pré-atendimento, liderança e apoio podem existir somente no Estratégico.</p></div><span id="strategyPeopleEditorMode" class="strategy-mini-badge">Somente leitura</span></div>
+                <div class="strategy-people-sync"><div><strong>Técnicos do operacional</strong><span id="strategyOperationalPeopleSyncStatus">Técnicos ativos são pré-carregados quando a base estratégica está vazia.</span></div><button class="btn secondary" id="strategySyncOperationalPeopleBtn" type="button">↻ Sincronizar técnicos</button></div>
                 <div class="strategy-person-create">
                   <label><span>Nome</span><input id="strategyNewPersonName" type="text" maxlength="120" placeholder="Nome da pessoa"></label>
                   <label><span>Função</span><input id="strategyNewPersonRole" type="text" maxlength="120" placeholder="Ex.: Técnico, Líder"></label>
-                  <label><span>Squad</span><select id="strategyNewPersonSquad"></select></label>
+                  <label><span>Grupo/Squad</span><select id="strategyNewPersonSquad"></select></label>
                   <label><span>FTE padrão</span><input id="strategyNewPersonFte" type="number" min="0" max="1" step="0.01" value="1"></label>
                   <button class="btn secondary" id="strategyAddPersonBtn" type="button">+ Adicionar pessoa</button>
                 </div>
                 <div class="table-wrap strategy-people-table-wrap">
                   <table class="strategy-people-table">
-                    <thead><tr><th>Pessoa</th><th>Função</th><th>Squad</th><th>FTE</th><th>Salário</th><th>Encargos</th><th>Benefícios</th><th>Variável</th><th>H. extras</th><th>Outros</th><th>Total atribuído</th></tr></thead>
+                    <thead><tr><th>Pessoa</th><th>Função</th><th>Grupo/Squad</th><th>FTE</th><th>Salário</th><th>Encargos</th><th>Benefícios</th><th>Variável</th><th>H. extras</th><th>Outros</th><th>Total atribuído</th></tr></thead>
                     <tbody id="strategyPeopleRows"><tr><td colspan="11" class="muted">Carregando dados estratégicos...</td></tr></tbody>
                   </table>
                 </div>
