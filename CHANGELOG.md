@@ -1,3 +1,14 @@
+# Changelog
+
+## V2.57.5 — Resultado Executivo
+- adiciona visão executiva com custo, produção, FTE, produtividade e qualidade;
+- ativa comparação com mês anterior e médias móveis de 3/6/12 competências;
+- calcula spread de eficiência com trava de qualidade;
+- adiciona evolução do custo por atendimento e Custo x Produção em índice base 100;
+- adiciona composição de custos, comparativo por Squad e insights determinísticos;
+- cria `get_strategy_financial_history` e amplia a consolidação agregada por Squad;
+- mantém custos individuais protegidos e o operacional somente leitura.
+
 ## V2.57.4 — Motor financeiro + consolidação por Squad
 
 - Corrige o acesso estratégico: checkbox marcado passa a habilitar visualização detalhada e edição do MVP.

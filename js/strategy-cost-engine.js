@@ -4,7 +4,7 @@
   if(root)root.SoftenStrategyCostEngine=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const RULE_VERSION='SC-0.4.0-financial';
+  const RULE_VERSION='SC-0.5.0-executive';
   function num(value){const n=Number(value);return Number.isFinite(n)?n:0}
   function money(value){return Math.round(Math.max(0,num(value))*100)/100}
   function clampFte(value){return Math.max(0,Math.min(1,num(value)||0))}
@@ -59,9 +59,28 @@
     return Object.freeze({...emptySummary(meta),peopleCount:Math.max(0,num(base.peopleCount??base.people_count)),fte,salary:money(base.salary),employerCharges:money(base.employerCharges??base.employer_charges),benefits:money(base.benefits),variablePay:money(base.variablePay??base.variable_pay),overtime:money(base.overtime),otherCosts:money(base.otherCosts??base.other_costs),peopleCost,operationalCost,unallocatedOperationalCost:money(base.unallocatedOperationalCost??base.unallocated_operational_cost),totalCost,attendance,costPerAttendance:attendance>0?money(totalCost/attendance):null,attendancePerFte:fte>0?Math.round((attendance/fte)*100)/100:null});
   }
   function mergePeopleSummary(base={},meta={}){return mergeFinancialSummary({...base,peopleCost:base.peopleCost??base.totalCost??base.total_cost,operationalCost:0,totalCost:base.peopleCost??base.totalCost??base.total_cost},meta)}
+
+  function changeRatio(current,previous){const prev=num(previous),cur=num(current);return prev>0?(cur-prev)/prev:null}
+  function averageRows(rows=[]){
+    const valid=(rows||[]).filter(Boolean);if(!valid.length)return null;
+    const keys=['peopleCount','fte','salary','employerCharges','benefits','variablePay','overtime','otherCosts','peopleCost','operationalCost','unallocatedOperationalCost','totalCost','attendance','evaluationRate','costPerAttendance','attendancePerFte'];
+    const out={};for(const key of keys){const vals=valid.map(r=>Number(r[key])).filter(Number.isFinite);out[key]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;}return out;
+  }
+  function comparisonWindow(history=[],currentCompetence='',mode='previous'){
+    const rows=[...(history||[])].filter(r=>r&&r.competence).sort((a,b)=>String(a.competence).localeCompare(String(b.competence))),idx=rows.findIndex(r=>r.competence===currentCompetence);if(idx<0)return{current:null,baseline:null,baselineRows:[],label:'Sem base de comparação'};
+    const current=rows[idx],count=mode==='12m'?12:mode==='6m'?6:mode==='3m'?3:1,baselineRows=rows.slice(Math.max(0,idx-count),idx),baseline=mode==='previous'?(baselineRows.at(-1)||null):averageRows(baselineRows),label=mode==='previous'?'Mês anterior':`Média das ${baselineRows.length} competência(s) anteriores`;
+    return{current,baseline,baselineRows,label};
+  }
+  function buildExecutiveAnalysis({history=[],currentCompetence='',comparison='previous',qualityTarget=null}={}){
+    const window=comparisonWindow(history,currentCompetence,comparison),current=window.current,baseline=window.baseline;if(!current)return Object.freeze({available:false,window,spread:null,qualityStatus:'unknown'});
+    const costChange=baseline?changeRatio(current.totalCost,baseline.totalCost):null,attendanceChange=baseline?changeRatio(current.attendance,baseline.attendance):null,costPerAttendanceChange=baseline?changeRatio(current.costPerAttendance,baseline.costPerAttendance):null,fteChange=baseline?changeRatio(current.fte,baseline.fte):null;
+    const currentEval=Number(current.evaluationRate),baseEval=baseline?Number(baseline.evaluationRate):NaN,evaluationDelta=Number.isFinite(currentEval)&&Number.isFinite(baseEval)?currentEval-baseEval:null,target=Number(qualityTarget),qualityStatus=Number.isFinite(currentEval)&&Number.isFinite(target)?(currentEval>=target?'preserved':'below_target'):(evaluationDelta==null?'unknown':evaluationDelta>=-.01?'preserved':'declining'),spread=attendanceChange!=null&&costChange!=null?attendanceChange-costChange:null;
+    return Object.freeze({available:true,window,costChange,attendanceChange,costPerAttendanceChange,fteChange,evaluationDelta,spread,qualityTarget:Number.isFinite(target)?target:null,qualityStatus});
+  }
+
   function consolidateSquads({squadCodes=[],peopleCosts=[],operationalCosts=[],allocations=[],operationalStats={}}={}){
     const codes=[...new Set([...(squadCodes||[]).map(cleanCode),...(peopleCosts||[]).map(r=>cleanCode(r.squadCode||r.squad_code_snapshot)),...(allocations||[]).map(r=>cleanCode(r.squadCode||r.squad_code))].filter(c=>c&&c!=='UNALLOCATED'))].sort();
     return Object.freeze(codes.map(code=>{const people=summarizePeopleCosts(peopleCosts,{squadCode:code}),ops=summarizeOperationalCosts(operationalCosts,allocations,{squadCode:code}),stats=operationalStats?.[code]||{},attendance=Math.max(0,num(stats.attendance)),totalCost=money(people.totalCost+ops.operationalCost);return Object.freeze({squadCode:code,peopleCount:people.peopleCount,fte:people.fte,peopleCost:people.totalCost,operationalCost:ops.operationalCost,totalCost,attendance,evaluationRate:Number.isFinite(Number(stats.evaluationRate))?Number(stats.evaluationRate):null,costPerAttendance:attendance>0?money(totalCost/attendance):null,attendancePerFte:people.fte>0?Math.round((attendance/people.fte)*100)/100:null});}));
   }
-  return{RULE_VERSION,calculatePersonCost,summarizePeopleCosts,allocateCents,calculateOperationalAllocations,summarizeOperationalCosts,emptySummary,mergePeopleSummary,mergeFinancialSummary,consolidateSquads};
+  return{RULE_VERSION,calculatePersonCost,summarizePeopleCosts,allocateCents,calculateOperationalAllocations,summarizeOperationalCosts,emptySummary,mergePeopleSummary,mergeFinancialSummary,changeRatio,averageRows,comparisonWindow,buildExecutiveAnalysis,consolidateSquads};
 });

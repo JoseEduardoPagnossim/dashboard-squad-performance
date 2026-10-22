@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.57.4" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.57.4" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.57.4" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.57.4" />
+  <link rel="stylesheet" href="css/styles.css?v=2.57.5" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.57.5" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.57.5" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.57.5" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.57.4 • Motor financeiro estratégico</small>
+        <small class="login-version">V2.57.5 • Resultado Executivo</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.57.4 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.57.5 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.57.4</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.57.5</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1385,12 +1385,12 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 2</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>Camada estratégica isolada do operacional. A V2.57.4 consolida custos de pessoas e custos operacionais por Squad, conectando custo e volume de atendimento sem alterar o operacional.</p>
+              <p>Camada estratégica isolada do operacional. A V2.57.5 transforma custos consolidados em leitura executiva de eficiência, produtividade e qualidade sem alterar o operacional.</p>
             </div>
-            <span class="strategy-foundation-badge">Custos pessoais ativos</span>
+            <span class="strategy-foundation-badge">Resultado Executivo ativo</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.4</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.5</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1411,24 +1411,53 @@
             <label><span>Comparação</span><select id="strategyComparisonSelect"><option value="previous">Mês anterior</option><option value="3m">3 meses</option><option value="6m">6 meses</option><option value="12m">12 meses</option></select></label>
           </section>
 
-          <div class="strategy-panel" data-strategy-panel="executive">
-            <article class="strategy-placeholder-card strategy-wide-card">
+          <div class="strategy-panel strategy-executive-panel" data-strategy-panel="executive">
+            <article class="strategy-placeholder-card strategy-wide-card strategy-executive-card">
               <span class="eyebrow" id="strategySectionEyebrow">VISÃO EXECUTIVA</span>
-              <div class="strategy-section-heading"><div><h3>Resultado financeiro da operação</h3><p>Consolidação mensal de pessoas, operação e produtividade econômica no mesmo escopo de Squad.</p></div><span id="strategyExecutiveStatus" class="strategy-mini-badge">—</span></div>
-              <div class="strategy-metric-grid">
-                <div class="strategy-metric"><span>Custo total</span><strong id="strategyExecutiveTotalCost">—</strong><small>pessoas + operação</small></div>
-                <div class="strategy-metric"><span>Custo de pessoas</span><strong id="strategyExecutivePeopleCost">—</strong><small>salários + encargos + benefícios + variáveis</small></div>
-                <div class="strategy-metric"><span>Custo operacional</span><strong id="strategyExecutiveOperationalCost">—</strong><small>após rateios da competência</small></div>
-                <div class="strategy-metric"><span>Custo por atendimento</span><strong id="strategyExecutiveCostPerAttendance">—</strong><small>custo total ÷ atendimentos</small></div>
+              <div class="strategy-section-heading"><div><h3>Resultado Executivo do Suporte</h3><p>Custo, produção e qualidade no mesmo contexto para apoiar decisões de capacidade e eficiência.</p></div><span id="strategyExecutiveStatus" class="strategy-mini-badge">—</span></div>
+
+              <div class="strategy-executive-context"><span>Comparação</span><strong id="strategyExecutiveComparisonLabel">Sem base histórica</strong></div>
+
+              <div class="strategy-metric-grid strategy-executive-primary-grid">
+                <div class="strategy-metric strategy-executive-metric"><span>Custo total</span><strong id="strategyExecutiveTotalCost">—</strong><small>pessoas + operação</small><em id="strategyExecutiveTotalCostDelta" class="strategy-delta neutral">Sem base</em></div>
+                <div class="strategy-metric strategy-executive-metric"><span>Custo de pessoas</span><strong id="strategyExecutivePeopleCost">—</strong><small>folha e custos pessoais atribuídos</small></div>
+                <div class="strategy-metric strategy-executive-metric"><span>Custo operacional</span><strong id="strategyExecutiveOperationalCost">—</strong><small>custos diretos e rateados</small></div>
+                <div class="strategy-metric strategy-executive-metric"><span>Custo por atendimento</span><strong id="strategyExecutiveCostPerAttendance">—</strong><small>custo total ÷ atendimentos</small><em id="strategyExecutiveCostPerAttendanceDelta" class="strategy-delta neutral">Sem base</em></div>
               </div>
-              <div class="strategy-roadmap">
-                <div class="strategy-roadmap-row"><i>1</i><strong>Fundação isolada</strong><span>V2.57.0 • concluída</span></div>
-                <div class="strategy-roadmap-row"><i>2</i><strong>Acesso opt-in</strong><span>V2.57.1 • concluída</span></div>
-                <div class="strategy-roadmap-row"><i>3</i><strong>Competências, pessoas e custos pessoais</strong><span>V2.57.2 • concluída</span></div>
-                <div class="strategy-roadmap-row"><i>4</i><strong>Motor financeiro e consolidação por Squad</strong><span>V2.57.4 • atual</span></div>
+
+              <div class="strategy-metric-grid strategy-executive-secondary-grid">
+                <div class="strategy-metric"><span>Atendimentos</span><strong id="strategyExecutiveAttendance">—</strong><small>produção da competência</small><em id="strategyExecutiveProductionDelta" class="strategy-delta neutral">Sem base</em></div>
+                <div class="strategy-metric"><span>FTE atribuído</span><strong id="strategyExecutiveFte">—</strong><small>força de trabalho equivalente</small><em id="strategyExecutiveFteDelta" class="strategy-delta neutral">Sem base</em></div>
+                <div class="strategy-metric"><span>Atendimentos por FTE</span><strong id="strategyExecutiveAttendancePerFte">—</strong><small>produtividade econômica</small></div>
+                <div class="strategy-metric"><span>Taxa de avaliação</span><strong id="strategyExecutiveEvaluation">—</strong><small>trava de qualidade da eficiência</small></div>
               </div>
+
+              <section class="strategy-efficiency-panel" aria-labelledby="strategyEfficiencyTitle">
+                <div class="strategy-section-heading"><div><span class="eyebrow">EFICIÊNCIA ECONÔMICA</span><h3 id="strategyEfficiencyTitle">Produção x custo x qualidade</h3><p>Spread positivo significa que a produção evoluiu mais rápido que o custo. A qualidade é analisada em conjunto.</p></div><span id="strategyEfficiencyStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
+                <div class="strategy-efficiency-grid">
+                  <div><span>Produção</span><strong id="strategyEfficiencyProduction">—</strong></div>
+                  <div><span>Custo</span><strong id="strategyEfficiencyCost">—</strong></div>
+                  <div><span>Spread</span><strong id="strategyEfficiencySpread">—</strong><small>produção − custo</small></div>
+                  <div><span>Qualidade</span><strong id="strategyEfficiencyQuality">—</strong><small>variação da taxa de avaliação</small></div>
+                </div>
+              </section>
+
+              <div class="strategy-executive-chart-grid">
+                <article class="strategy-executive-chart-card"><div class="section-title"><div><span class="eyebrow">UNIT ECONOMICS</span><h3>Evolução do custo por atendimento</h3></div><span class="muted">Quanto custa produzir uma unidade de atendimento</span></div><div id="strategyExecutiveUnitCostChart" class="chart strategy-executive-chart"></div></article>
+                <article class="strategy-executive-chart-card"><div class="section-title"><div><span class="eyebrow">EFICIÊNCIA</span><h3>Custo x produção — índice base 100</h3></div><span class="muted">Compara velocidades de crescimento sem misturar unidades</span></div><div id="strategyExecutiveEfficiencyChart" class="chart strategy-executive-chart"></div></article>
+              </div>
+
+              <div class="strategy-executive-lower-grid">
+                <section class="strategy-composition-card"><div class="strategy-section-heading"><div><span class="eyebrow">COMPOSIÇÃO</span><h3>Onde está o custo</h3><p>Participação de pessoas e operação no custo total selecionado.</p></div></div><div id="strategyExecutiveComposition"></div></section>
+                <section class="strategy-insights-card"><div class="strategy-section-heading"><div><span class="eyebrow">INSIGHTS</span><h3>Leituras automáticas</h3><p>Regras explicáveis para investigação; não substituem análise gerencial.</p></div></div><div id="strategyExecutiveInsights" class="strategy-executive-insights"></div></section>
+              </div>
+
+              <section class="strategy-executive-squads">
+                <div class="strategy-section-heading"><div><span class="eyebrow">COMPARATIVO</span><h3>Resultado por Squad</h3><p>O custo unitário é um detector de investigação, não um ranking isolado de desempenho.</p></div></div>
+                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-executive-squad-table"><thead><tr><th>Squad</th><th>Custo total</th><th>Atendimentos</th><th>Custo/Atend.</th><th>FTE</th><th>Atend./FTE</th><th>Avaliação</th></tr></thead><tbody id="strategyExecutiveSquadRows"><tr><td colspan="7" class="muted">Carregando resultado executivo...</td></tr></tbody></table></div>
+              </section>
             </article>
-            <aside class="strategy-insight"><strong id="strategyFoundationInsightTitle">Custos pessoais separados do operacional</strong><p id="strategyFoundationInsightText">A competência financeira preserva a fotografia mensal de salário, encargos, benefícios e demais custos pessoais.</p></aside>
+            <aside class="strategy-insight strategy-executive-aside"><strong id="strategyFoundationInsightTitle">Resultado Executivo ativo</strong><p id="strategyFoundationInsightText">Custos, produção e qualidade passam a ser lidos no mesmo contexto para apoiar decisões sem alterar o operacional.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -1906,29 +1935,29 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.57.4"></script>
-  <script src="js/finance-rules.js?v=2.57.4"></script>
-  <script src="js/finance-advanced.js?v=2.57.4"></script>
-  <script src="js/tv-engine.js?v=2.57.4"></script>
-  <script src="js/presentation.js?v=2.57.4"></script>
-  <script src="js/chart-engine.js?v=2.57.4"></script>
-  <script src="js/chart-export.js?v=2.57.4"></script>
-  <script src="js/import-engine.js?v=2.57.4"></script>
-  <script src="js/predictive-engine.js?v=2.57.4"></script>
-  <script src="js/alert-engine.js?v=2.57.4"></script>
-  <script src="js/settings-engine.js?v=2.57.4"></script>
-  <script src="js/performance-engine.js?v=2.57.4"></script>
-  <script src="js/navigation-engine.js?v=2.57.4"></script>
-  <script src="js/workspace-engine.js?v=2.57.4"></script>
-  <script src="js/filter-system.js?v=2.57.4"></script>
-  <script src="js/comparison-engine.js?v=2.57.4"></script>
-  <script src="js/finance-report-engine.js?v=2.57.4"></script>
-  <script src="js/design-system.js?v=2.57.4"></script>
-  <script src="js/strategy-access.js?v=2.57.4"></script>
-  <script src="js/strategy-data.js?v=2.57.4"></script>
-  <script src="js/strategy-cost-engine.js?v=2.57.4"></script>
-  <script src="js/strategy-insights.js?v=2.57.4"></script>
-  <script src="js/strategy.js?v=2.57.4"></script>
-  <script src="js/app.js?v=2.57.4"></script>
+  <script src="js/business-calendar.js?v=2.57.5"></script>
+  <script src="js/finance-rules.js?v=2.57.5"></script>
+  <script src="js/finance-advanced.js?v=2.57.5"></script>
+  <script src="js/tv-engine.js?v=2.57.5"></script>
+  <script src="js/presentation.js?v=2.57.5"></script>
+  <script src="js/chart-engine.js?v=2.57.5"></script>
+  <script src="js/chart-export.js?v=2.57.5"></script>
+  <script src="js/import-engine.js?v=2.57.5"></script>
+  <script src="js/predictive-engine.js?v=2.57.5"></script>
+  <script src="js/alert-engine.js?v=2.57.5"></script>
+  <script src="js/settings-engine.js?v=2.57.5"></script>
+  <script src="js/performance-engine.js?v=2.57.5"></script>
+  <script src="js/navigation-engine.js?v=2.57.5"></script>
+  <script src="js/workspace-engine.js?v=2.57.5"></script>
+  <script src="js/filter-system.js?v=2.57.5"></script>
+  <script src="js/comparison-engine.js?v=2.57.5"></script>
+  <script src="js/finance-report-engine.js?v=2.57.5"></script>
+  <script src="js/design-system.js?v=2.57.5"></script>
+  <script src="js/strategy-access.js?v=2.57.5"></script>
+  <script src="js/strategy-data.js?v=2.57.5"></script>
+  <script src="js/strategy-cost-engine.js?v=2.57.5"></script>
+  <script src="js/strategy-insights.js?v=2.57.5"></script>
+  <script src="js/strategy.js?v=2.57.5"></script>
+  <script src="js/app.js?v=2.57.5"></script>
 </body>
 </html>
