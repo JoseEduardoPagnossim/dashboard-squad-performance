@@ -1,3 +1,12 @@
+## V2.58.0 R5 — Compatibilidade de schema estratégico
+
+- corrige instalações que vieram da V2.57.3, onde `strategy_cost_allocations` ainda não possuía `allocated_amount` e `allocation_method_snapshot`;
+- converte percentuais legados de 0..100 para a escala atual 0..1 sem apagar rateios existentes;
+- normaliza categorias e o método legado `headcount` para o contrato atual baseado em FTE;
+- adiciona `MIGRACAO_V2.58.0_R5.sql`, idempotente para bases já atualizadas;
+- melhora o alerta da tela para apontar a migration R5 quando detectar drift de `strategy_cost_allocations`;
+- revisa os assets para `2.58.0-r5` e identifica visualmente a R5.
+
 # Changelog
 
 ## V2.58.0 R4 — Cache busting e compatibilidade de insights

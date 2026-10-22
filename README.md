@@ -1,3 +1,7 @@
+## V2.58.0 R5 — Hotfix de compatibilidade do schema
+
+Bases que passaram pela V2.57.3 podem manter a estrutura antiga de `strategy_cost_allocations`. A migration `supabase/migrations/MIGRACAO_V2.58.0_R5.sql` atualiza essa estrutura sem excluir dados, converte a escala de percentual e adiciona as colunas usadas pelo motor atual. Execute a R5 no Supabase antes de validar novamente a Gestão Estratégica.
+
 ## V2.58.0 R4 — Hotfix de cache dos insights
 
 O código corrigido do R3 estava correto, porém R2 e R3 publicavam o mesmo endereço de asset (`js/app.js?v=2.58.0`). A R4 usa `assetVersion=2.58.0-r4`, força a atualização dos arquivos estáticos e adiciona compatibilidade temporária para sessões que ainda tenham o JavaScript antigo carregado.

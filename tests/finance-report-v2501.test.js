@@ -12,8 +12,8 @@ const pkg = require(join(root,'package.json'));
 
 test('V2.53.0 carrega o configurador de relatório antes do app',()=>{
   assert.equal(pkg.version,'2.58.0');
-  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.58.0-r4');
-  const appPos=index.indexOf('js/app.js?v=2.58.0-r4');
+  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.58.0-r5');
+  const appPos=index.indexOf('js/app.js?v=2.58.0-r5');
   assert.ok(enginePos>=0 && appPos>enginePos);
   assert.match(app,/window\.SoftenFinanceReportEngine/);
   assert.match(app,/APP_VERSION = '2\.58\.0'/);

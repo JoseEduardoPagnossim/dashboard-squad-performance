@@ -174,3 +174,6 @@ Execute `MIGRACAO_V2.57.4.sql` depois da V2.57.2. A migration alinha o checkbox 
 ### V2.57.7 — Saneamento de identidade na reimportação
 
 Execute `MIGRACAO_V2.57.7.sql` depois da V2.57.6. A migration remove `user_id` inválido de competências operacionais abertas, instala uma proteção para impedir novos vínculos com técnico inativo/excluído e atualiza o ranking individual do próprio Squad para ignorar esses registros enquanto a competência estiver aberta. A produção histórica permanece nos totais do Squad. Não é necessário republicar Edge Functions.
+
+### V2.58.0 R5 - compatibility hotfix
+Execute `MIGRACAO_V2.58.0_R5.sql` after the strategic migrations when the database originated from V2.57.3. It upgrades the legacy `strategy_cost_allocations` shape to the current contract without deleting existing allocations.

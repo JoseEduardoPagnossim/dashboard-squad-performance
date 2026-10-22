@@ -16,7 +16,7 @@ test('V2.57.7 mantém mês e ano visíveis dentro da navegação do calendário'
 });
 
 test('V2.57.7 atualiza cache-bust principal sem migration nova', () => {
-  assert.ok(index.includes('css/styles.css?v=2.58.0-r4'));
-  assert.ok(index.includes('js/app.js?v=2.58.0-r4'));
+  assert.ok(index.includes('css/styles.css?v=2.58.0-r5'));
+  assert.ok(index.includes('js/app.js?v=2.58.0-r5'));
   assert.ok(index.includes('V2.58.0'));
 });
