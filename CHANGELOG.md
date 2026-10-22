@@ -1,5 +1,12 @@
 # Changelog
 
+## V2.58.0 R3 — Hotfix de renderização estratégica
+
+- corrige `ReferenceError: insightEngine is not defined` após criar/salvar competência;
+- o Resultado Executivo passa a usar o alias carregado `strategyInsightsEngine`;
+- preserva a persistência já concluída antes da renderização;
+- adiciona regressão específica para impedir retorno do erro de escopo.
+
 ## V2.58.0 — Fundação da Eficiência
 
 - corrige confirmação de persistência de competências, pessoas e custos para não exibir sucesso quando o banco não confirma a gravação;

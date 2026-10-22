@@ -1,3 +1,7 @@
+## V2.58.0 R3 — Hotfix de renderização estratégica
+
+Corrige o erro `insightEngine is not defined` disparado na atualização da visão estratégica após salvar/criar competência. O render executivo agora utiliza `strategyInsightsEngine`, que é o alias efetivamente carregado por `app.js`.
+
 ## V2.58.0 — Fundação da Eficiência
 
 A revisão R2 da V2.58.0 reforça a persistência da área estratégica: competências e pessoas só exibem confirmação após retorno do banco, competências cadastradas ficam visíveis na própria tela e técnicos ativos do módulo operacional podem ser sincronizados para `strategy_people`. Pessoas de Pré-atendimento podem ser mantidas apenas no Estratégico usando o grupo `PRE`, sem entrar no ranking ou nas métricas operacionais.
