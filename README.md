@@ -1,3 +1,9 @@
+## V2.58.1 — Custo por Atendimento
+
+A Fase 3 passa a calcular oficialmente custo por atendimento no escopo estratégico selecionado. A tela compara operação, Squads e custo pessoal por atendimento dos técnicos vinculados, mantendo custos compartilhados no nível do Squad. A tabela de custos também ganha **Excluir dos custos**, que desativa a pessoa somente no Estratégico, limpa custos de competências abertas e preserva o usuário operacional e snapshots fechados.
+
+Não há migration nova. Detalhes: `docs/EFICIENCIA_CUSTO_ATENDIMENTO_V2.58.1.md`.
+
 ## V2.58.0 R5 — Hotfix de compatibilidade do schema
 
 Bases que passaram pela V2.57.3 podem manter a estrutura antiga de `strategy_cost_allocations`. A migration `supabase/migrations/MIGRACAO_V2.58.0_R5.sql` atualiza essa estrutura sem excluir dados, converte a escala de percentual e adiciona as colunas usadas pelo motor atual. Execute a R5 no Supabase antes de validar novamente a Gestão Estratégica.

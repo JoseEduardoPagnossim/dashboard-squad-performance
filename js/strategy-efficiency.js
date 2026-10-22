@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='EF-0.1.0-foundation';
+  const RULE_VERSION='EF-0.2.0-cost-per-attendance';
   const COVERAGE_KEYS=Object.freeze(['financial','attendance','fte','quality']);
   const METRIC_CATALOG=Object.freeze([
     Object.freeze({id:'cost-per-attendance',label:'Custo por atendimento',version:'V2.58.1',requires:Object.freeze(['financial','attendance'])}),
@@ -31,17 +31,51 @@
       resolutions:bool(raw.resolutions)
     });
   }
+  function calculateCostPerAttendance(totalCost,attendance){
+    const cost=Math.max(0,num(totalCost)),volume=Math.max(0,num(attendance));
+    return volume>0?cost/volume:null;
+  }
   function normalizeMetrics(raw={}){
-    const evaluation=Number(raw.evaluationRate);
+    const evaluation=Number(raw.evaluationRate),totalCost=Math.max(0,num(raw.totalCost)),attendance=Math.max(0,num(raw.attendance));
     return Object.freeze({
-      totalCost:Math.max(0,num(raw.totalCost)),
+      totalCost,
       peopleCost:Math.max(0,num(raw.peopleCost)),
       operationalCost:Math.max(0,num(raw.operationalCost)),
-      attendance:Math.max(0,num(raw.attendance)),
+      attendance,
+      costPerAttendance:calculateCostPerAttendance(totalCost,attendance),
       fte:Math.max(0,num(raw.fte)),
       peopleCount:Math.max(0,Math.round(num(raw.peopleCount))),
       evaluationRate:Number.isFinite(evaluation)?percent(evaluation):null,
       resolutions:Math.max(0,num(raw.resolutions))
+    });
+  }
+  function normalizeUnitRow(raw={}){
+    const totalCost=Math.max(0,num(raw.totalCost??raw.total_cost)),attendance=Math.max(0,num(raw.attendance));
+    return Object.freeze({
+      id:text(raw.id),
+      label:text(raw.label||raw.name||raw.squadCode||raw.squad_code,'Sem identificação'),
+      squadCode:text(raw.squadCode||raw.squad_code).toUpperCase(),
+      totalCost,
+      attendance,
+      costPerAttendance:calculateCostPerAttendance(totalCost,attendance)
+    });
+  }
+  function changeRatio(current,baseline){
+    const cur=Number(current),base=Number(baseline);
+    return Number.isFinite(cur)&&Number.isFinite(base)&&base>0?(cur-base)/base:null;
+  }
+  function buildCostPerAttendance({current={},baseline=null,comparisonLabel=''}={}){
+    const currentRow=normalizeUnitRow(current),baselineRow=baseline?normalizeUnitRow(baseline):null;
+    const delta=baselineRow?changeRatio(currentRow.costPerAttendance,baselineRow.costPerAttendance):null;
+    const impact=baselineRow&&currentRow.costPerAttendance!=null&&baselineRow.costPerAttendance!=null&&currentRow.attendance>0?(currentRow.costPerAttendance-baselineRow.costPerAttendance)*currentRow.attendance:null;
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,
+      status:currentRow.costPerAttendance==null?'pending':'ready',
+      current:currentRow,
+      baseline:baselineRow,
+      comparisonLabel:text(comparisonLabel,'Sem base de comparação'),
+      delta,
+      impact
     });
   }
   function coverageScore(availability={}){
@@ -68,5 +102,5 @@
     return Object.freeze({ruleVersion:RULE_VERSION,scope,metrics,availability,coverage,status,catalog:Object.freeze(catalog),warnings:notes});
   }
 
-  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,coverageScore,metricReadiness,buildFoundation};
+  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,changeRatio,buildCostPerAttendance,coverageScore,metricReadiness,buildFoundation};
 });

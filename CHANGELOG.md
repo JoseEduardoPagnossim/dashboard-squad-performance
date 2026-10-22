@@ -1,3 +1,16 @@
+## V2.58.1 — Custo por Atendimento
+
+- calcula custo por atendimento com `custo total consolidado / atendimentos válidos`;
+- publica comparação histórica conforme mês anterior, 3, 6 ou 12 competências;
+- adiciona visão por Squad usando custo total já rateado;
+- adiciona custo pessoal por atendimento por técnico, sem redistribuir custo operacional até o indivíduo;
+- carrega a produção mensal necessária para vincular atendimentos ao `user_id` do técnico;
+- adiciona ação **Excluir dos custos** na tabela de pessoas;
+- exclusão preserva usuário operacional, produção e competências fechadas, removendo custos apenas de competências abertas;
+- técnicos excluídos permanecem registrados como inativos no Estratégico para não serem recriados pela sincronização;
+- atualiza o motor de eficiência para `EF-0.2.0-cost-per-attendance`;
+- não exige migration nova.
+
 ## V2.58.0 R5 — Compatibilidade de schema estratégico
 
 - corrige instalações que vieram da V2.57.3, onde `strategy_cost_allocations` ainda não possuía `allocated_amount` e `allocation_method_snapshot`;

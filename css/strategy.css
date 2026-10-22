@@ -168,3 +168,23 @@
 .strategy-competence-chip{display:flex;gap:8px;align-items:center;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:999px;padding:7px 10px;cursor:pointer}.strategy-competence-chip strong{font-size:.76rem}.strategy-competence-chip span{font-size:.68rem;color:var(--muted)}.strategy-competence-chip.is-active{border-color:color-mix(in srgb,var(--accent) 55%,var(--border));background:color-mix(in srgb,var(--accent) 10%,var(--panel2))}
 .strategy-people-sync{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}.strategy-people-sync>div{display:grid;gap:3px}.strategy-people-sync strong{font-size:.8rem}.strategy-people-sync span{font-size:.74rem;color:var(--muted)}
 @media(max-width:720px){.strategy-people-sync{align-items:stretch;flex-direction:column}.strategy-people-sync .btn{width:100%}}
+
+
+/* V2.58.1 — Custo por atendimento */
+.strategy-unit-cost-summary{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(180px,.6fr) minmax(180px,.6fr);gap:12px;align-items:stretch;padding:16px 18px;border:1px solid color-mix(in srgb,var(--accent) 36%,var(--border));border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--panel2))}
+.strategy-unit-cost-summary h3{margin:3px 0 5px}.strategy-unit-cost-summary p{margin:0;color:var(--muted);line-height:1.45}
+.strategy-unit-cost-value{display:flex;flex-direction:column;justify-content:center;padding:13px 14px;border:1px solid color-mix(in srgb,var(--accent) 25%,var(--border));border-radius:12px;background:var(--panel)}
+.strategy-unit-cost-value.secondary{border-color:var(--border);background:var(--panel2)}
+.strategy-unit-cost-value>span{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.strategy-unit-cost-value>strong{margin-top:5px;font-size:1.42rem}.strategy-unit-cost-value>small{margin-top:4px;color:var(--muted)}
+.strategy-unit-cost-value>small.good{color:var(--success)}.strategy-unit-cost-value>small.bad{color:var(--danger)}.strategy-unit-cost-value>small.neutral{color:var(--muted)}
+.strategy-efficiency-analysis-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.strategy-efficiency-squad-card,.strategy-efficiency-technician-card{padding:16px 18px;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}
+.strategy-unit-cost-table{min-width:720px}.strategy-technician-unit-cost-table{min-width:840px}
+.strategy-unit-cost-reading{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;border:1px solid var(--border);font-size:.7rem;font-weight:900;white-space:nowrap}
+.strategy-unit-cost-reading.good{color:var(--success);border-color:color-mix(in srgb,var(--success) 32%,var(--border));background:color-mix(in srgb,var(--success) 8%,transparent)}
+.strategy-unit-cost-reading.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 32%,var(--border));background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.strategy-unit-cost-reading.neutral{color:var(--muted)}
+.strategy-person-actions{display:flex;justify-content:flex-end;min-width:120px}.strategy-person-actions .table-action{white-space:nowrap}
+@media(max-width:1180px){.strategy-efficiency-analysis-grid{grid-template-columns:1fr}.strategy-unit-cost-summary{grid-template-columns:1fr 1fr}.strategy-unit-cost-summary>div:first-child{grid-column:1/-1}}
+@media(max-width:680px){.strategy-unit-cost-summary{grid-template-columns:1fr}.strategy-unit-cost-summary>div:first-child{grid-column:auto}}

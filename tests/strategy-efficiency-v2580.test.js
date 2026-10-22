@@ -11,15 +11,15 @@ const filters=require(join(root,'js','filter-system.js'));
 const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
-test('V2.58.0 publica a Fundação da Eficiência isolada do operacional',()=>{
-  assert.equal(pkg.version,'2.58.0');
+test('V2.58.1 publica a Fundação da Eficiência isolada do operacional',()=>{
+  assert.equal(pkg.version,'2.58.1');
   assert.match(index,/data-strategy-section="efficiency"/);
   assert.match(index,/data-strategy-panel="efficiency"/);
   assert.match(index,/strategyEfficiencyBaseCost/);
   assert.match(index,/strategyEfficiencyReadinessRows/);
-  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.0/);
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.0-r5')<index.indexOf('js/strategy.js?v=2.58.0-r5'));
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.0-r5')<index.indexOf('js/app.js?v=2.58.0-r5'));
+  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.1/);
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.1')<index.indexOf('js/strategy.js?v=2.58.1'));
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.1')<index.indexOf('js/app.js?v=2.58.1'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
 });
 
@@ -29,17 +29,17 @@ test('rota de eficiência preserva o isolamento e descarta filtros operacionais'
   assert.equal(filters.activeCount({view:'strategy',isSuperAdmin:true}),0);
 });
 
-test('fundação identifica base pronta sem calcular antecipadamente custo unitário',()=>{
+test('fundação preservada agora publica também o custo unitário da V2.58.1',()=>{
   const foundation=efficiency.buildFoundation({
     scope:{competence:'2026-10',squadCode:'D',comparison:'previous',competenceStatus:'draft'},
     metrics:{totalCost:40000,peopleCost:35000,operationalCost:5000,attendance:2500,fte:7,evaluationRate:.41},
     availability:{financial:true,attendance:true,fte:true,quality:true,resolutions:false}
   });
-  assert.equal(foundation.ruleVersion,'EF-0.1.0-foundation');
+  assert.equal(foundation.ruleVersion,'EF-0.2.0-cost-per-attendance');
   assert.equal(foundation.status,'ready');
   assert.equal(foundation.coverage.ratio,1);
   assert.equal(foundation.metrics.totalCost,40000);
-  assert.equal(Object.prototype.hasOwnProperty.call(foundation.metrics,'costPerAttendance'),false);
+  assert.equal(foundation.metrics.costPerAttendance,16);
   assert.equal(foundation.catalog.find(x=>x.id==='cost-per-attendance').status,'ready');
   const resolution=foundation.catalog.find(x=>x.id==='cost-per-resolution');
   assert.equal(resolution.status,'pending');
