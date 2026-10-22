@@ -33,13 +33,13 @@ test('super_admin também fica sem acesso estratégico por padrão', () => {
   assert.equal(admin.canManageAccess, false);
 });
 
-test('acesso estratégico explícito libera somente visão e agregados', () => {
+test('acesso estratégico explícito libera o MVP atual sem liberar fechamento', () => {
   const admin = access.demoAccessForRole('super_admin', true);
   assert.equal(admin.canViewStrategy, true);
   assert.equal(admin.canViewAggregates, true);
   assert.equal(admin.canManageAccess, false);
-  assert.equal(admin.canViewPeopleCosts, false);
-  assert.equal(admin.canEditCosts, false);
+  assert.equal(admin.canViewPeopleCosts, true);
+  assert.equal(admin.canEditCosts, true);
   assert.equal(admin.canCloseCompetence, false);
 });
 

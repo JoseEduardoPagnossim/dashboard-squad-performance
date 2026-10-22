@@ -49,7 +49,7 @@ test('controller rejeita Squad, competência e seção fora do contexto', () => 
   assert.equal(state.section, 'executive');
 });
 
-test('V2.57.3 mantém custos estratégicos separados e aceita contexto financeiro próprio', () => {
+test('V2.57.4 mantém custos estratégicos separados e aceita contexto financeiro próprio', () => {
   const controller = strategy.createController({access:{canViewStrategy:true,canViewAggregates:true,canViewPeopleCosts:true}});
   controller.initializeContext({squads:operationalFixture()});
   controller.setFinancialData({
@@ -63,5 +63,5 @@ test('V2.57.3 mantém custos estratégicos separados e aceita contexto financeir
   assert.equal(vm.summary.totalCost, 5500);
   assert.equal(vm.summary.operationalCost, 0);
   assert.equal(vm.competenceRecord.competence, '2026-10');
-  assert.ok(vm.insights.some(item=>item.code==='STRATEGY_PEOPLE_COSTS_READY'));
+  assert.ok(vm.insights.some(item=>item.code==='STRATEGY_FINANCIAL_ENGINE_READY'));
 });

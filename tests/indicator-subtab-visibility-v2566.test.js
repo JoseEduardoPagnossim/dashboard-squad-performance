@@ -9,23 +9,23 @@ const app=fs.readFileSync(path.join(root,'js','app.js'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const pkg=require('../package.json');
 
-test('V2.57.3 mantém subaba oculta mesmo com layout pessoal ativo',()=>{
-  assert.equal(pkg.version,'2.57.3');
+test('V2.57.4 mantém subaba oculta mesmo com layout pessoal ativo',()=>{
+  assert.equal(pkg.version,'2.57.4');
   assert.match(css,/\.hidden\{display:none!important\}/);
   assert.match(css,/\.personal-layout-root:not\(\.home-widget-grid\):not\(\.hidden\)\{display:flex!important/);
   assert.doesNotMatch(css,/\.personal-layout-root:not\(\.home-widget-grid\)\{display:flex!important/);
 });
 
-test('V2.57.3 continua alternando Desempenho e Qualidade pela classe hidden',()=>{
+test('V2.57.4 continua alternando Desempenho e Qualidade pela classe hidden',()=>{
   assert.match(app,/indicatorPerformancePanel[^\n]*classList\.toggle\('hidden',section!=='performance'\)/);
   assert.match(app,/indicatorQualityPanel[^\n]*classList\.toggle\('hidden',section!=='quality'\)/);
   assert.match(app,/layoutRootForView\(view\).*view==='indicators'\?'#indicatorPerformancePanel'/s);
 });
 
-test('V2.57.3 publica cache-bust coerente sem migration',()=>{
+test('V2.57.4 publica cache-bust coerente sem migration',()=>{
   for(const asset of ['css/styles.css','js/app.js','js/design-system.js','js/filter-system.js']){
-    assert.ok(index.includes(`${asset}?v=2.57.3`),asset);
+    assert.ok(index.includes(`${asset}?v=2.57.4`),asset);
   }
-  assert.ok(index.includes('V2.57.3'));
+  assert.ok(index.includes('V2.57.4'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
 });

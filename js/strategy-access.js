@@ -49,7 +49,9 @@
     const allowed=enabled===true;
     return normalizeAccess(allowed?{
       canViewStrategy:true,
-      canViewAggregates:true
+      canViewAggregates:true,
+      canViewPeopleCosts:true,
+      canEditCosts:true
     }:{},{source:'demo',remoteAvailable:true});
   }
   function canView(access){return normalizeAccess(access).canViewStrategy}

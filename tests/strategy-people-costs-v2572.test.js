@@ -14,8 +14,8 @@ const migrationPath = join(root, 'supabase', 'migrations', 'MIGRACAO_V2.57.2.sql
 const migration = readFileSync(migrationPath, 'utf8');
 const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 
-test('V2.57.2 publica competências, pessoas e custos pessoais', () => {
-  assert.equal(pkg.version, '2.57.3');
+test('V2.57.4 publica competências, pessoas e custos pessoais', () => {
+  assert.equal(pkg.version, '2.57.4');
   assert.equal(existsSync(migrationPath), true);
   assert.match(index, /id="strategyNewCompetenceInput"/);
   assert.match(index, /id="strategyPeopleRows"/);
@@ -80,8 +80,8 @@ test('migration isola custos pessoais com RLS e RPC agregada sem SELECT individu
 });
 
 test('frontend agregado usa RPC e só consulta detalhes quando há acesso pessoal', () => {
-  assert.match(app, /rpc\('get_strategy_people_cost_summary'/);
+  assert.match(app, /rpc\('get_strategy_financial_summary'/);
   assert.match(app, /if\(strategyPeopleAccess\(\)\)/);
   assert.match(app, /from\('strategy_employee_costs'\)/);
-  assert.match(index, /custos individuais/i);
+  assert.match(index, /Acesso à Gestão Estratégica/i);
 });

@@ -4,14 +4,11 @@
   if(root)root.SoftenStrategyCostEngine=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const RULE_VERSION='SC-0.3.0-operational';
-  const OPERATIONAL_CATEGORIES=Object.freeze(['technology','communication','infrastructure','third_party','training','other']);
-  const ALLOCATION_METHODS=Object.freeze(['direct','headcount','attendance','manual']);
+  const RULE_VERSION='SC-0.4.0-financial';
   function num(value){const n=Number(value);return Number.isFinite(n)?n:0}
   function money(value){return Math.round(Math.max(0,num(value))*100)/100}
   function clampFte(value){return Math.max(0,Math.min(1,num(value)||0))}
   function cleanCode(value){return String(value||'').trim().toUpperCase()}
-  function round(value,digits=4){const factor=10**digits;return Math.round(num(value)*factor)/factor}
   function calculatePersonCost(input={}){
     const fte=clampFte(input.fte??1);
     const salary=money(input.salary),employerCharges=money(input.employerCharges??input.employer_charges),benefits=money(input.benefits),variablePay=money(input.variablePay??input.variable_pay),overtime=money(input.overtime),otherCosts=money(input.otherCosts??input.other_costs);
@@ -20,54 +17,51 @@
     return Object.freeze({fte,salary,employerCharges,benefits,variablePay,overtime,otherCosts,grossCost,totalCost});
   }
   function summarizePeopleCosts(rows=[],{squadCode='all'}={}){
-    const code=cleanCode(squadCode)||'ALL',filtered=(rows||[]).filter(row=>code==='ALL'||cleanCode(row.squadCode||row.squad_code_snapshot)===code);
+    const code=cleanCode(squadCode||'ALL'),filtered=(rows||[]).filter(row=>code==='ALL'||cleanCode(row.squadCode||row.squad_code_snapshot)===code);
     const people=new Set();let fte=0,salary=0,employerCharges=0,benefits=0,variablePay=0,overtime=0,otherCosts=0,totalCost=0;
     for(const row of filtered){const calc=calculatePersonCost(row);if(row.personId||row.person_id)people.add(String(row.personId||row.person_id));fte+=calc.fte;salary+=calc.salary*calc.fte;employerCharges+=calc.employerCharges*calc.fte;benefits+=calc.benefits*calc.fte;variablePay+=calc.variablePay*calc.fte;overtime+=calc.overtime*calc.fte;otherCosts+=calc.otherCosts*calc.fte;totalCost+=calc.totalCost;}
-    return Object.freeze({ruleVersion:RULE_VERSION,peopleCount:people.size,fte:round(fte,2),salary:money(salary),employerCharges:money(employerCharges),benefits:money(benefits),variablePay:money(variablePay),overtime:money(overtime),otherCosts:money(otherCosts),totalCost:money(totalCost)});
+    return Object.freeze({ruleVersion:RULE_VERSION,peopleCount:people.size,fte:Math.round(fte*100)/100,salary:money(salary),employerCharges:money(employerCharges),benefits:money(benefits),variablePay:money(variablePay),overtime:money(overtime),otherCosts:money(otherCosts),totalCost:money(totalCost)});
   }
-  function normalizeCategory(value){const id=String(value||'').trim().toLowerCase();return OPERATIONAL_CATEGORIES.includes(id)?id:'other'}
-  function normalizeAllocationMethod(value){const id=String(value||'').trim().toLowerCase();return ALLOCATION_METHODS.includes(id)?id:'manual'}
-  function allocationRowsFromWeights(codes,weights,amount){
-    const positive=codes.map(code=>({code,weight:Math.max(0,num(weights?.[code]))})).filter(row=>row.weight>0),total=positive.reduce((sum,row)=>sum+row.weight,0);
-    if(!positive.length||total<=0)return{valid:false,error:'Base de rateio sem valores positivos.',allocations:[],percentageTotal:0,allocatedTotal:0};
-    const allocations=positive.map(row=>({squadCode:row.code,percentage:round(row.weight/total*100,4),basisValue:round(row.weight,4),basisTotal:round(total,4)}));
-    const percentageTotal=round(allocations.reduce((sum,row)=>sum+row.percentage,0),4),delta=round(100-percentageTotal,4);
-    if(allocations.length&&Math.abs(delta)>0)allocations[allocations.length-1].percentage=round(allocations[allocations.length-1].percentage+delta,4);
-    return{valid:true,error:'',allocations:allocations.map(row=>({...row,allocatedAmount:money(amount*row.percentage/100)})),percentageTotal:100,allocatedTotal:money(amount)};
+  function allocateCents(amount,weights={}){
+    const totalCents=Math.round(money(amount)*100),entries=Object.entries(weights||{}).map(([code,value])=>[cleanCode(code),Math.max(0,num(value))]).filter(([code,value])=>code&&value>0),basis=entries.reduce((s,[,v])=>s+v,0);
+    if(totalCents<=0||basis<=0)return{allocations:{},percentages:{},basis};
+    const raw=entries.map(([code,value])=>{const exact=totalCents*(value/basis),floor=Math.floor(exact);return{code,value,exact,floor,frac:exact-floor}}),used=raw.reduce((s,r)=>s+r.floor,0),remaining=totalCents-used;
+    raw.sort((a,b)=>b.frac-a.frac||a.code.localeCompare(b.code));for(let i=0;i<remaining;i++)raw[i%raw.length].floor++;
+    raw.sort((a,b)=>a.code.localeCompare(b.code));const allocations={},percentages={};for(const row of raw){allocations[row.code]=row.floor/100;percentages[row.code]=row.value/basis;}
+    return{allocations,percentages,basis};
   }
-  function buildOperationalAllocationPlan({amount=0,method='manual',squadCodes=[],directSquad='',fteBySquad={},attendanceBySquad={},manualPercentages={}}={}){
-    const value=money(amount),mode=normalizeAllocationMethod(method),codes=[...new Set((squadCodes||[]).map(cleanCode).filter(Boolean))].sort();
-    if(value<=0)return{valid:false,error:'Informe um valor maior que zero.',method:mode,allocations:[],percentageTotal:0,allocatedTotal:0};
-    if(!codes.length)return{valid:false,error:'Nenhum Squad disponível para rateio.',method:mode,allocations:[],percentageTotal:0,allocatedTotal:0};
-    if(mode==='direct'){
-      const code=cleanCode(directSquad);if(!codes.includes(code))return{valid:false,error:'Selecione um Squad válido para o custo direto.',method:mode,allocations:[],percentageTotal:0,allocatedTotal:0};
-      return{valid:true,error:'',method:mode,allocations:[{squadCode:code,percentage:100,basisValue:1,basisTotal:1,allocatedAmount:value}],percentageTotal:100,allocatedTotal:value};
+  function calculateOperationalAllocations(cost={},basis={}){
+    const amount=money(cost.amount),scope=String(cost.scopeType||cost.scope_type||'organization').toLowerCase(),method=String(cost.allocationMethod||cost.allocation_method||'fte').toLowerCase(),directCode=cleanCode(cost.squadCode||cost.squad_code);
+    if(amount<=0)return Object.freeze([]);
+    if(scope==='squad'||method==='direct'){
+      if(!directCode)return Object.freeze([{squadCode:'UNALLOCATED',percentage:1,basisValue:0,allocatedAmount:amount,allocationMethod:'direct',unallocated:true}]);
+      return Object.freeze([Object.freeze({squadCode:directCode,percentage:1,basisValue:1,allocatedAmount:amount,allocationMethod:'direct',unallocated:false})]);
     }
-    if(mode==='headcount')return{method:mode,...allocationRowsFromWeights(codes,fteBySquad,value)};
-    if(mode==='attendance')return{method:mode,...allocationRowsFromWeights(codes,attendanceBySquad,value)};
-    const allocations=codes.map(code=>({squadCode:code,percentage:round(Math.max(0,num(manualPercentages?.[code])),4),basisValue:round(Math.max(0,num(manualPercentages?.[code])),4),basisTotal:100})).filter(row=>row.percentage>0);
-    const total=round(allocations.reduce((sum,row)=>sum+row.percentage,0),4);
-    if(Math.abs(total-100)>.01)return{valid:false,error:`O rateio manual precisa totalizar 100%. Total atual: ${total.toFixed(2)}%.`,method:mode,allocations,percentageTotal:total,allocatedTotal:money(allocations.reduce((sum,row)=>sum+value*row.percentage/100,0))};
-    if(allocations.length){const delta=round(100-total,4);allocations[allocations.length-1].percentage=round(allocations[allocations.length-1].percentage+delta,4)}
-    return{valid:true,error:'',method:mode,allocations:allocations.map(row=>({...row,allocatedAmount:money(value*row.percentage/100)})),percentageTotal:100,allocatedTotal:value};
+    let weights={};
+    if(method==='attendance')weights=basis.attendanceBySquad||{};
+    else if(method==='manual')weights=basis.manualBySquad||{};
+    else weights=basis.fteBySquad||{};
+    const distributed=allocateCents(amount,weights),codes=Object.keys(distributed.allocations);
+    if(!codes.length)return Object.freeze([Object.freeze({squadCode:'UNALLOCATED',percentage:1,basisValue:0,allocatedAmount:amount,allocationMethod:method,unallocated:true})]);
+    return Object.freeze(codes.map(code=>Object.freeze({squadCode:code,percentage:distributed.percentages[code]||0,basisValue:Math.max(0,num(weights[code])),allocatedAmount:money(distributed.allocations[code]),allocationMethod:method,unallocated:false})));
   }
   function summarizeOperationalCosts(costs=[],allocations=[],{squadCode='all'}={}){
-    const code=cleanCode(squadCode)||'ALL',byCost=new Map();for(const row of allocations||[]){const key=String(row.operationalCostId||row.operational_cost_id||'');if(!key)continue;const list=byCost.get(key)||[];list.push(row);byCost.set(key,list)}
-    let operationalCost=0,directCost=0,sharedCost=0,invalidCostCount=0;const categories=Object.fromEntries(OPERATIONAL_CATEGORIES.map(id=>[id,0]));const included=new Set();
-    for(const cost of costs||[]){const id=String(cost.id||''),amount=money(cost.amount),method=normalizeAllocationMethod(cost.allocationMethod||cost.allocation_method),rows=byCost.get(id)||[],totalPct=round(rows.reduce((sum,row)=>sum+Math.max(0,num(row.percentage)),0),4);if(Math.abs(totalPct-100)>.01){invalidCostCount++;continue}let value=0;for(const row of rows){if(code==='ALL'||cleanCode(row.squadCode||row.squad_code)===code)value+=amount*Math.max(0,num(row.percentage))/100}value=money(value);if(value<=0)continue;included.add(id);operationalCost+=value;if(method==='direct')directCost+=value;else sharedCost+=value;categories[normalizeCategory(cost.category)]+=value;}
-    Object.keys(categories).forEach(key=>{categories[key]=money(categories[key])});
-    return Object.freeze({ruleVersion:RULE_VERSION,costCount:included.size,operationalCost:money(operationalCost),directCost:money(directCost),sharedCost:money(sharedCost),invalidCostCount,categories:Object.freeze(categories)});
+    const code=cleanCode(squadCode||'ALL');
+    if(code==='ALL')return Object.freeze({operationalCost:money((costs||[]).reduce((s,row)=>s+money(row.amount),0)),unallocatedCost:money((allocations||[]).filter(a=>cleanCode(a.squadCode||a.squad_code)==='UNALLOCATED').reduce((s,a)=>s+money(a.allocatedAmount??a.allocated_amount),0))});
+    return Object.freeze({operationalCost:money((allocations||[]).filter(a=>cleanCode(a.squadCode||a.squad_code)===code).reduce((s,a)=>s+money(a.allocatedAmount??a.allocated_amount),0)),unallocatedCost:0});
   }
   function emptySummary({competence='',squadCode='all'}={}){
-    return Object.freeze({ruleVersion:RULE_VERSION,competence:String(competence||''),squadCode:String(squadCode||'all'),status:'costs',peopleCount:0,fte:0,salary:0,employerCharges:0,benefits:0,variablePay:0,overtime:0,otherCosts:0,peopleCost:0,operationalCost:0,directOperationalCost:0,sharedOperationalCost:0,operationalCostCount:0,invalidOperationalCostCount:0,operationalCategories:Object.freeze(Object.fromEntries(OPERATIONAL_CATEGORIES.map(id=>[id,0]))),totalCost:0,costPerAttendance:null});
+    return Object.freeze({ruleVersion:RULE_VERSION,competence:String(competence||''),squadCode:String(squadCode||'all'),status:'financial-consolidated',peopleCount:0,fte:0,salary:0,employerCharges:0,benefits:0,variablePay:0,overtime:0,otherCosts:0,peopleCost:0,operationalCost:0,unallocatedOperationalCost:0,totalCost:0,attendance:0,costPerAttendance:null,attendancePerFte:null});
   }
-  function mergePeopleSummary(base={},meta={}){
-    const total=money(base.totalCost??base.total_cost);
-    return Object.freeze({...emptySummary(meta),peopleCount:Math.max(0,num(base.peopleCount??base.people_count)),fte:Math.max(0,num(base.fte)),salary:money(base.salary),employerCharges:money(base.employerCharges??base.employer_charges),benefits:money(base.benefits),variablePay:money(base.variablePay??base.variable_pay),overtime:money(base.overtime),otherCosts:money(base.otherCosts??base.other_costs),peopleCost:total,totalCost:total});
+  function mergeFinancialSummary(base={},meta={}){
+    const peopleCost=money(base.peopleCost??base.people_cost??base.totalPeopleCost??base.people_total??base.total_cost_people??base.totalCostPeople??base.total_cost??0),operationalCost=money(base.operationalCost??base.operational_cost),explicitTotal=Number(base.totalCost??base.total_cost),totalCost=Number.isFinite(explicitTotal)&&('operationalCost' in base||'operational_cost' in base||'peopleCost' in base||'people_cost' in base)?money(explicitTotal):money(peopleCost+operationalCost),attendance=Math.max(0,num(base.attendance));
+    const fte=Math.max(0,num(base.fte));
+    return Object.freeze({...emptySummary(meta),peopleCount:Math.max(0,num(base.peopleCount??base.people_count)),fte,salary:money(base.salary),employerCharges:money(base.employerCharges??base.employer_charges),benefits:money(base.benefits),variablePay:money(base.variablePay??base.variable_pay),overtime:money(base.overtime),otherCosts:money(base.otherCosts??base.other_costs),peopleCost,operationalCost,unallocatedOperationalCost:money(base.unallocatedOperationalCost??base.unallocated_operational_cost),totalCost,attendance,costPerAttendance:attendance>0?money(totalCost/attendance):null,attendancePerFte:fte>0?Math.round((attendance/fte)*100)/100:null});
   }
-  function mergeFinancialSummary(peopleBase={},operationalBase={},meta={}){
-    const people=mergePeopleSummary(peopleBase,meta),opCost=money(operationalBase.operationalCost??operationalBase.operational_cost??operationalBase.totalCost??operationalBase.total_cost),categories=operationalBase.categories||operationalBase.operationalCategories||operationalBase.category_breakdown||{};
-    return Object.freeze({...people,operationalCost:opCost,directOperationalCost:money(operationalBase.directCost??operationalBase.direct_cost),sharedOperationalCost:money(operationalBase.sharedCost??operationalBase.shared_cost),operationalCostCount:Math.max(0,num(operationalBase.costCount??operationalBase.cost_count)),invalidOperationalCostCount:Math.max(0,num(operationalBase.invalidCostCount??operationalBase.invalid_cost_count)),operationalCategories:Object.freeze(Object.fromEntries(OPERATIONAL_CATEGORIES.map(id=>[id,money(categories?.[id])]))),totalCost:money(people.peopleCost+opCost)});
+  function mergePeopleSummary(base={},meta={}){return mergeFinancialSummary({...base,peopleCost:base.peopleCost??base.totalCost??base.total_cost,operationalCost:0,totalCost:base.peopleCost??base.totalCost??base.total_cost},meta)}
+  function consolidateSquads({squadCodes=[],peopleCosts=[],operationalCosts=[],allocations=[],operationalStats={}}={}){
+    const codes=[...new Set([...(squadCodes||[]).map(cleanCode),...(peopleCosts||[]).map(r=>cleanCode(r.squadCode||r.squad_code_snapshot)),...(allocations||[]).map(r=>cleanCode(r.squadCode||r.squad_code))].filter(c=>c&&c!=='UNALLOCATED'))].sort();
+    return Object.freeze(codes.map(code=>{const people=summarizePeopleCosts(peopleCosts,{squadCode:code}),ops=summarizeOperationalCosts(operationalCosts,allocations,{squadCode:code}),stats=operationalStats?.[code]||{},attendance=Math.max(0,num(stats.attendance)),totalCost=money(people.totalCost+ops.operationalCost);return Object.freeze({squadCode:code,peopleCount:people.peopleCount,fte:people.fte,peopleCost:people.totalCost,operationalCost:ops.operationalCost,totalCost,attendance,evaluationRate:Number.isFinite(Number(stats.evaluationRate))?Number(stats.evaluationRate):null,costPerAttendance:attendance>0?money(totalCost/attendance):null,attendancePerFte:people.fte>0?Math.round((attendance/people.fte)*100)/100:null});}));
   }
-  return{RULE_VERSION,OPERATIONAL_CATEGORIES,ALLOCATION_METHODS,calculatePersonCost,summarizePeopleCosts,normalizeCategory,normalizeAllocationMethod,buildOperationalAllocationPlan,summarizeOperationalCosts,emptySummary,mergePeopleSummary,mergeFinancialSummary};
+  return{RULE_VERSION,calculatePersonCost,summarizePeopleCosts,allocateCents,calculateOperationalAllocations,summarizeOperationalCosts,emptySummary,mergePeopleSummary,mergeFinancialSummary,consolidateSquads};
 });

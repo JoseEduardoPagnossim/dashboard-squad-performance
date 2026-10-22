@@ -123,18 +123,7 @@ Execute `supabase/migrations/MIGRACAO_V2.57.1.sql` antes de habilitar a nova ár
 
 A camada estratégica passa a usar tabelas próprias (`strategy_competences`, `strategy_people`, `strategy_employee_costs`). Custos pessoais nunca são gravados nas tabelas operacionais de técnicos ou competências. `strategy_employee_costs.total_cost` é uma coluna gerada que aplica o FTE ao somatório dos componentes financeiros. A RPC `get_strategy_people_cost_summary` entrega somente agregados a usuários com `can_view_aggregates`.
 
-## V2.57.3 — Custos operacionais e rateios
 
-Novas tabelas:
+## V2.57.4 — Custos operacionais e consolidação
 
-- `strategy_operational_costs`
-- `strategy_cost_allocations`
-
-Novas RPCs:
-
-- `get_strategy_operational_cost_summary(date,text)`
-- `get_strategy_allocation_basis(date)`
-- `save_strategy_operational_cost(...)`
-- `delete_strategy_operational_cost(uuid)`
-
-`strategy_cost_allocations` armazena percentual e base utilizada por Squad. O cadastro detalhado é restrito a `can_edit_costs`; usuários com acesso agregado recebem somente consolidados via RPC.
+Novas tabelas: `strategy_operational_costs` e `strategy_cost_allocations`. Novas RPCs agregadas: `get_strategy_financial_summary` e `get_strategy_squad_cost_summary`.

@@ -1,20 +1,12 @@
-## V2.57.3 — Custos operacionais + rateios
+## V2.57.4 — Motor financeiro + consolidação por Squad
 
-A Gestão Estratégica passa a registrar custos operacionais por competência e distribuí-los entre os Squads sem alterar os dados operacionais.
+- Corrige o checkbox de Gestão Estratégica para liberar o MVP financeiro atual sem edição manual no banco.
+- Consolida pessoas + operação e custo por atendimento.
+- Adiciona custos operacionais com rateio por FTE, atendimentos ou direto por Squad.
+- Adiciona consolidação financeira por Squad.
+- Execute `supabase/migrations/MIGRACAO_V2.57.4.sql` após a V2.57.2.
 
-- categorias iniciais: Tecnologia, Comunicação, Infraestrutura, Terceiros, Treinamento e Outros;
-- rateio **Direto**, por **FTE**, por **Atendimentos** ou **Manual**;
-- FTE e atendimentos são consultados de forma agregada pela competência e fotografados no rateio;
-- rateio manual exige exatamente 100%;
-- custo + rateio são gravados pela RPC transacional `save_strategy_operational_cost`;
-- usuários com acesso estratégico básico recebem somente os consolidados por RPC;
-- detalhes dos lançamentos permanecem restritos a `can_edit_costs`;
-- Resultado Executivo passa a consolidar `custo de pessoas + custo operacional`;
-- nenhuma tabela operacional é modificada.
-
-Execute `supabase/migrations/MIGRACAO_V2.57.3.sql` após a V2.57.2. Não é necessário republicar Edge Functions.
-
-Detalhes: `docs/GESTAO_ESTRATEGICA_CUSTOS_OPERACIONAIS_V2.57.3.md`.
+Detalhes: `docs/GESTAO_ESTRATEGICA_MOTOR_FINANCEIRO_V2.57.4.md`.
 
 ## V2.57.2 — Competências, pessoas e custos pessoais
 

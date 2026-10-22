@@ -72,8 +72,7 @@ O bootstrap da migration libera aos administradores existentes apenas a fundaç�
 
 O acesso geral à Gestão Estratégica não concede acesso a salários. As tabelas `strategy_people` e `strategy_employee_costs` exigem `can_view_people_costs`; escrita exige também `can_edit_costs`. Usuários com acesso apenas agregado recebem totais por uma RPC `SECURITY DEFINER` que valida `has_strategy_access('aggregates')` e não retorna nomes ou linhas individuais.
 
-## V2.57.3 — Segurança de custos operacionais
 
-Custos operacionais detalhados não são expostos pelo simples `can_view_strategy`. A leitura direta de `strategy_operational_costs` e `strategy_cost_allocations` exige `can_edit_costs`. Usuários com `can_view_aggregates` recebem somente totais e composição por categoria via RPC `SECURITY DEFINER`, sem descrição de fornecedor, subcategoria ou linha individual.
+## V2.57.4 — Checkbox funcional do MVP
 
-A RPC de gravação valida organização, permissão, competência, status, Squads e soma de rateio antes de substituir as alocações, mantendo custo e rateio na mesma transação.
+Somente Super Admin altera o checkbox. Quando marcado, ele habilita `can_view_strategy`, `can_view_aggregates`, `can_view_people_costs` e `can_edit_costs`. Fechamento de competência permanece separado.

@@ -8,15 +8,15 @@ const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const app=fs.readFileSync(path.join(root,'js','app.js'),'utf8');
 const pkg=require('../package.json');
 
-test('V2.57.3 publica a preparação de CSV dentro da Central de Importação',()=>{
-  assert.equal(pkg.version,'2.57.3');
+test('V2.57.4 publica a preparação de CSV dentro da Central de Importação',()=>{
+  assert.equal(pkg.version,'2.57.4');
   for(const id of ['csvPreparationBlock','csvMapDate','csvMapTechnician','csvMapService','csvMapProduct','csvMapCompany','csvMapGroup','csvDedupeEnabled','csvDedupeColumns','csvDedupeKeep','applyCsvPreparationBtn']) assert.ok(index.includes(`id="${id}"`),id);
   assert.match(app,/openCsvPreparation\(state\.pendingCsvSource\)/);
   assert.match(app,/applyCsvPreparation/);
   assert.match(app,/Não é mais necessário excluir colunas manualmente/);
 });
 
-test('V2.57.3 sugere mapeamento e chave de cliente no relatório bruto',()=>{
+test('V2.57.4 sugere mapeamento e chave de cliente no relatório bruto',()=>{
   const headers=['DataAvaliacao','nomeApresentativo','CNPJ','NotaServico','NotaProduto','NotaEmpresa','Outro Campo'];
   const q=engine.suggestQualityPreparation(headers,'quality');
   assert.equal(q.mapping.date,0);
@@ -29,7 +29,7 @@ test('V2.57.3 sugere mapeamento e chave de cliente no relatório bruto',()=>{
   assert.equal(full.mapping.service,3);
 });
 
-test('V2.57.3 deduplica cliente somente dentro da mesma competência',()=>{
+test('V2.57.4 deduplica cliente somente dentro da mesma competência',()=>{
   const headers=['Data','Tecnico','CNPJ','NotaServico','NotaProduto','NotaEmpresa'];
   const rows=[
     ['01/10/2026','Ana','11.111.111/0001-01','5','4','5'],
@@ -46,7 +46,7 @@ test('V2.57.3 deduplica cliente somente dentro da mesma competência',()=>{
   assert.equal(parsed[2][0],'02/11/2026');
 });
 
-test('V2.57.3 permite manter a última ocorrência quando solicitado',()=>{
+test('V2.57.4 permite manter a última ocorrência quando solicitado',()=>{
   const headers=['Data','Tecnico','Cliente','NotaProduto','NotaEmpresa'];
   const rows=[['01/10/2026','Ana','Cliente X','2','3'],['20/10/2026','Ana','Cliente X','5','5']];
   const result=engine.prepareQualitySource({headers,rows,kind:'quality',mapping:{date:0,technician:1,product:3,company:4},dedupeEnabled:true,dedupeColumns:[2],keep:'last'});
@@ -56,7 +56,7 @@ test('V2.57.3 permite manter a última ocorrência quando solicitado',()=>{
   assert.equal(parsed[1][2],'5');
 });
 
-test('V2.57.3 Qualidade Completa preserva todas as linhas quando deduplicação está desligada',()=>{
+test('V2.57.4 Qualidade Completa preserva todas as linhas quando deduplicação está desligada',()=>{
   const headers=['Data','Tecnico','Cliente','NotaServico','NotaProduto','NotaEmpresa'];
   const rows=[['01/10/2026','Ana','Cliente X','5','4','5'],['02/10/2026','Ana','Cliente X','4','5','5']];
   const result=engine.prepareQualitySource({headers,rows,kind:'quality-full',mapping:{date:0,technician:1,service:3,product:4,company:5,group:null},dedupeEnabled:false,dedupeColumns:[],keep:'first'});

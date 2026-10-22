@@ -5,8 +5,6 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const OPERATIONAL_CATEGORIES=Object.freeze(['technology','communication','infrastructure','third_party','training','other']);
-  const ALLOCATION_METHODS=Object.freeze(['direct','headcount','attendance','manual']);
   function cleanCode(value){return String(value||'').trim().toUpperCase()}
   function cleanText(value){return String(value??'').trim()}
   function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
@@ -86,6 +84,24 @@
       updatedAt:row.updated_at||null
     };
   }
+
+  function normalizeOperationalCostRow(row={}){
+    return{
+      id:cleanText(row.id),competenceId:cleanText(row.competence_id),description:cleanText(row.description),category:cleanText(row.category)||'Outros',amount:Math.max(0,num(row.amount)),scopeType:['organization','squad'].includes(row.scope_type)?row.scope_type:'organization',squadCode:cleanCode(row.squad_code),allocationMethod:['direct','fte','attendance','manual'].includes(row.allocation_method)?row.allocation_method:'fte',recurring:row.recurring===true,source:cleanText(row.source)||'manual',notes:cleanText(row.notes),createdAt:row.created_at||null,updatedAt:row.updated_at||null
+    };
+  }
+  function normalizeAllocationRow(row={}){
+    return{id:cleanText(row.id),operationalCostId:cleanText(row.operational_cost_id),squadCode:cleanCode(row.squad_code),allocationMethod:cleanText(row.allocation_method_snapshot)||'fte',basisValue:Math.max(0,num(row.basis_value)),percentage:Math.max(0,num(row.percentage)),allocatedAmount:Math.max(0,num(row.allocated_amount)),createdAt:row.created_at||null,updatedAt:row.updated_at||null};
+  }
+  function normalizeFinancialSummary(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    const peopleCost=Math.max(0,num(source.people_cost??source.peopleCost??source.total_cost_people??source.totalCostPeople??source.total_cost??source.totalCost));
+    const operationalCost=Math.max(0,num(source.operational_cost??source.operationalCost));
+    const explicitTotal=Number(source.total_cost??source.totalCost);
+    return{competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code||source.squadCode)||'ALL',peopleCount:Math.max(0,num(source.people_count??source.peopleCount)),fte:Math.max(0,num(source.fte)),salary:Math.max(0,num(source.salary)),employerCharges:Math.max(0,num(source.employer_charges??source.employerCharges)),benefits:Math.max(0,num(source.benefits)),variablePay:Math.max(0,num(source.variable_pay??source.variablePay)),overtime:Math.max(0,num(source.overtime)),otherCosts:Math.max(0,num(source.other_costs??source.otherCosts)),peopleCost,operationalCost,unallocatedOperationalCost:Math.max(0,num(source.unallocated_operational_cost??source.unallocatedOperationalCost)),totalCost:Number.isFinite(explicitTotal)?Math.max(0,explicitTotal):peopleCost+operationalCost};
+  }
+  function normalizeSquadFinancialRow(row={}){return{squadCode:cleanCode(row.squad_code||row.squadCode),peopleCount:Math.max(0,num(row.people_count??row.peopleCount)),fte:Math.max(0,num(row.fte)),peopleCost:Math.max(0,num(row.people_cost??row.peopleCost)),operationalCost:Math.max(0,num(row.operational_cost??row.operationalCost)),totalCost:Math.max(0,num(row.total_cost??row.totalCost))};}
+
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
     return{
@@ -102,55 +118,6 @@
       totalCost:Math.max(0,num(source.total_cost??source.totalCost))
     };
   }
-  function normalizeOperationalCostRow(row={}){
-    const method=String(row.allocation_method||row.allocationMethod||'manual').trim().toLowerCase(),category=String(row.category||'other').trim().toLowerCase();
-    return{
-      id:cleanText(row.id),
-      competenceId:cleanText(row.competence_id),
-      description:cleanText(row.description),
-      category:OPERATIONAL_CATEGORIES.includes(category)?category:'other',
-      subcategory:cleanText(row.subcategory),
-      amount:Math.max(0,num(row.amount)),
-      scopeType:String(row.scope_type||row.scopeType||'organization').trim().toLowerCase()==='squad'?'squad':'organization',
-      squadCode:cleanCode(row.squad_code),
-      allocationMethod:ALLOCATION_METHODS.includes(method)?method:'manual',
-      recurring:row.recurring===true,
-      source:cleanText(row.source)||'manual',
-      sourceReference:cleanText(row.source_reference),
-      notes:cleanText(row.notes),
-      createdAt:row.created_at||null,
-      updatedAt:row.updated_at||null
-    };
-  }
-  function normalizeCostAllocationRow(row={}){
-    return{
-      id:cleanText(row.id),
-      operationalCostId:cleanText(row.operational_cost_id||row.operationalCostId),
-      squadCode:cleanCode(row.squad_code||row.squadCode),
-      percentage:Math.max(0,num(row.percentage)),
-      basisValue:Math.max(0,num(row.basis_value??row.basisValue)),
-      basisTotal:Math.max(0,num(row.basis_total??row.basisTotal)),
-      createdAt:row.created_at||null,
-      updatedAt:row.updated_at||null
-    };
-  }
-  function normalizeOperationalSummary(raw={}){
-    const source=raw&&typeof raw==='object'?raw:{},categories=source.categories||source.category_breakdown||source.operationalCategories||{};
-    return{
-      competence:competenceId(source.competence),
-      squadCode:cleanCode(source.squad_code||source.squadCode)||'ALL',
-      costCount:Math.max(0,num(source.cost_count??source.costCount)),
-      operationalCost:Math.max(0,num(source.operational_cost??source.operationalCost??source.total_cost??source.totalCost)),
-      directCost:Math.max(0,num(source.direct_cost??source.directCost)),
-      sharedCost:Math.max(0,num(source.shared_cost??source.sharedCost)),
-      invalidCostCount:Math.max(0,num(source.invalid_cost_count??source.invalidCostCount)),
-      categories:Object.fromEntries(OPERATIONAL_CATEGORIES.map(id=>[id,Math.max(0,num(categories?.[id]))]))
-    };
-  }
-  function normalizeAllocationBasis(raw={}){
-    const rows=Array.isArray(raw)?raw:(Array.isArray(raw?.rows)?raw.rows:[]);
-    return rows.map(row=>({squadCode:cleanCode(row.squad_code||row.squadCode),fte:Math.max(0,num(row.fte)),attendance:Math.max(0,num(row.attendance))})).filter(row=>row.squadCode);
-  }
   function buildOperationalContext({squads}={}){
     const normalized=normalizeSquads(squads),competences=collectCompetences(normalized);
     return Object.freeze({
@@ -159,23 +126,22 @@
       latestCompetence:competences.at(-1)||''
     });
   }
-  function buildFinancialContext({competences=[],people=[],costs=[],summary=null,operationalCosts=[],allocations=[],operationalSummary=null,allocationBasis=[]}={}){
+  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],summary=null,squadSummary=[]}={}){
     const competenceRows=(competences||[]).map(normalizeCompetenceRow).filter(row=>row.competence);
     const personRows=(people||[]).map(normalizePersonRow).filter(row=>row.id&&row.name);
     const costRows=(costs||[]).map(normalizeEmployeeCostRow).filter(row=>row.personId);
-    const operationalRows=(operationalCosts||[]).map(normalizeOperationalCostRow).filter(row=>row.id&&row.description);
-    const allocationRows=(allocations||[]).map(normalizeCostAllocationRow).filter(row=>row.operationalCostId&&row.squadCode);
-    const basisRows=normalizeAllocationBasis(allocationBasis);
+    const operationalRows=(operationalCosts||[]).map(normalizeOperationalCostRow).filter(row=>row.id);
+    const allocationRows=(allocations||[]).map(normalizeAllocationRow).filter(row=>row.operationalCostId);
+    const squadRows=(squadSummary||[]).map(normalizeSquadFinancialRow).filter(row=>row.squadCode);
     return Object.freeze({
       competences:Object.freeze(competenceRows.map(row=>Object.freeze({...row}))),
       people:Object.freeze(personRows.map(row=>Object.freeze({...row}))),
       costs:Object.freeze(costRows.map(row=>Object.freeze({...row}))),
-      summary:Object.freeze(normalizePeopleSummary(summary||{})),
       operationalCosts:Object.freeze(operationalRows.map(row=>Object.freeze({...row}))),
       allocations:Object.freeze(allocationRows.map(row=>Object.freeze({...row}))),
-      operationalSummary:Object.freeze({...normalizeOperationalSummary(operationalSummary||{}),categories:Object.freeze({...normalizeOperationalSummary(operationalSummary||{}).categories})}),
-      allocationBasis:Object.freeze(basisRows.map(row=>Object.freeze({...row})))
+      summary:Object.freeze(normalizeFinancialSummary(summary||{})),
+      squadSummary:Object.freeze(squadRows.map(row=>Object.freeze({...row})))
     });
   }
-  return{OPERATIONAL_CATEGORIES,ALLOCATION_METHODS,num,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizePeopleSummary,normalizeOperationalCostRow,normalizeCostAllocationRow,normalizeOperationalSummary,normalizeAllocationBasis,buildOperationalContext,buildFinancialContext};
+  return{num,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,buildOperationalContext,buildFinancialContext};
 });

@@ -1,14 +1,10 @@
-## V2.57.3 — Custos operacionais + rateios
+## V2.57.4 — Motor financeiro + consolidação por Squad
 
-- Cria `strategy_operational_costs` e `strategy_cost_allocations`.
-- Adiciona rateio direto, por FTE, por atendimentos e manual.
-- Persiste a base e o percentual utilizados em cada Squad para preservar o histórico.
-- Adiciona `get_strategy_operational_cost_summary(date,text)` para consolidados sem expor lançamentos detalhados.
-- Adiciona `get_strategy_allocation_basis(date)` com FTE e atendimentos agregados por Squad.
-- Adiciona `save_strategy_operational_cost(...)` e `delete_strategy_operational_cost(uuid)` para gravação segura.
-- Resultado Executivo passa a somar custo de pessoas e custo operacional.
-- Mantém RLS e isolamento completo das tabelas operacionais.
-- Adiciona regressões específicas dos quatro métodos de rateio.
+- Corrige o acesso estratégico: checkbox marcado passa a habilitar visualização detalhada e edição do MVP.
+- Cria custos operacionais e snapshots de rateio.
+- Implementa motor SC-0.4.0-financial.
+- Consolida pessoas + operação + atendimentos por Squad.
+- Adiciona `MIGRACAO_V2.57.4.sql`.
 
 ## V2.57.2 — Competências, pessoas e custos pessoais
 
