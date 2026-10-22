@@ -14,7 +14,7 @@
   const VALID_SECTIONS=Object.freeze(['executive','efficiency','costs','assumptions']);
   const SECTION_META=Object.freeze({
     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
-    efficiency:Object.freeze({label:'Eficiência',eyebrow:'CUSTO POR ATENDIMENTO'}),
+    efficiency:Object.freeze({label:'Eficiência',eyebrow:'CUSTO POR RESOLUÇÃO'}),
     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });
@@ -44,7 +44,7 @@
     function setComparison(value){state={...state,comparison:normalizeComparison(value)};return getState()}
     function getState(){return{...state,access:{...state.access}}}
     function getContext(){const comps=availableCompetences(context,financial);return{squads:availableSquads(context).map(row=>({...row,competences:[...(row.competences||[])]})),operationalCompetences:[...context.competences],financialCompetences:financial.competences.map(row=>row.competence),competences:comps,latestCompetence:comps.at(-1)||context.latestCompetence}}
-    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),operationalCosts:financial.operationalCosts.map(row=>({...row})),allocations:financial.allocations.map(row=>({...row})),summary:{...financial.summary},squadSummary:financial.squadSummary.map(row=>({...row})),history:financial.history.map(row=>({...row}))}}
+    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),operationalCosts:financial.operationalCosts.map(row=>({...row})),allocations:financial.allocations.map(row=>({...row})),resolutionMetrics:financial.resolutionMetrics.map(row=>({...row})),summary:{...financial.summary},squadSummary:financial.squadSummary.map(row=>({...row})),history:financial.history.map(row=>({...row}))}}
     function selectedCompetenceRecord(){return financial.competences.find(row=>row.competence===state.competence)||null}
     function viewModel(){
       const snapshot=getState(),ctx=getContext(),fin=getFinancialData(),meta=SECTION_META[snapshot.section];

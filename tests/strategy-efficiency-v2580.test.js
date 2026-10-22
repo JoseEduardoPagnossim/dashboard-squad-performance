@@ -11,15 +11,15 @@ const filters=require(join(root,'js','filter-system.js'));
 const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
-test('V2.58.1 publica a Fundação da Eficiência isolada do operacional',()=>{
-  assert.equal(pkg.version,'2.58.1');
+test('V2.58.2 publica a Fundação da Eficiência isolada do operacional',()=>{
+  assert.equal(pkg.version,'2.58.2');
   assert.match(index,/data-strategy-section="efficiency"/);
   assert.match(index,/data-strategy-panel="efficiency"/);
   assert.match(index,/strategyEfficiencyBaseCost/);
   assert.match(index,/strategyEfficiencyReadinessRows/);
-  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.1/);
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.1')<index.indexOf('js/strategy.js?v=2.58.1'));
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.1')<index.indexOf('js/app.js?v=2.58.1'));
+  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.2/);
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.2')<index.indexOf('js/strategy.js?v=2.58.2'));
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.2')<index.indexOf('js/app.js?v=2.58.2'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
 });
 
@@ -29,21 +29,22 @@ test('rota de eficiência preserva o isolamento e descarta filtros operacionais'
   assert.equal(filters.activeCount({view:'strategy',isSuperAdmin:true}),0);
 });
 
-test('fundação preservada agora publica também o custo unitário da V2.58.1',()=>{
+test('fundação preservada publica atendimento e resolução com prontidão independente',()=>{
   const foundation=efficiency.buildFoundation({
     scope:{competence:'2026-10',squadCode:'D',comparison:'previous',competenceStatus:'draft'},
-    metrics:{totalCost:40000,peopleCost:35000,operationalCost:5000,attendance:2500,fte:7,evaluationRate:.41},
-    availability:{financial:true,attendance:true,fte:true,quality:true,resolutions:false}
+    metrics:{totalCost:40000,peopleCost:35000,operationalCost:5000,attendance:2500,resolutions:1800,fte:7,evaluationRate:.41},
+    availability:{financial:true,attendance:true,fte:true,quality:true,resolutions:true}
   });
-  assert.equal(foundation.ruleVersion,'EF-0.2.0-cost-per-attendance');
+  assert.equal(foundation.ruleVersion,'EF-0.3.0-cost-per-resolution');
   assert.equal(foundation.status,'ready');
   assert.equal(foundation.coverage.ratio,1);
   assert.equal(foundation.metrics.totalCost,40000);
   assert.equal(foundation.metrics.costPerAttendance,16);
   assert.equal(foundation.catalog.find(x=>x.id==='cost-per-attendance').status,'ready');
   const resolution=foundation.catalog.find(x=>x.id==='cost-per-resolution');
-  assert.equal(resolution.status,'pending');
-  assert.deepEqual(resolution.missing,['resolutions']);
+  assert.equal(resolution.status,'ready');
+  assert.deepEqual(resolution.missing,[]);
+  assert.equal(foundation.metrics.costPerResolution,40000/1800);
 });
 
 test('fundação sinaliza base parcial sem fabricar valores ausentes',()=>{
@@ -56,13 +57,14 @@ test('fundação sinaliza base parcial sem fabricar valores ausentes',()=>{
   assert.ok(foundation.warnings.some(x=>/produção operacional/i.test(x)));
 });
 
-test('UI da eficiência respeita a permissão agregada e mantém resolução pendente',()=>{
+test('UI da eficiência respeita permissão e usa disponibilidade explícita de resolução',()=>{
   const start=app.indexOf('function strategyEfficiencyFoundation(vm,displayAggregate)');
   const end=app.indexOf('function renderStrategy({skipLoad=false}',start);
   assert.ok(start>=0&&end>start);
   const block=app.slice(start,end);
   assert.match(block,/financialReady=displayAggregate/);
-  assert.match(block,/resolutions:false/);
+  assert.match(block,/resolutionEntries/);
   assert.match(block,/strategyEfficiencyEngine\.buildFoundation/);
-  assert.doesNotMatch(block,/costPerResolution\s*[:=]/);
+  assert.match(block,/strategyCostPerResolutionAnalysis/);
+  assert.match(block,/strategyEfficiencyEngine\.calculateCostPerResolution/);
 });

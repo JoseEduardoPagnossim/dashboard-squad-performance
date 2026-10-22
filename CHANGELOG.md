@@ -1,3 +1,16 @@
+## V2.58.2 — Custo por Resolução
+
+- cria uma base estratégica explícita de resoluções por técnico, competência e Squad;
+- não reutiliza atendimentos automaticamente como resolução;
+- calcula custo por resolução na operação, por Squad e por técnico;
+- adiciona taxa de resolução (`resoluções / atendimentos`);
+- adiciona histórico e comparação conforme mês anterior, 3, 6 ou 12 competências;
+- permite editar resoluções na própria tela de Eficiência enquanto a competência estiver aberta;
+- congela a base de resoluções no fechamento por RLS/policies;
+- adiciona RPCs agregadas sem expor detalhe individual a perfis sem acesso de pessoas;
+- atualiza o motor de eficiência para `EF-0.3.0-cost-per-resolution`;
+- exige a migration `MIGRACAO_V2.58.2.sql`.
+
 ## V2.58.1 — Custo por Atendimento
 
 - calcula custo por atendimento com `custo total consolidado / atendimentos válidos`;

@@ -70,7 +70,7 @@
   function changeRatio(current,previous){const prev=num(previous),cur=num(current);return prev>0?(cur-prev)/prev:null}
   function averageRows(rows=[]){
     const valid=(rows||[]).filter(Boolean);if(!valid.length)return null;
-    const keys=['peopleCount','fte','salary','employerCharges','benefits','variablePay','overtime','otherCosts','peopleCost','operationalCost','unallocatedOperationalCost','totalCost','attendance','evaluationRate','qualityTarget','costPerAttendance','attendancePerFte'];
+    const keys=['peopleCount','fte','salary','employerCharges','benefits','variablePay','overtime','otherCosts','peopleCost','operationalCost','unallocatedOperationalCost','totalCost','attendance','resolutions','resolutionEntries','evaluationRate','qualityTarget','costPerAttendance','costPerResolution','resolutionRate','attendancePerFte'];
     const out={};for(const key of keys){const vals=valid.map(r=>Number(r[key])).filter(Number.isFinite);out[key]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;}return out;
   }
   function comparisonWindow(history=[],currentCompetence='',mode='previous'){

@@ -5,8 +5,8 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='EF-0.2.0-cost-per-attendance';
-  const COVERAGE_KEYS=Object.freeze(['financial','attendance','fte','quality']);
+  const RULE_VERSION='EF-0.3.0-cost-per-resolution';
+  const COVERAGE_KEYS=Object.freeze(['financial','attendance','fte','quality','resolutions']);
   const METRIC_CATALOG=Object.freeze([
     Object.freeze({id:'cost-per-attendance',label:'Custo por atendimento',version:'V2.58.1',requires:Object.freeze(['financial','attendance'])}),
     Object.freeze({id:'cost-per-resolution',label:'Custo por resolução',version:'V2.58.2',requires:Object.freeze(['financial','resolutions'])}),
@@ -35,29 +35,42 @@
     const cost=Math.max(0,num(totalCost)),volume=Math.max(0,num(attendance));
     return volume>0?cost/volume:null;
   }
+  function calculateCostPerResolution(totalCost,resolutions){
+    const cost=Math.max(0,num(totalCost)),volume=Math.max(0,num(resolutions));
+    return volume>0?cost/volume:null;
+  }
+  function calculateResolutionRate(resolutions,attendance){
+    const resolved=Math.max(0,num(resolutions)),volume=Math.max(0,num(attendance));
+    return volume>0?Math.min(1,resolved/volume):null;
+  }
   function normalizeMetrics(raw={}){
-    const evaluation=Number(raw.evaluationRate),totalCost=Math.max(0,num(raw.totalCost)),attendance=Math.max(0,num(raw.attendance));
+    const evaluation=Number(raw.evaluationRate),totalCost=Math.max(0,num(raw.totalCost)),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions));
     return Object.freeze({
       totalCost,
       peopleCost:Math.max(0,num(raw.peopleCost)),
       operationalCost:Math.max(0,num(raw.operationalCost)),
       attendance,
+      resolutions,
       costPerAttendance:calculateCostPerAttendance(totalCost,attendance),
+      costPerResolution:calculateCostPerResolution(totalCost,resolutions),
+      resolutionRate:calculateResolutionRate(resolutions,attendance),
       fte:Math.max(0,num(raw.fte)),
       peopleCount:Math.max(0,Math.round(num(raw.peopleCount))),
-      evaluationRate:Number.isFinite(evaluation)?percent(evaluation):null,
-      resolutions:Math.max(0,num(raw.resolutions))
+      evaluationRate:Number.isFinite(evaluation)?percent(evaluation):null
     });
   }
   function normalizeUnitRow(raw={}){
-    const totalCost=Math.max(0,num(raw.totalCost??raw.total_cost)),attendance=Math.max(0,num(raw.attendance));
+    const totalCost=Math.max(0,num(raw.totalCost??raw.total_cost)),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions));
     return Object.freeze({
       id:text(raw.id),
       label:text(raw.label||raw.name||raw.squadCode||raw.squad_code,'Sem identificação'),
       squadCode:text(raw.squadCode||raw.squad_code).toUpperCase(),
       totalCost,
       attendance,
-      costPerAttendance:calculateCostPerAttendance(totalCost,attendance)
+      resolutions,
+      costPerAttendance:calculateCostPerAttendance(totalCost,attendance),
+      costPerResolution:calculateCostPerResolution(totalCost,resolutions),
+      resolutionRate:calculateResolutionRate(resolutions,attendance)
     });
   }
   function changeRatio(current,baseline){
@@ -71,6 +84,20 @@
     return Object.freeze({
       ruleVersion:RULE_VERSION,
       status:currentRow.costPerAttendance==null?'pending':'ready',
+      current:currentRow,
+      baseline:baselineRow,
+      comparisonLabel:text(comparisonLabel,'Sem base de comparação'),
+      delta,
+      impact
+    });
+  }
+  function buildCostPerResolution({current={},baseline=null,comparisonLabel=''}={}){
+    const currentRow=normalizeUnitRow(current),baselineRow=baseline?normalizeUnitRow(baseline):null;
+    const delta=baselineRow?changeRatio(currentRow.costPerResolution,baselineRow.costPerResolution):null;
+    const impact=baselineRow&&currentRow.costPerResolution!=null&&baselineRow.costPerResolution!=null&&currentRow.resolutions>0?(currentRow.costPerResolution-baselineRow.costPerResolution)*currentRow.resolutions:null;
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,
+      status:currentRow.costPerResolution==null?'pending':'ready',
       current:currentRow,
       baseline:baselineRow,
       comparisonLabel:text(comparisonLabel,'Sem base de comparação'),
@@ -93,6 +120,7 @@
     if(!availability.attendance)out.push('Não há produção operacional válida no escopo selecionado.');
     if(!availability.fte)out.push('O FTE estratégico ainda não está disponível no escopo selecionado.');
     if(!availability.quality)out.push('A taxa de avaliação não está disponível para este escopo.');
+    if(!availability.resolutions)out.push('A base de resoluções ainda não foi informada para esta competência.');
     if(metrics.totalCost>0&&metrics.peopleCost+metrics.operationalCost===0)out.push('O custo total existe sem composição de pessoas/operação; valide a consolidação.');
     return Object.freeze(out);
   }
@@ -102,5 +130,5 @@
     return Object.freeze({ruleVersion:RULE_VERSION,scope,metrics,availability,coverage,status,catalog:Object.freeze(catalog),warnings:notes});
   }
 
-  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,changeRatio,buildCostPerAttendance,coverageScore,metricReadiness,buildFoundation};
+  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,calculateCostPerResolution,calculateResolutionRate,changeRatio,buildCostPerAttendance,buildCostPerResolution,coverageScore,metricReadiness,buildFoundation};
 });

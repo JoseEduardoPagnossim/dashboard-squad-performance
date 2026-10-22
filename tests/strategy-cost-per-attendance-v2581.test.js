@@ -9,11 +9,11 @@ const efficiency=require(join(root,'js','strategy-efficiency.js'));
 const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
-test('V2.58.1 publica custo por atendimento como indicador oficial da Fase 3',()=>{
-  assert.equal(pkg.version,'2.58.1');
-  assert.equal(pkg.assetVersion,'2.58.1');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.2.0-cost-per-attendance');
-  assert.match(index,/CUSTO POR ATENDIMENTO • V2\.58\.1/);
+test('V2.58.1 permanece preservada dentro da V2.58.2',()=>{
+  assert.equal(pkg.version,'2.58.2');
+  assert.equal(pkg.assetVersion,'2.58.2');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.3.0-cost-per-resolution');
+  assert.match(index,/INDICADOR V2\.58\.1/);
   assert.match(index,/strategyCostPerAttendanceValue/);
   assert.match(index,/strategyCostPerAttendanceSquadRows/);
   assert.match(index,/strategyCostPerAttendanceTechRows/);

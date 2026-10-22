@@ -188,3 +188,15 @@
 .strategy-person-actions{display:flex;justify-content:flex-end;min-width:120px}.strategy-person-actions .table-action{white-space:nowrap}
 @media(max-width:1180px){.strategy-efficiency-analysis-grid{grid-template-columns:1fr}.strategy-unit-cost-summary{grid-template-columns:1fr 1fr}.strategy-unit-cost-summary>div:first-child{grid-column:1/-1}}
 @media(max-width:680px){.strategy-unit-cost-summary{grid-template-columns:1fr}.strategy-unit-cost-summary>div:first-child{grid-column:auto}}
+
+/* V2.58.2 — Custo por resolução */
+.strategy-resolution-block{display:grid;gap:16px;padding:18px;border:1px solid color-mix(in srgb,var(--success) 28%,var(--border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--success) 5%,var(--panel)),var(--panel))}
+.strategy-resolution-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.strategy-resolution-kpis .strategy-metric{margin:0}
+.strategy-resolution-editor{display:grid;gap:12px;background:var(--panel)}
+.strategy-resolution-table{min-width:1080px}
+.strategy-resolution-input{width:92px;min-width:92px;border:1px solid var(--border);border-radius:9px;background:var(--panel2);color:var(--text);padding:8px 9px;font:inherit;text-align:right}
+.strategy-resolution-input:focus{outline:none;border-color:color-mix(in srgb,var(--accent) 60%,var(--border));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
+.strategy-resolution-input:disabled{opacity:.65;cursor:not-allowed}
+@media(max-width:1180px){.strategy-resolution-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.strategy-resolution-kpis{grid-template-columns:1fr}.strategy-resolution-editor .strategy-section-heading{align-items:stretch;flex-direction:column}.strategy-resolution-editor .btn{width:100%}}
