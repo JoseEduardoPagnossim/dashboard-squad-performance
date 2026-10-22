@@ -51,8 +51,8 @@ test('presets simplificam a configuração e preservam ajustes avançados', () =
 });
 
 test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
-  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.58.0');
-  const appIndex = index.indexOf('js/app.js?v=2.58.0');
+  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.58.0-r4');
+  const appIndex = index.indexOf('js/app.js?v=2.58.0-r4');
   assert.ok(chartExportIndex >= 0 && appIndex > chartExportIndex, 'chart-export precisa carregar antes do app');
   const svg = exporter.buildExportSvg({
     title: 'Avaliação por Squad',

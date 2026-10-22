@@ -44,7 +44,7 @@ test('renderer aceita controle por série e o gráfico entra no fluxo de exporta
 });
 
 test('V2.52.3 atualiza cache e permanece frontend-only', () => {
-  assert.ok(index.includes('js/app.js?v=2.58.0'));
-  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+  assert.ok(index.includes('js/app.js?v=2.58.0-r4'));
+  assert.ok(index.includes('css/styles.css?v=2.58.0-r4'));
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
 });

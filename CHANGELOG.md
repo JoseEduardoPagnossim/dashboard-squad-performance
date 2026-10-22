@@ -1,5 +1,14 @@
 # Changelog
 
+## V2.58.0 R4 — Cache busting e compatibilidade de insights
+
+- altera a revisão dos assets para `2.58.0-r4`, forçando o navegador/CDN a buscar o JavaScript corrigido;
+- mantém a release funcional em `2.58.0`, sem avançar o roadmap para a V2.58.1;
+- adiciona alias temporário de compatibilidade `window.insightEngine` para sessões que ainda tenham o `app.js` antigo em memória/cache;
+- identifica visualmente a revisão R4 no login e rodapé;
+- separa versão funcional da revisão de assets no validador do projeto;
+- adiciona regressão para impedir publicação de hotfix com o mesmo cache-buster.
+
 ## V2.58.0 R3 — Hotfix de renderização estratégica
 
 - corrige `ReferenceError: insightEngine is not defined` após criar/salvar competência;

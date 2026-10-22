@@ -54,8 +54,8 @@ test('exportador reforça legibilidade dos labels em tema e transparência', () 
 });
 
 test('V2.52.2 atualiza cache e continua frontend-only', () => {
-  assert.ok(index.includes('js/app.js?v=2.58.0'));
-  assert.ok(index.includes('js/chart-export.js?v=2.58.0'));
-  assert.ok(index.includes('css/styles.css?v=2.58.0'));
+  assert.ok(index.includes('js/app.js?v=2.58.0-r4'));
+  assert.ok(index.includes('js/chart-export.js?v=2.58.0-r4'));
+  assert.ok(index.includes('css/styles.css?v=2.58.0-r4'));
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
 });

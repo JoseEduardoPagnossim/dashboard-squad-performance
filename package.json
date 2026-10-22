@@ -10,5 +10,6 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "assetVersion": "2.58.0-r4"
 }

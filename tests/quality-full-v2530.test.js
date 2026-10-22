@@ -49,8 +49,8 @@ test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
 });
 
 test('V2.53.0 atualiza cache de assets e scripts',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.58.0'));
-  assert.ok(index.includes('js/import-engine.js?v=2.58.0'));
-  assert.ok(index.includes('js/app.js?v=2.58.0'));
+  assert.ok(index.includes('css/styles.css?v=2.58.0-r4'));
+  assert.ok(index.includes('js/import-engine.js?v=2.58.0-r4'));
+  assert.ok(index.includes('js/app.js?v=2.58.0-r4'));
   assert.ok(index.includes('V2.58.0'));
 });

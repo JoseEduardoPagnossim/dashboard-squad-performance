@@ -43,7 +43,7 @@ test('V2.57.7 Qualidade recalcula escopo no instante da renderização',()=>{
 
 test('V2.57.7 inclui teste legado do GitHub e cache-bust coerente',()=>{
   assert.ok(fs.existsSync(path.join(root,'tests','indicator-squad-filter-v2563.test.js')));
-  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.58.0`),asset);
+  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.58.0-r4`),asset);
   assert.ok(index.includes('V2.58.0'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
 });

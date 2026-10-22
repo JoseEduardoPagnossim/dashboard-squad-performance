@@ -221,7 +221,9 @@ const appText = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const packageLock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
 const releaseVersion = String(packageJson.version || '').trim();
+const assetVersion = String(packageJson.assetVersion || releaseVersion).trim();
 if (!releaseVersion) errors.push('package.json não informa versão da aplicação.');
+if (!assetVersion) errors.push('package.json não informa revisão dos assets.');
 if (String(packageLock.version || '') !== releaseVersion) errors.push(`package-lock.json divergente do package.json: ${packageLock.version || 'sem versão'} != ${releaseVersion}.`);
 if (String(packageLock.packages?.['']?.version || '') !== releaseVersion) errors.push(`package-lock root divergente do package.json: ${packageLock.packages?.['']?.version || 'sem versão'} != ${releaseVersion}.`);
 const appVersionMatch = appText.match(/const APP_VERSION = ['"]([^'"]+)['"]/);
@@ -230,7 +232,7 @@ else if (appVersionMatch[1] !== releaseVersion) errors.push(`APP_VERSION diverge
 for (const match of index.matchAll(/(?:src|href)=['"]([^'"]+)\?v=([^'"]+)['"]/g)) {
   const asset = match[1], version = match[2];
   if (asset === 'js/audit-utils.js') continue;
-  if (version !== releaseVersion) errors.push(`Cache-buster divergente em ${asset}: ${version} != ${releaseVersion}.`);
+  if (version !== assetVersion) errors.push(`Cache-buster divergente em ${asset}: ${version} != ${assetVersion}.`);
 }
 for (const marker of [`login-version">V${releaseVersion}`,`sidebar-footer">V${releaseVersion}`,`GUIA COMPLETO • V${releaseVersion}`]) {
   if (!index.includes(marker)) errors.push(`index.html não apresenta o marcador de release esperado: ${marker}.`);
