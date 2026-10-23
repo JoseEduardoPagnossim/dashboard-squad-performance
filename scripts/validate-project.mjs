@@ -127,6 +127,8 @@ for (const required of [
   'tests/strategy-capacity-utilization-v2593.test.js',
   'docs/CAPACIDADE_UTILIZACAO_V2.59.3.md',
   'supabase/migrations/MIGRACAO_V2.59.3.sql',
+  'tests/strategy-capacity-productivity-v2594.test.js',
+  'docs/CAPACIDADE_PRODUTIVIDADE_FTE_V2.59.4.md',
   'js/strategy-capacity.js',
   'supabase/migrations/MIGRACAO_V2.58.9.sql',
   'supabase/migrations/MIGRACAO_V2.58.2.sql',

@@ -1,3 +1,13 @@
+## V2.59.4 — Produtividade por FTE
+
+- normaliza atendimentos e resoluções pelo FTE efetivamente disponível;
+- define resoluções por FTE disponível como produtividade principal da Fase 4;
+- adiciona índice relativo com operação completa = 100;
+- compara Squads de tamanhos diferentes sem usar headcount bruto;
+- adiciona leitura individual por técnico com referência do próprio Squad e da operação;
+- mantém ausência de resolução/disponibilidade em modo fail-closed;
+- não cria migration nova e não antecipa FTE necessário da V2.59.5.
+
 ## V2.59.3 — Utilização, ociosidade e sobrecarga
 
 - compara a carga atual por FTE disponível com histórico fechado comparável;

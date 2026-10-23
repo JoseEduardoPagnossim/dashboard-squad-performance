@@ -12,17 +12,17 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
  test('V2.59.2 publica fundacao de capacidade isolada',()=>{
-  assert.equal(pkg.version,'2.59.3');
-  assert.equal(pkg.assetVersion,'2.59.3');
-  assert.equal(capacity.RULE_VERSION,'CA-0.4.0-utilization-bands');
+  assert.equal(pkg.version,'2.59.4');
+  assert.equal(pkg.assetVersion,'2.59.4');
+  assert.equal(capacity.RULE_VERSION,'CA-0.5.0-productivity-per-fte');
   assert.ok(strategy.VALID_SECTIONS.includes('capacity'));
   assert.equal(strategy.SECTION_META.capacity.label,'Capacidade');
   assert.match(index,/data-strategy-section="capacity"/);
   assert.match(index,/data-strategy-panel="capacity"/);
   assert.match(index,/strategyCapacityNominalFte/);
   assert.match(index,/strategyCapacityReadinessRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.3'));
-  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.59.3')<index.indexOf('js/app.js?v=2.59.3'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.4'));
+  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.59.4')<index.indexOf('js/app.js?v=2.59.4'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.0.sql')),false);
 });
 
@@ -55,7 +55,8 @@ test('roadmap de capacidade declara dependencias sem fabricar prontidao',()=>{
   const productivity=foundation.catalog.find(x=>x.id==='productivity-per-fte');
   const available=foundation.catalog.find(x=>x.id==='available-capacity');
   const required=foundation.catalog.find(x=>x.id==='required-fte');
-  assert.equal(productivity.status,'base-ready');
+  assert.equal(productivity.status,'pending');
+  assert.ok(productivity.missing.includes('availabilityFactors'));
   assert.equal(available.status,'pending');
   assert.ok(available.missing.includes('availabilityFactors'));
   assert.equal(required.status,'pending');

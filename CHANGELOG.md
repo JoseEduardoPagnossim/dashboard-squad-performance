@@ -1,3 +1,15 @@
+## V2.59.4 — Produtividade por FTE
+
+- atualiza o motor para `CA-0.5.0-productivity-per-fte`;
+- calcula atendimentos por FTE disponível;
+- calcula resoluções por FTE disponível;
+- adiciona taxa de resolução como contexto;
+- cria índice normalizado com operação = 100;
+- compara produtividade por Squad e por técnico;
+- preserva referência global ao filtrar um Squad;
+- mantém V2.59.5 responsável pelo FTE necessário;
+- não adiciona migration.
+
 ## V2.59.3 — Utilização, ociosidade e sobrecarga
 
 - atualiza o motor para `CA-0.4.0-utilization-bands`;

@@ -9,7 +9,7 @@ const app=fs.readFileSync(path.join(root,'js','app.js'),'utf8');
 const pkg=require('../package.json');
 
 test('V2.57.7 publica a preparação de CSV dentro da Central de Importação',()=>{
-  assert.equal(pkg.version,'2.59.3');
+  assert.equal(pkg.version,'2.59.4');
   for(const id of ['csvPreparationBlock','csvMapDate','csvMapTechnician','csvMapService','csvMapProduct','csvMapCompany','csvMapGroup','csvDedupeEnabled','csvDedupeColumns','csvDedupeKeep','applyCsvPreparationBtn']) assert.ok(index.includes(`id="${id}"`),id);
   assert.match(app,/openCsvPreparation\(state\.pendingCsvSource\)/);
   assert.match(app,/applyCsvPreparation/);
