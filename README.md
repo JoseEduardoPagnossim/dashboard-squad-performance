@@ -1,3 +1,11 @@
+## V2.58.5 — Comparativos, benchmarks e eficiência relativa
+
+A Fase 3 passa a comparar produtividade econômica de Squads e técnicos contra referências observadas na própria competência. A operação ponderada define o índice 100; média, mediana e melhor referência ajudam a interpretar dispersão sem criar meta automática. Técnicos são comparados também com a base econômica do próprio Squad, preservando a regra de custo pessoal da V2.58.3.
+
+Não há migration nova. A `MIGRACAO_V2.58.2.sql` continua sendo o pré-requisito da base de resoluções.
+
+Detalhes: `docs/EFICIENCIA_BENCHMARKS_V2.58.5.md`.
+
 ## V2.58.4 — Produtividade econômica por Squad
 
 A Fase 3 passa a consolidar a produtividade econômica no nível em que os custos compartilhados já possuem atribuição confiável. O indicador principal é **resoluções por R$ 1.000 de custo total do Squad**, incluindo custo de pessoas e custo operacional rateado. FTE, taxa de resolução e taxa de avaliação permanecem visíveis como guardrails e não alteram o índice por pesos ocultos.

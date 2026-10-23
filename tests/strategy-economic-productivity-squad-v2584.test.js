@@ -9,11 +9,12 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 const doc=join(root,'docs','EFICIENCIA_PRODUTIVIDADE_SQUAD_V2.58.4.md');
 
-test('V2.58.4 publica produtividade economica por Squad sem migration nova',()=>{
-  assert.equal(pkg.version,'2.58.4');
-  assert.equal(pkg.assetVersion,'2.58.4');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.5.0-economic-productivity-squad');
+test('V2.58.4 permanece preservada dentro da V2.58.5',()=>{
+  assert.equal(pkg.version,'2.58.5');
+  assert.equal(pkg.assetVersion,'2.58.5');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.6.0-relative-efficiency-benchmarks');
   assert.equal(existsSync(doc),true);
+  assert.match(index,/INDICADOR V2\.58\.4/);
   assert.match(index,/Produtividade econômica por Squad/);
   assert.match(index,/strategySquadEconomicProductivityRows/);
   assert.match(index,/strategySquadProductivityPerThousand/);

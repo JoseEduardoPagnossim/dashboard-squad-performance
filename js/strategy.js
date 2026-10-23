@@ -14,7 +14,7 @@
   const VALID_SECTIONS=Object.freeze(['executive','efficiency','costs','assumptions']);
   const SECTION_META=Object.freeze({
     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
-    efficiency:Object.freeze({label:'Eficiência',eyebrow:'CUSTO POR RESOLUÇÃO'}),
+    efficiency:Object.freeze({label:'Eficiência',eyebrow:'EFICIÊNCIA RELATIVA'}),
     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });

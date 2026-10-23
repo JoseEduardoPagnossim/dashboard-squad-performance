@@ -5,13 +5,14 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='EF-0.5.0-economic-productivity-squad';
+  const RULE_VERSION='EF-0.6.0-relative-efficiency-benchmarks';
   const COVERAGE_KEYS=Object.freeze(['financial','attendance','fte','quality','resolutions']);
   const METRIC_CATALOG=Object.freeze([
     Object.freeze({id:'cost-per-attendance',label:'Custo por atendimento',version:'V2.58.1',requires:Object.freeze(['financial','attendance'])}),
     Object.freeze({id:'cost-per-resolution',label:'Custo por resolução',version:'V2.58.2',requires:Object.freeze(['financial','resolutions'])}),
     Object.freeze({id:'economic-productivity-person',label:'Produtividade econômica por técnico',version:'V2.58.3',requires:Object.freeze(['financial','attendance','fte','resolutions'])}),
-    Object.freeze({id:'economic-productivity-squad',label:'Produtividade econômica por Squad',version:'V2.58.4',requires:Object.freeze(['financial','attendance','fte','resolutions'])})
+    Object.freeze({id:'economic-productivity-squad',label:'Produtividade econômica por Squad',version:'V2.58.4',requires:Object.freeze(['financial','attendance','fte','resolutions'])}),
+    Object.freeze({id:'relative-efficiency-benchmarks',label:'Comparativos, benchmarks e eficiência relativa',version:'V2.58.5',requires:Object.freeze(['financial','attendance','fte','resolutions'])})
   ]);
 
   function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
@@ -116,6 +117,43 @@
     });
   }
 
+  function median(values=[]){
+    const rows=(Array.isArray(values)?values:[]).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+    if(!rows.length)return null;
+    const mid=Math.floor(rows.length/2);
+    return rows.length%2?rows[mid]:(rows[mid-1]+rows[mid])/2;
+  }
+  function average(values=[]){
+    const rows=(Array.isArray(values)?values:[]).map(Number).filter(Number.isFinite);
+    return rows.length?rows.reduce((sum,value)=>sum+value,0)/rows.length:null;
+  }
+  function relativeIndex(value,benchmark){
+    const current=Number(value),base=Number(benchmark);
+    return Number.isFinite(current)&&Number.isFinite(base)&&base>0?current/base*100:null;
+  }
+  function relativeBand(value,benchmark,tolerance=.05){
+    const delta=changeRatio(value,benchmark),limit=Math.max(0,num(tolerance,.05));
+    if(delta==null)return'no-base';
+    if(delta>limit)return'above';
+    if(delta<-limit)return'below';
+    return'near';
+  }
+  function buildSquadBenchmarks(rows=[]){
+    const normalized=(Array.isArray(rows)?rows:[]).map(normalizeSquadProductivityRow),eligible=normalized.filter(row=>row.squadCode&&row.sourceAvailable&&row.totalCost>0&&row.economicProductivity!=null);
+    const totalCost=eligible.reduce((sum,row)=>sum+row.totalCost,0),resolutions=eligible.reduce((sum,row)=>sum+row.resolutions,0),operation=calculateEconomicProductivity(resolutions,totalCost),mean=average(eligible.map(row=>row.economicProductivity)),medianValue=median(eligible.map(row=>row.economicProductivity)),best=eligible.slice().sort((a,b)=>(b.economicProductivity??-1)-(a.economicProductivity??-1)||a.squadCode.localeCompare(b.squadCode,'pt-BR'))[0]||null;
+    const enriched=normalized.map(row=>Object.freeze({...row,benchmarkEligible:eligible.some(item=>item.squadCode===row.squadCode),operationBenchmark:operation,medianBenchmark:medianValue,vsOperation:changeRatio(row.economicProductivity,operation),vsMedian:changeRatio(row.economicProductivity,medianValue),relativeIndex:relativeIndex(row.economicProductivity,operation),relativeBand:relativeBand(row.economicProductivity,operation)}));
+    return Object.freeze({ruleVersion:RULE_VERSION,eligibleCount:eligible.length,operationBenchmark:operation,meanBenchmark:mean,medianBenchmark:medianValue,best:best?Object.freeze({...best}):null,rows:Object.freeze(enriched)});
+  }
+  function buildTechnicianBenchmarks(rows=[]){
+    const normalized=(Array.isArray(rows)?rows:[]).map(normalizeTechnicianProductivityRow),eligible=normalized.filter(row=>row.linked&&row.sourceAvailable&&row.personalCost>0&&row.economicProductivity!=null);
+    const totalCost=eligible.reduce((sum,row)=>sum+row.personalCost,0),resolutions=eligible.reduce((sum,row)=>sum+row.resolutions,0),operation=calculateEconomicProductivity(resolutions,totalCost),mean=average(eligible.map(row=>row.economicProductivity)),medianValue=median(eligible.map(row=>row.economicProductivity)),best=eligible.slice().sort((a,b)=>(b.economicProductivity??-1)-(a.economicProductivity??-1)||a.name.localeCompare(b.name,'pt-BR'))[0]||null;
+    const bySquad=new Map();
+    for(const row of eligible){const code=row.squadCode||'SEM_SQUAD',group=bySquad.get(code)||{cost:0,resolutions:0,count:0};group.cost+=row.personalCost;group.resolutions+=row.resolutions;group.count++;bySquad.set(code,group);}
+    const squadBenchmarks=new Map([...bySquad.entries()].map(([code,group])=>[code,Object.freeze({squadCode:code,count:group.count,economicProductivity:calculateEconomicProductivity(group.resolutions,group.cost)})]));
+    const enriched=normalized.map(row=>{const squad=squadBenchmarks.get(row.squadCode),squadBenchmark=squad?.economicProductivity??null;return Object.freeze({...row,benchmarkEligible:eligible.some(item=>item.id===row.id),operationBenchmark:operation,squadBenchmark,vsOperation:changeRatio(row.economicProductivity,operation),vsSquad:changeRatio(row.economicProductivity,squadBenchmark),relativeIndex:relativeIndex(row.economicProductivity,operation),relativeBand:relativeBand(row.economicProductivity,squadBenchmark??operation)});});
+    return Object.freeze({ruleVersion:RULE_VERSION,eligibleCount:eligible.length,operationBenchmark:operation,meanBenchmark:mean,medianBenchmark:medianValue,best:best?Object.freeze({...best}):null,squadBenchmarks:Object.freeze([...squadBenchmarks.values()]),rows:Object.freeze(enriched)});
+  }
+
   function normalizeMetrics(raw={}){
     const evaluation=Number(raw.evaluationRate),totalCost=Math.max(0,num(raw.totalCost)),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions));
     return Object.freeze({
@@ -203,5 +241,5 @@
     return Object.freeze({ruleVersion:RULE_VERSION,scope,metrics,availability,coverage,status,catalog:Object.freeze(catalog),warnings:notes});
   }
 
-  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,calculateCostPerResolution,calculateResolutionRate,calculateEconomicProductivity,normalizeTechnicianProductivityRow,buildTechnicianProductivity,normalizeSquadProductivityRow,buildSquadProductivity,changeRatio,buildCostPerAttendance,buildCostPerResolution,coverageScore,metricReadiness,buildFoundation};
+  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,calculateCostPerResolution,calculateResolutionRate,calculateEconomicProductivity,normalizeTechnicianProductivityRow,buildTechnicianProductivity,normalizeSquadProductivityRow,buildSquadProductivity,median,average,relativeIndex,relativeBand,buildSquadBenchmarks,buildTechnicianBenchmarks,changeRatio,buildCostPerAttendance,buildCostPerResolution,coverageScore,metricReadiness,buildFoundation};
 });

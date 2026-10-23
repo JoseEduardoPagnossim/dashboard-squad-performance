@@ -105,6 +105,8 @@ for (const required of [
   'docs/EFICIENCIA_CUSTO_RESOLUCAO_V2.58.2.md',
   'docs/EFICIENCIA_PRODUTIVIDADE_TECNICO_V2.58.3.md',
   'docs/EFICIENCIA_PRODUTIVIDADE_SQUAD_V2.58.4.md',
+  'tests/strategy-efficiency-benchmarks-v2585.test.js',
+  'docs/EFICIENCIA_BENCHMARKS_V2.58.5.md',
   'supabase/migrations/MIGRACAO_V2.58.2.sql',
   'tests/finance-rules.test.js',
   'tests/finance-advanced.test.js',

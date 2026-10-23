@@ -216,3 +216,11 @@
 .strategy-squad-productivity-table{min-width:1640px}
 @media(max-width:1180px){.strategy-squad-productivity-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.strategy-squad-productivity-kpis{grid-template-columns:1fr}}
+
+
+/* V2.58.5 — Comparativos, benchmarks e eficiência relativa */
+.strategy-benchmark-block{display:grid;gap:16px;padding:18px;border:1px solid color-mix(in srgb,var(--accent) 34%,var(--border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 6%,var(--panel)),var(--panel))}
+.strategy-benchmark-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.strategy-benchmark-kpis .strategy-metric{margin:0}
+.strategy-benchmark-squad-card,.strategy-benchmark-technician-card{display:grid;gap:12px}.strategy-benchmark-squad-table{min-width:1180px}.strategy-benchmark-tech-table{min-width:1380px}
+@media(max-width:1180px){.strategy-benchmark-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.strategy-benchmark-kpis{grid-template-columns:1fr}}

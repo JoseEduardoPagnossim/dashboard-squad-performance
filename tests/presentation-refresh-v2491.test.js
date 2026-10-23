@@ -54,6 +54,6 @@ test('R4 preserva última visão válida em falha e atualiza cache-bust',()=>{
   assert.match(refresh,/backupMeta=clone\(state\.presentationDataMeta\|\|null\)/);
   assert.match(refresh,/state\.orgTechnicianDailyOverview=backup/);
   assert.match(refresh,/state\.presentationDataMeta=backupMeta/);
-  assert.ok(index.includes('js/presentation.js?v=2.58.4'));
-  assert.ok(index.includes('js/app.js?v=2.58.4'));
+  assert.ok(index.includes('js/presentation.js?v=2.58.5'));
+  assert.ok(index.includes('js/app.js?v=2.58.5'));
 });

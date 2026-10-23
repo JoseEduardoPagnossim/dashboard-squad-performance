@@ -1,3 +1,15 @@
+## V2.58.5 — Comparativos, benchmarks e eficiência relativa
+
+- adiciona benchmark ponderado da operação para produtividade econômica;
+- calcula média simples, mediana e melhor referência observada entre Squads elegíveis;
+- publica índice relativo com operação = 100 e diferenças percentuais versus operação e mediana;
+- adiciona comparação individual versus benchmark técnico do próprio Squad e da operação;
+- mantém custos compartilhados fora do benchmark individual;
+- mantém filtros de exibição sem contaminar a referência global da competência;
+- trata ±5% como faixa próxima da referência, sem transformar benchmark em meta;
+- não cria migration nova;
+- atualiza o motor para `EF-0.6.0-relative-efficiency-benchmarks`.
+
 ## V2.58.4 — Produtividade econômica por Squad
 
 - calcula produtividade econômica do Squad como `resoluções / custo total consolidado × R$ 1.000`;
