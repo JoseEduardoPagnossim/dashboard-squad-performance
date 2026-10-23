@@ -38,8 +38,21 @@
     service:{label:'Nota Serviço',accepted:['NotaServico','Nota Serviço','Nota Atendimento'],aliases:['notaservico','notaatendimento']},
     product:{label:'Nota Produto',accepted:['NotaProduto','Nota Produto'],aliases:['notaproduto']},
     company:{label:'Nota Empresa',accepted:['NotaEmpresa','Nota Empresa'],aliases:['notaempresa']},
-    group:{label:'Grupo',accepted:['grupoAtendimento','Grupo Atendimento','Squad','Grupo'],aliases:['grupoatendimento','squad','grupo'],optional:true}
+    group:{label:'Grupo',accepted:['grupoAtendimento','Grupo Atendimento','Squad','Grupo'],aliases:['grupoatendimento','squad','grupo'],optional:true},
+    resolve:{label:'Resolve',accepted:['Resolve','Resolvido','Resolvido?','Problema Resolvido'],aliases:['resolve','resolvido','problemaresolvido'],optional:true}
   };
+  function normalizeResolveAnswer(value){
+    const raw=String(value??'').trim();if(!raw)return'blank';
+    const key=normalizeCsvHeader(raw);
+    if(['sim','s','yes','y','1','true','resolvido','resolvida'].includes(key))return'yes';
+    if(['nao','n','no','0','false','naoresolvido','naoresolvida'].includes(key))return'no';
+    return'invalid';
+  }
+  function calculateFcr(attendance,resolveNo,{sourceComplete=true}={}){
+    const total=Math.max(0,safe(attendance)),negative=Math.max(0,safe(resolveNo));
+    if(!sourceComplete||negative>total)return{ready:false,attendance:total,resolveNo:negative,resolved:null,fcr:null};
+    const resolved=Math.max(0,total-negative);return{ready:true,attendance:total,resolveNo:negative,resolved,fcr:total>0?resolved/total:null};
+  }
   function resolveFinancialImpactColumns(headers=[]){
     const original=(headers||[]).map(v=>String(v||'').trim()),normalized=original.map(normalizeCsvHeader),indexes={},missing=[];
     for(const [key,definition] of Object.entries(FINANCIAL_IMPACT_HEADER_ALIASES)){
@@ -70,7 +83,7 @@
 
   const QUALITY_PREP_DEDUPE_ALIASES=['idcliente','clienteid','codigocliente','codcliente','cnpj','cpf','documento','documentocliente','clientecnpj','razaosocial','nomecliente','cliente'];
   function suggestQualityPreparation(headers=[],kind='quality'){
-    const original=(headers||[]).map(v=>String(v||'').trim()),base=kind==='quality-full'?resolveQualityFullImportColumns(original):resolveQualityImportColumns(original),full=resolveQualityFullImportColumns(original),mapping={date:base.indexes.date,technician:base.indexes.technician,product:base.indexes.product,company:base.indexes.company,service:full.indexes.service,group:full.indexes.group};
+    const original=(headers||[]).map(v=>String(v||'').trim()),base=kind==='quality-full'?resolveQualityFullImportColumns(original):resolveQualityImportColumns(original),full=resolveQualityFullImportColumns(original),mapping={date:base.indexes.date,technician:base.indexes.technician,product:base.indexes.product,company:base.indexes.company,service:full.indexes.service,group:full.indexes.group,resolve:full.indexes.resolve};
     const normalized=original.map(normalizeCsvHeader),dedupeIndex=normalized.findIndex(h=>QUALITY_PREP_DEDUPE_ALIASES.includes(h));
     return{headers:original,mapping,dedupeColumns:dedupeIndex>=0?[dedupeIndex]:[],dedupeEnabled:kind==='quality',keep:'first'};
   }
@@ -93,8 +106,9 @@
     }
     for(const item of sourceRows)if(!duplicateIndexes.has(item.index))kept.push(item.row);
     const get=(row,key)=>{const idx=Number(mapping?.[key]);return Number.isInteger(idx)&&idx>=0&&idx<row.length?row[idx]:''};
-    const canonicalHeaders=kind==='quality-full'?['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa','grupoAtendimento']:['DataAvaliacao','nomeApresentativo','NotaProduto','NotaEmpresa'];
-    const canonicalRows=kept.map(row=>kind==='quality-full'?[get(row,'date'),get(row,'technician'),get(row,'service'),get(row,'product'),get(row,'company'),get(row,'group')]:[get(row,'date'),get(row,'technician'),get(row,'product'),get(row,'company')]);
+    const hasResolve=kind==='quality-full'&&Number.isInteger(Number(mapping?.resolve))&&Number(mapping.resolve)>=0&&Number(mapping.resolve)<headers.length;
+    const canonicalHeaders=kind==='quality-full'?['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa','grupoAtendimento',...(hasResolve?['Resolve']:[])]:['DataAvaliacao','nomeApresentativo','NotaProduto','NotaEmpresa'];
+    const canonicalRows=kept.map(row=>kind==='quality-full'?[get(row,'date'),get(row,'technician'),get(row,'service'),get(row,'product'),get(row,'company'),get(row,'group'),...(hasResolve?[get(row,'resolve')]:[])]:[get(row,'date'),get(row,'technician'),get(row,'product'),get(row,'company')]);
     const csvText=[canonicalHeaders,...canonicalRows].map(row=>row.map(csvEscape).join(',')).join('\n');
     return{csvText,headers:canonicalHeaders,rows:canonicalRows,stats:{sourceRows:sourceRows.length,sourceColumns:headers.length,resultRows:canonicalRows.length,duplicatesRemoved:duplicateIndexes.size,blankDedupKeys,dedupeEnabled:!!dedupeEnabled,dedupeColumns:dedupeIdx,keep:keep==='last'?'last':'first',partitionByCompetence:true},mapping:{...mapping}};
   }
@@ -162,5 +176,5 @@
     };
   }
   function canRollback(record){return Boolean(record&&record.status==='success'&&record.beforeSnapshot&&Object.keys(record.beforeSnapshot||{}).length>0)}
-  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,resolveFinancialImpactColumns,resolveQualityImportColumns,resolveQualityFullImportColumns,suggestQualityPreparation,prepareQualitySource,summarizeService,summarizeQuality,summarizeQualityFull,validatePreview,historySummary,canRollback};
+  return {safe,pctDelta,checksumText,parseCsvRows,normalizeCsvHeader,normalizeResolveAnswer,calculateFcr,resolveFinancialImpactColumns,resolveQualityImportColumns,resolveQualityFullImportColumns,suggestQualityPreparation,prepareQualitySource,summarizeService,summarizeQuality,summarizeQualityFull,validatePreview,historySummary,canRollback};
 });

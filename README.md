@@ -1,3 +1,15 @@
+## V2.59.5 — FCR automático + FTE necessário
+
+- reaproveita a Importação de Qualidade Completa como fonte automática de resolução por meio da coluna opcional `Resolve`;
+- considera somente `Resolve = Não` como não resolvido e trata ausência de resposta como resolvida apenas quando a fonte Resolve da competência é válida;
+- publica FCR total, por Squad e por técnico;
+- sincroniza a base estratégica de resoluções automaticamente, mantendo preenchimento manual como contingência;
+- dimensiona `FTE necessário = atendimentos atuais / referência histórica de atendimentos por FTE disponível`;
+- usa histórico fechado, contíguo e completo com mediana da janela selecionada;
+- mantém FCR, resolução automática e FTE necessário em modo fail-closed quando a base é inconsistente;
+- reserva o gap entre FTE disponível e FTE necessário para a V2.59.6;
+- adiciona `MIGRACAO_V2.59.5.sql`.
+
 ## V2.59.4 — Produtividade por FTE
 
 - normaliza atendimentos e resoluções pelo FTE efetivamente disponível;

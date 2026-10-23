@@ -15,16 +15,16 @@ function historyRow(competence,squadCode,usedPerAvailableFte,availableFte=2){
   return {competence,squadCode,status:'closed',availableFte,usedCapacityVolume:usedPerAvailableFte*availableFte,usedPerAvailableFte,complete:true};
 }
 
-test('V2.59.4 publica utilizacao com regra e migration proprias',()=>{
-  assert.equal(pkg.version,'2.59.4');
-  assert.equal(pkg.assetVersion,'2.59.4');
-  assert.equal(capacity.RULE_VERSION,'CA-0.5.0-productivity-per-fte');
+test('V2.59.5 publica utilizacao com regra e migration proprias',()=>{
+  assert.equal(pkg.version,'2.59.5');
+  assert.equal(pkg.assetVersion,'2.59.5');
+  assert.equal(capacity.RULE_VERSION,'CA-0.6.0-required-fte');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.59\.3/);
   assert.match(index,/strategyCapacityUtilizationRate/);
   assert.match(index,/strategyCapacityReferencePerFte/);
   assert.match(index,/strategyCapacityUtilizationSquadRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.4'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.5'));
 });
 
 test('referencia historica usa exatamente os meses anteriores da janela e mediana',()=>{
@@ -121,5 +121,5 @@ test('app carrega historico de utilizacao e mantem FTE necessario pendente',()=>
   assert.match(app,/strategyCapacityEngine\.buildUtilization/);
   assert.match(app,/renderStrategyCapacityUtilization/);
   assert.match(app,/capacityUtilizationMissing\?'V2\.59\.3'/);
-  assert.match(app,/set\('#strategyCapacityRequiredFte','Pendente'\)/);
+  assert.match(app,/renderStrategyRequiredFte/);
 });

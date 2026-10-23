@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.59.4" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.59.4" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.59.4" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.59.4" />
+  <link rel="stylesheet" href="css/styles.css?v=2.59.5" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.59.5" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.59.5" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.59.5" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.59.4 • Produtividade por FTE</small>
+        <small class="login-version">V2.59.5 • FCR automático + FTE necessário</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.59.4 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.59.5 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -486,6 +486,7 @@
       <section id="view-team" class="view">
         <div id="allSquadsPanel" class="hidden">
           <div class="portfolio-hero card"><div><span class="eyebrow">VISÃO ADMINISTRATIVA</span><h2>Todos os Squads</h2><p>Resumo consolidado dos quatro times. Selecione um Squad no topo para abrir os detalhes.</p></div><span class="portfolio-chip">4 SQUADS</span></div>
+          <article class="card portfolio-fcr-card"><div><span class="eyebrow">RESOLUÇÃO AUTOMÁTICA</span><h3>FCR geral</h3><p id="portfolioFcrSource">Fonte: Qualidade Completa + atendimentos operacionais.</p></div><div class="portfolio-fcr-value"><strong id="portfolioFcrTotal">—</strong><small id="portfolioFcrResolved">Aguardando base Resolve</small></div></article>
           <div id="squadPortfolio" class="portfolio-grid"></div>
           <article id="portfolioBenchmarkCard" class="card chart-card portfolio-benchmark-card">
             <div class="section-title">
@@ -515,6 +516,7 @@
               <article class="card team-goal-card"><span>Total de atendimentos</span><div class="team-kpi-value"><strong id="teamAtt">0</strong><small>/ <b id="teamAttGoal">0</b></small></div><div class="team-progress"><i id="teamAttBar"></i></div><small class="team-kpi-note" id="teamAttNote">Meta mensal</small></article>
               <article class="card"><span>Total de avaliações</span><strong id="teamEval">0</strong><small class="team-kpi-note">Avaliações recebidas até o momento</small></article>
               <article class="card team-goal-card"><span>% de avaliação</span><div class="team-kpi-value"><strong id="teamPct">0%</strong><small>/ <b id="teamPctGoal">34,3%</b></small></div><div class="team-progress"><i id="teamPctBar"></i></div><small class="team-kpi-note" id="teamPctNote">Meta mensal</small></article>
+              <article class="card"><span>FCR</span><strong id="teamFcr">—</strong><small class="team-kpi-note" id="teamFcrNote">Atendimentos − Resolve Não</small></article>
               <article class="card"><span>Média de pontos</span><strong id="teamAvgPoints">0</strong><small class="team-kpi-note" id="teamAvgPointsNote">Referência usada no status da equipe</small></article>
             </div>
 
@@ -773,6 +775,11 @@
             <p id="indicatorPeriodStatusSupport">Compara o resultado mensal da equipe no período selecionado</p>
           </article>
         </div>
+
+        <article class="card indicator-card indicator-fcr-card">
+          <div class="section-title"><div><span class="eyebrow">RESOLUÇÃO</span><h3>FCR por técnico</h3><p>FCR = (Atendimentos − respostas explícitas Resolve = Não) ÷ Atendimentos. Chamados sem resposta são considerados resolvidos somente quando a competência possui importação válida com a coluna Resolve.</p></div><span class="muted" id="indicatorFcrNote">Fonte automática</span></div>
+          <div class="table-wrap"><table><thead><tr><th>Técnico</th><th>Squad</th><th>Atendimentos</th><th>Resolve = Não</th><th>Resolvidos</th><th>FCR</th><th>Base</th></tr></thead><tbody id="indicatorFcrTechRows"><tr><td colspan="7" class="muted">Carregando FCR por técnico...</td></tr></tbody></table></div>
+        </article>
 
         <section class="predictive-management-section">
           <article class="card predictive-management-head">
@@ -1218,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.59.4</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.59.5</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1385,7 +1392,7 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 4</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>A Fase 4 mede quanto da força operacional disponível está sendo efetivamente absorvida pela demanda. A V2.59.4 também normaliza a produtividade pela força efetivamente disponível, sem antecipar o FTE necessário.</p>
+              <p>A Fase 4 mede quanto da força operacional disponível está sendo efetivamente absorvida pela demanda. A V2.59.5 automatiza o FCR pela Qualidade Completa e dimensiona o FTE necessário pela demanda de atendimentos, mantendo o gap reservado à V2.59.6.</p>
             </div>
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
@@ -1631,6 +1638,23 @@
 
 
 
+              <section class="strategy-efficiency-unit-cost strategy-capacity-required-fte">
+                <div class="strategy-section-heading"><div><span class="eyebrow">INDICADOR V2.59.5</span><h3>FTE necessário</h3><p>Dimensiona a força necessária para absorver a demanda atual de atendimentos usando a mediana histórica de atendimentos por FTE disponível em competências anteriores fechadas e completas.</p></div><span id="strategyCapacityRequiredStatus" class="strategy-efficiency-status neutral">SEM REFERÊNCIA</span></div>
+                <div class="strategy-metric-grid strategy-capacity-metric-grid">
+                  <div class="strategy-metric"><span>Demanda atual</span><strong id="strategyCapacityRequiredDemand">—</strong><small>atendimentos da competência</small></div>
+                  <div class="strategy-metric"><span>Referência histórica</span><strong id="strategyCapacityRequiredReference">—</strong><small>atendimentos por FTE disponível</small></div>
+                  <div class="strategy-metric"><span>FTE necessário</span><strong id="strategyCapacityRequiredFteDetail">—</strong><small>demanda ÷ referência histórica</small></div>
+                  <div class="strategy-metric"><span>FTE disponível atual</span><strong id="strategyCapacityRequiredAvailable">—</strong><small>contexto; gap fica para V2.59.6</small></div>
+                </div>
+                <div class="strategy-efficiency-context-grid">
+                  <div><span>Amostra histórica</span><strong id="strategyCapacityRequiredSample">—</strong></div>
+                  <div style="grid-column:span 3"><span>Leitura</span><strong id="strategyCapacityRequiredHint">Aguardando histórico de atendimentos por FTE.</strong></div>
+                </div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">POR SQUAD</span><h3>Dimensionamento da demanda</h3><p>Cada Squad usa sua própria referência histórica de atendimentos por FTE. Chamados não resolvidos continuam na demanda porque também consumiram capacidade da equipe.</p></div></div>
+                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Squad</th><th>Atendimentos</th><th>Referência atend./FTE</th><th>FTE necessário</th><th>FTE disponível</th><th>Amostra</th><th>Base</th></tr></thead><tbody id="strategyCapacityRequiredSquadRows"><tr><td colspan="7" class="muted">Carregando FTE necessário por Squad...</td></tr></tbody></table></div>
+                <aside class="strategy-insight"><strong>Dimensionamento sem esconder demanda</strong><p>O FTE necessário usa atendimentos, e não apenas resoluções. O FCR mede a efetividade de resolução; ele não reduz a demanda recebida. A diferença entre FTE disponível e FTE necessário será tratada separadamente na V2.59.6.</p></aside>
+              </section>
+
               <section class="strategy-efficiency-readiness">
                 <div class="strategy-section-heading"><div><span class="eyebrow">COBERTURA TÉCNICA</span><h3>Prontidão dos indicadores da Fase 3</h3><p>A fundação valida a disponibilidade das bases utilizadas por cada indicador ativo, inclusive o histórico por snapshots.</p></div></div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-efficiency-readiness-table"><thead><tr><th>Indicador</th><th>Versão</th><th>Base</th><th>Pendências</th></tr></thead><tbody id="strategyEfficiencyReadinessRows"><tr><td colspan="4" class="muted">Carregando prontidão...</td></tr></tbody></table></div>
@@ -1643,14 +1667,14 @@
 
           <div class="strategy-panel strategy-capacity-foundation-panel hidden" data-strategy-panel="capacity">
             <article class="strategy-placeholder-card strategy-wide-card strategy-capacity-foundation-card">
-              <span class="eyebrow">FASE 4 • V2.59.4</span>
+              <span class="eyebrow">FASE 4 • V2.59.5</span>
               <div class="strategy-section-heading"><div><h3>Fundação de Capacidade</h3><p>A Fase 4 já calcula disponibilidade, carga utilizada, utilização relativa e produtividade normalizada por FTE disponível. FTE necessário continua bloqueado até sua versão específica.</p></div><span id="strategyCapacityFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à capacidade">
                 <div><span>Competência</span><strong id="strategyCapacityContextCompetence">—</strong></div>
                 <div><span>Squad</span><strong id="strategyCapacityContextSquad">—</strong></div>
                 <div><span>Comparação</span><strong id="strategyCapacityContextComparison">—</strong></div>
-                <div><span>Regra</span><strong id="strategyCapacityRuleVersion">CA-0.5.0-productivity-per-fte</strong></div>
+                <div><span>Regra</span><strong id="strategyCapacityRuleVersion">CA-0.6.0-required-fte</strong></div>
               </div>
 
               <div class="strategy-metric-grid strategy-efficiency-base-grid">
@@ -1754,7 +1778,7 @@
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Capacidade não é produção realizada</h3></div><ul id="strategyCapacityWarnings"><li>Carregando regras da Fase 4.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Capacidade com referência auditável</strong><p>O FTE permanece contratual, a disponibilidade registra a força efetiva, a V2.59.3 compara a carga com histórico fechado e a V2.59.4 normaliza a produtividade pela força disponível. FTE necessário e gap estrutural continuam reservados às próximas versões.</p></aside>
+            <aside class="strategy-insight"><strong>Capacidade com referência auditável</strong><p>O FTE permanece contratual, a disponibilidade registra a força efetiva, a V2.59.3 compara a carga com histórico fechado e a V2.59.4 normaliza a produtividade pela força disponível. O FTE necessário passa a ser dimensionado pela demanda de atendimentos; o gap estrutural continua reservado à V2.59.6.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2042,7 +2066,7 @@
 
   <div id="reconciliationModal" class="modal" aria-hidden="true"><div class="modal-card reconciliation-modal-card"><button class="modal-close" data-close="reconciliationModal">×</button><div class="modal-icon">≠</div><h2 id="reconciliationModalTitle">Conciliação da competência</h2><p id="reconciliationModalText">Técnicos com diferença entre as fontes.</p><div class="table-wrap reconciliation-detail-wrap"><table><thead><tr><th>Técnico</th><th>Squad</th><th>Serviço</th><th>Produto</th><th>Empresa</th><th>Dif. Produto</th><th>Dif. Empresa</th></tr></thead><tbody id="reconciliationDetailRows"></tbody></table></div><div class="modal-actions"><button class="btn secondary" data-close="reconciliationModal">Fechar</button></div></div></div>
 
-  <div id="importModal" class="modal import-modal" aria-hidden="true"><div class="modal-card import-modal-card" role="dialog" aria-modal="true" aria-labelledby="importModalTitle"><div class="import-modal-header"><div class="modal-icon">↑</div><div><span class="eyebrow">DADOS DO PAINEL</span><h2 id="importModalTitle">Central de Importação</h2></div><button class="modal-close" data-close="importModal" aria-label="Fechar Central de Importação">×</button></div><div class="import-modal-body" id="importModalBody"><p id="importMessage">Selecione o CSV operacional ou o CSV de Produto/Empresa.</p><div class="import-progress"><i id="importProgress"></i></div><div class="import-details" id="importDetails"></div><div id="importDropzone" class="import-dropzone" role="button" tabindex="0" aria-label="Arraste um CSV ou clique para escolher"><span class="import-dropzone-icon">⇩</span><div><strong>Arraste o CSV aqui</strong><span>ou clique para escolher um arquivo no computador</span><small id="importDropzoneFile">Nenhum arquivo selecionado</small></div></div><div id="csvScopeBlock" class="csv-scope"><label><span>Squad a importar</span><select id="csvScopeSelect"></select></label><small>Este escopo vale somente para esta importação e não altera o filtro de Squad da tela atrás.</small></div><div id="csvPreparationBlock" class="csv-preparation hidden"><div class="csv-preparation-head"><div><span class="eyebrow">PREPARAR RELATÓRIO</span><strong>Escolha as colunas e trate duplicidades sem editar o CSV</strong><small>As demais colunas do relatório serão ignoradas automaticamente.</small></div><span class="history-chip" id="csvPreparationKind">—</span></div><div class="csv-preparation-map" id="csvPreparationMap"><label><span>Data</span><select id="csvMapDate"></select></label><label><span>Técnico</span><select id="csvMapTechnician"></select></label><label id="csvMapServiceField"><span>Nota Serviço</span><select id="csvMapService"></select></label><label><span>Nota Produto</span><select id="csvMapProduct"></select></label><label><span>Nota Empresa</span><select id="csvMapCompany"></select></label><label id="csvMapGroupField"><span>Grupo <small>opcional</small></span><select id="csvMapGroup"></select></label></div><div class="csv-dedupe-box"><div class="csv-dedupe-top"><label class="csv-dedupe-toggle"><input id="csvDedupeEnabled" type="checkbox"><span><strong>Deduplicar antes de importar</strong><small>Remove repetições dentro de cada competência usando as chaves selecionadas abaixo.</small></span></label><label class="csv-dedupe-keep"><span>Quando repetir</span><select id="csvDedupeKeep"><option value="first">Manter a primeira ocorrência</option><option value="last">Manter a última ocorrência</option></select></label></div><div id="csvDedupeOptions" class="csv-dedupe-options"><span>Deduplicar por</span><div id="csvDedupeColumns" class="csv-dedupe-columns"></div><small>Você pode marcar uma ou mais colunas, como CNPJ, código do cliente ou razão social. O mesmo cliente pode aparecer novamente em outra competência.</small></div></div><div class="csv-preparation-summary" id="csvPreparationSummary">Selecione as colunas para preparar o relatório.</div><div class="csv-preparation-actions"><button type="button" class="btn primary" id="applyCsvPreparationBtn">Aplicar preparação e continuar</button></div></div><div id="csvPeriodBlock" class="csv-period hidden"><label><span>Mês a importar</span><select id="csvMonthSelect"></select></label><small id="csvPeriodHint">Selecione a competência encontrada no arquivo.</small></div><div id="importPreviewBlock" class="import-preview hidden"><div id="importPreviewSummary" class="import-preview-summary"></div><div id="importRiskBanner" class="import-risk-banner"></div><div id="importValidationList" class="import-validation-list"></div><div class="table-wrap import-comparison-wrap"><table><thead><tr><th>Squad</th><th>Atual</th><th>Novo</th><th>Variação</th><th>Técnicos atual</th><th>Técnicos novo</th><th>Situação</th></tr></thead><tbody id="importComparisonRows"></tbody></table></div></div></div><div class="modal-actions import-modal-footer"><button class="btn secondary" data-close="importModal">Cancelar</button><button class="btn secondary" id="chooseFileBtn">Escolher CSV</button><button class="btn primary hidden" id="confirmCsvImportBtn">Importar mês</button></div></div></div>
+  <div id="importModal" class="modal import-modal" aria-hidden="true"><div class="modal-card import-modal-card" role="dialog" aria-modal="true" aria-labelledby="importModalTitle"><div class="import-modal-header"><div class="modal-icon">↑</div><div><span class="eyebrow">DADOS DO PAINEL</span><h2 id="importModalTitle">Central de Importação</h2></div><button class="modal-close" data-close="importModal" aria-label="Fechar Central de Importação">×</button></div><div class="import-modal-body" id="importModalBody"><p id="importMessage">Selecione o CSV operacional ou o CSV de Produto/Empresa.</p><div class="import-progress"><i id="importProgress"></i></div><div class="import-details" id="importDetails"></div><div id="importDropzone" class="import-dropzone" role="button" tabindex="0" aria-label="Arraste um CSV ou clique para escolher"><span class="import-dropzone-icon">⇩</span><div><strong>Arraste o CSV aqui</strong><span>ou clique para escolher um arquivo no computador</span><small id="importDropzoneFile">Nenhum arquivo selecionado</small></div></div><div id="csvScopeBlock" class="csv-scope"><label><span>Squad a importar</span><select id="csvScopeSelect"></select></label><small>Este escopo vale somente para esta importação e não altera o filtro de Squad da tela atrás.</small></div><div id="csvPreparationBlock" class="csv-preparation hidden"><div class="csv-preparation-head"><div><span class="eyebrow">PREPARAR RELATÓRIO</span><strong>Escolha as colunas e trate duplicidades sem editar o CSV</strong><small>As demais colunas do relatório serão ignoradas automaticamente.</small></div><span class="history-chip" id="csvPreparationKind">—</span></div><div class="csv-preparation-map" id="csvPreparationMap"><label><span>Data</span><select id="csvMapDate"></select></label><label><span>Técnico</span><select id="csvMapTechnician"></select></label><label id="csvMapServiceField"><span>Nota Serviço</span><select id="csvMapService"></select></label><label><span>Nota Produto</span><select id="csvMapProduct"></select></label><label><span>Nota Empresa</span><select id="csvMapCompany"></select></label><label id="csvMapGroupField"><span>Grupo <small>opcional</small></span><select id="csvMapGroup"></select></label><label id="csvMapResolveField"><span>Resolve <small>opcional · gera FCR</small></span><select id="csvMapResolve"></select></label></div><div class="csv-dedupe-box"><div class="csv-dedupe-top"><label class="csv-dedupe-toggle"><input id="csvDedupeEnabled" type="checkbox"><span><strong>Deduplicar antes de importar</strong><small>Remove repetições dentro de cada competência usando as chaves selecionadas abaixo.</small></span></label><label class="csv-dedupe-keep"><span>Quando repetir</span><select id="csvDedupeKeep"><option value="first">Manter a primeira ocorrência</option><option value="last">Manter a última ocorrência</option></select></label></div><div id="csvDedupeOptions" class="csv-dedupe-options"><span>Deduplicar por</span><div id="csvDedupeColumns" class="csv-dedupe-columns"></div><small>Você pode marcar uma ou mais colunas, como CNPJ, código do cliente ou razão social. O mesmo cliente pode aparecer novamente em outra competência.</small></div></div><div class="csv-preparation-summary" id="csvPreparationSummary">Selecione as colunas para preparar o relatório.</div><div class="csv-preparation-actions"><button type="button" class="btn primary" id="applyCsvPreparationBtn">Aplicar preparação e continuar</button></div></div><div id="csvPeriodBlock" class="csv-period hidden"><label><span>Mês a importar</span><select id="csvMonthSelect"></select></label><small id="csvPeriodHint">Selecione a competência encontrada no arquivo.</small></div><div id="importPreviewBlock" class="import-preview hidden"><div id="importPreviewSummary" class="import-preview-summary"></div><div id="importRiskBanner" class="import-risk-banner"></div><div id="importValidationList" class="import-validation-list"></div><div class="table-wrap import-comparison-wrap"><table><thead><tr><th>Squad</th><th>Atual</th><th>Novo</th><th>Variação</th><th>Técnicos atual</th><th>Técnicos novo</th><th>Situação</th></tr></thead><tbody id="importComparisonRows"></tbody></table></div></div></div><div class="modal-actions import-modal-footer"><button class="btn secondary" data-close="importModal">Cancelar</button><button class="btn secondary" id="chooseFileBtn">Escolher CSV</button><button class="btn primary hidden" id="confirmCsvImportBtn">Importar mês</button></div></div></div>
 
   <div id="themeModal" class="modal" aria-hidden="true"><div class="modal-card theme-modal"><button class="modal-close" data-close="themeModal" aria-label="Cancelar personalização">×</button><span class="eyebrow">TEMA DO SQUAD</span><h2>Personalizar experiência</h2><p>As alterações abaixo são pré-visualizadas no painel, mas só serão gravadas no tema quando você clicar em <strong>Salvar tema</strong>.</p><div class="theme-mode-editor"><div><span>Paleta em edição</span><strong>Alterne para ajustar as cores do modo desejado.</strong></div><div class="theme-mode-segmented" role="group" aria-label="Paleta do tema"><button type="button" data-theme-edit-mode="light"><span>☀</span> Claro</button><button type="button" data-theme-edit-mode="dark"><span>☾</span> Escuro</button></div></div><div class="preset-grid"><button class="preset" data-theme="vermithor" type="button"><i class="swatch fire"></i><span>Vermithor</span></button><button class="preset" data-theme="soften" type="button"><i class="swatch soften"></i><span>Soften</span></button><button class="preset" data-theme="neon" type="button"><i class="swatch neon"></i><span>Neon</span></button><button class="preset" data-theme="clean" type="button"><i class="swatch clean"></i><span>Claro</span></button></div><div class="custom-theme"><label><span>Cor principal</span><span class="color-control"><input id="accentColor" type="color" value="#f0a33a" aria-label="Escolher cor principal"><input id="accentColorText" class="color-hex-input" type="text" value="#f0a33a" maxlength="7" spellcheck="false" aria-label="Código hexadecimal da cor principal"></span></label><label><span>Cor secundária</span><span class="color-control"><input id="secondaryColor" type="color" value="#ef5a29" aria-label="Escolher cor secundária"><input id="secondaryColorText" class="color-hex-input" type="text" value="#ef5a29" maxlength="7" spellcheck="false" aria-label="Código hexadecimal da cor secundária"></span></label><label><span>Nome do tema</span><input id="campaignNameInput" type="text"></label><label><span>Frase do tema</span><input id="campaignTaglineInput" type="text"></label><div class="theme-upload-field"><div><span>Imagem de fundo</span><small>JPG, PNG ou WEBP de até 5 MB.</small></div><div class="theme-upload-actions"><button class="btn secondary compact" id="chooseBackgroundBtn" type="button">Escolher imagem</button><small id="backgroundFileName">Nenhuma nova imagem selecionada</small><input id="backgroundFile" type="file" accept="image/*" hidden></div></div><button class="link-btn" id="removeBg" type="button">Remover fundo personalizado</button><div class="favicon-theme-row"><div><span>Favicon do tema</span><small>Ícone exibido na aba do navegador. Prefira uma imagem quadrada.</small></div><div class="favicon-theme-actions"><span class="favicon-preview"><img id="faviconPreview" src="assets/favicon-dragon.png" alt="Prévia do favicon"></span><button class="btn secondary compact" id="chooseFaviconBtn" type="button">Escolher ícone</button><input id="faviconFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button class="link-btn" id="resetFavicon" type="button">Usar ícone padrão</button></div></div><div class="soundtrack-theme-row"><div class="soundtrack-theme-copy"><span>Trilha sonora do tema</span><small>Use MP3, OGG, WAV, M4A ou AAC de até 3 MB. Prefira material original, licenciado ou royalty-free.</small></div><div class="soundtrack-theme-config"><label class="soundtrack-name-field"><span>Nome</span><input id="soundtrackNameInput" type="text" placeholder="Ex.: Fogo & Conquista"></label><div class="soundtrack-buttons"><button class="btn secondary compact" id="chooseSoundtrackBtn" type="button">♫ Escolher áudio</button><input id="soundtrackFile" type="file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/mp4,audio/aac,.mp3,.ogg,.wav,.m4a,.aac" hidden><button class="btn secondary compact" id="previewSoundtrackBtn" type="button">▶ Ouvir trilha</button></div><div class="soundtrack-volume-config"><span>Volume padrão</span><input id="soundtrackDefaultVolume" type="range" min="0" max="100" step="1" value="24"><strong id="soundtrackDefaultVolumeLabel">24%</strong></div><div class="soundtrack-links"><button class="link-btn" id="resetSoundtrack" type="button">Usar trilha original</button><button class="link-btn danger-link" id="removeSoundtrack" type="button">Remover trilha</button></div></div></div></div><div class="theme-editor-footer"><small id="themeEditStatus">Nenhuma alteração pendente.</small><div class="modal-actions"><button class="btn secondary" id="cancelThemeChangesBtn" type="button">Cancelar</button><button class="btn primary" id="saveThemeChangesBtn" type="button">Salvar tema</button></div></div></div></div>
 
@@ -2235,35 +2259,35 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.59.4"></script>
-  <script src="js/finance-rules.js?v=2.59.4"></script>
-  <script src="js/finance-advanced.js?v=2.59.4"></script>
-  <script src="js/tv-engine.js?v=2.59.4"></script>
-  <script src="js/presentation.js?v=2.59.4"></script>
-  <script src="js/chart-engine.js?v=2.59.4"></script>
-  <script src="js/chart-export.js?v=2.59.4"></script>
-  <script src="js/import-engine.js?v=2.59.4"></script>
-  <script src="js/predictive-engine.js?v=2.59.4"></script>
-  <script src="js/alert-engine.js?v=2.59.4"></script>
-  <script src="js/settings-engine.js?v=2.59.4"></script>
-  <script src="js/performance-engine.js?v=2.59.4"></script>
-  <script src="js/navigation-engine.js?v=2.59.4"></script>
-  <script src="js/workspace-engine.js?v=2.59.4"></script>
-  <script src="js/filter-system.js?v=2.59.4"></script>
-  <script src="js/comparison-engine.js?v=2.59.4"></script>
-  <script src="js/finance-report-engine.js?v=2.59.4"></script>
-  <script src="js/design-system.js?v=2.59.4"></script>
-  <script src="js/strategy-access.js?v=2.59.4"></script>
-  <script src="js/strategy-data.js?v=2.59.4"></script>
-  <script src="js/strategy-cost-engine.js?v=2.59.4"></script>
-  <script src="js/strategy-efficiency.js?v=2.59.4"></script>
-  <script src="js/strategy-capacity.js?v=2.59.4"></script>
-  <script src="js/strategy-insights.js?v=2.59.4"></script>
-  <script src="js/strategy.js?v=2.59.4"></script>
+  <script src="js/business-calendar.js?v=2.59.5"></script>
+  <script src="js/finance-rules.js?v=2.59.5"></script>
+  <script src="js/finance-advanced.js?v=2.59.5"></script>
+  <script src="js/tv-engine.js?v=2.59.5"></script>
+  <script src="js/presentation.js?v=2.59.5"></script>
+  <script src="js/chart-engine.js?v=2.59.5"></script>
+  <script src="js/chart-export.js?v=2.59.5"></script>
+  <script src="js/import-engine.js?v=2.59.5"></script>
+  <script src="js/predictive-engine.js?v=2.59.5"></script>
+  <script src="js/alert-engine.js?v=2.59.5"></script>
+  <script src="js/settings-engine.js?v=2.59.5"></script>
+  <script src="js/performance-engine.js?v=2.59.5"></script>
+  <script src="js/navigation-engine.js?v=2.59.5"></script>
+  <script src="js/workspace-engine.js?v=2.59.5"></script>
+  <script src="js/filter-system.js?v=2.59.5"></script>
+  <script src="js/comparison-engine.js?v=2.59.5"></script>
+  <script src="js/finance-report-engine.js?v=2.59.5"></script>
+  <script src="js/design-system.js?v=2.59.5"></script>
+  <script src="js/strategy-access.js?v=2.59.5"></script>
+  <script src="js/strategy-data.js?v=2.59.5"></script>
+  <script src="js/strategy-cost-engine.js?v=2.59.5"></script>
+  <script src="js/strategy-efficiency.js?v=2.59.5"></script>
+  <script src="js/strategy-capacity.js?v=2.59.5"></script>
+  <script src="js/strategy-insights.js?v=2.59.5"></script>
+  <script src="js/strategy.js?v=2.59.5"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.59.4"></script>
+  <script src="js/app.js?v=2.59.5"></script>
 </body>
 </html>

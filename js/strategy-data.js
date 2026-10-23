@@ -156,12 +156,14 @@
 
   function normalizeCapacityHistoryRow(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
-    const availableFte=optionalNumber(source.available_fte??source.availableFte),usedVolume=optionalNumber(source.used_capacity_volume??source.usedCapacityVolume),usedPerFte=optionalNumber(source.used_per_available_fte??source.usedPerAvailableFte);
+    const availableFte=optionalNumber(source.available_fte??source.availableFte),usedVolume=optionalNumber(source.used_capacity_volume??source.usedCapacityVolume),usedPerFte=optionalNumber(source.used_per_available_fte??source.usedPerAvailableFte),attendanceVolume=optionalNumber(source.attendance_volume??source.attendanceVolume),attendancePerFte=optionalNumber(source.attendance_per_available_fte??source.attendancePerAvailableFte);
     return{
       competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',status:source.status==='closed'?'closed':'draft',
       availableFte:availableFte==null?null:Math.max(0,availableFte),usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
+      attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),
       usedCapacityComplete:source.used_capacity_complete===true||source.usedCapacityComplete===true||source.complete===true,
-      availabilityMissing:Math.max(0,num(source.availability_missing??source.availabilityMissing)),usedCapacityMissing:Math.max(0,num(source.used_capacity_missing??source.usedCapacityMissing)),inconsistentRows:Math.max(0,num(source.inconsistent_rows??source.inconsistentRows))
+      attendanceComplete:source.attendance_complete===true||source.attendanceComplete===true,
+      availabilityMissing:Math.max(0,num(source.availability_missing??source.availabilityMissing)),usedCapacityMissing:Math.max(0,num(source.used_capacity_missing??source.usedCapacityMissing)),attendanceMissing:Math.max(0,num(source.attendance_missing??source.attendanceMissing)),inconsistentRows:Math.max(0,num(source.inconsistent_rows??source.inconsistentRows))
     };
   }
 

@@ -5,10 +5,10 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='CA-0.5.0-productivity-per-fte';
+  const RULE_VERSION='CA-0.6.0-required-fte';
   const DEMAND_UNITS=Object.freeze(['resolutions','attendance']);
-  const FOUNDATION_SOURCES=Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity']);
-  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte']));
+  const FOUNDATION_SOURCES=Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity']);
+  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte','required-fte']));
   const UTILIZATION_BANDS=Object.freeze({below:0.90,above:1.10});
   const COMPARISON_MONTHS=Object.freeze({previous:1,'3m':3,'6m':6,'12m':12});
   const ROADMAP_CATALOG=Object.freeze([
@@ -16,7 +16,7 @@
     Object.freeze({id:'used-capacity',label:'Capacidade utilizada',version:'V2.59.2',requires:Object.freeze(['fte','resolutions','availabilityFactors'])}),
     Object.freeze({id:'utilization',label:'Utilização, ociosidade e sobrecarga',version:'V2.59.3',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])}),
     Object.freeze({id:'productivity-per-fte',label:'Produtividade por FTE',version:'V2.59.4',requires:Object.freeze(['fte','resolutions','availabilityFactors'])}),
-    Object.freeze({id:'required-fte',label:'FTE necessário',version:'V2.59.5',requires:Object.freeze(['resolutions','historicalCapacity'])}),
+    Object.freeze({id:'required-fte',label:'FTE necessário',version:'V2.59.5',requires:Object.freeze(['attendance','historicalAttendanceCapacity'])}),
     Object.freeze({id:'capacity-gap',label:'Gap de capacidade',version:'V2.59.6',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])}),
     Object.freeze({id:'capacity-diagnostics',label:'Insights de capacidade',version:'V2.59.7',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])}),
     Object.freeze({id:'capacity-history',label:'Snapshots e evolução',version:'V2.59.8',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])})
@@ -45,7 +45,8 @@
       attendance:bool(raw.attendance),
       resolutions:bool(raw.resolutions),
       availabilityFactors:bool(raw.availabilityFactors),
-      historicalCapacity:bool(raw.historicalCapacity)
+      historicalCapacity:bool(raw.historicalCapacity),
+      historicalAttendanceCapacity:bool(raw.historicalAttendanceCapacity)
     });
   }
   function observedPerFte(volume,fte){const v=Math.max(0,num(volume)),base=Math.max(0,num(fte));return base>0?v/base:null}
@@ -119,12 +120,14 @@
     const rows=(values||[]).map(optionalNumber).filter(v=>v!=null).sort((a,b)=>a-b);if(!rows.length)return null;const mid=Math.floor(rows.length/2);return rows.length%2?rows[mid]:(rows[mid-1]+rows[mid])/2;
   }
   function normalizeCapacityHistoryRow(raw={}){
-    const availableFte=optionalNumber(raw.availableFte??raw.available_fte),usedVolume=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFte=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte);
+    const availableFte=optionalNumber(raw.availableFte??raw.available_fte),usedVolume=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFte=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),attendanceVolume=optionalNumber(raw.attendanceVolume??raw.attendance_volume),attendancePerFte=optionalNumber(raw.attendancePerAvailableFte??raw.attendance_per_available_fte);
     return Object.freeze({
       competence:competenceId(raw.competence),squadCode:text(raw.squadCode??raw.squad_code,'ALL').toUpperCase(),status:text(raw.status,'closed'),
       availableFte:availableFte==null?null:Math.max(0,availableFte),usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
+      attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),
       complete:raw.complete===true||raw.used_capacity_complete===true||raw.usedCapacityComplete===true,
-      availabilityMissing:Math.max(0,num(raw.availabilityMissing??raw.availability_missing)),demandMissing:Math.max(0,num(raw.demandMissing??raw.used_capacity_missing)),inconsistentCount:Math.max(0,num(raw.inconsistentCount??raw.inconsistent_rows))
+      attendanceComplete:raw.attendance_complete===true||raw.attendanceComplete===true,
+      availabilityMissing:Math.max(0,num(raw.availabilityMissing??raw.availability_missing)),demandMissing:Math.max(0,num(raw.demandMissing??raw.used_capacity_missing)),attendanceMissing:Math.max(0,num(raw.attendanceMissing??raw.attendance_missing)),inconsistentCount:Math.max(0,num(raw.inconsistentCount??raw.inconsistent_rows))
     });
   }
   function buildHistoricalReference(history=[],options={}){
@@ -133,6 +136,22 @@
     const referencePerFte=ready?median(valid.map(row=>row.usedPerAvailableFte)):null;
     return Object.freeze({comparison,scope,requestedCount,expectedCompetences:Object.freeze(expected),sampleCount:valid.length,missingCount:requestedCount-valid.length,samples:Object.freeze(valid),ready:ready&&referencePerFte!=null&&referencePerFte>0,referencePerFte:referencePerFte!=null&&referencePerFte>0?referencePerFte:null});
   }
+  function buildHistoricalAttendanceReference(history=[],options={}){
+    const comparison=normalizeComparison(options.comparison),requestedCount=COMPARISON_MONTHS[comparison],current=competenceId(options.competence),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase(),expected=priorCompetences(current,requestedCount),normalized=(history||[]).map(normalizeCapacityHistoryRow),byKey=new Map(normalized.map(row=>[`${row.competence}|${row.squadCode}`,row]));
+    const samples=expected.map(id=>byKey.get(`${id}|${scope}`)||null),valid=samples.filter(row=>row&&row.status==='closed'&&row.attendanceComplete&&row.attendancePerAvailableFte!=null&&row.availableFte>0),ready=current!==''&&samples.length===requestedCount&&valid.length===requestedCount;
+    const referenceAttendancePerFte=ready?median(valid.map(row=>row.attendancePerAvailableFte)):null;
+    return Object.freeze({comparison,scope,requestedCount,expectedCompetences:Object.freeze(expected),sampleCount:valid.length,missingCount:requestedCount-valid.length,samples:Object.freeze(valid),ready:ready&&referenceAttendancePerFte!=null&&referenceAttendancePerFte>0,referenceAttendancePerFte:referenceAttendancePerFte!=null&&referenceAttendancePerFte>0?referenceAttendancePerFte:null});
+  }
+  function calculateRequiredFte({attendance,referenceAttendancePerFte}={}){
+    const demand=optionalNumber(attendance),reference=optionalNumber(referenceAttendancePerFte);
+    if(demand==null||demand<0||reference==null||reference<=0)return Object.freeze({ready:false,attendance:demand==null?null:Math.max(0,demand),referenceAttendancePerFte:null,requiredFte:null});
+    return Object.freeze({ready:true,attendance:Math.max(0,demand),referenceAttendancePerFte:reference,requiredFte:Math.max(0,demand)/reference});
+  }
+  function buildRequiredFte({current={},history=[],competence='',squadCode='ALL',comparison='previous'}={}){
+    const reference=buildHistoricalAttendanceReference(history,{competence,squadCode,comparison}),calculation=calculateRequiredFte({attendance:current.attendance,referenceAttendancePerFte:reference.referenceAttendancePerFte});
+    return Object.freeze({reference,calculation,ready:reference.ready&&calculation.ready});
+  }
+
   function classifyUtilization(rate){
     const value=optionalNumber(rate);if(value==null)return Object.freeze({status:'unavailable',label:'SEM REFERÊNCIA',tone:'neutral'});
     if(value<UTILIZATION_BANDS.below)return Object.freeze({status:'below',label:'ABAIXO DA CAPACIDADE',tone:'warn'});
@@ -185,6 +204,7 @@
     const usedVolumeRaw=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFteRaw=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),usedComplete=raw.usedCapacityComplete===true||raw.used_capacity_complete===true;
     const usedCapacityVolume=usedComplete&&usedVolumeRaw!=null?Math.max(0,usedVolumeRaw):null,usedPerAvailableFte=usedComplete&&usedPerFteRaw!=null?Math.max(0,usedPerFteRaw):(usedComplete&&usedCapacityVolume!=null&&availableFte>0?usedCapacityVolume/availableFte:null);
     const referencePerFte=availability.historicalCapacity?optionalNumber(raw.referencePerFte??raw.sustainableReferencePerFte):null;
+    const referenceAttendancePerFte=availability.historicalAttendanceCapacity?optionalNumber(raw.referenceAttendancePerFte):null,required=calculateRequiredFte({attendance,referenceAttendancePerFte});
     const utilization=calculateUtilization({usedVolume:usedCapacityVolume,usedPerAvailableFte,availableFte,referencePerFte});
     const metrics=Object.freeze({
       nominalFte,peopleCount,attendance,resolutions,demand,demandUnit:scope.demandUnit,
@@ -206,7 +226,9 @@
       slackVolume:utilization.slackVolume,
       overloadVolume:utilization.overloadVolume,
       utilizationStatus:utilization.status,
-      requiredFte:null,
+      referenceAttendancePerFte:required.referenceAttendancePerFte,
+      requiredFte:availability.historicalAttendanceCapacity&&required.ready?required.requiredFte:null,
+      requiredFteSampleCount:Math.max(0,num(raw.requiredFteSampleCount)),
       capacityGap:null
     });
     const catalog=ROADMAP_CATALOG.map(item=>{
@@ -225,6 +247,8 @@
     if(availability.availabilityFactors&&demandAvailable&&usedComplete)warnings.push('Produtividade por FTE usa a força efetivamente disponível: resoluções por FTE disponível; atendimentos por FTE ficam como contexto operacional.');
     if(!availability.historicalCapacity)warnings.push('Utilização permanece indisponível até a janela selecionada possuir competências anteriores fechadas com disponibilidade e resoluções completas.');
     else warnings.push(`Utilização compara a carga atual com a mediana histórica da janela selecionada. Faixas: abaixo de ${Math.round(UTILIZATION_BANDS.below*100)}%, dentro entre ${Math.round(UTILIZATION_BANDS.below*100)}% e ${Math.round(UTILIZATION_BANDS.above*100)}%, acima de ${Math.round(UTILIZATION_BANDS.above*100)}%.`);
+    if(!availability.historicalAttendanceCapacity)warnings.push('FTE necessário permanece indisponível até a janela selecionada possuir competências anteriores fechadas com disponibilidade e atendimentos completos.');
+    else warnings.push('FTE necessário = atendimentos atuais ÷ mediana histórica de atendimentos por FTE disponível. Chamados não resolvidos continuam consumindo capacidade e, por isso, permanecem na demanda.');
     warnings.push('A referência histórica observada não é meta automática nem capacidade contratual; ela representa o padrão sustentável disponível na base fechada comparável.');
     warnings.push('FTE nominal representa força equivalente cadastrada; não deve ser interpretado como quantidade de pessoas.');
     warnings.push('Zero informado é dado válido; ausência de fonte permanece indisponível e não é convertida em zero.');
@@ -239,5 +263,5 @@
     });
   }
 
-  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,classifyUtilization,calculateUtilization,buildUtilization,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
+  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyUtilization,calculateUtilization,buildUtilization,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
 });

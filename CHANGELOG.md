@@ -1,3 +1,16 @@
+## V2.59.5 — FCR automático + FTE necessário
+
+- atualiza o motor para `CA-0.6.0-required-fte`;
+- adiciona `Resolve` opcional à Importação de Qualidade Completa;
+- calcula resoluções automáticas como `atendimentos - Resolve Não`;
+- considera ausência de resposta como resolvida somente com fonte Resolve válida;
+- adiciona FCR operacional total, por Squad e por técnico;
+- torna a fonte automática prioritária em `strategy_resolution_metrics`, mantendo manual como contingência;
+- recalcula resolução automática após reimportação operacional;
+- dimensiona FTE necessário com demanda de atendimentos e histórico fechado de atendimentos/FTE disponível;
+- mantém janelas históricas incompletas em fail-closed e não calcula gap antes da V2.59.6;
+- adiciona migration, documentação e regressões da V2.59.5.
+
 ## V2.59.4 — Produtividade por FTE
 
 - atualiza o motor para `CA-0.5.0-productivity-per-fte`;

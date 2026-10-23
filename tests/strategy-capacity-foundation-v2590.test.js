@@ -12,17 +12,17 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
  test('V2.59.2 publica fundacao de capacidade isolada',()=>{
-  assert.equal(pkg.version,'2.59.4');
-  assert.equal(pkg.assetVersion,'2.59.4');
-  assert.equal(capacity.RULE_VERSION,'CA-0.5.0-productivity-per-fte');
+  assert.equal(pkg.version,'2.59.5');
+  assert.equal(pkg.assetVersion,'2.59.5');
+  assert.equal(capacity.RULE_VERSION,'CA-0.6.0-required-fte');
   assert.ok(strategy.VALID_SECTIONS.includes('capacity'));
   assert.equal(strategy.SECTION_META.capacity.label,'Capacidade');
   assert.match(index,/data-strategy-section="capacity"/);
   assert.match(index,/data-strategy-panel="capacity"/);
   assert.match(index,/strategyCapacityNominalFte/);
   assert.match(index,/strategyCapacityReadinessRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.4'));
-  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.59.4')<index.indexOf('js/app.js?v=2.59.4'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.5'));
+  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.59.5')<index.indexOf('js/app.js?v=2.59.5'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.0.sql')),false);
 });
 
@@ -60,7 +60,8 @@ test('roadmap de capacidade declara dependencias sem fabricar prontidao',()=>{
   assert.equal(available.status,'pending');
   assert.ok(available.missing.includes('availabilityFactors'));
   assert.equal(required.status,'pending');
-  assert.ok(required.missing.includes('historicalCapacity'));
+  assert.ok(required.missing.includes('attendance'));
+  assert.ok(required.missing.includes('historicalAttendanceCapacity'));
 });
 
 test('zero explicito continua dado e ausencia de fonte continua indisponivel',()=>{
@@ -79,5 +80,5 @@ test('app consome motor de capacidade sem calcular fases futuras',()=>{
   assert.match(app,/renderStrategyCapacity\(vm,displayAggregate\)/);
   assert.match(app,/availabilityFactors:availabilityReady/);
   assert.match(app,/historicalCapacity:historicalReady/);
-  assert.match(app,/set\('#strategyCapacityRequiredFte','Pendente'\)/);
+  assert.match(app,/renderStrategyRequiredFte/);
 });

@@ -2900,3 +2900,13 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 .strategy-user-access-toggle input:checked+span{color:var(--text)}
 .strategy-user-access-toggle input:disabled{cursor:not-allowed;opacity:.55}
 .strategy-user-access-toggle:has(input:disabled){cursor:not-allowed;opacity:.72}
+
+/* V2.59.5 — FCR operacional */
+.team-kpis{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.portfolio-fcr-card{margin-top:14px;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.portfolio-fcr-card h3{margin:4px 0 6px}.portfolio-fcr-card p{margin:0;color:var(--muted);font-size:11px}.portfolio-fcr-value{text-align:right}.portfolio-fcr-value strong{display:block;font-size:30px}.portfolio-fcr-value small{display:block;color:var(--muted);margin-top:5px}
+.squad-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+.indicator-fcr-card{margin-bottom:14px}
+@media(max-width:1250px){.team-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:1000px){.team-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.squad-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.team-kpis{grid-template-columns:1fr!important}.portfolio-fcr-card{align-items:flex-start;flex-direction:column}.portfolio-fcr-value{text-align:left}.squad-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}

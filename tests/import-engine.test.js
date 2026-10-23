@@ -102,7 +102,7 @@ test('V2.47.1 importacao de qualidade continua bloqueando arquivo incompleto',()
 test('V2.53.0 Qualidade Completa reconhece as cinco dimensoes e grupo opcional',()=>{
   const r=engine.resolveQualityFullImportColumns(['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa','grupoAtendimento']);
   assert.deepEqual(r.missing,[]);
-  assert.deepEqual(r.indexes,{date:0,technician:1,service:2,product:3,company:4,group:5});
+  assert.deepEqual(r.indexes,{date:0,technician:1,service:2,product:3,company:4,group:5,resolve:null});
 });
 
 test('V2.53.0 Qualidade Completa exige NotaServico para manter as tres linhas comparaveis',()=>{

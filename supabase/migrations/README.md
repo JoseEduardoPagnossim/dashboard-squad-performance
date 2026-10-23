@@ -203,3 +203,8 @@ Execute `MIGRACAO_V2.59.2.sql` depois da V2.59.1. A migration cria as RPCs agreg
 ### V2.59.3 — Utilização, ociosidade e sobrecarga
 
 Execute `MIGRACAO_V2.59.3.sql` depois da V2.59.2. A migration cria `get_strategy_capacity_utilization_history()`, que publica somente histórico agregado de competências fechadas por operação e Squad. A aplicação usa essa base para calcular a mediana histórica da janela selecionada, taxa de utilização e faixas de capacidade. Não cria tabela nova, não altera custos e não preenche disponibilidade retroativamente. Não é necessário republicar Edge Functions.
+
+### V2.59.5 — FCR automático + FTE necessário
+
+Execute `MIGRACAO_V2.59.5.sql` depois da V2.59.3 (a V2.59.4 não possui migration). Ela cria a base agregada da coluna `Resolve` da Qualidade Completa, publica `get_operational_fcr_overview_range(date,date)`, sincroniza `strategy_resolution_metrics` por `sync_strategy_resolution_metrics_from_quality(date,text)` e amplia `get_strategy_capacity_utilization_history()` com atendimentos por FTE disponível para o cálculo de FTE necessário. Não é necessário republicar Edge Functions.
+

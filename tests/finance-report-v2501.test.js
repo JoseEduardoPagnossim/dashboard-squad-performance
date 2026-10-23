@@ -11,12 +11,12 @@ const css = readFileSync(join(root,'css','styles.css'),'utf8');
 const pkg = require(join(root,'package.json'));
 
 test('V2.53.0 carrega o configurador de relatório antes do app',()=>{
-  assert.equal(pkg.version,'2.59.4');
-  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.59.4');
-  const appPos=index.indexOf('js/app.js?v=2.59.4');
+  assert.equal(pkg.version,'2.59.5');
+  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.59.5');
+  const appPos=index.indexOf('js/app.js?v=2.59.5');
   assert.ok(enginePos>=0 && appPos>enginePos);
   assert.match(app,/window\.SoftenFinanceReportEngine/);
-  assert.match(app,/APP_VERSION = '2\.59\.4'/);
+  assert.match(app,/APP_VERSION = '2\.59\.5'/);
 });
 
 test('catálogo mantém Técnico obrigatório e padrão compatível com o PDF anterior',()=>{
