@@ -8,7 +8,7 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const strategy=require(join(root,'js','strategy.js'));
 const data=require(join(root,'js','strategy-data.js'));
 
-test('V2.58.8 preserva competencias persistidas visiveis e selecionaveis',()=>{
+test('V2.58.9 preserva competencias persistidas visiveis e selecionaveis',()=>{
   assert.match(index,/strategyCompetenceList/);
   assert.match(app,/data-strategy-competence-chip/);
   assert.match(app,/Nenhuma competência foi alterada\. O salvamento não foi confirmado pelo banco/);

@@ -70,7 +70,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.58.8';
+  const APP_VERSION = '2.58.9';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3731,10 +3731,11 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
 
   function strategyEfficiencyFoundation(vm,displayAggregate){
     const operational=strategyOperationalSnapshot(vm.state.competence,vm.state.squadCode),history=strategyExecutiveHistory(vm),current=history.find(row=>row.competence===vm.state.competence),attendance=current?Number(current.attendance||0):Number(operational.attendance||0),evaluationRate=current&&current.evaluationRate!=null?Number(current.evaluationRate):(operational.evaluationRate!=null?Number(operational.evaluationRate):null),financialReady=displayAggregate&&vm.state.financialLoaded&&!vm.state.financialError;
+    const squadRows=financialReady?strategySquadEconomicProductivityRows(vm,{respectFilter:false}):[],selected=String(vm.state.squadCode||'all').toUpperCase(),costBearing=squadRows.filter(row=>safe(row.totalCost)>0),selectedRow=selected==='ALL'?null:squadRows.find(row=>row.squadCode===selected),resolutionCoverageReady=selected==='ALL'?(costBearing.length>0&&costBearing.every(row=>row.sourceAvailable)):(!!selectedRow&&safe(selectedRow.totalCost)>0&&selectedRow.sourceAvailable);
     return strategyEfficiencyEngine.buildFoundation({
       scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison,competenceStatus:vm.competenceRecord?.status||'draft'},
       metrics:{totalCost:financialReady?vm.summary.totalCost:0,peopleCost:financialReady?vm.summary.peopleCost:0,operationalCost:financialReady?vm.summary.operationalCost:0,attendance,resolutions:financialReady?safe(vm.summary.resolutions):0,fte:financialReady?vm.summary.fte:0,peopleCount:financialReady?vm.summary.peopleCount:0,evaluationRate},
-      availability:{financial:financialReady,attendance:attendance>0,fte:financialReady&&Number(vm.summary.fte||0)>0,quality:evaluationRate!=null,resolutions:financialReady&&safe(vm.summary.resolutionEntries)>0}
+      availability:{financial:financialReady,attendance:attendance>0,fte:financialReady&&Number(vm.summary.fte||0)>0,quality:evaluationRate!=null,resolutions:financialReady&&resolutionCoverageReady}
     });
   }
   function strategyReadinessLabel(status){return status==='ready'?'Base pronta':'Aguardando dado'}
@@ -3895,7 +3896,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const now=new Date().toISOString(),payload=[];
     for(const row of rows){const userId=String(row.dataset.strategyResolutionUser||'').trim(),squadCode=String(row.dataset.strategyResolutionSquad||'').trim().toUpperCase(),name=String(row.dataset.strategyResolutionName||'').trim(),input=row.querySelector('[data-strategy-resolution-value]');if(!userId||!squadCode||!input)continue;const text=String(input.value??'').trim();if(text==='')continue;const resolutions=Math.max(0,Math.round(strategyParseNumber(text))),attendance=Math.max(0,Number(input.max||0));if(attendance>=0&&resolutions>attendance)return toast(`${name}: resoluções não podem superar os atendimentos (${fmtInt(attendance)}).`);payload.push({organization_id:state.user.organizationId,competence_id:vm.competenceRecord.id,user_id:userId,technician_name_snapshot:name,squad_code_snapshot:squadCode,resolutions,source:'manual',updated_by:state.user.userId,updated_at:now,created_by:state.user.userId});}
     if(!payload.length)return toast('Informe ao menos uma quantidade de resoluções para salvar.');
-    try{const {data,error}=await state.supabase.from('strategy_resolution_metrics').upsert(payload,{onConflict:'organization_id,competence_id,user_id,squad_code_snapshot'}).select('id,competence_id,user_id,technician_name_snapshot,squad_code_snapshot,resolutions,source,notes,created_at,updated_at');if(error)throw error;if((data||[]).length!==payload.length)throw new Error(`Persistência incompleta: ${(data||[]).length} de ${payload.length} registro(s) confirmados.`);await logAuditEvent('strategy.resolutions_update',{entityType:'strategy_resolution_metrics',entityId:vm.competenceRecord.id,description:`Base de resoluções atualizada em ${vm.state.competence}.`,metadata:{competence:vm.state.competence,rows:payload.length}});strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Resoluções de ${payload.length} técnico${payload.length===1?'':'s'} salvas.`);}catch(err){console.error(err);toast(/strategy_resolution_metrics|get_strategy_resolution/i.test(String(err?.message||err))?'Não foi possível salvar resoluções. Execute a migração V2.58.2 no Supabase e tente novamente.':String(err?.message||err));}
+    try{const {data,error}=await state.supabase.from('strategy_resolution_metrics').upsert(payload,{onConflict:'organization_id,competence_id,user_id,squad_code_snapshot'}).select('id,competence_id,user_id,technician_name_snapshot,squad_code_snapshot,resolutions,source,notes,created_at,updated_at');if(error)throw error;if((data||[]).length!==payload.length)throw new Error(`Persistência incompleta: ${(data||[]).length} de ${payload.length} registro(s) confirmados.`);await logAuditEvent('strategy.resolutions_update',{entityType:'strategy_resolution_metrics',entityId:vm.competenceRecord.id,description:`Base de resoluções atualizada em ${vm.state.competence}.`,metadata:{competence:vm.state.competence,rows:payload.length}});strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Resoluções de ${payload.length} técnico${payload.length===1?'':'s'} salvas.`);}catch(err){console.error(err);toast(/resolutions exceed operational attendance/i.test(String(err?.message||err))?'As resoluções informadas superam os atendimentos operacionais do técnico nesta competência. Revise a quantidade antes de salvar.':/strategy_resolution_metrics|get_strategy_resolution/i.test(String(err?.message||err))?'Não foi possível salvar resoluções. Execute as migrations V2.58.2 e V2.58.9 no Supabase e tente novamente.':String(err?.message||err));}
   }
 
   function strategyEfficiencySnapshotSource(source){return source==='close'?'Snapshot oficial':source==='legacy_backfill'?'Reconstruído':'Prévia aberta'}
@@ -3908,7 +3909,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function strategyEfficiencyHistoricalRows(vm){
     const frozen=[...(vm.financial.efficiencyHistory||[])],live=strategyEfficiencyLivePreview(vm);
-    if(live&&!frozen.some(row=>row.competence===live.competence))frozen.push(live);
+    if(live){const index=frozen.findIndex(row=>row.competence===live.competence);if(index>=0)frozen.splice(index,1,live);else frozen.push(live);}
     return frozen.sort((a,b)=>String(a.competence).localeCompare(String(b.competence)));
   }
   function renderStrategyEfficiencyHistory(vm,displayAggregate){

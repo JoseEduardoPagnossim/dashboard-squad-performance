@@ -12,14 +12,14 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('V2.58.8 publica a Fundação da Eficiência isolada do operacional',()=>{
-  assert.equal(pkg.version,'2.58.8');
+  assert.equal(pkg.version,'2.58.9');
   assert.match(index,/data-strategy-section="efficiency"/);
   assert.match(index,/data-strategy-panel="efficiency"/);
   assert.match(index,/strategyEfficiencyBaseCost/);
   assert.match(index,/strategyEfficiencyReadinessRows/);
-  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.8/);
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.8')<index.indexOf('js/strategy.js?v=2.58.8'));
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.8')<index.indexOf('js/app.js?v=2.58.8'));
+  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.58\.9/);
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.9')<index.indexOf('js/strategy.js?v=2.58.9'));
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.58.9')<index.indexOf('js/app.js?v=2.58.9'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
 });
 
@@ -35,7 +35,7 @@ test('fundação preservada publica atendimento e resolução com prontidão ind
     metrics:{totalCost:40000,peopleCost:35000,operationalCost:5000,attendance:2500,resolutions:1800,fte:7,evaluationRate:.41},
     availability:{financial:true,attendance:true,fte:true,quality:true,resolutions:true}
   });
-  assert.equal(foundation.ruleVersion,'EF-0.8.0-snapshots-history');
+  assert.equal(foundation.ruleVersion,'EF-0.9.0-phase3-hardening');
   assert.equal(foundation.status,'ready');
   assert.equal(foundation.coverage.ratio,1);
   assert.equal(foundation.metrics.totalCost,40000);

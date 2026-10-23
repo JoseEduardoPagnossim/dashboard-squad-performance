@@ -177,3 +177,15 @@ Execute `MIGRACAO_V2.57.7.sql` depois da V2.57.6. A migration remove `user_id` i
 
 ### V2.58.0 R5 - compatibility hotfix
 Execute `MIGRACAO_V2.58.0_R5.sql` after the strategic migrations when the database originated from V2.57.3. It upgrades the legacy `strategy_cost_allocations` shape to the current contract without deleting existing allocations.
+
+### V2.58.2 — Base explícita de resoluções
+
+Execute `MIGRACAO_V2.58.2.sql` antes de usar custo por resolução e produtividade econômica. A migration cria `strategy_resolution_metrics` e as RPCs agregadas de resolução. Resolução permanece uma fonte própria e não é inferida automaticamente a partir de atendimentos.
+
+### V2.58.8 — Snapshots, histórico e evolução
+
+Execute `MIGRACAO_V2.58.8.sql` depois da V2.58.2. Ela cria `strategy_efficiency_snapshots`, captura revisões imutáveis no fechamento e disponibiliza o histórico agregado por `get_strategy_efficiency_history()`. Competências fechadas anteriormente são identificadas como `legacy_backfill`.
+
+### V2.58.9 — Hardening e fechamento da Fase 3
+
+Execute `MIGRACAO_V2.58.9.sql` depois da V2.58.8. Ela instala validação de integridade em `strategy_resolution_metrics`, impedindo resoluções negativas, competências divergentes, alterações indevidas após fechamento e resoluções superiores aos atendimentos operacionais vinculados. Também reforça o contrato dos snapshots de eficiência. Não é necessário republicar Edge Functions.

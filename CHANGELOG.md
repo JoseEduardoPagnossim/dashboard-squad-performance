@@ -1,3 +1,18 @@
+## V2.58.9 — Hardening, regressões e fechamento da Fase 3
+
+- corrige `null` sendo interpretado como zero em métricas, benchmarks e deltas;
+- torna benchmarks de Squad fail-closed quando existe custo sem base explícita de resolução;
+- torna benchmarks individuais fail-closed quando a referência comparável está incompleta;
+- diferencia resolução zero informada de ausência de registro de resolução;
+- impede histórico da competência reaberta de continuar mostrando snapshot antigo como estado corrente;
+- deduplica defensivamente competências no motor histórico e preserva a maior revisão;
+- exige cobertura completa para considerar a evolução agregada da operação pronta;
+- adiciona guarda de banco para validar resoluções contra atendimentos operacionais;
+- preserva `ON DELETE SET NULL` de usuários sem romper snapshots/histórico;
+- adiciona contratos de integridade para novas revisões de snapshot;
+- atualiza o motor para `EF-0.9.0-phase3-hardening`;
+- encerra formalmente a Fase 3 sem criar uma V2.58.7 retroativa.
+
 ## V2.58.8 — Snapshots, histórico e evolução
 
 - cria `strategy_efficiency_snapshots` vinculada à revisão da competência;

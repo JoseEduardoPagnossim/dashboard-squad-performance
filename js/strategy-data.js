@@ -8,6 +8,7 @@
   function cleanCode(value){return String(value||'').trim().toUpperCase()}
   function cleanText(value){return String(value??'').trim()}
   function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
+  function optionalNumber(value){if(value===null||value===undefined)return null;if(typeof value==='string'&&!value.trim())return null;const n=Number(value);return Number.isFinite(n)?n:null}
   function competenceId(value){
     const text=String(value||'').trim();
     const match=/^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(text);
@@ -129,24 +130,24 @@
   function normalizeEfficiencyMetric(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
     const totalCost=Math.max(0,num(source.total_cost??source.totalCost)),attendance=Math.max(0,num(source.attendance)),resolutions=Math.max(0,num(source.resolutions)),fte=Math.max(0,num(source.fte));
-    const productivityRaw=Number(source.economic_productivity??source.economicProductivity),costAttendanceRaw=Number(source.cost_per_attendance??source.costPerAttendance),costResolutionRaw=Number(source.cost_per_resolution??source.costPerResolution),resolutionRateRaw=Number(source.resolution_rate??source.resolutionRate),evaluationRaw=Number(source.evaluation_rate??source.evaluationRate);
+    const productivityRaw=optionalNumber(source.economic_productivity??source.economicProductivity),costAttendanceRaw=optionalNumber(source.cost_per_attendance??source.costPerAttendance),costResolutionRaw=optionalNumber(source.cost_per_resolution??source.costPerResolution),resolutionRateRaw=optionalNumber(source.resolution_rate??source.resolutionRate),evaluationRaw=optionalNumber(source.evaluation_rate??source.evaluationRate);
     return{
       squadCode:cleanCode(source.squad_code??source.squadCode),
       totalCost,peopleCost:Math.max(0,num(source.people_cost??source.peopleCost)),operationalCost:Math.max(0,num(source.operational_cost??source.operationalCost)),
       peopleCount:Math.max(0,num(source.people_count??source.peopleCount)),fte,attendance,resolutions,resolutionEntries:Math.max(0,num(source.resolution_entries??source.resolutionEntries)),
-      costPerAttendance:Number.isFinite(costAttendanceRaw)?Math.max(0,costAttendanceRaw):(attendance>0?totalCost/attendance:null),
-      costPerResolution:Number.isFinite(costResolutionRaw)?Math.max(0,costResolutionRaw):(resolutions>0?totalCost/resolutions:null),
-      resolutionRate:Number.isFinite(resolutionRateRaw)?Math.max(0,Math.min(1,resolutionRateRaw)):(attendance>0?Math.min(1,resolutions/attendance):null),
-      economicProductivity:Number.isFinite(productivityRaw)?Math.max(0,productivityRaw):(totalCost>0?resolutions*1000/totalCost:null),
-      evaluationRate:Number.isFinite(evaluationRaw)?Math.max(0,Math.min(1,evaluationRaw)):null
+      costPerAttendance:costAttendanceRaw!=null?Math.max(0,costAttendanceRaw):(attendance>0?totalCost/attendance:null),
+      costPerResolution:costResolutionRaw!=null?Math.max(0,costResolutionRaw):(resolutions>0?totalCost/resolutions:null),
+      resolutionRate:resolutionRateRaw!=null?Math.max(0,Math.min(1,resolutionRateRaw)):(attendance>0?Math.min(1,resolutions/attendance):null),
+      economicProductivity:productivityRaw!=null?Math.max(0,productivityRaw):(totalCost>0?resolutions*1000/totalCost:null),
+      evaluationRate:evaluationRaw!=null?Math.max(0,Math.min(1,evaluationRaw)):null
     };
   }
   function normalizeEfficiencyHistoryRow(row={}){
     const operation=normalizeEfficiencyMetric(row.operation||{}),squads=(Array.isArray(row.squads)?row.squads:[]).map(normalizeEfficiencyMetric).filter(item=>item.squadCode),bench=row.benchmarks&&typeof row.benchmarks==='object'?row.benchmarks:{};
-    const operationBenchmark=Number(bench.operation_benchmark??bench.operationBenchmark),meanBenchmark=Number(bench.mean_benchmark??bench.meanBenchmark),medianBenchmark=Number(bench.median_benchmark??bench.medianBenchmark),bestValue=Number(bench.best_value??bench.bestValue);
+    const operationBenchmark=optionalNumber(bench.operation_benchmark??bench.operationBenchmark),meanBenchmark=optionalNumber(bench.mean_benchmark??bench.meanBenchmark),medianBenchmark=optionalNumber(bench.median_benchmark??bench.medianBenchmark),bestValue=optionalNumber(bench.best_value??bench.bestValue);
     return{
       competence:competenceId(row.competence),status:row.status==='closed'?'closed':'draft',revision:Math.max(0,num(row.revision)),snapshotVersion:cleanText(row.snapshot_version??row.snapshotVersion),ruleVersion:cleanText(row.rule_version??row.ruleVersion),source:['close','legacy_backfill','live_preview'].includes(row.source)?row.source:'close',financialSnapshotRevision:Math.max(0,num(row.financial_snapshot_revision??row.financialSnapshotRevision)),createdAt:row.created_at??row.createdAt??null,
-      operation,squads,benchmarks:{operationBenchmark:Number.isFinite(operationBenchmark)?operationBenchmark:null,meanBenchmark:Number.isFinite(meanBenchmark)?meanBenchmark:null,medianBenchmark:Number.isFinite(medianBenchmark)?medianBenchmark:null,bestSquadCode:cleanCode(bench.best_squad_code??bench.bestSquadCode),bestValue:Number.isFinite(bestValue)?bestValue:null}
+      operation,squads,benchmarks:{operationBenchmark,meanBenchmark,medianBenchmark,bestSquadCode:cleanCode(bench.best_squad_code??bench.bestSquadCode),bestValue}
     };
   }
 
@@ -197,5 +198,5 @@
       efficiencyHistory:Object.freeze(efficiencyRows.map(row=>Object.freeze({...row,operation:Object.freeze({...row.operation}),squads:Object.freeze(row.squads.map(item=>Object.freeze({...item}))),benchmarks:Object.freeze({...row.benchmarks})})))
     });
   }
-  return{num,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,buildOperationalContext,buildFinancialContext};
+  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,buildOperationalContext,buildFinancialContext};
 });

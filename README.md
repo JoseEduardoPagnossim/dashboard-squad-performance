@@ -1,3 +1,11 @@
+## V2.58.9 — Hardening, regressões e fechamento da Fase 3
+
+A Fase 3 de eficiência econômica foi endurecida antes da abertura da próxima etapa. A V2.58.9 corrige conversões de `null` que podiam virar zero, bloqueia benchmarks com cobertura parcial de resoluções, corrige a prévia de competências reabertas e adiciona validação de integridade no banco para a base de resoluções.
+
+Execute `supabase/migrations/MIGRACAO_V2.58.9.sql` após as migrations anteriores da Fase 3. A V2.58.8 continua sendo responsável pelos snapshots históricos; a V2.58.9 apenas reforça a integridade sem reescrever o histórico congelado.
+
+Detalhes: `docs/HARDENING_EFICIENCIA_V2.58.9.md`.
+
 ## V2.58.8 — Snapshots, histórico e evolução
 
 A Fase 3 passa a congelar a fotografia econômica de competências fechadas. Produtividade, custo por resolução, taxa de resolução e benchmarks ficam associados à revisão do fechamento, permitindo evolução histórica sem reescrever o passado quando o motor mudar.
