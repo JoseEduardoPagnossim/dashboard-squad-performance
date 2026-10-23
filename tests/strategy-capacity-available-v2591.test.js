@@ -12,15 +12,15 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.59.1.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.59.1 publica capacidade disponivel com migration propria',()=>{
-  assert.equal(pkg.version,'2.59.1');
-  assert.equal(pkg.assetVersion,'2.59.1');
-  assert.equal(capacity.RULE_VERSION,'CA-0.2.0-available-capacity');
+  assert.equal(pkg.version,'2.59.2');
+  assert.equal(pkg.assetVersion,'2.59.2');
+  assert.equal(capacity.RULE_VERSION,'CA-0.3.0-used-capacity');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.59\.1/);
   assert.match(index,/strategyCapacitySquadRows/);
   assert.match(index,/strategyCapacityTechnicianRows/);
   assert.match(index,/Disponib\. %/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.2'));
 });
 
 test('FTE disponivel respeita FTE nominal e disponibilidade explicita',()=>{
@@ -75,7 +75,7 @@ test('fundacao ativa V2.59.1 sem antecipar utilizacao ou FTE necessario',()=>{
   assert.equal(foundation.metrics.utilizationRate,null);
   assert.equal(foundation.metrics.requiredFte,null);
   assert.equal(foundation.catalog.find(x=>x.id==='available-capacity').status,'active');
-  assert.equal(foundation.catalog.find(x=>x.id==='used-capacity').status,'base-ready');
+  assert.equal(foundation.catalog.find(x=>x.id==='used-capacity').status,'active');
 });
 
 test('normalizador preserva disponibilidade nula e calcula FTE disponivel somente quando informada',()=>{
@@ -105,5 +105,5 @@ test('app persiste disponibilidade e consome RPC agregada sem expor detalhes ind
   assert.match(app,/get_strategy_capacity_squad_summary/);
   assert.match(app,/strategyCapacityEngine\.buildAvailableCapacity/);
   assert.match(app,/Detalhes individuais protegidos/);
-  assert.match(app,/migration=capacityMissing\?'V2\.59\.1'/);
+  assert.match(app,/capacityMissing\?'V2\.59\.1'/);
 });

@@ -194,3 +194,7 @@ Execute `MIGRACAO_V2.58.9.sql` depois da V2.58.8. Ela instala validação de int
 ### V2.59.1 — Capacidade disponível
 
 Execute `MIGRACAO_V2.59.1.sql` depois da V2.58.9. A migration adiciona `availability_factor` aos custos pessoais por competência e cria as RPCs agregadas `get_strategy_capacity_summary(date,text)` e `get_strategy_capacity_squad_summary(date)`. Competências abertas existentes recebem 100% como ponto de partida; competências já fechadas permanecem sem disponibilidade retroativa. Não é necessário republicar Edge Functions.
+
+### V2.59.2 — Capacidade utilizada
+
+Execute `MIGRACAO_V2.59.2.sql` depois da V2.59.1. A migration cria as RPCs agregadas `get_strategy_capacity_used_summary(date,text)` e `get_strategy_capacity_used_squad_summary(date)`, consolidando resoluções absorvidas e resoluções por FTE disponível com cobertura fail-closed. Ela não cria tabela nova e não calcula percentual de utilização; essa taxa fica reservada para a V2.59.3. Não é necessário republicar Edge Functions.

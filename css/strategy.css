@@ -246,7 +246,7 @@
 .strategy-snapshot-source.live_preview{border-color:color-mix(in srgb,var(--accent) 38%,var(--border));color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel2))}
 @media(max-width:1180px){.strategy-history-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-history-chart-grid{grid-template-columns:1fr}}
 @media(max-width:680px){.strategy-history-kpis{grid-template-columns:1fr}}
-.strategy-capacity-concepts,.strategy-capacity-observed{margin-top:18px}
+.strategy-capacity-concepts,.strategy-capacity-observed,.strategy-capacity-available,.strategy-capacity-used{margin-top:18px}
 .strategy-capacity-concept-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .strategy-capacity-concept-grid article{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface-2)}
 .strategy-capacity-concept-grid strong{display:block;margin-bottom:6px}

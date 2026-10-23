@@ -1,3 +1,13 @@
+## V2.59.2 — Capacidade utilizada
+
+- mede a carga real absorvida em resoluções;
+- calcula resoluções por FTE disponível sem criar percentual artificial de utilização;
+- exige cobertura completa de disponibilidade e resolução para consolidar o indicador;
+- mantém zero explícito diferente de ausência de fonte;
+- adiciona visões por operação, Squad e técnico;
+- cria RPCs agregadas em `MIGRACAO_V2.59.2.sql`;
+- mantém utilização, ociosidade, sobrecarga e FTE necessário reservados às próximas versões.
+
 ## V2.59.1 — Capacidade disponível
 
 - adiciona disponibilidade percentual por pessoa e competência;

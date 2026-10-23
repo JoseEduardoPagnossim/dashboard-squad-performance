@@ -1,3 +1,15 @@
+## V2.59.2 — Capacidade utilizada
+
+- atualiza o motor para `CA-0.3.0-used-capacity`;
+- define capacidade utilizada como carga observada, não como percentual;
+- calcula resoluções e resoluções por FTE disponível;
+- adiciona cobertura fail-closed da base de carga;
+- ignora disponibilidade 0% como capacidade ativa, mas sinaliza produção positiva nesse cenário como inconsistência;
+- consolida capacidade utilizada por Squad e técnico;
+- adiciona RPCs agregadas sem expor detalhes individuais;
+- mantém taxa de utilização e FTE necessário sem cálculo;
+- adiciona migration, documentação e regressões da V2.59.2.
+
 ## V2.59.1 — Capacidade disponível
 
 - ativa o primeiro indicador da Fase 4 com `CA-0.2.0-available-capacity`;

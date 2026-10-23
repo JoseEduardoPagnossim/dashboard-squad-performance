@@ -9,7 +9,7 @@ const app=fs.readFileSync(path.join(root,'js','app.js'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 
 test('V2.57.7 filtra o consolidado diario pelo Squad global antes de calcular a media',()=>{
-  assert.equal(pkg.version,'2.59.1');
+  assert.equal(pkg.version,'2.59.2');
   assert.match(app,/function orgDailyScopeCode\(\)\{return state\.squadCode==='all'\?null:String\(state\.squadCode\|\|''\)\.toUpperCase\(\);\}/);
   assert.match(app,/function filteredOrgDailyRows\(\).*dateBetween\(date\)&&\(!code\|\|rowCode===code\)/s);
 });
@@ -31,8 +31,8 @@ test('V2.57.7 adapta titulo legenda e resumo ao Squad selecionado',()=>{
 
 test('V2.57.7 publica cache-bust coerente sem migration',()=>{
   for(const asset of ['css/styles.css','js/app.js','js/chart-engine.js']){
-    assert.ok(index.includes(`${asset}?v=2.59.1`),asset);
+    assert.ok(index.includes(`${asset}?v=2.59.2`),asset);
   }
-  assert.ok(index.includes('V2.59.1'));
+  assert.ok(index.includes('V2.59.2'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
 });

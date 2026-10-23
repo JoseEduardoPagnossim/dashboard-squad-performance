@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.59.1" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.59.1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.59.1" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.59.1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.59.2" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.59.2" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.59.2" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.59.2" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.59.1 • Capacidade disponível</small>
+        <small class="login-version">V2.59.2 • Capacidade utilizada</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.59.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.59.2 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.59.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.59.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1385,12 +1385,12 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 4</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>A Fase 4 mede a força operacional disponível sobre as bases econômicas endurecidas da Fase 3. A V2.59.1 ativa o FTE disponível por técnico e Squad sem antecipar utilização ou FTE necessário.</p>
+              <p>A Fase 4 mede quanto da força operacional disponível está sendo efetivamente absorvida pela demanda. A V2.59.2 ativa a carga utilizada em resoluções e por FTE disponível sem antecipar a taxa percentual de utilização ou o FTE necessário.</p>
             </div>
-            <span class="strategy-foundation-badge">Fase 4 • Capacidade disponível</span>
+            <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.59.1</strong> no Supabase e valide as permissões.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.59.2</strong> no Supabase e valide as permissões.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1643,7 +1643,7 @@
 
           <div class="strategy-panel strategy-capacity-foundation-panel hidden" data-strategy-panel="capacity">
             <article class="strategy-placeholder-card strategy-wide-card strategy-capacity-foundation-card">
-              <span class="eyebrow">FASE 4 • V2.59.1</span>
+              <span class="eyebrow">FASE 4 • V2.59.2</span>
               <div class="strategy-section-heading"><div><h3>Fundação de Capacidade</h3><p>A Fase 4 passa a calcular o FTE efetivamente disponível por técnico e Squad. Utilização e FTE necessário continuam bloqueados até suas versões específicas.</p></div><span id="strategyCapacityFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à capacidade">
@@ -1696,6 +1696,21 @@
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Técnico</th><th>Squad</th><th>FTE nominal</th><th>Disponibilidade</th><th>FTE disponível</th><th>FTE indisponível</th><th>Base</th></tr></thead><tbody id="strategyCapacityTechnicianRows"><tr><td colspan="7" class="muted">Carregando capacidade por técnico...</td></tr></tbody></table></div>
               </section>
 
+              <section class="strategy-capacity-used">
+                <div class="strategy-section-heading"><div><span class="eyebrow">INDICADOR V2.59.2</span><h3>Capacidade utilizada</h3><p>Mede a carga que a estrutura disponível realmente absorveu. Nesta versão a unidade principal é resolução: mostramos o volume resolvido e a intensidade por FTE disponível, sem transformar isso ainda em percentual de utilização.</p></div><span id="strategyCapacityUsedStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
+                <div class="strategy-metric-grid">
+                  <div class="strategy-metric"><span>Resoluções absorvidas</span><strong id="strategyCapacityUsedVolume">—</strong><small>carga realizada com base explícita</small></div>
+                  <div class="strategy-metric"><span>Resoluções / FTE disponível</span><strong id="strategyCapacityUsedPerFte">—</strong><small>intensidade da carga observada</small></div>
+                  <div class="strategy-metric"><span>FTE disponível na competência</span><strong id="strategyCapacityUsedAvailableFte">—</strong><small>denominador operacional disponível</small></div>
+                  <div class="strategy-metric"><span>Cobertura da carga</span><strong id="strategyCapacityUsedCoverage">—</strong><small>FTE disponível com resolução informada</small></div>
+                </div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">POR SQUAD</span><h3>Carga absorvida por Squad</h3><p>Compara o volume efetivamente resolvido com o FTE disponível de cada Squad. Ainda não classifica o resultado como ociosidade ou sobrecarga.</p></div></div>
+                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Squad</th><th>FTE disponível</th><th>Resoluções</th><th>Resoluções / FTE disp.</th><th>Cobertura</th><th>Base</th></tr></thead><tbody id="strategyCapacityUsedSquadRows"><tr><td colspan="6" class="muted">Carregando capacidade utilizada por Squad...</td></tr></tbody></table></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">POR TÉCNICO</span><h3>Carga absorvida individual</h3><p>Mostra quanto cada FTE disponível absorveu na competência. O detalhe permanece protegido pelas permissões de pessoas/custos.</p></div></div>
+                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Técnico</th><th>Squad</th><th>FTE disponível</th><th>Resoluções</th><th>Resoluções / FTE disp.</th><th>Disponibilidade</th><th>Base</th></tr></thead><tbody id="strategyCapacityUsedTechnicianRows"><tr><td colspan="7" class="muted">Carregando capacidade utilizada por técnico...</td></tr></tbody></table></div>
+                <aside class="strategy-insight"><strong>Ainda não é taxa de utilização</strong><p>200 resoluções por FTE disponível descreve a carga absorvida. Para dizer se isso corresponde a 80%, 100% ou 120% da capacidade precisamos primeiro de uma referência sustentável, que será tratada na V2.59.3.</p></aside>
+              </section>
+
               <section class="strategy-efficiency-readiness">
                 <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Prontidão da Fase 4</h3><p>Mostra quais bases já existem e quais ainda precisam ser implementadas, sem preencher lacunas com estimativas silenciosas.</p></div></div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Indicador</th><th>Versão</th><th>Estado</th><th>Base pendente</th></tr></thead><tbody id="strategyCapacityReadinessRows"><tr><td colspan="4" class="muted">Carregando fundação de capacidade...</td></tr></tbody></table></div>
@@ -1703,7 +1718,7 @@
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Capacidade não é produção realizada</h3></div><ul id="strategyCapacityWarnings"><li>Carregando regras da Fase 4.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Disponibilidade sem alterar custo</strong><p>O FTE permanece contratual. A disponibilidade é uma fotografia operacional da competência. Capacidade sustentável, utilização e FTE necessário continuam reservados às próximas versões.</p></aside>
+            <aside class="strategy-insight"><strong>Carga real sem percentual artificial</strong><p>O FTE permanece contratual e a disponibilidade continua sendo a fotografia operacional da competência. A V2.59.2 mede a carga absorvida; taxa de utilização, ociosidade, sobrecarga e FTE necessário continuam reservados às próximas versões.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2184,35 +2199,35 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.59.1"></script>
-  <script src="js/finance-rules.js?v=2.59.1"></script>
-  <script src="js/finance-advanced.js?v=2.59.1"></script>
-  <script src="js/tv-engine.js?v=2.59.1"></script>
-  <script src="js/presentation.js?v=2.59.1"></script>
-  <script src="js/chart-engine.js?v=2.59.1"></script>
-  <script src="js/chart-export.js?v=2.59.1"></script>
-  <script src="js/import-engine.js?v=2.59.1"></script>
-  <script src="js/predictive-engine.js?v=2.59.1"></script>
-  <script src="js/alert-engine.js?v=2.59.1"></script>
-  <script src="js/settings-engine.js?v=2.59.1"></script>
-  <script src="js/performance-engine.js?v=2.59.1"></script>
-  <script src="js/navigation-engine.js?v=2.59.1"></script>
-  <script src="js/workspace-engine.js?v=2.59.1"></script>
-  <script src="js/filter-system.js?v=2.59.1"></script>
-  <script src="js/comparison-engine.js?v=2.59.1"></script>
-  <script src="js/finance-report-engine.js?v=2.59.1"></script>
-  <script src="js/design-system.js?v=2.59.1"></script>
-  <script src="js/strategy-access.js?v=2.59.1"></script>
-  <script src="js/strategy-data.js?v=2.59.1"></script>
-  <script src="js/strategy-cost-engine.js?v=2.59.1"></script>
-  <script src="js/strategy-efficiency.js?v=2.59.1"></script>
-  <script src="js/strategy-capacity.js?v=2.59.1"></script>
-  <script src="js/strategy-insights.js?v=2.59.1"></script>
-  <script src="js/strategy.js?v=2.59.1"></script>
+  <script src="js/business-calendar.js?v=2.59.2"></script>
+  <script src="js/finance-rules.js?v=2.59.2"></script>
+  <script src="js/finance-advanced.js?v=2.59.2"></script>
+  <script src="js/tv-engine.js?v=2.59.2"></script>
+  <script src="js/presentation.js?v=2.59.2"></script>
+  <script src="js/chart-engine.js?v=2.59.2"></script>
+  <script src="js/chart-export.js?v=2.59.2"></script>
+  <script src="js/import-engine.js?v=2.59.2"></script>
+  <script src="js/predictive-engine.js?v=2.59.2"></script>
+  <script src="js/alert-engine.js?v=2.59.2"></script>
+  <script src="js/settings-engine.js?v=2.59.2"></script>
+  <script src="js/performance-engine.js?v=2.59.2"></script>
+  <script src="js/navigation-engine.js?v=2.59.2"></script>
+  <script src="js/workspace-engine.js?v=2.59.2"></script>
+  <script src="js/filter-system.js?v=2.59.2"></script>
+  <script src="js/comparison-engine.js?v=2.59.2"></script>
+  <script src="js/finance-report-engine.js?v=2.59.2"></script>
+  <script src="js/design-system.js?v=2.59.2"></script>
+  <script src="js/strategy-access.js?v=2.59.2"></script>
+  <script src="js/strategy-data.js?v=2.59.2"></script>
+  <script src="js/strategy-cost-engine.js?v=2.59.2"></script>
+  <script src="js/strategy-efficiency.js?v=2.59.2"></script>
+  <script src="js/strategy-capacity.js?v=2.59.2"></script>
+  <script src="js/strategy-insights.js?v=2.59.2"></script>
+  <script src="js/strategy.js?v=2.59.2"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.59.1"></script>
+  <script src="js/app.js?v=2.59.2"></script>
 </body>
 </html>

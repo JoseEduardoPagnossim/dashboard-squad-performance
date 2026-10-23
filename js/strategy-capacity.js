@@ -5,9 +5,10 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='CA-0.2.0-available-capacity';
+  const RULE_VERSION='CA-0.3.0-used-capacity';
   const DEMAND_UNITS=Object.freeze(['resolutions','attendance']);
   const FOUNDATION_SOURCES=Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity']);
+  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity']));
   const ROADMAP_CATALOG=Object.freeze([
     Object.freeze({id:'available-capacity',label:'Capacidade disponível',version:'V2.59.1',requires:Object.freeze(['fte','availabilityFactors'])}),
     Object.freeze({id:'used-capacity',label:'Capacidade utilizada',version:'V2.59.2',requires:Object.freeze(['fte','resolutions','availabilityFactors'])}),
@@ -49,6 +50,17 @@
     const fte=Math.max(0,num(nominalFte)),factor=clamp01(availabilityFactor);
     return factor==null?null:fte*factor;
   }
+  function calculateUsedCapacity(volume,availableFte,{sourceAvailable=true,availabilityComplete=true}={}){
+    const demand=Math.max(0,num(volume)),fte=optionalNumber(availableFte);
+    if(!sourceAvailable||!availabilityComplete||fte==null||fte<0)return Object.freeze({usedVolume:null,usedPerAvailableFte:null,ready:false});
+    const normalizedFte=Math.max(0,fte),inconsistent=normalizedFte===0&&demand>0;
+    return Object.freeze({
+      usedVolume:inconsistent?null:demand,
+      usedPerAvailableFte:!inconsistent&&normalizedFte>0?demand/normalizedFte:null,
+      ready:!inconsistent,
+      inconsistent
+    });
+  }
   function normalizeCapacityPerson(raw={}){
     const nominalFte=Math.max(0,num(raw.nominalFte??raw.fte)),availabilityFactor=clamp01(raw.availabilityFactor??raw.availability_factor),availableFte=calculateAvailableFte(nominalFte,availabilityFactor);
     return Object.freeze({
@@ -58,10 +70,25 @@
       availabilityComplete:availabilityFactor!=null||nominalFte===0
     });
   }
+  function normalizeUsedCapacityRow(raw={},options={}){
+    const demandUnit=normalizeDemandUnit(options.demandUnit??raw.demandUnit),base=normalizeCapacityPerson(raw),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions));
+    const attendanceSourceAvailable=raw.attendanceSourceAvailable===true||raw.attendance_source_available===true;
+    const resolutionSourceAvailable=raw.resolutionSourceAvailable===true||raw.resolution_source_available===true||raw.sourceAvailable===true;
+    const demand=demandUnit==='attendance'?attendance:resolutions,demandSourceAvailable=demandUnit==='attendance'?attendanceSourceAvailable:resolutionSourceAvailable;
+    const used=calculateUsedCapacity(demand,base.availableFte,{sourceAvailable:base.availableFte===0?true:demandSourceAvailable,availabilityComplete:base.availabilityComplete});
+    const inconsistent=used.inconsistent===true||(base.availableFte===0&&demandSourceAvailable&&demand>0);
+    return Object.freeze({...base,attendance,resolutions,demand,demandUnit,attendanceSourceAvailable,resolutionSourceAvailable,demandSourceAvailable,usedVolume:inconsistent?null:used.usedVolume,usedPerAvailableFte:inconsistent?null:used.usedPerAvailableFte,usedCapacityReady:used.ready===true&&!inconsistent,inconsistent});
+  }
   function summarizeCapacityRows(rows=[]){
     const normalized=(rows||[]).map(normalizeCapacityPerson),peopleCount=normalized.length,nominalFte=normalized.reduce((sum,row)=>sum+row.nominalFte,0),missingRows=normalized.filter(row=>!row.availabilityComplete&&row.nominalFte>0),knownNominalFte=normalized.filter(row=>row.availabilityFactor!=null).reduce((sum,row)=>sum+row.nominalFte,0),knownAvailableFte=normalized.filter(row=>row.availableFte!=null).reduce((sum,row)=>sum+row.availableFte,0),complete=peopleCount>0&&missingRows.length===0;
     const availableFte=complete?knownAvailableFte:null,unavailableFte=availableFte==null?null:Math.max(0,nominalFte-availableFte),availabilityRate=availableFte!=null&&nominalFte>0?availableFte/nominalFte:null,availabilityCoverage=nominalFte>0?knownNominalFte/nominalFte:null;
     return Object.freeze({peopleCount,nominalFte,availableFte,unavailableFte,availabilityRate,availabilityCoverage,availabilityEntries:normalized.filter(row=>row.availabilityFactor!=null).length,availabilityMissing:missingRows.length,availabilityComplete:complete});
+  }
+  function summarizeUsedCapacityRows(rows=[],options={}){
+    const demandUnit=normalizeDemandUnit(options.demandUnit),normalized=(rows||[]).map(row=>normalizeUsedCapacityRow(row,{demandUnit}));
+    const candidates=normalized.filter(row=>row.nominalFte>0),availabilityMissing=candidates.filter(row=>!row.availabilityComplete),active=candidates.filter(row=>row.availabilityComplete&&row.availableFte>0),sourceMissing=active.filter(row=>!row.demandSourceAvailable),inconsistent=normalized.filter(row=>row.inconsistent),availabilityComplete=candidates.length>0&&availabilityMissing.length===0,demandComplete=active.length>0&&sourceMissing.length===0,complete=availabilityComplete&&demandComplete&&inconsistent.length===0;
+    const nominalFte=candidates.reduce((sum,row)=>sum+row.nominalFte,0),availableFte=availabilityComplete?candidates.reduce((sum,row)=>sum+Math.max(0,row.availableFte??0),0):null,coveredAvailableFte=active.filter(row=>row.demandSourceAvailable).reduce((sum,row)=>sum+Math.max(0,row.availableFte??0),0),usedVolume=complete?active.reduce((sum,row)=>sum+row.demand,0):null,usedPerAvailableFte=complete&&availableFte>0?usedVolume/availableFte:null,coverage=availableFte!=null&&availableFte>0?coveredAvailableFte/availableFte:null;
+    return Object.freeze({peopleCount:normalized.length,candidateCount:candidates.length,activeCapacityCount:active.length,nominalFte,availableFte,usedVolume,usedPerAvailableFte,demandUnit,demandEntries:active.filter(row=>row.demandSourceAvailable).length,demandMissing:sourceMissing.length,demandComplete,availabilityMissing:availabilityMissing.length,availabilityComplete,coverage,inconsistentCount:inconsistent.length,complete});
   }
   function buildAvailableCapacity(rows=[]){
     const normalized=(rows||[]).map(normalizeCapacityPerson),bySquad=new Map();
@@ -69,11 +96,18 @@
     const squads=[...bySquad.entries()].map(([squadCode,items])=>Object.freeze({squadCode,...summarizeCapacityRows(items)})).sort((a,b)=>a.squadCode.localeCompare(b.squadCode,'pt-BR'));
     return Object.freeze({summary:summarizeCapacityRows(normalized),rows:Object.freeze(normalized),squads:Object.freeze(squads)});
   }
+  function buildUsedCapacity(rows=[],options={}){
+    const demandUnit=normalizeDemandUnit(options.demandUnit),normalized=(rows||[]).map(row=>normalizeUsedCapacityRow(row,{demandUnit})),bySquad=new Map();
+    for(const row of normalized){const code=row.squadCode||'SEM_SQUAD';if(!bySquad.has(code))bySquad.set(code,[]);bySquad.get(code).push(row);}
+    const squads=[...bySquad.entries()].map(([squadCode,items])=>Object.freeze({squadCode,...summarizeUsedCapacityRows(items,{demandUnit})})).sort((a,b)=>a.squadCode.localeCompare(b.squadCode,'pt-BR'));
+    return Object.freeze({summary:summarizeUsedCapacityRows(normalized,{demandUnit}),rows:Object.freeze(normalized),squads:Object.freeze(squads)});
+  }
   function buildFoundation(input={}){
     const scope=normalizeScope(input.scope),availability=normalizeAvailability(input.availability),raw=input.metrics||{};
     const nominalFte=Math.max(0,num(raw.nominalFte??raw.fte)),peopleCount=Math.max(0,Math.round(num(raw.peopleCount))),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions)),availableRaw=optionalNumber(raw.availableFte),availableFte=availability.availabilityFactors&&availableRaw!=null?Math.max(0,Math.min(nominalFte,availableRaw)):null;
-    const demand=scope.demandUnit==='attendance'?attendance:resolutions;
-    const demandAvailable=scope.demandUnit==='attendance'?availability.attendance:availability.resolutions;
+    const demand=scope.demandUnit==='attendance'?attendance:resolutions,demandAvailable=scope.demandUnit==='attendance'?availability.attendance:availability.resolutions;
+    const usedVolumeRaw=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFteRaw=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),usedComplete=raw.usedCapacityComplete===true||raw.used_capacity_complete===true;
+    const usedCapacityVolume=usedComplete&&usedVolumeRaw!=null?Math.max(0,usedVolumeRaw):null,usedPerAvailableFte=usedComplete&&usedPerFteRaw!=null?Math.max(0,usedPerFteRaw):(usedComplete&&usedCapacityVolume!=null&&availableFte>0?usedCapacityVolume/availableFte:null);
     const metrics=Object.freeze({
       nominalFte,peopleCount,attendance,resolutions,demand,demandUnit:scope.demandUnit,
       attendancePerNominalFte:availability.attendance?observedPerFte(attendance,nominalFte):null,
@@ -82,14 +116,17 @@
       unavailableFte:availableFte==null?null:Math.max(0,nominalFte-availableFte),
       availabilityRate:availableFte!=null&&nominalFte>0?availableFte/nominalFte:null,
       theoreticalCapacity:null,
-      usedCapacity:null,
+      usedCapacity:usedCapacityVolume,
+      usedCapacityVolume,
+      usedPerAvailableFte,
+      usedCapacityComplete:usedComplete,
       utilizationRate:null,
       requiredFte:null,
       capacityGap:null
     });
     const catalog=ROADMAP_CATALOG.map(item=>{
       const missing=item.requires.filter(key=>!availability[key]);
-      const status=missing.length?'pending':item.id==='available-capacity'?'active':'base-ready';
+      const status=missing.length?'pending':ACTIVE_METRICS.has(item.id)?'active':'base-ready';
       return Object.freeze({...item,status,missing:Object.freeze(missing)});
     });
     const coreReady=availability.fte&&demandAvailable;
@@ -98,7 +135,9 @@
     if(!demandAvailable)warnings.push(`Base de ${scope.demandUnit==='attendance'?'atendimentos':'resoluções'} indisponível para o escopo selecionado.`);
     if(!availability.availabilityFactors)warnings.push('Disponibilidade incompleta: informe a porcentagem disponível de cada pessoa da competência para calcular o FTE disponível.');
     else warnings.push('FTE disponível = FTE nominal × disponibilidade da competência. A disponibilidade não altera salário, custos ou o FTE contratual.');
-    if(!availability.historicalCapacity)warnings.push('Capacidade sustentável, utilização e FTE necessário permanecem sem cálculo até as próximas versões da Fase 4.');
+    if(availability.availabilityFactors&&demandAvailable&&!usedComplete)warnings.push('Capacidade utilizada permanece indisponível enquanto houver FTE disponível sem uma base explícita de demanda/resolução.');
+    else if(usedComplete)warnings.push('Capacidade utilizada representa a carga realmente absorvida: volume resolvido e volume por FTE disponível. Ainda não é uma taxa percentual de utilização.');
+    if(!availability.historicalCapacity)warnings.push('Taxa de utilização, ociosidade, sobrecarga e FTE necessário permanecem sem cálculo até existir referência sustentável nas próximas versões.');
     warnings.push('FTE nominal representa força equivalente cadastrada; não deve ser interpretado como quantidade de pessoas.');
     warnings.push('Zero informado é dado válido; ausência de fonte permanece indisponível e não é convertida em zero.');
     return Object.freeze({
@@ -112,5 +151,5 @@
     });
   }
 
-  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,normalizeCapacityPerson,summarizeCapacityRows,buildAvailableCapacity,buildFoundation};
+  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,buildFoundation};
 });
