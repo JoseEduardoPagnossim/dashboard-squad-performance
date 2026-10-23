@@ -30,9 +30,9 @@ test('UI points schema-drift errors to the R5 migration',()=>{
   assert.match(app,/schemaDrift\?'V2\.58\.0 R5':'V2\.57\.6'/);
 });
 
-test('R5 permanece preservada como migration histórica após a V2.58.6',()=>{
-  assert.equal(pkg.version,'2.58.6');
-  assert.equal(pkg.assetVersion,'2.58.6');
-  assert.match(index,/js\/app\.js\?v=2\.58\.6/);
+test('R5 permanece preservada como migration histórica após a V2.58.8',()=>{
+  assert.equal(pkg.version,'2.58.8');
+  assert.equal(pkg.assetVersion,'2.58.8');
+  assert.match(index,/js\/app\.js\?v=2\.58\.8/);
   assert.match(migration,/notify pgrst,'reload schema'/);
 });

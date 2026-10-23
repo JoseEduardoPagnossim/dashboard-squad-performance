@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.58.6" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.58.6" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.58.6" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.58.6" />
+  <link rel="stylesheet" href="css/styles.css?v=2.58.8" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.58.8" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.58.8" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.58.8" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.58.6 • Insights e Diagnóstico de Eficiência</small>
+        <small class="login-version">V2.58.8 • Snapshots, Histórico e Evolução</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.58.6 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.58.8 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.58.6</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.58.8</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1385,7 +1385,7 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 3</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>Camada estratégica isolada do operacional. A V2.58.6 adiciona insights e diagnóstico de eficiência sobre comparativos e benchmarks já consolidados, sem alterar o motor operacional.</p>
+              <p>Camada estratégica isolada do operacional. A V2.58.8 adiciona snapshots de eficiência, histórico congelado e evolução comparável, preservando custos, resoluções, benchmarks e diagnósticos das versões anteriores.</p>
             </div>
             <span class="strategy-foundation-badge">Fase 3 • Produtividade Econômica por Squad</span>
           </section>
@@ -1463,7 +1463,7 @@
 
           <div class="strategy-panel strategy-efficiency-foundation-panel hidden" data-strategy-panel="efficiency">
             <article class="strategy-placeholder-card strategy-wide-card strategy-efficiency-foundation-card">
-              <span class="eyebrow">INSIGHTS E DIAGNÓSTICO • V2.58.6</span>
+              <span class="eyebrow">SNAPSHOTS, HISTÓRICO E EVOLUÇÃO • V2.58.8</span>
               <div class="strategy-section-heading"><div><h3>Base econômica da operação</h3><p>A versão consolida custo total e atendimentos válidos para calcular o custo por atendimento da operação, comparar Squads e detalhar o custo pessoal por atendimento dos técnicos vinculados.</p></div><span id="strategyEfficiencyFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à eficiência">
@@ -1603,13 +1603,32 @@
                 <div class="strategy-productivity-explainer"><strong>Regras explícitas</strong><span>Faixa econômica de ±5% é tratada como próxima da referência; queda de taxa de resolução acima de 5 p.p. direciona diagnóstico para resolução; qualidade funciona como guardrail e não altera a fórmula econômica. Melhor referência continua não sendo meta automática.</span></div>
               </section>
 
+              <section class="strategy-history-block" aria-labelledby="strategyEfficiencyHistoryTitle">
+                <div class="strategy-section-heading"><div><span class="eyebrow">INDICADOR V2.58.8</span><h3 id="strategyEfficiencyHistoryTitle">Snapshots, histórico e evolução</h3><p>Congela a fotografia econômica no fechamento da competência e permite acompanhar a evolução sem reescrever o passado quando as regras do motor mudarem.</p></div></div>
+                <div class="strategy-history-kpis">
+                  <div class="strategy-metric"><span>Snapshots históricos</span><strong id="strategySnapshotCount">—</strong><small>competências congeladas</small></div>
+                  <div class="strategy-metric"><span>Fechamentos oficiais</span><strong id="strategySnapshotOfficial">—</strong><small>capturados no fechamento</small></div>
+                  <div class="strategy-metric"><span>Reconstruídos</span><strong id="strategySnapshotBackfill">—</strong><small>competências antigas consolidadas pela V2.58.8</small></div>
+                  <div class="strategy-metric"><span>Evolução mais recente</span><strong id="strategySnapshotLatestDelta">—</strong><small>produtividade vs. snapshot anterior</small></div>
+                </div>
+                <div class="strategy-history-chart-grid">
+                  <article class="strategy-history-chart-card"><div class="section-title"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Produtividade econômica</h3></div><span class="muted">resoluções por R$ 1.000</span></div><div id="strategyEfficiencyEvolutionChart" class="chart strategy-history-chart"></div></article>
+                  <article class="strategy-history-chart-card"><div class="section-title"><div><span class="eyebrow">ÍNDICE BASE 100</span><h3>Produtividade x custo por resolução</h3></div><span class="muted">a primeira base válida = 100</span></div><div id="strategyEfficiencyEvolutionIndexChart" class="chart strategy-history-chart"></div></article>
+                </div>
+                <section class="strategy-history-card">
+                  <div class="strategy-section-heading"><div><span class="eyebrow">LINHA DO TEMPO</span><h3>Fotografias econômicas por competência</h3><p>Snapshot oficial é capturado no fechamento. Competências fechadas antes da V2.58.8 aparecem como reconstruídas a partir das bases já congeladas. Competência aberta aparece somente como prévia e não é tratada como snapshot.</p></div></div>
+                  <div class="table-wrap"><table class="strategy-people-table strategy-history-table"><thead><tr><th>Competência</th><th>Fonte</th><th>Revisão</th><th>Escopo</th><th>Custo total</th><th>Resoluções</th><th>Resol./R$1 mil</th><th>Custo/resol.</th><th>Taxa resol.</th><th>Taxa avaliação</th><th>Δ produtividade</th></tr></thead><tbody id="strategyEfficiencyHistoryRows"><tr><td colspan="11" class="muted">Carregando histórico de eficiência...</td></tr></tbody></table></div>
+                </section>
+                <div class="strategy-productivity-explainer"><strong>Histórico imutável</strong><span>Ao fechar a competência, custo, volume, produtividade e benchmarks ficam associados à revisão daquele fechamento. Reabrir e fechar novamente cria nova revisão; o snapshot anterior permanece preservado para auditoria.</span></div>
+              </section>
+
               <section class="strategy-efficiency-source-card">
                 <div><span class="eyebrow">INTEGRAÇÃO</span><h3>Fontes conectadas</h3><p id="strategyEfficiencySourceStatus">Aguardando leitura das bases.</p></div>
-                <div class="strategy-efficiency-source-flow"><span>Custos estratégicos</span><b>+</b><span>Produção operacional</span><b>+</b><span>Resoluções</span><b>→</b><strong>Eficiência</strong></div>
+                <div class="strategy-efficiency-source-flow"><span>Custos estratégicos</span><b>+</b><span>Produção operacional</span><b>+</b><span>Resoluções</span><b>→</b><strong>Eficiência</strong><b>→</b><span>Snapshot</span></div>
               </section>
 
               <section class="strategy-efficiency-readiness">
-                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Prontidão dos próximos indicadores</h3><p>A fundação valida se cada métrica futura já possui os dados mínimos necessários, sem antecipar sua fórmula final.</p></div></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">COBERTURA TÉCNICA</span><h3>Prontidão dos indicadores da Fase 3</h3><p>A fundação valida a disponibilidade das bases utilizadas por cada indicador ativo, inclusive o histórico por snapshots.</p></div></div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-efficiency-readiness-table"><thead><tr><th>Indicador</th><th>Versão</th><th>Base</th><th>Pendências</th></tr></thead><tbody id="strategyEfficiencyReadinessRows"><tr><td colspan="4" class="muted">Carregando prontidão...</td></tr></tbody></table></div>
               </section>
 
@@ -2096,34 +2115,34 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.58.6"></script>
-  <script src="js/finance-rules.js?v=2.58.6"></script>
-  <script src="js/finance-advanced.js?v=2.58.6"></script>
-  <script src="js/tv-engine.js?v=2.58.6"></script>
-  <script src="js/presentation.js?v=2.58.6"></script>
-  <script src="js/chart-engine.js?v=2.58.6"></script>
-  <script src="js/chart-export.js?v=2.58.6"></script>
-  <script src="js/import-engine.js?v=2.58.6"></script>
-  <script src="js/predictive-engine.js?v=2.58.6"></script>
-  <script src="js/alert-engine.js?v=2.58.6"></script>
-  <script src="js/settings-engine.js?v=2.58.6"></script>
-  <script src="js/performance-engine.js?v=2.58.6"></script>
-  <script src="js/navigation-engine.js?v=2.58.6"></script>
-  <script src="js/workspace-engine.js?v=2.58.6"></script>
-  <script src="js/filter-system.js?v=2.58.6"></script>
-  <script src="js/comparison-engine.js?v=2.58.6"></script>
-  <script src="js/finance-report-engine.js?v=2.58.6"></script>
-  <script src="js/design-system.js?v=2.58.6"></script>
-  <script src="js/strategy-access.js?v=2.58.6"></script>
-  <script src="js/strategy-data.js?v=2.58.6"></script>
-  <script src="js/strategy-cost-engine.js?v=2.58.6"></script>
-  <script src="js/strategy-efficiency.js?v=2.58.6"></script>
-  <script src="js/strategy-insights.js?v=2.58.6"></script>
-  <script src="js/strategy.js?v=2.58.6"></script>
+  <script src="js/business-calendar.js?v=2.58.8"></script>
+  <script src="js/finance-rules.js?v=2.58.8"></script>
+  <script src="js/finance-advanced.js?v=2.58.8"></script>
+  <script src="js/tv-engine.js?v=2.58.8"></script>
+  <script src="js/presentation.js?v=2.58.8"></script>
+  <script src="js/chart-engine.js?v=2.58.8"></script>
+  <script src="js/chart-export.js?v=2.58.8"></script>
+  <script src="js/import-engine.js?v=2.58.8"></script>
+  <script src="js/predictive-engine.js?v=2.58.8"></script>
+  <script src="js/alert-engine.js?v=2.58.8"></script>
+  <script src="js/settings-engine.js?v=2.58.8"></script>
+  <script src="js/performance-engine.js?v=2.58.8"></script>
+  <script src="js/navigation-engine.js?v=2.58.8"></script>
+  <script src="js/workspace-engine.js?v=2.58.8"></script>
+  <script src="js/filter-system.js?v=2.58.8"></script>
+  <script src="js/comparison-engine.js?v=2.58.8"></script>
+  <script src="js/finance-report-engine.js?v=2.58.8"></script>
+  <script src="js/design-system.js?v=2.58.8"></script>
+  <script src="js/strategy-access.js?v=2.58.8"></script>
+  <script src="js/strategy-data.js?v=2.58.8"></script>
+  <script src="js/strategy-cost-engine.js?v=2.58.8"></script>
+  <script src="js/strategy-efficiency.js?v=2.58.8"></script>
+  <script src="js/strategy-insights.js?v=2.58.8"></script>
+  <script src="js/strategy.js?v=2.58.8"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.58.6"></script>
+  <script src="js/app.js?v=2.58.8"></script>
 </body>
 </html>

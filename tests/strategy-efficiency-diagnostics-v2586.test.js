@@ -10,11 +10,11 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const doc=join(root,'docs','EFICIENCIA_DIAGNOSTICOS_V2.58.6.md');
 
 test('V2.58.6 publica insights e diagnostico explicavel sem migration nova',()=>{
-  assert.equal(pkg.version,'2.58.6');
-  assert.equal(pkg.assetVersion,'2.58.6');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.7.0-efficiency-diagnostics');
+  assert.equal(pkg.version,'2.58.8');
+  assert.equal(pkg.assetVersion,'2.58.8');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.8.0-snapshots-history');
   assert.equal(existsSync(doc),true);
-  assert.match(index,/INSIGHTS E DIAGNÓSTICO • V2\.58\.6/);
+  assert.match(index,/INDICADOR V2\.58\.6/);
   assert.match(index,/strategyEfficiencyDiagnosticPriority/);
   assert.match(index,/strategyEfficiencyDiagnosticSquadRows/);
   assert.match(index,/strategyEfficiencyDiagnosticTechRows/);

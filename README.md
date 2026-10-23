@@ -1,3 +1,11 @@
+## V2.58.8 — Snapshots, histórico e evolução
+
+A Fase 3 passa a congelar a fotografia econômica de competências fechadas. Produtividade, custo por resolução, taxa de resolução e benchmarks ficam associados à revisão do fechamento, permitindo evolução histórica sem reescrever o passado quando o motor mudar.
+
+A versão exige `supabase/migrations/MIGRACAO_V2.58.8.sql`. Competências fechadas antes desta versão são reconstruídas uma única vez e identificadas como `legacy_backfill`; novos fechamentos geram snapshots oficiais automaticamente.
+
+Detalhes: `docs/EFICIENCIA_SNAPSHOTS_HISTORICO_V2.58.8.md`.
+
 ## V2.58.6 — Insights e diagnóstico de eficiência
 
 A Fase 3 passa a transformar produtividade econômica e benchmarks em diagnósticos explicáveis por Squad e técnico. O painel diferencia pressão de custo, pressão de resolução, eficiência saudável e alertas de qualidade, sempre exibindo a evidência e a próxima análise sugerida.

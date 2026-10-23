@@ -1,3 +1,17 @@
+## V2.58.8 — Snapshots, histórico e evolução
+
+- cria `strategy_efficiency_snapshots` vinculada à revisão da competência;
+- captura automaticamente produtividade, custo por resolução, taxa de resolução e benchmarks no fechamento;
+- preserva snapshots anteriores quando uma competência é reaberta e fechada em nova revisão;
+- reconstrói competências antigas já fechadas com origem explícita `legacy_backfill`;
+- adiciona RPC agregada `get_strategy_efficiency_history()` sem expor custo individual;
+- adiciona prévia não persistida para competência aberta;
+- publica linha do tempo histórica e gráficos de evolução;
+- compara Squad selecionado com a referência congelada da operação;
+- adiciona índice base 100 de produtividade e custo por resolução;
+- atualiza o motor para `EF-0.8.0-snapshots-history`;
+- exige a migration `MIGRACAO_V2.58.8.sql`.
+
 ## V2.58.6 — Insights e diagnóstico de eficiência
 
 - adiciona diagnóstico explicável de eficiência por Squad e técnico;

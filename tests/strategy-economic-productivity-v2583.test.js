@@ -9,10 +9,10 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 const doc=join(root,'docs','EFICIENCIA_PRODUTIVIDADE_TECNICO_V2.58.3.md');
 
-test('V2.58.3 permanece preservada dentro da V2.58.6',()=>{
-  assert.equal(pkg.version,'2.58.6');
-  assert.equal(pkg.assetVersion,'2.58.6');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.7.0-efficiency-diagnostics');
+test('V2.58.3 permanece preservada dentro da V2.58.8',()=>{
+  assert.equal(pkg.version,'2.58.8');
+  assert.equal(pkg.assetVersion,'2.58.8');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.8.0-snapshots-history');
   assert.equal(existsSync(doc),true);
   assert.match(index,/Produtividade econômica por técnico/);
   assert.match(index,/strategyTechnicianEconomicProductivityRows/);

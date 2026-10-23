@@ -234,3 +234,15 @@
 .strategy-diagnostic-card{display:grid;gap:12px}.strategy-diagnostic-squad-table{min-width:1260px}.strategy-diagnostic-tech-table{min-width:1420px}
 @media(max-width:1180px){.strategy-diagnostic-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-diagnostic-priority{grid-template-columns:1fr}}
 @media(max-width:680px){.strategy-diagnostic-kpis{grid-template-columns:1fr}}
+
+/* V2.58.8 — snapshots, histórico e evolução */
+.strategy-history-block{display:grid;gap:16px;padding:18px;border:1px solid color-mix(in srgb,var(--success) 34%,var(--border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--success) 5%,var(--panel)),var(--panel))}
+.strategy-history-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.strategy-history-kpis .strategy-metric{margin:0}
+.strategy-history-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.strategy-history-chart-card{padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}.strategy-history-chart{min-height:310px}
+.strategy-history-card{display:grid;gap:12px}.strategy-history-table{min-width:1500px}
+.strategy-snapshot-source{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid var(--border);border-radius:999px;font-size:.72rem;font-weight:850;white-space:nowrap;background:var(--panel2)}
+.strategy-snapshot-source.close{border-color:color-mix(in srgb,var(--success) 40%,var(--border));color:var(--success);background:color-mix(in srgb,var(--success) 7%,var(--panel2))}
+.strategy-snapshot-source.legacy_backfill{border-color:color-mix(in srgb,var(--warn) 42%,var(--border));color:var(--warn);background:color-mix(in srgb,var(--warn) 7%,var(--panel2))}
+.strategy-snapshot-source.live_preview{border-color:color-mix(in srgb,var(--accent) 38%,var(--border));color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel2))}
+@media(max-width:1180px){.strategy-history-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-history-chart-grid{grid-template-columns:1fr}}
+@media(max-width:680px){.strategy-history-kpis{grid-template-columns:1fr}}
