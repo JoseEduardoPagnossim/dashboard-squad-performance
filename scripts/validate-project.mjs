@@ -132,6 +132,8 @@ for (const required of [
   'tests/resolution-fcr-required-fte-v2595.test.js',
   'docs/CAPACIDADE_FTE_NECESSARIO_FCR_V2.59.5.md',
   'supabase/migrations/MIGRACAO_V2.59.5.sql',
+  'tests/strategy-capacity-gap-v2596.test.js',
+  'docs/CAPACIDADE_GAP_V2.59.6.md',
   'js/strategy-capacity.js',
   'supabase/migrations/MIGRACAO_V2.58.9.sql',
   'supabase/migrations/MIGRACAO_V2.58.2.sql',

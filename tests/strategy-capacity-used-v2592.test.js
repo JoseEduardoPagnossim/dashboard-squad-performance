@@ -12,16 +12,16 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.59.2.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.59.2 publica capacidade utilizada sem antecipar taxa de utilizacao',()=>{
-  assert.equal(pkg.version,'2.59.5');
-  assert.equal(pkg.assetVersion,'2.59.5');
-  assert.equal(capacity.RULE_VERSION,'CA-0.6.0-required-fte');
+  assert.equal(pkg.version,'2.59.6');
+  assert.equal(pkg.assetVersion,'2.59.6');
+  assert.equal(capacity.RULE_VERSION,'CA-0.7.0-capacity-gap');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.59\.2/);
   assert.match(index,/strategyCapacityUsedVolume/);
   assert.match(index,/strategyCapacityUsedPerFte/);
   assert.match(index,/strategyCapacityUsedSquadRows/);
   assert.match(index,/strategyCapacityUsedTechnicianRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.5'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6'));
 });
 
 test('capacidade utilizada mede volume e intensidade por FTE disponivel',()=>{

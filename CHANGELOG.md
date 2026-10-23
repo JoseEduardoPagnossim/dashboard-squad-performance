@@ -1,3 +1,16 @@
+## V2.59.6 — Gap de capacidade
+
+- atualiza o motor para `CA-0.7.0-capacity-gap`;
+- calcula FTE disponível menos FTE necessário;
+- calcula excesso e déficit de FTE sem arredondamento decisório;
+- converte o gap em volume de atendimentos pela referência histórica;
+- adiciona leitura consolidada da operação e por Squad;
+- mantém janelas históricas incompletas em fail-closed;
+- reposiciona o bloco V2.59.5 de FTE necessário para o painel Capacidade;
+- mantém diagnósticos causais e recomendações reservados para V2.59.7;
+- não adiciona migration nova;
+- adiciona documentação e regressões da V2.59.6.
+
 ## V2.59.5 — FCR automático + FTE necessário
 
 - atualiza o motor para `CA-0.6.0-required-fte`;

@@ -12,17 +12,17 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
  test('V2.59.2 publica fundacao de capacidade isolada',()=>{
-  assert.equal(pkg.version,'2.59.5');
-  assert.equal(pkg.assetVersion,'2.59.5');
-  assert.equal(capacity.RULE_VERSION,'CA-0.6.0-required-fte');
+  assert.equal(pkg.version,'2.59.6');
+  assert.equal(pkg.assetVersion,'2.59.6');
+  assert.equal(capacity.RULE_VERSION,'CA-0.7.0-capacity-gap');
   assert.ok(strategy.VALID_SECTIONS.includes('capacity'));
   assert.equal(strategy.SECTION_META.capacity.label,'Capacidade');
   assert.match(index,/data-strategy-section="capacity"/);
   assert.match(index,/data-strategy-panel="capacity"/);
   assert.match(index,/strategyCapacityNominalFte/);
   assert.match(index,/strategyCapacityReadinessRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.5'));
-  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.59.5')<index.indexOf('js/app.js?v=2.59.5'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6'));
+  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.59.6')<index.indexOf('js/app.js?v=2.59.6'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.0.sql')),false);
 });
 

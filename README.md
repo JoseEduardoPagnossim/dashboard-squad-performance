@@ -1,3 +1,14 @@
+## V2.59.6 — Gap de capacidade
+
+- calcula `Gap de FTE = FTE disponível - FTE necessário`;
+- converte o saldo de FTE em capacidade de atendimentos pela mesma referência histórica da V2.59.5;
+- mostra excesso, déficit ou equilíbrio por operação e por Squad;
+- usa a demanda atual de atendimentos e histórico fechado de atendimentos/FTE disponível;
+- mantém o cálculo em modo fail-closed quando falta disponibilidade, demanda ou referência histórica;
+- não transforma déficit em recomendação automática de contratação;
+- reposiciona o bloco FTE necessário para a seção correta de Capacidade;
+- não cria migration nova; a última migration necessária continua sendo `MIGRACAO_V2.59.5.sql`.
+
 ## V2.59.5 — FCR automático + FTE necessário
 
 - reaproveita a Importação de Qualidade Completa como fonte automática de resolução por meio da coluna opcional `Resolve`;
