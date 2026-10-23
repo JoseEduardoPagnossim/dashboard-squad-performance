@@ -5,13 +5,13 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='EF-0.4.0-economic-productivity-person';
+  const RULE_VERSION='EF-0.5.0-economic-productivity-squad';
   const COVERAGE_KEYS=Object.freeze(['financial','attendance','fte','quality','resolutions']);
   const METRIC_CATALOG=Object.freeze([
     Object.freeze({id:'cost-per-attendance',label:'Custo por atendimento',version:'V2.58.1',requires:Object.freeze(['financial','attendance'])}),
     Object.freeze({id:'cost-per-resolution',label:'Custo por resolução',version:'V2.58.2',requires:Object.freeze(['financial','resolutions'])}),
     Object.freeze({id:'economic-productivity-person',label:'Produtividade econômica por técnico',version:'V2.58.3',requires:Object.freeze(['financial','attendance','fte','resolutions'])}),
-    Object.freeze({id:'economic-productivity-squad',label:'Produtividade econômica por Squad',version:'V2.58.4',requires:Object.freeze(['financial','attendance','fte'])})
+    Object.freeze({id:'economic-productivity-squad',label:'Produtividade econômica por Squad',version:'V2.58.4',requires:Object.freeze(['financial','attendance','fte','resolutions'])})
   ]);
 
   function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
@@ -82,6 +82,40 @@
       avgRating:ratingWeight>0?weightedRating/ratingWeight:null
     });
   }
+  function normalizeSquadProductivityRow(raw={}){
+    const totalCost=Math.max(0,num(raw.totalCost??raw.total_cost)),peopleCost=Math.max(0,num(raw.peopleCost??raw.people_cost)),operationalCost=Math.max(0,num(raw.operationalCost??raw.operational_cost)),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions)),fte=Math.max(0,num(raw.fte));
+    const evaluation=Number(raw.evaluationRate??raw.evaluation_rate),resolutionEntries=Math.max(0,num(raw.resolutionEntries??raw.resolution_entries));
+    return Object.freeze({
+      squadCode:text(raw.squadCode||raw.squad_code).toUpperCase(),
+      label:text(raw.label||raw.name||raw.squadCode||raw.squad_code,'Sem identificação'),
+      totalCost,peopleCost,operationalCost,fte,attendance,resolutions,resolutionEntries,
+      costPerAttendance:calculateCostPerAttendance(totalCost,attendance),
+      costPerResolution:calculateCostPerResolution(totalCost,resolutions),
+      resolutionRate:calculateResolutionRate(resolutions,attendance),
+      attendancePerFte:fte>0?attendance/fte:null,
+      resolutionsPerFte:fte>0?resolutions/fte:null,
+      economicProductivity:calculateEconomicProductivity(resolutions,totalCost),
+      evaluationRate:Number.isFinite(evaluation)?percent(evaluation):null,
+      sourceAvailable:raw.sourceAvailable===true||resolutionEntries>0
+    });
+  }
+  function buildSquadProductivity(rows=[]){
+    const normalized=(Array.isArray(rows)?rows:[]).map(normalizeSquadProductivityRow);
+    const ready=normalized.filter(row=>row.squadCode&&row.sourceAvailable&&row.totalCost>0);
+    const ranked=ready.slice().sort((a,b)=>(b.economicProductivity??-1)-(a.economicProductivity??-1)||a.squadCode.localeCompare(b.squadCode,'pt-BR')).map((row,index)=>Object.freeze({...row,rank:index+1}));
+    const totalCost=ready.reduce((sum,row)=>sum+row.totalCost,0),peopleCost=ready.reduce((sum,row)=>sum+row.peopleCost,0),operationalCost=ready.reduce((sum,row)=>sum+row.operationalCost,0),resolutions=ready.reduce((sum,row)=>sum+row.resolutions,0),attendance=ready.reduce((sum,row)=>sum+row.attendance,0),fte=ready.reduce((sum,row)=>sum+row.fte,0);
+    const qualityWeight=ready.reduce((sum,row)=>sum+(row.evaluationRate!=null?Math.max(1,row.attendance):0),0),weightedQuality=ready.reduce((sum,row)=>sum+(row.evaluationRate!=null?row.evaluationRate*Math.max(1,row.attendance):0),0);
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,
+      rows:Object.freeze(ranked),eligibleCount:ready.length,totalCost,peopleCost,operationalCost,resolutions,attendance,fte,
+      economicProductivity:calculateEconomicProductivity(resolutions,totalCost),
+      costPerResolution:calculateCostPerResolution(totalCost,resolutions),
+      resolutionRate:calculateResolutionRate(resolutions,attendance),
+      resolutionsPerFte:fte>0?resolutions/fte:null,
+      evaluationRate:qualityWeight>0?weightedQuality/qualityWeight:null
+    });
+  }
+
   function normalizeMetrics(raw={}){
     const evaluation=Number(raw.evaluationRate),totalCost=Math.max(0,num(raw.totalCost)),attendance=Math.max(0,num(raw.attendance)),resolutions=Math.max(0,num(raw.resolutions));
     return Object.freeze({
@@ -169,5 +203,5 @@
     return Object.freeze({ruleVersion:RULE_VERSION,scope,metrics,availability,coverage,status,catalog:Object.freeze(catalog),warnings:notes});
   }
 
-  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,calculateCostPerResolution,calculateResolutionRate,calculateEconomicProductivity,normalizeTechnicianProductivityRow,buildTechnicianProductivity,changeRatio,buildCostPerAttendance,buildCostPerResolution,coverageScore,metricReadiness,buildFoundation};
+  return{RULE_VERSION,COVERAGE_KEYS,METRIC_CATALOG,normalizeScope,normalizeAvailability,normalizeMetrics,normalizeUnitRow,calculateCostPerAttendance,calculateCostPerResolution,calculateResolutionRate,calculateEconomicProductivity,normalizeTechnicianProductivityRow,buildTechnicianProductivity,normalizeSquadProductivityRow,buildSquadProductivity,changeRatio,buildCostPerAttendance,buildCostPerResolution,coverageScore,metricReadiness,buildFoundation};
 });

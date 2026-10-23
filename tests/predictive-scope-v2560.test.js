@@ -33,9 +33,9 @@ test('V2.57.7 diferencia projeção de desempenho realizado e corrige semântica
 });
 
 test('V2.57.7 é frontend-only e preserva o motor financeiro e as demais abas',()=>{
-  assert.equal(pkg.version,'2.58.3');
-  assert.ok(index.includes('js/predictive-engine.js?v=2.58.3'));
-  assert.ok(index.includes('js/app.js?v=2.58.3'));
+  assert.equal(pkg.version,'2.58.4');
+  assert.ok(index.includes('js/predictive-engine.js?v=2.58.4'));
+  assert.ok(index.includes('js/app.js?v=2.58.4'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
   assert.match(app,/function periodGoalForTechnician\(/);
   assert.match(app,/function periodTeamGoal\(/);

@@ -1,3 +1,11 @@
+## V2.58.4 — Produtividade econômica por Squad
+
+A Fase 3 passa a consolidar a produtividade econômica no nível em que os custos compartilhados já possuem atribuição confiável. O indicador principal é **resoluções por R$ 1.000 de custo total do Squad**, incluindo custo de pessoas e custo operacional rateado. FTE, taxa de resolução e taxa de avaliação permanecem visíveis como guardrails e não alteram o índice por pesos ocultos.
+
+Não há migration nova. A base explícita de resoluções continua dependendo de `supabase/migrations/MIGRACAO_V2.58.2.sql`.
+
+Detalhes: `docs/EFICIENCIA_PRODUTIVIDADE_SQUAD_V2.58.4.md`.
+
 ## V2.58.3 — Produtividade econômica por técnico
 
 A Fase 3 passa a relacionar resoluções e custo pessoal por técnico. O indicador principal é **resoluções por R$ 1.000 de custo pessoal**, acompanhado por FTE, atendimentos, taxa de resolução, nota média e custo por resolução. Qualidade permanece visível como guardrail e não altera o índice por peso oculto.

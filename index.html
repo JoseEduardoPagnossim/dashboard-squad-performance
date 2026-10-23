@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.58.3" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.58.3" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.58.3" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.58.3" />
+  <link rel="stylesheet" href="css/styles.css?v=2.58.4" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.58.4" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.58.4" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.58.4" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.58.3 • Produtividade Econômica por Técnico</small>
+        <small class="login-version">V2.58.4 • Produtividade Econômica por Squad</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.58.3 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.58.4 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1218,7 +1218,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.58.3</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.58.4</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1385,9 +1385,9 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 3</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>Camada estratégica isolada do operacional. A V2.58.3 adiciona produtividade econômica por técnico, relacionando resoluções e custo pessoal com qualidade visível como guardrail.</p>
+              <p>Camada estratégica isolada do operacional. A V2.58.4 consolida produtividade econômica por Squad, relacionando resoluções, custo total rateado, FTE e qualidade sem alterar o motor operacional.</p>
             </div>
-            <span class="strategy-foundation-badge">Fase 3 • Produtividade Econômica</span>
+            <span class="strategy-foundation-badge">Fase 3 • Produtividade Econômica por Squad</span>
           </section>
 
           <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados financeiros estratégicos não puderam ser carregados. Execute as migrações até <strong>V2.57.7</strong> no Supabase e valide o checkbox de Gestão Estratégica.</div>
@@ -1463,7 +1463,7 @@
 
           <div class="strategy-panel strategy-efficiency-foundation-panel hidden" data-strategy-panel="efficiency">
             <article class="strategy-placeholder-card strategy-wide-card strategy-efficiency-foundation-card">
-              <span class="eyebrow">PRODUTIVIDADE ECONÔMICA • V2.58.3</span>
+              <span class="eyebrow">PRODUTIVIDADE ECONÔMICA • V2.58.4</span>
               <div class="strategy-section-heading"><div><h3>Base econômica da operação</h3><p>A versão consolida custo total e atendimentos válidos para calcular o custo por atendimento da operação, comparar Squads e detalhar o custo pessoal por atendimento dos técnicos vinculados.</p></div><span id="strategyEfficiencyFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à eficiência">
@@ -1548,6 +1548,18 @@
                 </div>
                 <div class="strategy-productivity-explainer"><strong>Fórmula transparente</strong><span>Produtividade econômica = resoluções ÷ custo pessoal × R$ 1.000. Custos compartilhados continuam fora do técnico e a qualidade não é usada como multiplicador oculto.</span></div>
                 <div class="table-wrap"><table class="strategy-people-table strategy-technician-productivity-table"><thead><tr><th>#</th><th>Técnico</th><th>Squad</th><th>Custo pessoal</th><th>FTE</th><th>Atend.</th><th>Resol.</th><th>Taxa resol.</th><th>Nota média</th><th>Custo/resol.</th><th>Resol./R$1 mil</th><th>Leitura</th></tr></thead><tbody id="strategyTechnicianEconomicProductivityRows"><tr><td colspan="12" class="muted">Carregando produtividade econômica...</td></tr></tbody></table></div>
+              </section>
+
+              <section class="strategy-squad-productivity-block" aria-labelledby="strategySquadEconomicProductivityTitle">
+                <div class="strategy-section-heading"><div><span class="eyebrow">INDICADOR V2.58.4</span><h3 id="strategySquadEconomicProductivityTitle">Produtividade econômica por Squad</h3><p>Consolida custo de pessoas e custos operacionais já rateados contra as resoluções do Squad. A taxa de resolução, o FTE e a taxa de avaliação permanecem visíveis como guardrails para evitar interpretar custo baixo isoladamente.</p></div></div>
+                <div class="strategy-squad-productivity-kpis">
+                  <div class="strategy-metric"><span>Squads calculados</span><strong id="strategySquadProductivityEligible">—</strong><small>com custo consolidado e base de resolução</small></div>
+                  <div class="strategy-metric"><span>Resoluções / R$ 1.000</span><strong id="strategySquadProductivityPerThousand">—</strong><small>produtividade econômica consolidada dos Squads elegíveis</small></div>
+                  <div class="strategy-metric"><span>Custo total / resolução</span><strong id="strategySquadProductivityCostPerResolution">—</strong><small>pessoas + operação já rateada</small></div>
+                  <div class="strategy-metric"><span>Resoluções / FTE</span><strong id="strategySquadProductivityResolutionsPerFte">—</strong><small>capacidade entregue por força de trabalho equivalente</small></div>
+                </div>
+                <div class="strategy-productivity-explainer"><strong>Fórmula do Squad</strong><span>Produtividade econômica = resoluções ÷ custo total consolidado × R$ 1.000. Diferente da visão individual, aqui os custos operacionais rateados entram no cálculo porque já possuem atribuição confiável por Squad.</span></div>
+                <div class="table-wrap"><table class="strategy-people-table strategy-squad-productivity-table"><thead><tr><th>#</th><th>Squad</th><th>Pessoas</th><th>Operação</th><th>Custo total</th><th>FTE</th><th>Atend.</th><th>Resol.</th><th>Taxa resol.</th><th>Taxa avaliação</th><th>Custo/resol.</th><th>Resol./R$1 mil</th><th>Resol./FTE</th><th>Leitura</th></tr></thead><tbody id="strategySquadEconomicProductivityRows"><tr><td colspan="14" class="muted">Carregando produtividade econômica por Squad...</td></tr></tbody></table></div>
               </section>
 
               <section class="strategy-efficiency-source-card">
@@ -2043,34 +2055,34 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.58.3"></script>
-  <script src="js/finance-rules.js?v=2.58.3"></script>
-  <script src="js/finance-advanced.js?v=2.58.3"></script>
-  <script src="js/tv-engine.js?v=2.58.3"></script>
-  <script src="js/presentation.js?v=2.58.3"></script>
-  <script src="js/chart-engine.js?v=2.58.3"></script>
-  <script src="js/chart-export.js?v=2.58.3"></script>
-  <script src="js/import-engine.js?v=2.58.3"></script>
-  <script src="js/predictive-engine.js?v=2.58.3"></script>
-  <script src="js/alert-engine.js?v=2.58.3"></script>
-  <script src="js/settings-engine.js?v=2.58.3"></script>
-  <script src="js/performance-engine.js?v=2.58.3"></script>
-  <script src="js/navigation-engine.js?v=2.58.3"></script>
-  <script src="js/workspace-engine.js?v=2.58.3"></script>
-  <script src="js/filter-system.js?v=2.58.3"></script>
-  <script src="js/comparison-engine.js?v=2.58.3"></script>
-  <script src="js/finance-report-engine.js?v=2.58.3"></script>
-  <script src="js/design-system.js?v=2.58.3"></script>
-  <script src="js/strategy-access.js?v=2.58.3"></script>
-  <script src="js/strategy-data.js?v=2.58.3"></script>
-  <script src="js/strategy-cost-engine.js?v=2.58.3"></script>
-  <script src="js/strategy-efficiency.js?v=2.58.3"></script>
-  <script src="js/strategy-insights.js?v=2.58.3"></script>
-  <script src="js/strategy.js?v=2.58.3"></script>
+  <script src="js/business-calendar.js?v=2.58.4"></script>
+  <script src="js/finance-rules.js?v=2.58.4"></script>
+  <script src="js/finance-advanced.js?v=2.58.4"></script>
+  <script src="js/tv-engine.js?v=2.58.4"></script>
+  <script src="js/presentation.js?v=2.58.4"></script>
+  <script src="js/chart-engine.js?v=2.58.4"></script>
+  <script src="js/chart-export.js?v=2.58.4"></script>
+  <script src="js/import-engine.js?v=2.58.4"></script>
+  <script src="js/predictive-engine.js?v=2.58.4"></script>
+  <script src="js/alert-engine.js?v=2.58.4"></script>
+  <script src="js/settings-engine.js?v=2.58.4"></script>
+  <script src="js/performance-engine.js?v=2.58.4"></script>
+  <script src="js/navigation-engine.js?v=2.58.4"></script>
+  <script src="js/workspace-engine.js?v=2.58.4"></script>
+  <script src="js/filter-system.js?v=2.58.4"></script>
+  <script src="js/comparison-engine.js?v=2.58.4"></script>
+  <script src="js/finance-report-engine.js?v=2.58.4"></script>
+  <script src="js/design-system.js?v=2.58.4"></script>
+  <script src="js/strategy-access.js?v=2.58.4"></script>
+  <script src="js/strategy-data.js?v=2.58.4"></script>
+  <script src="js/strategy-cost-engine.js?v=2.58.4"></script>
+  <script src="js/strategy-efficiency.js?v=2.58.4"></script>
+  <script src="js/strategy-insights.js?v=2.58.4"></script>
+  <script src="js/strategy.js?v=2.58.4"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.58.3"></script>
+  <script src="js/app.js?v=2.58.4"></script>
 </body>
 </html>

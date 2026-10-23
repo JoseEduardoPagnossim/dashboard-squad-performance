@@ -1,3 +1,15 @@
+## V2.58.4 — Produtividade econômica por Squad
+
+- calcula produtividade econômica do Squad como `resoluções / custo total consolidado × R$ 1.000`;
+- inclui custo de pessoas e custo operacional já rateado no denominador do Squad;
+- adiciona ranking econômico por Squad na competência selecionada;
+- exibe FTE, atendimentos, resoluções, taxa de resolução, taxa de avaliação, custo por resolução e resoluções por FTE;
+- mantém qualidade e efetividade como guardrails visíveis, sem pesos ocultos no índice;
+- mantém Squads sem custo ou sem base de resolução visíveis, mas sem posição no ranking;
+- respeita o filtro estratégico de Squad e a permissão agregada;
+- atualiza o motor de eficiência para `EF-0.5.0-economic-productivity-squad`;
+- não exige migration nova e reutiliza a consolidação financeira e a base de resoluções da V2.58.2.
+
 ## V2.58.3 — Produtividade econômica por técnico
 
 - calcula produtividade econômica individual como `resoluções / custo pessoal × R$ 1.000`;

@@ -9,12 +9,12 @@ const css = readFileSync(join(root,'css','styles.css'),'utf8');
 const pkg = require(join(root,'package.json'));
 
 test('V2.50 identifica a versão e carrega o motor comparativo antes do app',()=>{
-  assert.equal(pkg.version,'2.58.3');
-  const comparePos=index.indexOf('js/comparison-engine.js?v=2.58.3');
-  const appPos=index.indexOf('js/app.js?v=2.58.3');
+  assert.equal(pkg.version,'2.58.4');
+  const comparePos=index.indexOf('js/comparison-engine.js?v=2.58.4');
+  const appPos=index.indexOf('js/app.js?v=2.58.4');
   assert.ok(comparePos>=0 && appPos>comparePos);
   assert.match(app,/window\.SoftenComparisonEngine/);
-  assert.match(app,/APP_VERSION = '2\.58\.3'/);
+  assert.match(app,/APP_VERSION = '2\.58\.4'/);
 });
 
 test('Meu desempenho oferece comparação opcional sem criar outro filtro global',()=>{

@@ -13,9 +13,9 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.58.2.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.58.2 permanece preservada com custo por resolução e migration própria',()=>{
-  assert.equal(pkg.version,'2.58.3');
-  assert.equal(pkg.assetVersion,'2.58.3');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.4.0-economic-productivity-person');
+  assert.equal(pkg.version,'2.58.4');
+  assert.equal(pkg.assetVersion,'2.58.4');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.5.0-economic-productivity-squad');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.58\.2[\s\S]*Custo por resolução/);
   assert.match(index,/strategyCostPerResolutionValue/);

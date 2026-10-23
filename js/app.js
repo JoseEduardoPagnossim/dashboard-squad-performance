@@ -70,7 +70,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.58.3';
+  const APP_VERSION = '2.58.4';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3802,6 +3802,38 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const normalized=raw.map(row=>strategyEfficiencyEngine.normalizeTechnicianProductivityRow({id:row.person.userId||row.person.id,name:row.person.name,squadCode:row.squadCode,personalCost:row.personalCost,fte:row.fte,attendance:row.attendance,resolutions:row.resolutions,avgRating:row.avgRating,evaluationCoverage:row.evaluationCoverage,linked:row.linked,sourceAvailable:row.sourceAvailable})).sort((a,b)=>{const ra=ranks.get(a.id)||9999,rb=ranks.get(b.id)||9999;return ra-rb||a.name.localeCompare(b.name,'pt-BR')});
     body.innerHTML=normalized.length?normalized.map(row=>{const rank=ranks.get(row.id),source=raw.find(item=>String(item.person.userId||item.person.id)===String(row.id)),reading=strategyEconomicProductivityReading(source||{}),productivity=row.sourceAvailable&&row.personalCost>0?row.economicProductivity:null;return`<tr><td>${rank?`<strong class="strategy-productivity-rank">#${rank}</strong>`:'—'}</td><td><strong>${escapeHtml(row.name)}</strong></td><td>${row.squadCode?escapeHtml(strategyGroupLabel(vm.context.squads.find(s=>s.code===row.squadCode)||{code:row.squadCode})):'—'}</td><td>${strategyMoney(row.personalCost)}</td><td>${strategyNumber(row.fte,2)}</td><td>${fmtInt(row.attendance)}</td><td>${row.sourceAvailable?fmtInt(row.resolutions):'—'}</td><td>${row.sourceAvailable&&row.resolutionRate!=null?fmtPct(row.resolutionRate):'—'}</td><td>${row.avgRating==null?'—':`${strategyNumber(row.avgRating,2)} / 5`}</td><td>${row.sourceAvailable&&row.costPerResolution!=null?strategyMoney(row.costPerResolution):'—'}</td><td><strong>${productivity==null?'—':strategyNumber(productivity,2)}</strong></td><td><span class="strategy-unit-cost-reading ${reading[1]}">${escapeHtml(reading[0])}</span></td></tr>`;}).join(''):'<tr><td colspan="12" class="muted">Nenhum técnico disponível neste escopo.</td></tr>';
   }
+  function strategySquadEconomicProductivityRows(vm){
+    let rows=strategyConsolidatedSquads(vm);
+    if(vm.state.squadCode!=='all')rows=rows.filter(row=>row.squadCode===vm.state.squadCode);
+    return rows.map(row=>({
+      squadCode:String(row.squadCode||'').toUpperCase(),
+      label:strategyGroupLabel(vm.context.squads.find(s=>s.code===row.squadCode)||{code:row.squadCode}),
+      peopleCost:safe(row.peopleCost),operationalCost:safe(row.operationalCost),totalCost:safe(row.totalCost),fte:safe(row.fte),attendance:safe(row.attendance),resolutions:safe(row.resolutions),resolutionEntries:safe(row.resolutionEntries),evaluationRate:Number.isFinite(Number(row.evaluationRate))?Number(row.evaluationRate):null,
+      sourceAvailable:safe(row.resolutionEntries)>0
+    }));
+  }
+  function strategySquadProductivityReading(row){
+    if(!row.sourceAvailable)return['Informe resoluções','warn'];
+    if(row.totalCost<=0)return['Sem custo consolidado','neutral'];
+    if(row.fte<=0)return['Sem FTE','warn'];
+    if(row.resolutions<=0)return['Sem resoluções','warn'];
+    if(row.evaluationRate==null)return['Calculado · sem taxa de avaliação','neutral'];
+    return['Calculado','good'];
+  }
+  function renderStrategySquadEconomicProductivity(vm,displayAggregate){
+    const set=(id,text)=>{const el=$(id);if(el)el.textContent=text},body=$('#strategySquadEconomicProductivityRows');
+    if(!displayAggregate){if(body)body.innerHTML='<tr><td colspan="14" class="muted">Sem permissão agregada.</td></tr>';set('#strategySquadProductivityEligible','—');set('#strategySquadProductivityPerThousand','—');set('#strategySquadProductivityCostPerResolution','—');set('#strategySquadProductivityResolutionsPerFte','—');return;}
+    const raw=strategySquadEconomicProductivityRows(vm),analysis=strategyEfficiencyEngine.buildSquadProductivity(raw);
+    set('#strategySquadProductivityEligible',fmtInt(analysis.eligibleCount));
+    set('#strategySquadProductivityPerThousand',analysis.economicProductivity==null?'—':strategyNumber(analysis.economicProductivity,2));
+    set('#strategySquadProductivityCostPerResolution',analysis.costPerResolution==null?'—':strategyMoney(analysis.costPerResolution));
+    set('#strategySquadProductivityResolutionsPerFte',analysis.resolutionsPerFte==null?'—':strategyNumber(analysis.resolutionsPerFte,1));
+    if(!body)return;
+    const ranks=new Map(analysis.rows.map(row=>[row.squadCode,row.rank]));
+    const normalized=raw.map(row=>strategyEfficiencyEngine.normalizeSquadProductivityRow(row)).sort((a,b)=>{const ra=ranks.get(a.squadCode)||9999,rb=ranks.get(b.squadCode)||9999;return ra-rb||a.squadCode.localeCompare(b.squadCode,'pt-BR')});
+    body.innerHTML=normalized.length?normalized.map(row=>{const rank=ranks.get(row.squadCode),source=raw.find(item=>item.squadCode===row.squadCode)||{},reading=strategySquadProductivityReading(source),productivity=row.sourceAvailable&&row.totalCost>0?row.economicProductivity:null;return`<tr><td>${rank?`<strong class="strategy-productivity-rank">#${rank}</strong>`:'—'}</td><td><strong>${escapeHtml(row.label)}</strong></td><td>${strategyMoney(row.peopleCost)}</td><td>${strategyMoney(row.operationalCost)}</td><td><strong>${strategyMoney(row.totalCost)}</strong></td><td>${strategyNumber(row.fte,2)}</td><td>${fmtInt(row.attendance)}</td><td>${row.sourceAvailable?fmtInt(row.resolutions):'—'}</td><td>${row.sourceAvailable&&row.resolutionRate!=null?fmtPct(row.resolutionRate):'—'}</td><td>${row.evaluationRate==null?'—':fmtPct(row.evaluationRate)}</td><td>${row.sourceAvailable&&row.costPerResolution!=null?strategyMoney(row.costPerResolution):'—'}</td><td><strong>${productivity==null?'—':strategyNumber(productivity,2)}</strong></td><td>${row.sourceAvailable&&row.resolutionsPerFte!=null?strategyNumber(row.resolutionsPerFte,1):'—'}</td><td><span class="strategy-unit-cost-reading ${reading[1]}">${escapeHtml(reading[0])}</span></td></tr>`;}).join(''):'<tr><td colspan="14" class="muted">Nenhum Squad disponível neste escopo.</td></tr>';
+  }
+
   function renderStrategyCostPerResolution(vm,foundation,displayAggregate){
     const analysis=strategyCostPerResolutionAnalysis(vm,displayAggregate),set=(id,text)=>{const el=$(id);if(el)el.textContent=text};
     set('#strategyResolutionCount',displayAggregate?fmtInt(analysis.current.resolutions||0):'—');
@@ -3835,12 +3867,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     set('#strategyEfficiencyContextSquad',vm.state.squadCode==='all'?'Todos os Squads':strategyGroupLabel(vm.context.squads.find(s=>s.code===vm.state.squadCode)||{code:vm.state.squadCode}));
     set('#strategyEfficiencyContextComparison',vm.state.comparison==='previous'?'Mês anterior':vm.state.comparison==='3m'?'3 meses':vm.state.comparison==='6m'?'6 meses':'12 meses');
     const badge=$('#strategyEfficiencyFoundationStatus');if(badge){badge.textContent=status[0];badge.className=`strategy-efficiency-status ${status[1]}`;}
-    const readiness=$('#strategyEfficiencyReadinessRows');if(readiness)readiness.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status}">${strategyReadinessLabel(item.status)}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>({financial:'custo consolidado',attendance:'atendimentos',fte:'FTE',quality:'qualidade',resolutions:'resoluções'})[key]||key).join(', ')):item.id==='cost-per-attendance'?'Indicador ativo na V2.58.1':item.id==='cost-per-resolution'?'Indicador ativo na V2.58.2':item.id==='economic-productivity-person'?'Indicador ativo na V2.58.3':'Base mínima disponível'}</td></tr>`).join('');
-    const warnings=$('#strategyEfficiencyWarnings');if(warnings)warnings.innerHTML=foundation.warnings.length?foundation.warnings.map(text=>`<li>${escapeHtml(text)}</li>`).join(''):'<li>Custo por atendimento, custo por resolução e produtividade econômica por técnico ativos. A consolidação econômica por Squad entra na V2.58.4.</li>';
+    const readiness=$('#strategyEfficiencyReadinessRows');if(readiness)readiness.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status}">${strategyReadinessLabel(item.status)}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>({financial:'custo consolidado',attendance:'atendimentos',fte:'FTE',quality:'qualidade',resolutions:'resoluções'})[key]||key).join(', ')):item.id==='cost-per-attendance'?'Indicador ativo na V2.58.1':item.id==='cost-per-resolution'?'Indicador ativo na V2.58.2':item.id==='economic-productivity-person'?'Indicador ativo na V2.58.3':item.id==='economic-productivity-squad'?'Indicador ativo na V2.58.4':'Base mínima disponível'}</td></tr>`).join('');
+    const warnings=$('#strategyEfficiencyWarnings');if(warnings)warnings.innerHTML=foundation.warnings.length?foundation.warnings.map(text=>`<li>${escapeHtml(text)}</li>`).join(''):'<li>Custo por atendimento, custo por resolução e produtividade econômica por técnico e Squad ativos. Benchmarks e eficiência relativa entram na V2.58.5.</li>';
     const source=$('#strategyEfficiencySourceStatus');if(source)source.textContent=foundation.availability.financial&&foundation.availability.attendance&&foundation.availability.resolutions?'Financeiro + operacional + resoluções conectados':foundation.availability.financial&&foundation.availability.attendance?'Financeiro + operacional conectados; resoluções pendentes':foundation.availability.financial?'Financeiro conectado; produção pendente':foundation.availability.attendance?'Produção conectada; financeiro pendente':'Bases ainda incompletas';
     renderStrategyCostPerAttendance(vm,foundation,displayAggregate);
     renderStrategyCostPerResolution(vm,foundation,displayAggregate);
     renderStrategyTechnicianEconomicProductivity(vm);
+    renderStrategySquadEconomicProductivity(vm,displayAggregate);
   }
   function renderStrategy({skipLoad=false}={}){
     if(!canViewStrategy())return;
