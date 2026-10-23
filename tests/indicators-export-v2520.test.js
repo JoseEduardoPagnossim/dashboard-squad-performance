@@ -12,7 +12,7 @@ const charts = require(join(root, 'js', 'chart-engine.js'));
 const exporter = require(join(root, 'js', 'chart-export.js'));
 
 test('V2.52.0 otimiza os três papéis dos indicadores de avaliação', () => {
-  assert.equal(pkg.version, '2.58.9');
+  assert.equal(pkg.version, '2.59.0');
   assert.match(index, /Nota média das avaliações por Squad/);
   assert.match(index, /% de avaliação dos Squads x meta/);
   assert.match(index, /id="indicatorHistoryEvalTitle">% de avaliação/);
@@ -51,8 +51,8 @@ test('presets simplificam a configuração e preservam ajustes avançados', () =
 });
 
 test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
-  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.58.9');
-  const appIndex = index.indexOf('js/app.js?v=2.58.9');
+  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.59.0');
+  const appIndex = index.indexOf('js/app.js?v=2.59.0');
   assert.ok(chartExportIndex >= 0 && appIndex > chartExportIndex, 'chart-export precisa carregar antes do app');
   const svg = exporter.buildExportSvg({
     title: 'Avaliação por Squad',

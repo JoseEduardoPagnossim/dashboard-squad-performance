@@ -1,3 +1,13 @@
+## V2.59.0 — Fundação de Capacidade
+
+- inicia a Fase 4 com o motor `CA-0.1.0-capacity-foundation`;
+- adiciona a seção estratégica Capacidade, isolada dos filtros operacionais;
+- formaliza FTE nominal, FTE disponível, demanda, capacidade, utilização, FTE necessário e gap;
+- exibe apenas FTE e produção observada já suportados pelas bases atuais;
+- mantém FTE disponível, capacidade, utilização e FTE necessário como pendentes até as versões corretas do roadmap;
+- adiciona prontidão técnica das entregas V2.59.1–V2.59.8;
+- não cria migration nova.
+
 ## V2.58.9 — Hardening, regressões e fechamento da Fase 3
 
 A Fase 3 de eficiência econômica foi endurecida antes da abertura da próxima etapa. A V2.58.9 corrige conversões de `null` que podiam virar zero, bloqueia benchmarks com cobertura parcial de resoluções, corrige a prévia de competências reabertas e adiciona validação de integridade no banco para a base de resoluções.

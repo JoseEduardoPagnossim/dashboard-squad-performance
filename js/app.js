@@ -51,6 +51,8 @@
   if(!strategyCostEngine) throw new Error('SoftenStrategyCostEngine não carregado. Verifique js/strategy-cost-engine.js.');
   const strategyEfficiencyEngine = window.SoftenStrategyEfficiency;
   if(!strategyEfficiencyEngine) throw new Error('SoftenStrategyEfficiency não carregado. Verifique js/strategy-efficiency.js.');
+  const strategyCapacityEngine = window.SoftenStrategyCapacity;
+  if(!strategyCapacityEngine) throw new Error('SoftenStrategyCapacity não carregado. Verifique js/strategy-capacity.js.');
   const strategyInsightsEngine = window.SoftenStrategyInsights;
   if(!strategyInsightsEngine) throw new Error('SoftenStrategyInsights não carregado. Verifique js/strategy-insights.js.');
   const strategyEngine = window.SoftenStrategy;
@@ -70,7 +72,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.58.9';
+  const APP_VERSION = '2.59.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -269,6 +271,7 @@
     {id:'admin-costs',label:'Custos',description:'Custos operacionais do suporte',group:'Gestão',icon:'⏱',view:'admin',adminSection:'costs',permission:'costs.view',adminOnly:true,keywords:'custos folha horas operação'},
     {id:'strategy-executive',label:'Gestão Estratégica',description:'Resultado executivo, custos e eficiência econômica',group:'Estratégia',icon:'◇',view:'strategy',strategySection:'executive',strategyAccess:true,keywords:'estratégia resultado executivo custos eficiência diretoria'},
     {id:'strategy-efficiency',label:'Estratégia · Eficiência',description:'Fundação dos indicadores econômicos da operação',group:'Estratégia',icon:'↗',view:'strategy',strategySection:'efficiency',strategyAccess:true,keywords:'estratégia eficiência custo atendimento resolução produtividade econômica'},
+    {id:'strategy-capacity',label:'Estratégia · Capacidade',description:'FTE, demanda e fundação de capacidade operacional',group:'Estratégia',icon:'▥',view:'strategy',strategySection:'capacity',strategyAccess:true,keywords:'estratégia capacidade fte utilização demanda dimensionamento'},
     {id:'strategy-costs',label:'Estratégia · Custos & Eficiência',description:'Fundação da análise econômica do suporte',group:'Estratégia',icon:'R$',view:'strategy',strategySection:'costs',strategyAccess:true,keywords:'estratégia custos eficiência financeiro'},
     {id:'strategy-assumptions',label:'Estratégia · Premissas',description:'Base de competências, pessoas, custos e rateios',group:'Estratégia',icon:'▤',view:'strategy',strategySection:'assumptions',strategyAccess:true,keywords:'estratégia premissas competência pessoas rateio'},
     {id:'feedbacks',label:'Feedbacks',description:'Gestão de feedbacks dos técnicos',group:'Pessoas',icon:'✎',view:'feedbacks',permission:'feedback.manage',adminOnly:true,keywords:'feedback pessoas técnico avaliação'},
@@ -3949,6 +3952,40 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyEfficiencyDiagnostics(vm,displayAggregate);
     renderStrategyEfficiencyHistory(vm,displayAggregate);
   }
+  function strategyCapacityFoundation(vm,displayAggregate){
+    const competence=vm.state.competence,selected=vm.state.squadCode,stats=strategyOperationalStatsBySquad(competence),selectedCode=String(selected||'all').toUpperCase();
+    const scopedStats=selectedCode==='ALL'?Object.values(stats):[stats[selectedCode]].filter(Boolean),attendance=scopedStats.reduce((sum,row)=>sum+safe(row?.attendance),0),attendanceSource=scopedStats.length>0;
+    let resolutions=safe(vm.summary.resolutions),resolutionEntries=safe(vm.summary.resolutionEntries);
+    if(selected!=='all'){
+      const row=(vm.financial.squadSummary||[]).find(item=>String(item.squadCode||'').toUpperCase()===selectedCode);
+      if(row){resolutions=safe(row.resolutions);resolutionEntries=safe(row.resolutionEntries);}
+    }
+    const fteSource=displayAggregate&&((safe(vm.summary.peopleCount)>0)||(safe(vm.summary.fte)>0));
+    return strategyCapacityEngine.buildFoundation({
+      scope:{competence,squadCode:selected,comparison:vm.state.comparison,demandUnit:'resolutions',competenceStatus:vm.competenceRecord?.status||'draft'},
+      metrics:{nominalFte:displayAggregate?safe(vm.summary.fte):0,peopleCount:displayAggregate?safe(vm.summary.peopleCount):0,attendance:displayAggregate?attendance:0,resolutions:displayAggregate?resolutions:0},
+      availability:{fte:fteSource,attendance:displayAggregate&&attendanceSource,resolutions:displayAggregate&&resolutionEntries>0,availabilityFactors:false,historicalCapacity:false}
+    });
+  }
+  function renderStrategyCapacity(vm,displayAggregate){
+    const foundation=strategyCapacityFoundation(vm,displayAggregate),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    const statusMap={ready:['BASE FUNDACIONAL PRONTA','good'],partial:['BASE PARCIAL','warn'],blocked:['BASE BLOQUEADA','bad']},status=statusMap[foundation.status]||['SEM BASE','neutral'];
+    const badge=$('#strategyCapacityFoundationStatus');if(badge){badge.textContent=status[0];badge.className=`strategy-efficiency-status ${status[1]}`;}
+    set('#strategyCapacityContextCompetence',vm.state.competence?strategyDataEngine.competenceLabel(vm.state.competence):'Sem competência');
+    set('#strategyCapacityContextSquad',vm.state.squadCode==='all'?'Todos os Squads':strategyGroupLabel(vm.context.squads.find(s=>s.code===vm.state.squadCode)||{code:vm.state.squadCode}));
+    set('#strategyCapacityContextComparison',vm.state.comparison==='previous'?'Mês anterior':vm.state.comparison==='3m'?'3 meses':vm.state.comparison==='6m'?'6 meses':'12 meses');
+    set('#strategyCapacityRuleVersion',foundation.ruleVersion);
+    set('#strategyCapacityNominalFte',foundation.availability.fte?strategyNumber(foundation.metrics.nominalFte,2):'—');
+    set('#strategyCapacityPeopleCount',foundation.availability.fte?fmtInt(foundation.metrics.peopleCount):'—');
+    set('#strategyCapacityAttendance',foundation.availability.attendance?fmtInt(foundation.metrics.attendance):'—');
+    set('#strategyCapacityResolutions',foundation.availability.resolutions?fmtInt(foundation.metrics.resolutions):'—');
+    set('#strategyCapacityAttendancePerFte',foundation.metrics.attendancePerNominalFte==null?'—':strategyNumber(foundation.metrics.attendancePerNominalFte,1));
+    set('#strategyCapacityResolutionsPerFte',foundation.metrics.resolutionsPerNominalFte==null?'—':strategyNumber(foundation.metrics.resolutionsPerNominalFte,1));
+    set('#strategyCapacityAvailableFte','Pendente');set('#strategyCapacityRequiredFte','Pendente');
+    const sourceNames={fte:'FTE nominal',attendance:'atendimentos',resolutions:'resoluções',availabilityFactors:'fatores de disponibilidade',historicalCapacity:'referência histórica de capacidade'};
+    const body=$('#strategyCapacityReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='base-ready'?'ready':'partial'}">${item.status==='base-ready'?'BASE DISPONÍVEL':'PENDENTE'}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>sourceNames[key]||key).join(', ')):'Bases atuais suficientes; cálculo será ativado na versão planejada.'}</td></tr>`).join('');
+    const warnings=$('#strategyCapacityWarnings');if(warnings)warnings.innerHTML=foundation.warnings.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
+  }
   function renderStrategy({skipLoad=false}={}){
     if(!canViewStrategy())return;
     strategyController.initializeContext({squads:state.squads});const vm=strategyController.viewModel(),section=vm.state.section,canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),displayAggregate=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError,canPeople=strategyPeopleAccess(),canEdit=strategyEditAccess(),canClose=strategyCloseAccess(),locked=strategyCompetenceLocked(vm),effectiveEdit=canEdit&&!locked;
@@ -3978,6 +4015,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyExecutiveStatus'))$('#strategyExecutiveStatus').textContent=locked&&vm.competenceRecord?.snapshotRevision?`${compStatus} • Snapshot #${vm.competenceRecord.snapshotRevision}`:compStatus;
     renderStrategyExecutive(vm,displayAggregate);
     renderStrategyEfficiency(vm,displayAggregate);
+    renderStrategyCapacity(vm,displayAggregate);
     if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
     if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
     if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';

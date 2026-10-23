@@ -37,6 +37,7 @@ const comparisonEngineScriptPosition = index.indexOf('js/comparison-engine.js');
 const financeReportEngineScriptPosition = index.indexOf('js/finance-report-engine.js');
 const designSystemScriptPosition = index.indexOf('js/design-system.js');
 const strategyEfficiencyScriptPosition = index.indexOf('js/strategy-efficiency.js');
+const strategyCapacityScriptPosition = index.indexOf('js/strategy-capacity.js');
 const strategyScriptPosition = index.indexOf('js/strategy.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (businessCalendarScriptPosition < 0) errors.push('index.html não carrega js/business-calendar.js.');
@@ -57,8 +58,10 @@ if (comparisonEngineScriptPosition < 0) errors.push('index.html não carrega js/
 if (financeReportEngineScriptPosition < 0) errors.push('index.html não carrega js/finance-report-engine.js.');
 if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
 if (strategyEfficiencyScriptPosition < 0) errors.push('index.html não carrega js/strategy-efficiency.js.');
+if (strategyCapacityScriptPosition < 0) errors.push('index.html não carrega js/strategy-capacity.js.');
 if (strategyEfficiencyScriptPosition >= 0 && strategyScriptPosition >= 0 && strategyEfficiencyScriptPosition > strategyScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/strategy.js.');
 if (strategyEfficiencyScriptPosition >= 0 && appScriptPosition >= 0 && strategyEfficiencyScriptPosition > appScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/app.js.');
+if (strategyCapacityScriptPosition >= 0 && appScriptPosition >= 0 && strategyCapacityScriptPosition > appScriptPosition) errors.push('js/strategy-capacity.js deve carregar antes de js/app.js.');
 if (appScriptPosition >= 0 && businessCalendarScriptPosition > appScriptPosition) errors.push('js/business-calendar.js deve ser carregado antes de js/app.js.');
 if (financeScriptPosition >= 0 && businessCalendarScriptPosition >= 0 && businessCalendarScriptPosition > financeScriptPosition) errors.push('js/business-calendar.js deve carregar antes de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
@@ -113,6 +116,9 @@ for (const required of [
   'tests/strategy-efficiency-history-v2588.test.js',
   'tests/strategy-efficiency-hardening-v2589.test.js',
   'docs/HARDENING_EFICIENCIA_V2.58.9.md',
+  'tests/strategy-capacity-foundation-v2590.test.js',
+  'docs/CAPACIDADE_FUNDACAO_V2.59.0.md',
+  'js/strategy-capacity.js',
   'supabase/migrations/MIGRACAO_V2.58.9.sql',
   'supabase/migrations/MIGRACAO_V2.58.2.sql',
   'tests/finance-rules.test.js',
