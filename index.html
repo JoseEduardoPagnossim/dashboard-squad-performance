@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.59.7" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.59.7" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.59.7" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.59.7" />
+  <link rel="stylesheet" href="css/styles.css?v=2.59.8" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.59.8" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.59.8" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.59.8" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.59.7 • Insights de capacidade</small>
+        <small class="login-version">V2.59.8 • Histórico de capacidade</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.59.7 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.59.8 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.59.7</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.59.8</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1392,7 +1392,7 @@
             <div>
               <span class="eyebrow">GESTÃO ESTRATÉGICA • FASE 4</span>
               <h2 id="strategySectionTitle">Resultado Executivo</h2>
-              <p>A Fase 4 mede quanto da força operacional disponível está sendo efetivamente absorvida pela demanda. A V2.59.7 traduz utilização, produtividade e gap de capacidade em situações operacionais explicáveis por operação e Squad.</p>
+              <p>A Fase 4 mede quanto da força operacional disponível está sendo efetivamente absorvida pela demanda. A V2.59.8 preserva snapshots revisionados e mostra a evolução de utilização, produtividade, FTE necessário e gap por operação e Squad.</p>
             </div>
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
@@ -1646,14 +1646,14 @@
 
           <div class="strategy-panel strategy-capacity-foundation-panel hidden" data-strategy-panel="capacity">
             <article class="strategy-placeholder-card strategy-wide-card strategy-capacity-foundation-card">
-              <span class="eyebrow">FASE 4 • V2.59.7</span>
-              <div class="strategy-section-heading"><div><h3>Fundação de Capacidade</h3><p>A Fase 4 já calcula disponibilidade, carga utilizada, utilização, produtividade por FTE, FTE necessário e gap; a V2.59.7 traduz esses sinais em situações operacionais explicáveis.</p></div><span id="strategyCapacityFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
+              <span class="eyebrow">FASE 4 • V2.59.8</span>
+              <div class="strategy-section-heading"><div><h3>Fundação de Capacidade</h3><p>A Fase 4 já calcula disponibilidade, carga utilizada, utilização, produtividade por FTE, FTE necessário e gap; a V2.59.8 congela essas leituras por competência e permite acompanhar sua evolução histórica.</p></div><span id="strategyCapacityFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <div class="strategy-efficiency-context-grid" aria-label="Contexto aplicado à capacidade">
                 <div><span>Competência</span><strong id="strategyCapacityContextCompetence">—</strong></div>
                 <div><span>Squad</span><strong id="strategyCapacityContextSquad">—</strong></div>
                 <div><span>Comparação</span><strong id="strategyCapacityContextComparison">—</strong></div>
-                <div><span>Regra</span><strong id="strategyCapacityRuleVersion">CA-0.8.0-capacity-diagnostics</strong></div>
+                <div><span>Regra</span><strong id="strategyCapacityRuleVersion">CA-0.9.0-snapshots-history</strong></div>
               </div>
 
               <div class="strategy-metric-grid strategy-efficiency-base-grid">
@@ -1806,6 +1806,25 @@
                 <aside class="strategy-insight"><strong>Diagnóstico não é decisão automática</strong><p>O painel explica a combinação dos sinais. Déficit com sobrecarga é diferente de déficit com baixa absorção; excesso com baixa utilização é diferente de folga saudável. A ação final continua gerencial e deve considerar recorrência, sazonalidade, backlog, complexidade e contexto operacional.</p></aside>
               </section>
 
+              <section class="strategy-history-block strategy-capacity-history" aria-labelledby="strategyCapacityHistoryTitle">
+                <div class="strategy-section-heading"><div><span class="eyebrow">INDICADOR V2.59.8</span><h3 id="strategyCapacityHistoryTitle">Snapshots, histórico e evolução da capacidade</h3><p>Congela FTE disponível, demanda, resoluções e indicadores derivados no fechamento da competência. A linha do tempo usa essas fotografias revisionadas para evitar que importações futuras alterem retroativamente a leitura histórica.</p></div><span class="strategy-efficiency-status good">HISTÓRICO CONGELADO</span></div>
+                <div class="strategy-history-kpis">
+                  <div class="strategy-metric"><span>Snapshots</span><strong id="strategyCapacitySnapshotCount">—</strong><small>competências congeladas no escopo</small></div>
+                  <div class="strategy-metric"><span>Fechamentos oficiais</span><strong id="strategyCapacitySnapshotOfficial">—</strong><small>capturados no fechamento</small></div>
+                  <div class="strategy-metric"><span>Reconstruídos</span><strong id="strategyCapacitySnapshotBackfill">—</strong><small>competências anteriores à V2.59.8</small></div>
+                  <div class="strategy-metric"><span>Leitura mais recente</span><strong id="strategyCapacitySnapshotLatestStatus">—</strong><small>diagnóstico do último ponto da série</small></div>
+                </div>
+                <div class="strategy-history-chart-grid">
+                  <article class="strategy-history-chart-card"><div class="section-title"><div><span class="eyebrow">DIMENSIONAMENTO</span><h3>FTE disponível x necessário</h3></div><span class="muted">evolução por competência</span></div><div id="strategyCapacityEvolutionFteChart" class="chart strategy-history-chart"></div></article>
+                  <article class="strategy-history-chart-card"><div class="section-title"><div><span class="eyebrow">UTILIZAÇÃO</span><h3>Intensidade da capacidade</h3></div><span class="muted">resoluções/FTE vs. histórico anterior</span></div><div id="strategyCapacityEvolutionUtilizationChart" class="chart strategy-history-chart"></div></article>
+                </div>
+                <section class="strategy-history-card">
+                  <div class="strategy-section-heading"><div><span class="eyebrow">LINHA DO TEMPO</span><h3>Fotografias de capacidade por competência</h3><p>Snapshot oficial é criado ao fechar a competência. Competências antigas podem aparecer como reconstruídas. A competência aberta entra apenas como prévia e não conta como snapshot oficial.</p></div></div>
+                  <div class="table-wrap"><table class="strategy-people-table strategy-history-table strategy-capacity-history-table"><thead><tr><th>Competência</th><th>Fonte</th><th>Revisão</th><th>Escopo</th><th>FTE disp.</th><th>Atend.</th><th>Resoluções</th><th>FCR</th><th>Atend./FTE</th><th>Resol./FTE</th><th>Utilização</th><th>FTE necessário</th><th>Gap FTE</th><th>Diagnóstico</th></tr></thead><tbody id="strategyCapacityHistoryRows"><tr><td colspan="14" class="muted">Carregando histórico de capacidade...</td></tr></tbody></table></div>
+                </section>
+                <div class="strategy-productivity-explainer"><strong>Histórico auditável</strong><span>Reabrir e fechar novamente gera uma nova revisão financeira e uma nova fotografia de capacidade. As referências de cada ponto usam apenas competências anteriores fechadas e completas; ausência de base permanece indisponível.</span></div>
+              </section>
+
               <section class="strategy-efficiency-readiness">
                 <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Prontidão da Fase 4</h3><p>Mostra quais bases já existem e quais ainda precisam ser implementadas, sem preencher lacunas com estimativas silenciosas.</p></div></div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Indicador</th><th>Versão</th><th>Estado</th><th>Base pendente</th></tr></thead><tbody id="strategyCapacityReadinessRows"><tr><td colspan="4" class="muted">Carregando fundação de capacidade...</td></tr></tbody></table></div>
@@ -1813,7 +1832,7 @@
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Capacidade não é produção realizada</h3></div><ul id="strategyCapacityWarnings"><li>Carregando regras da Fase 4.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Capacidade com referência auditável</strong><p>O FTE permanece contratual, a disponibilidade registra a força efetiva, a V2.59.3 compara a carga com histórico fechado e a V2.59.4 normaliza a produtividade pela força disponível. O FTE necessário dimensiona a demanda, a V2.59.6 mostra o gap e a V2.59.7 explica a combinação dos sinais em situações operacionais auditáveis.</p></aside>
+            <aside class="strategy-insight"><strong>Capacidade com referência auditável</strong><p>O FTE permanece contratual, a disponibilidade registra a força efetiva, a V2.59.3 compara a carga com histórico fechado e a V2.59.4 normaliza a produtividade pela força disponível. O FTE necessário dimensiona a demanda, a V2.59.6 mostra o gap, a V2.59.7 explica os sinais e a V2.59.8 congela cada competência para evolução auditável.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2294,35 +2313,35 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.59.7"></script>
-  <script src="js/finance-rules.js?v=2.59.7"></script>
-  <script src="js/finance-advanced.js?v=2.59.7"></script>
-  <script src="js/tv-engine.js?v=2.59.7"></script>
-  <script src="js/presentation.js?v=2.59.7"></script>
-  <script src="js/chart-engine.js?v=2.59.7"></script>
-  <script src="js/chart-export.js?v=2.59.7"></script>
-  <script src="js/import-engine.js?v=2.59.7"></script>
-  <script src="js/predictive-engine.js?v=2.59.7"></script>
-  <script src="js/alert-engine.js?v=2.59.7"></script>
-  <script src="js/settings-engine.js?v=2.59.7"></script>
-  <script src="js/performance-engine.js?v=2.59.7"></script>
-  <script src="js/navigation-engine.js?v=2.59.7"></script>
-  <script src="js/workspace-engine.js?v=2.59.7"></script>
-  <script src="js/filter-system.js?v=2.59.7"></script>
-  <script src="js/comparison-engine.js?v=2.59.7"></script>
-  <script src="js/finance-report-engine.js?v=2.59.7"></script>
-  <script src="js/design-system.js?v=2.59.7"></script>
-  <script src="js/strategy-access.js?v=2.59.7"></script>
-  <script src="js/strategy-data.js?v=2.59.7"></script>
-  <script src="js/strategy-cost-engine.js?v=2.59.7"></script>
-  <script src="js/strategy-efficiency.js?v=2.59.7"></script>
-  <script src="js/strategy-capacity.js?v=2.59.7"></script>
-  <script src="js/strategy-insights.js?v=2.59.7"></script>
-  <script src="js/strategy.js?v=2.59.7"></script>
+  <script src="js/business-calendar.js?v=2.59.8"></script>
+  <script src="js/finance-rules.js?v=2.59.8"></script>
+  <script src="js/finance-advanced.js?v=2.59.8"></script>
+  <script src="js/tv-engine.js?v=2.59.8"></script>
+  <script src="js/presentation.js?v=2.59.8"></script>
+  <script src="js/chart-engine.js?v=2.59.8"></script>
+  <script src="js/chart-export.js?v=2.59.8"></script>
+  <script src="js/import-engine.js?v=2.59.8"></script>
+  <script src="js/predictive-engine.js?v=2.59.8"></script>
+  <script src="js/alert-engine.js?v=2.59.8"></script>
+  <script src="js/settings-engine.js?v=2.59.8"></script>
+  <script src="js/performance-engine.js?v=2.59.8"></script>
+  <script src="js/navigation-engine.js?v=2.59.8"></script>
+  <script src="js/workspace-engine.js?v=2.59.8"></script>
+  <script src="js/filter-system.js?v=2.59.8"></script>
+  <script src="js/comparison-engine.js?v=2.59.8"></script>
+  <script src="js/finance-report-engine.js?v=2.59.8"></script>
+  <script src="js/design-system.js?v=2.59.8"></script>
+  <script src="js/strategy-access.js?v=2.59.8"></script>
+  <script src="js/strategy-data.js?v=2.59.8"></script>
+  <script src="js/strategy-cost-engine.js?v=2.59.8"></script>
+  <script src="js/strategy-efficiency.js?v=2.59.8"></script>
+  <script src="js/strategy-capacity.js?v=2.59.8"></script>
+  <script src="js/strategy-insights.js?v=2.59.8"></script>
+  <script src="js/strategy.js?v=2.59.8"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.59.7"></script>
+  <script src="js/app.js?v=2.59.8"></script>
 </body>
 </html>

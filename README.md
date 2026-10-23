@@ -1,3 +1,9 @@
+## V2.59.8 — Snapshots, histórico e evolução da capacidade
+
+A V2.59.8 transforma a Fase 4 em uma série histórica auditável. Ao fechar uma competência, o sistema congela FTE disponível, atendimentos, resoluções, FCR e métricas por FTE na mesma revisão do fechamento financeiro. A tela de Capacidade passa a mostrar snapshots oficiais, reconstruções legadas, prévia da competência aberta e evolução de FTE disponível x necessário e utilização. A referência histórica deixa de depender da base operacional viva.
+
+> Banco: execute `supabase/migrations/MIGRACAO_V2.59.8.sql` antes de publicar o frontend.
+
 ## V2.59.7 — Insights e diagnóstico de capacidade
 
 A V2.59.7 transforma os números de capacidade em leituras operacionais explicáveis. O motor cruza utilização e gap de FTE para diferenciar sobrecarga, déficit estrutural, baixa absorção, equilíbrio, folga e ociosidade potencial. O FCR aparece como evidência, sem criar uma meta automática. Não há migration nova nesta versão.

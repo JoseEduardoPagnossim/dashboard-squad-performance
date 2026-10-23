@@ -1,3 +1,14 @@
+# V2.59.8 — Snapshots, histórico e evolução da capacidade
+
+- cria `strategy_capacity_snapshots` com revisão vinculada ao snapshot financeiro da competência;
+- captura automaticamente a fotografia de capacidade no fechamento e preserva revisões anteriores;
+- reconstrói competências fechadas anteriores como `legacy_backfill`, sem rotulá-las como fechamento oficial;
+- passa o histórico da Fase 4 a ler exclusivamente snapshots congelados;
+- preserva compatibilidade com `get_strategy_capacity_utilization_history`;
+- adiciona evolução de FTE disponível x necessário, utilização e linha do tempo de diagnósticos;
+- mantém competência aberta como `live_preview`, sem contar como snapshot;
+- atualiza o motor para `CA-0.9.0-snapshots-history` e adiciona migration V2.59.8.
+
 # V2.59.7 R1 - Hotfix de testes do pipeline
 
 - Corrige o pacote patch da V2.59.7 para incluir todas as expectativas históricas de versão/cache-buster atualizadas.

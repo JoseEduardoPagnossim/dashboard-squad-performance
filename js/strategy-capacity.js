@@ -5,10 +5,10 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='CA-0.8.0-capacity-diagnostics';
+  const RULE_VERSION='CA-0.9.0-snapshots-history';
   const DEMAND_UNITS=Object.freeze(['resolutions','attendance']);
   const FOUNDATION_SOURCES=Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity']);
-  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte','required-fte','capacity-gap','capacity-diagnostics']));
+  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte','required-fte','capacity-gap','capacity-diagnostics','capacity-history']));
   const UTILIZATION_BANDS=Object.freeze({below:0.90,above:1.10});
   const COMPARISON_MONTHS=Object.freeze({previous:1,'3m':3,'6m':6,'12m':12});
   const ROADMAP_CATALOG=Object.freeze([
@@ -19,7 +19,7 @@
     Object.freeze({id:'required-fte',label:'FTE necessário',version:'V2.59.5',requires:Object.freeze(['attendance','historicalAttendanceCapacity'])}),
     Object.freeze({id:'capacity-gap',label:'Gap de capacidade',version:'V2.59.6',requires:Object.freeze(['fte','attendance','availabilityFactors','historicalAttendanceCapacity'])}),
     Object.freeze({id:'capacity-diagnostics',label:'Insights e diagnóstico de capacidade',version:'V2.59.7',requires:Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity'])}),
-    Object.freeze({id:'capacity-history',label:'Snapshots e evolução',version:'V2.59.8',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])})
+    Object.freeze({id:'capacity-history',label:'Snapshots e evolução',version:'V2.59.8',requires:Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity'])})
   ]);
 
   function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
@@ -120,13 +120,16 @@
     const rows=(values||[]).map(optionalNumber).filter(v=>v!=null).sort((a,b)=>a-b);if(!rows.length)return null;const mid=Math.floor(rows.length/2);return rows.length%2?rows[mid]:(rows[mid-1]+rows[mid])/2;
   }
   function normalizeCapacityHistoryRow(raw={}){
-    const availableFte=optionalNumber(raw.availableFte??raw.available_fte),usedVolume=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFte=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),attendanceVolume=optionalNumber(raw.attendanceVolume??raw.attendance_volume),attendancePerFte=optionalNumber(raw.attendancePerAvailableFte??raw.attendance_per_available_fte);
+    const availableFte=optionalNumber(raw.availableFte??raw.available_fte),nominalFte=optionalNumber(raw.nominalFte??raw.nominal_fte),availabilityRate=optionalNumber(raw.availabilityRate??raw.availability_rate),usedVolume=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFte=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),attendanceVolume=optionalNumber(raw.attendanceVolume??raw.attendance_volume),attendancePerFte=optionalNumber(raw.attendancePerAvailableFte??raw.attendance_per_available_fte),resolutionRate=optionalNumber(raw.resolutionRate??raw.resolution_rate);
+    const source=['close','legacy_backfill','live_preview'].includes(raw.source)?raw.source:'close';
     return Object.freeze({
-      competence:competenceId(raw.competence),squadCode:text(raw.squadCode??raw.squad_code,'ALL').toUpperCase(),status:text(raw.status,'closed'),
-      availableFte:availableFte==null?null:Math.max(0,availableFte),usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
-      attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),
+      competence:competenceId(raw.competence),squadCode:text(raw.squadCode??raw.squad_code,'ALL').toUpperCase(),status:text(raw.status,source==='live_preview'?'draft':'closed'),
+      revision:Math.max(0,num(raw.revision)),snapshotVersion:text(raw.snapshotVersion??raw.snapshot_version),ruleVersion:text(raw.ruleVersion??raw.rule_version),source,financialSnapshotRevision:Math.max(0,num(raw.financialSnapshotRevision??raw.financial_snapshot_revision)),createdAt:raw.createdAt??raw.created_at??null,
+      candidateCount:Math.max(0,num(raw.candidateCount??raw.candidate_count)),nominalFte:nominalFte==null?null:Math.max(0,nominalFte),availableFte:availableFte==null?null:Math.max(0,availableFte),availabilityRate:availabilityRate==null?null:clamp01(availabilityRate),
+      usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
+      attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),resolutionRate:resolutionRate==null?null:clamp01(resolutionRate),
       complete:raw.complete===true||raw.used_capacity_complete===true||raw.usedCapacityComplete===true,
-      attendanceComplete:raw.attendance_complete===true||raw.attendanceComplete===true,
+      attendanceComplete:raw.attendance_complete===true||raw.attendanceComplete===true,availabilityComplete:raw.availability_complete===true||raw.availabilityComplete===true,
       availabilityMissing:Math.max(0,num(raw.availabilityMissing??raw.availability_missing)),demandMissing:Math.max(0,num(raw.demandMissing??raw.used_capacity_missing)),attendanceMissing:Math.max(0,num(raw.attendanceMissing??raw.attendance_missing)),inconsistentCount:Math.max(0,num(raw.inconsistentCount??raw.inconsistent_rows))
     });
   }
@@ -225,6 +228,32 @@
     const reference=buildHistoricalReference(history,{competence,squadCode,comparison}),utilization=calculateUtilization({usedVolume:current.usedCapacityVolume??current.usedVolume,usedPerAvailableFte:current.usedPerAvailableFte,availableFte:current.availableFte,referencePerFte:reference.referencePerFte});
     return Object.freeze({reference,utilization,ready:reference.ready&&utilization.ready});
   }
+  function capacityHistoryDelta(current,previous){
+    const a=optionalNumber(current),b=optionalNumber(previous);
+    return a==null||b==null?null:a-b;
+  }
+  function buildCapacityEvolution(history=[],options={}){
+    const comparison=normalizeComparison(options.comparison),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase();
+    const normalized=(history||[]).map(normalizeCapacityHistoryRow).filter(row=>row.competence&&row.squadCode===scope).sort((a,b)=>a.competence.localeCompare(b.competence));
+    const calculated=normalized.map(row=>{
+      const current={
+        attendance:row.attendanceComplete?row.attendanceVolume:null,
+        resolutions:row.complete?row.usedCapacityVolume:null,
+        availableFte:row.availableFte,
+        usedCapacityVolume:row.complete?row.usedCapacityVolume:null,
+        usedPerAvailableFte:row.complete?row.usedPerAvailableFte:null
+      };
+      const utilization=buildUtilization({current,history:normalized,competence:row.competence,squadCode:scope,comparison});
+      const gap=buildCapacityGap({current,history:normalized,competence:row.competence,squadCode:scope,comparison});
+      const diagnostic=buildCapacityDiagnostic({current,history:normalized,competence:row.competence,squadCode:scope,comparison});
+      const fcr=row.resolutionRate!=null?row.resolutionRate:currentFcr(current.attendance,current.resolutions);
+      return Object.freeze({...row,fcr,utilizationRate:utilization.ready?utilization.utilization.utilizationRate:null,utilizationStatus:utilization.ready?utilization.utilization.status:'unavailable',referenceResolutionPerFte:utilization.reference.referencePerFte,requiredFte:gap.ready?gap.gap.requiredFte:null,referenceAttendancePerFte:gap.reference.referenceAttendancePerFte,gapFte:gap.ready?gap.gap.gapFte:null,gapCapacityVolume:gap.ready?gap.gap.gapCapacityVolume:null,gapStatus:gap.ready?gap.gap.status:'unavailable',diagnosticCode:diagnostic.code,diagnosticTitle:diagnostic.title,diagnosticTone:diagnostic.tone,diagnosticReady:diagnostic.ready});
+    });
+    const rows=calculated.map((row,index)=>{const previous=index>0?calculated[index-1]:null;return Object.freeze({...row,availableFteDelta:previous?capacityHistoryDelta(row.availableFte,previous.availableFte):null,resolutionsPerFteDelta:previous?capacityHistoryDelta(row.usedPerAvailableFte,previous.usedPerAvailableFte):null,attendancePerFteDelta:previous?capacityHistoryDelta(row.attendancePerAvailableFte,previous.attendancePerAvailableFte):null,gapFteDelta:previous?capacityHistoryDelta(row.gapFte,previous.gapFte):null});});
+    const frozen=rows.filter(row=>row.source==='close').length,backfill=rows.filter(row=>row.source==='legacy_backfill').length,live=rows.filter(row=>row.source==='live_preview').length,latest=rows.at(-1)||null;
+    return Object.freeze({comparison,scope,rows:Object.freeze(rows),snapshotCount:frozen+backfill,frozenCount:frozen,backfillCount:backfill,liveCount:live,latest,latestAvailableFte:latest?.availableFte??null,latestRequiredFte:latest?.requiredFte??null,latestGapFte:latest?.gapFte??null,latestDiagnostic:latest?.diagnosticTitle||'SEM BASE'});
+  }
+
   function productivityIndex(value,reference){
     const current=optionalNumber(value),base=optionalNumber(reference);
     return current==null||base==null||base<=0?null:(current/base)*100;
@@ -310,6 +339,7 @@
     else{warnings.push('FTE necessário = atendimentos atuais ÷ mediana histórica de atendimentos por FTE disponível. Chamados não resolvidos continuam consumindo capacidade e, por isso, permanecem na demanda.');warnings.push('Gap de capacidade = FTE disponível − FTE necessário; o mesmo saldo é convertido em atendimentos pela referência histórica da janela.');}
     if(!(availability.historicalCapacity&&availability.historicalAttendanceCapacity&&availability.availabilityFactors&&availability.attendance&&availability.resolutions))warnings.push('Insights de capacidade permanecem sem diagnóstico até existirem disponibilidade, produção atual e as duas referências históricas fechadas da janela selecionada.');
     else warnings.push('O diagnóstico de capacidade cruza utilização e gap de FTE para explicar a situação operacional; o FCR entra como evidência contextual, sem meta implícita.');
+    warnings.push('Snapshots de capacidade congelam FTE disponível, atendimentos, resoluções, FCR e produtividade por FTE no fechamento; competências antigas reconstruídas são identificadas separadamente.');
     warnings.push('A referência histórica observada não é meta automática nem capacidade contratual; ela representa o padrão sustentável disponível na base fechada comparável.');
     warnings.push('FTE nominal representa força equivalente cadastrada; não deve ser interpretado como quantidade de pessoas.');
     warnings.push('Zero informado é dado válido; ausência de fonte permanece indisponível e não é convertida em zero.');
@@ -324,5 +354,5 @@
     });
   }
 
-  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyCapacityGap,calculateCapacityGap,buildCapacityGap,currentFcr,capacityDiagnosticRule,buildCapacityDiagnostic,classifyUtilization,calculateUtilization,buildUtilization,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
+  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyCapacityGap,calculateCapacityGap,buildCapacityGap,currentFcr,capacityDiagnosticRule,buildCapacityDiagnostic,classifyUtilization,calculateUtilization,buildUtilization,capacityHistoryDelta,buildCapacityEvolution,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
 });

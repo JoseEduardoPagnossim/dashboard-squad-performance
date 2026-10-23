@@ -155,14 +155,15 @@
   }
 
   function normalizeCapacityHistoryRow(raw={}){
-    const source=raw&&typeof raw==='object'?raw:{};
-    const availableFte=optionalNumber(source.available_fte??source.availableFte),usedVolume=optionalNumber(source.used_capacity_volume??source.usedCapacityVolume),usedPerFte=optionalNumber(source.used_per_available_fte??source.usedPerAvailableFte),attendanceVolume=optionalNumber(source.attendance_volume??source.attendanceVolume),attendancePerFte=optionalNumber(source.attendance_per_available_fte??source.attendancePerAvailableFte);
+    const source=raw&&typeof raw==='object'?raw:{},snapshotSource=['close','legacy_backfill','live_preview'].includes(source.source)?source.source:'close';
+    const nominalFte=optionalNumber(source.nominal_fte??source.nominalFte),availableFte=optionalNumber(source.available_fte??source.availableFte),availabilityRate=optionalNumber(source.availability_rate??source.availabilityRate),usedVolume=optionalNumber(source.used_capacity_volume??source.usedCapacityVolume),usedPerFte=optionalNumber(source.used_per_available_fte??source.usedPerAvailableFte),attendanceVolume=optionalNumber(source.attendance_volume??source.attendanceVolume),attendancePerFte=optionalNumber(source.attendance_per_available_fte??source.attendancePerAvailableFte),resolutionRate=optionalNumber(source.resolution_rate??source.resolutionRate);
     return{
       competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',status:source.status==='closed'?'closed':'draft',
-      availableFte:availableFte==null?null:Math.max(0,availableFte),usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
-      attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),
-      usedCapacityComplete:source.used_capacity_complete===true||source.usedCapacityComplete===true||source.complete===true,
-      attendanceComplete:source.attendance_complete===true||source.attendanceComplete===true,
+      revision:Math.max(0,num(source.revision)),snapshotVersion:cleanText(source.snapshot_version??source.snapshotVersion),ruleVersion:cleanText(source.rule_version??source.ruleVersion),source:snapshotSource,financialSnapshotRevision:Math.max(0,num(source.financial_snapshot_revision??source.financialSnapshotRevision)),createdAt:source.created_at??source.createdAt??null,
+      candidateCount:Math.max(0,num(source.candidate_count??source.candidateCount)),nominalFte:nominalFte==null?null:Math.max(0,nominalFte),availableFte:availableFte==null?null:Math.max(0,availableFte),availabilityRate:availabilityRate==null?null:Math.max(0,Math.min(1,availabilityRate)),
+      usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
+      attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),resolutionRate:resolutionRate==null?null:Math.max(0,Math.min(1,resolutionRate)),
+      usedCapacityComplete:source.used_capacity_complete===true||source.usedCapacityComplete===true||source.complete===true,attendanceComplete:source.attendance_complete===true||source.attendanceComplete===true,availabilityComplete:source.availability_complete===true||source.availabilityComplete===true,
       availabilityMissing:Math.max(0,num(source.availability_missing??source.availabilityMissing)),usedCapacityMissing:Math.max(0,num(source.used_capacity_missing??source.usedCapacityMissing)),attendanceMissing:Math.max(0,num(source.attendance_missing??source.attendanceMissing)),inconsistentRows:Math.max(0,num(source.inconsistent_rows??source.inconsistentRows))
     };
   }
