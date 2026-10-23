@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 
-test('V2.58.5 usa o engine de insights carregado no escopo do app',()=>{
+test('V2.58.6 usa o engine de insights carregado no escopo do app',()=>{
   assert.match(app,/const strategyInsightsEngine = window\.SoftenStrategyInsights;/);
   assert.match(app,/insights=strategyInsightsEngine\.executiveInsights\(/);
   assert.doesNotMatch(app,/insights=insightEngine\.executiveInsights\(/);

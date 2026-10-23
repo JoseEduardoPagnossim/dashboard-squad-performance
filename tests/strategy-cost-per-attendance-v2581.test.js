@@ -9,10 +9,10 @@ const efficiency=require(join(root,'js','strategy-efficiency.js'));
 const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
-test('V2.58.1 permanece preservada dentro da V2.58.5',()=>{
-  assert.equal(pkg.version,'2.58.5');
-  assert.equal(pkg.assetVersion,'2.58.5');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.6.0-relative-efficiency-benchmarks');
+test('V2.58.1 permanece preservada dentro da V2.58.6',()=>{
+  assert.equal(pkg.version,'2.58.6');
+  assert.equal(pkg.assetVersion,'2.58.6');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.7.0-efficiency-diagnostics');
   assert.match(index,/INDICADOR V2\.58\.1/);
   assert.match(index,/strategyCostPerAttendanceValue/);
   assert.match(index,/strategyCostPerAttendanceSquadRows/);

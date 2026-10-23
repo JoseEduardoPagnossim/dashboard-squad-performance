@@ -1,3 +1,11 @@
+## V2.58.6 — Insights e diagnóstico de eficiência
+
+A Fase 3 passa a transformar produtividade econômica e benchmarks em diagnósticos explicáveis por Squad e técnico. O painel diferencia pressão de custo, pressão de resolução, eficiência saudável e alertas de qualidade, sempre exibindo a evidência e a próxima análise sugerida.
+
+Não há migration nova. A V2.58.2 continua sendo o pré-requisito para a base de resoluções.
+
+Detalhes: `docs/EFICIENCIA_DIAGNOSTICOS_V2.58.6.md`.
+
 ## V2.58.5 — Comparativos, benchmarks e eficiência relativa
 
 A Fase 3 passa a comparar produtividade econômica de Squads e técnicos contra referências observadas na própria competência. A operação ponderada define o índice 100; média, mediana e melhor referência ajudam a interpretar dispersão sem criar meta automática. Técnicos são comparados também com a base econômica do próprio Squad, preservando a regra de custo pessoal da V2.58.3.

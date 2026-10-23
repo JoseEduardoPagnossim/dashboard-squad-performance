@@ -9,15 +9,14 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 const doc=join(root,'docs','EFICIENCIA_BENCHMARKS_V2.58.5.md');
 
-test('V2.58.5 publica benchmarks e eficiencia relativa sem migration nova',()=>{
-  assert.equal(pkg.version,'2.58.5');
-  assert.equal(pkg.assetVersion,'2.58.5');
-  assert.equal(efficiency.RULE_VERSION,'EF-0.6.0-relative-efficiency-benchmarks');
+test('V2.58.5 permanece preservada dentro da V2.58.6',()=>{
+  assert.equal(pkg.version,'2.58.6');
+  assert.equal(pkg.assetVersion,'2.58.6');
+  assert.equal(efficiency.RULE_VERSION,'EF-0.7.0-efficiency-diagnostics');
   assert.equal(existsSync(doc),true);
-  assert.match(index,/BENCHMARKS E EFICIÊNCIA RELATIVA • V2\.58\.5/);
+  assert.match(index,/INDICADOR V2\.58\.5/);
   assert.match(index,/strategyEfficiencyBenchmarkSquadRows/);
   assert.match(index,/strategyEfficiencyBenchmarkTechRows/);
-  assert.match(index,/EF-0\.6\.0-relative-efficiency-benchmarks/);
   assert.match(index,/INDICADOR V2\.58\.4/);
   assert.match(app,/renderStrategyEfficiencyBenchmarks/);
 });

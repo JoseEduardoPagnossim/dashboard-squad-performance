@@ -1,3 +1,15 @@
+## V2.58.6 — Insights e diagnóstico de eficiência
+
+- adiciona diagnóstico explicável de eficiência por Squad e técnico;
+- diferencia pressão de custo, pressão de resolução, eficiência saudável e alerta de qualidade;
+- adiciona referências operacionais de custo por resolução, taxa de resolução e qualidade;
+- mantém benchmark global mesmo com filtro de Squad;
+- publica diagnóstico prioritário e próxima análise recomendada;
+- mantém qualidade como guardrail sem peso oculto na fórmula econômica;
+- explicita tolerâncias diagnósticas no motor;
+- não cria migration nova;
+- atualiza motor para `EF-0.7.0-efficiency-diagnostics`.
+
 ## V2.58.5 — Comparativos, benchmarks e eficiência relativa
 
 - adiciona benchmark ponderado da operação para produtividade econômica;
