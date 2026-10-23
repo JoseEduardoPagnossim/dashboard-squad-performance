@@ -14,7 +14,7 @@ const docPath=join(root,'docs','EFICIENCIA_SNAPSHOTS_HISTORICO_V2.58.8.md');
 
 test('V2.58.8 publica snapshots, historico e evolucao com migration propria',()=>{
   assert.equal(pkg.version,'2.59.6');
-  assert.equal(pkg.assetVersion,'2.59.6');
+  assert.equal(pkg.assetVersion,'2.59.6-r1');
   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
   assert.equal(efficiency.SNAPSHOT_VERSION,'ES-1.0.0');
   assert.equal(existsSync(migrationPath),true);

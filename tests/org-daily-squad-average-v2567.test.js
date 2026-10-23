@@ -31,7 +31,7 @@ test('V2.57.7 adapta titulo legenda e resumo ao Squad selecionado',()=>{
 
 test('V2.57.7 publica cache-bust coerente sem migration',()=>{
   for(const asset of ['css/styles.css','js/app.js','js/chart-engine.js']){
-    assert.ok(index.includes(`${asset}?v=2.59.6`),asset);
+    assert.ok(index.includes(`${asset}?v=2.59.6-r1`),asset);
   }
   assert.ok(index.includes('V2.59.6'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));

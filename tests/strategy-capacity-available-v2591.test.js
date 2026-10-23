@@ -13,14 +13,14 @@ const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.59.1 publica capacidade disponivel com migration propria',()=>{
   assert.equal(pkg.version,'2.59.6');
-  assert.equal(pkg.assetVersion,'2.59.6');
+  assert.equal(pkg.assetVersion,'2.59.6-r1');
   assert.equal(capacity.RULE_VERSION,'CA-0.7.0-capacity-gap');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.59\.1/);
   assert.match(index,/strategyCapacitySquadRows/);
   assert.match(index,/strategyCapacityTechnicianRows/);
   assert.match(index,/Disponib\. %/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6-r1'));
 });
 
 test('FTE disponivel respeita FTE nominal e disponibilidade explicita',()=>{

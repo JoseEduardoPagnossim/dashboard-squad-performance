@@ -1,3 +1,11 @@
+## V2.59.6 R1 — Hotfix do resumo de Capacidade
+
+- preserva no view model estratégico os campos estendidos de resolução e capacidade;
+- corrige os cards consolidados de FTE disponível, disponibilidade, resoluções/FTE e indicadores derivados;
+- mantém intactos os dados já corretos por Squad e na aba Eficiência;
+- não exige reimportação nem migration;
+- usa cache-buster `2.59.6-r1` sem consumir a V2.59.7 do roadmap.
+
 ## V2.59.6 — Gap de capacidade
 
 - atualiza o motor para `CA-0.7.0-capacity-gap`;

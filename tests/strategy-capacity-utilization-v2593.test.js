@@ -17,14 +17,14 @@ function historyRow(competence,squadCode,usedPerAvailableFte,availableFte=2){
 
 test('V2.59.6 publica utilizacao com regra e migration proprias',()=>{
   assert.equal(pkg.version,'2.59.6');
-  assert.equal(pkg.assetVersion,'2.59.6');
+  assert.equal(pkg.assetVersion,'2.59.6-r1');
   assert.equal(capacity.RULE_VERSION,'CA-0.7.0-capacity-gap');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.59\.3/);
   assert.match(index,/strategyCapacityUtilizationRate/);
   assert.match(index,/strategyCapacityReferencePerFte/);
   assert.match(index,/strategyCapacityUtilizationSquadRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6-r1'));
 });
 
 test('referencia historica usa exatamente os meses anteriores da janela e mediana',()=>{

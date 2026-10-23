@@ -37,7 +37,7 @@ test('V2.57.7 permite recarga forcada do mesmo carregador mensal',()=>{
 });
 test('V2.57.7 publica cache-bust completo sem migration',()=>{
   for(const asset of ['css/styles.css','css/design-system.css','css/presentation.css','js/performance-engine.js','js/filter-system.js','js/app.js']){
-    assert.ok(index.includes(`${asset}?v=2.59.6`),asset);
+    assert.ok(index.includes(`${asset}?v=2.59.6-r1`),asset);
   }
   assert.ok(index.includes('V2.59.6'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
