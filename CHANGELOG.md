@@ -1,3 +1,17 @@
+## V2.59.3 — Utilização, ociosidade e sobrecarga
+
+- atualiza o motor para `CA-0.4.0-utilization-bands`;
+- cria referência histórica de capacidade baseada em competências fechadas e completas;
+- usa mediana de `resoluções / FTE disponível` dentro da janela selecionada;
+- calcula taxa de utilização e capacidade sustentável observada;
+- calcula saldo de capacidade em volume;
+- classifica operação e Squad como abaixo, dentro ou acima da capacidade;
+- fixa faixas explícitas em <90%, 90%–110% e >110%;
+- não pula meses incompletos nem presume disponibilidade em histórico legado;
+- adiciona RPC agregada histórica sem criar tabela nova;
+- mantém FTE necessário sem cálculo;
+- adiciona documentação e regressões da V2.59.3.
+
 ## V2.59.2 — Capacidade utilizada
 
 - atualiza o motor para `CA-0.3.0-used-capacity`;

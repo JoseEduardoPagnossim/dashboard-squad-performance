@@ -1,3 +1,14 @@
+## V2.59.3 — Utilização, ociosidade e sobrecarga
+
+- compara a carga atual por FTE disponível com histórico fechado comparável;
+- usa mediana das competências imediatamente anteriores da janela selecionada;
+- classifica abaixo de 90%, dentro de 90% a 110% e acima de 110%;
+- calcula capacidade sustentável observada e saldo de capacidade em resoluções;
+- mantém referência incompleta em modo fail-closed, sem pular meses ou preencher histórico antigo;
+- compara cada Squad com o próprio histórico e a operação com o histórico agregado;
+- cria a RPC histórica em `MIGRACAO_V2.59.3.sql`;
+- mantém FTE necessário e gap estrutural reservados às versões posteriores.
+
 ## V2.59.2 — Capacidade utilizada
 
 - mede a carga real absorvida em resoluções;

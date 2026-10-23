@@ -11,7 +11,7 @@ const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 const pkg = require(join(root, 'package.json'));
 
 test('V2.57.7 publica saneamento de tecnicos excluidos na reimportacao',()=>{
-  assert.equal(pkg.version,'2.59.2');
+  assert.equal(pkg.version,'2.59.3');
   assert.equal(existsSync(migrationPath),true);
   assert.match(app,/function activeTechnicianDirectoryByUserId\(userId\)/);
   assert.match(app,/u\.role!==\'technician\'\|\|u\.active===false/);

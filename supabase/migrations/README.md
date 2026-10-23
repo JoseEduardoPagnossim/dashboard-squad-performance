@@ -198,3 +198,8 @@ Execute `MIGRACAO_V2.59.1.sql` depois da V2.58.9. A migration adiciona `availabi
 ### V2.59.2 — Capacidade utilizada
 
 Execute `MIGRACAO_V2.59.2.sql` depois da V2.59.1. A migration cria as RPCs agregadas `get_strategy_capacity_used_summary(date,text)` e `get_strategy_capacity_used_squad_summary(date)`, consolidando resoluções absorvidas e resoluções por FTE disponível com cobertura fail-closed. Ela não cria tabela nova e não calcula percentual de utilização; essa taxa fica reservada para a V2.59.3. Não é necessário republicar Edge Functions.
+
+
+### V2.59.3 — Utilização, ociosidade e sobrecarga
+
+Execute `MIGRACAO_V2.59.3.sql` depois da V2.59.2. A migration cria `get_strategy_capacity_utilization_history()`, que publica somente histórico agregado de competências fechadas por operação e Squad. A aplicação usa essa base para calcular a mediana histórica da janela selecionada, taxa de utilização e faixas de capacidade. Não cria tabela nova, não altera custos e não preenche disponibilidade retroativamente. Não é necessário republicar Edge Functions.
