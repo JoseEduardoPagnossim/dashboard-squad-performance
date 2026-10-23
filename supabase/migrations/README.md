@@ -189,3 +189,8 @@ Execute `MIGRACAO_V2.58.8.sql` depois da V2.58.2. Ela cria `strategy_efficiency_
 ### V2.58.9 — Hardening e fechamento da Fase 3
 
 Execute `MIGRACAO_V2.58.9.sql` depois da V2.58.8. Ela instala validação de integridade em `strategy_resolution_metrics`, impedindo resoluções negativas, competências divergentes, alterações indevidas após fechamento e resoluções superiores aos atendimentos operacionais vinculados. Também reforça o contrato dos snapshots de eficiência. Não é necessário republicar Edge Functions.
+
+
+### V2.59.1 — Capacidade disponível
+
+Execute `MIGRACAO_V2.59.1.sql` depois da V2.58.9. A migration adiciona `availability_factor` aos custos pessoais por competência e cria as RPCs agregadas `get_strategy_capacity_summary(date,text)` e `get_strategy_capacity_squad_summary(date)`. Competências abertas existentes recebem 100% como ponto de partida; competências já fechadas permanecem sem disponibilidade retroativa. Não é necessário republicar Edge Functions.

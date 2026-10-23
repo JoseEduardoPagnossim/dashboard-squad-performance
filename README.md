@@ -1,3 +1,13 @@
+## V2.59.1 — Capacidade disponível
+
+- adiciona disponibilidade percentual por pessoa e competência;
+- calcula `FTE disponível = FTE nominal × disponibilidade`;
+- consolida FTE disponível e indisponível por Squad;
+- mantém custos e FTE contratual inalterados;
+- preserva competências fechadas antigas sem backfill artificial;
+- adiciona RPCs agregadas de capacidade e migration `MIGRACAO_V2.59.1.sql`;
+- mantém utilização e FTE necessário bloqueados para as próximas versões.
+
 ## V2.59.0 — Fundação de Capacidade
 
 - inicia a Fase 4 com o motor `CA-0.1.0-capacity-foundation`;

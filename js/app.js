@@ -72,7 +72,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.59.0';
+  const APP_VERSION = '2.59.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3673,20 +3673,22 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[];
       if(strategyPeopleAccess()&&st.competence){const operationalCodes=Object.keys(state.squads||{}).filter(Boolean);if(operationalCodes.length)await ensureMonthsLoaded(operationalCodes,[st.competence],{silent:true,strict:false}).catch(err=>console.warn('Produção individual indisponível para eficiência estratégica.',err));}
       if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
-        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError}]=await Promise.all([
+        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError}]=await Promise.all([
           state.supabase.rpc('get_strategy_financial_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_squad_cost_summary',{p_competence:competenceDate}),
           state.supabase.rpc('get_strategy_financial_history',{p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_resolution_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_resolution_squad_summary',{p_competence:competenceDate}),
           state.supabase.rpc('get_strategy_resolution_history',{p_squad_code:st.squadCode==='all'?null:st.squadCode}),
-          state.supabase.rpc('get_strategy_efficiency_history')
+          state.supabase.rpc('get_strategy_efficiency_history'),
+          state.supabase.rpc('get_strategy_capacity_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
+          state.supabase.rpc('get_strategy_capacity_squad_summary',{p_competence:competenceDate})
         ]);
-        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;
+        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;
         efficiencyHistory=Array.isArray(efficiencyHistoryData)?efficiencyHistoryData:[];
-        summary={...(summaryData||{}),...(resolutionSummaryData||{})};
-        const financialSquads=Array.isArray(squadData)?squadData:[],resolutionSquads=Array.isArray(resolutionSquadData)?resolutionSquadData:[],resolutionBySquad=new Map(resolutionSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),squadCodes=new Set([...financialSquads.map(row=>String(row.squad_code||'').toUpperCase()),...resolutionSquads.map(row=>String(row.squad_code||'').toUpperCase())].filter(Boolean));
-        squadSummary=[...squadCodes].map(code=>({...((financialSquads||[]).find(row=>String(row.squad_code||'').toUpperCase()===code)||{squad_code:code}),...(resolutionBySquad.get(code)||{})}));
+        summary={...(summaryData||{}),...(resolutionSummaryData||{}),...(capacitySummaryData||{})};
+        const financialSquads=Array.isArray(squadData)?squadData:[],resolutionSquads=Array.isArray(resolutionSquadData)?resolutionSquadData:[],capacitySquads=Array.isArray(capacitySquadData)?capacitySquadData:[],resolutionBySquad=new Map(resolutionSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityBySquad=new Map(capacitySquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),squadCodes=new Set([...financialSquads.map(row=>String(row.squad_code||'').toUpperCase()),...resolutionSquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacitySquads.map(row=>String(row.squad_code||'').toUpperCase())].filter(Boolean));
+        squadSummary=[...squadCodes].map(code=>({...((financialSquads||[]).find(row=>String(row.squad_code||'').toUpperCase()===code)||{squad_code:code}),...(resolutionBySquad.get(code)||{}),...(capacityBySquad.get(code)||{})}));
         const financialHistory=Array.isArray(historyData)?historyData:[],resolutionHistory=Array.isArray(resolutionHistoryData)?resolutionHistoryData:[],resolutionByCompetence=new Map(resolutionHistory.map(row=>[strategyDataEngine.competenceId(row.competence),row]));
         history=financialHistory.map(row=>({...row,...(resolutionByCompetence.get(strategyDataEngine.competenceId(row.competence))||{})}));
       }
@@ -3697,7 +3699,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         if(!people.length&&strategyEditAccess()){const sync=await syncStrategyOperationalPeople({existingPeople:people,silent:true});if(sync.created){const {data:syncedRows,error:syncedError}=await state.supabase.from('strategy_people').select('id,user_id,name,role_label,default_squad_code,default_fte,active,source,created_at,updated_at').eq('organization_id',org).order('name',{ascending:true});if(syncedError)throw syncedError;people=syncedRows||[];}}
         if(comp?.id){
           const [{data:costRows,error:costError},{data:resolutionRows,error:resolutionError}]=await Promise.all([
-            state.supabase.from('strategy_employee_costs').select('id,competence_id,person_id,squad_code_snapshot,fte,salary,employer_charges,benefits,variable_pay,overtime,other_costs,total_cost,source,notes,created_at,updated_at').eq('organization_id',org).eq('competence_id',comp.id),
+            state.supabase.from('strategy_employee_costs').select('id,competence_id,person_id,squad_code_snapshot,fte,availability_factor,salary,employer_charges,benefits,variable_pay,overtime,other_costs,total_cost,source,notes,created_at,updated_at').eq('organization_id',org).eq('competence_id',comp.id),
             state.supabase.from('strategy_resolution_metrics').select('id,competence_id,user_id,technician_name_snapshot,squad_code_snapshot,resolutions,source,notes,created_at,updated_at').eq('organization_id',org).eq('competence_id',comp.id)
           ]);
           if(costError)throw costError;if(resolutionError)throw resolutionError;costs=costRows||[];resolutionMetrics=(resolutionRows||[]).map(row=>({...row,competence:st.competence}));
@@ -3709,20 +3711,20 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
       if(seq!==strategyFinanceLoadSeq)return;
       strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.57.9',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.59.1',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
   function renderStrategyPeopleRows(vm){
     const tbody=$('#strategyPeopleRows');if(!tbody)return;
-    if(!strategyPeopleAccess()){tbody.innerHTML='<tr><td colspan="12" class="muted">Custos individuais protegidos para este usuário.</td></tr>';return;}
+    if(!strategyPeopleAccess()){tbody.innerHTML='<tr><td colspan="13" class="muted">Custos individuais protegidos para este usuário.</td></tr>';return;}
     const editable=strategyEditAccess()&&!strategyCompetenceLocked(vm),selected=vm.state.squadCode;
     const people=vm.financial.people.filter(p=>p.active!==false).filter(p=>selected==='all'||String((strategyCostForPerson(vm,p.id)?.squadCode||p.squadCode)||'').toUpperCase()===selected);
-    if(!people.length){tbody.innerHTML='<tr><td colspan="12" class="muted">Nenhuma pessoa cadastrada neste escopo. Use “Adicionar pessoa” para começar.</td></tr>';return;}
+    if(!people.length){tbody.innerHTML='<tr><td colspan="13" class="muted">Nenhuma pessoa cadastrada neste escopo. Use “Adicionar pessoa” para começar.</td></tr>';return;}
     tbody.innerHTML=people.map(person=>{
       const cost=strategyCostForPerson(vm,person.id)||{},calc=strategyCostEngine.calculatePersonCost({fte:cost.fte??person.defaultFte,salary:cost.salary,employerCharges:cost.employerCharges,benefits:cost.benefits,variablePay:cost.variablePay,overtime:cost.overtime,otherCosts:cost.otherCosts}),disabled=editable?'':'disabled';
-      const val=n=>Number(n||0).toFixed(2);
-      return `<tr data-strategy-person-row="${escapeHtml(person.id)}"><td><input ${disabled} data-strategy-person-field="name" value="${escapeHtml(person.name)}"></td><td><input ${disabled} data-strategy-person-field="roleLabel" value="${escapeHtml(person.roleLabel||'')}"></td><td><select ${disabled} data-strategy-person-field="squadCode">${strategyPersonSquadOptions(vm,cost.squadCode||person.squadCode,true)}</select></td><td><input ${disabled} data-strategy-cost-field="fte" type="number" min="0" max="1" step="0.01" value="${val(calc.fte)}"></td><td><input ${disabled} data-strategy-cost-field="salary" type="number" min="0" step="0.01" value="${val(calc.salary)}"></td><td><input ${disabled} data-strategy-cost-field="employerCharges" type="number" min="0" step="0.01" value="${val(calc.employerCharges)}"></td><td><input ${disabled} data-strategy-cost-field="benefits" type="number" min="0" step="0.01" value="${val(calc.benefits)}"></td><td><input ${disabled} data-strategy-cost-field="variablePay" type="number" min="0" step="0.01" value="${val(calc.variablePay)}"></td><td><input ${disabled} data-strategy-cost-field="overtime" type="number" min="0" step="0.01" value="${val(calc.overtime)}"></td><td><input ${disabled} data-strategy-cost-field="otherCosts" type="number" min="0" step="0.01" value="${val(calc.otherCosts)}"></td><td class="strategy-row-total" data-strategy-row-total>${strategyMoney(calc.totalCost)}</td><td class="strategy-person-actions"><button class="table-action danger" type="button" data-strategy-remove-person="${escapeHtml(person.id)}" ${editable?'':'disabled'} title="Remove apenas da base de custos estratégicos">Excluir dos custos</button></td></tr>`;
+      const val=n=>Number(n||0).toFixed(2),availabilityFactor=cost.id?cost.availabilityFactor:1,availabilityValue=availabilityFactor==null?'':(availabilityFactor*100).toFixed(0);
+      return `<tr data-strategy-person-row="${escapeHtml(person.id)}"><td><input ${disabled} data-strategy-person-field="name" value="${escapeHtml(person.name)}"></td><td><input ${disabled} data-strategy-person-field="roleLabel" value="${escapeHtml(person.roleLabel||'')}"></td><td><select ${disabled} data-strategy-person-field="squadCode">${strategyPersonSquadOptions(vm,cost.squadCode||person.squadCode,true)}</select></td><td><input ${disabled} data-strategy-cost-field="fte" type="number" min="0" max="1" step="0.01" value="${val(calc.fte)}"></td><td><input ${disabled} data-strategy-availability-field="availabilityPercent" type="number" min="0" max="100" step="1" value="${availabilityValue}" placeholder="100" title="Percentual da competência em que a pessoa esteve disponível para a operação"></td><td><input ${disabled} data-strategy-cost-field="salary" type="number" min="0" step="0.01" value="${val(calc.salary)}"></td><td><input ${disabled} data-strategy-cost-field="employerCharges" type="number" min="0" step="0.01" value="${val(calc.employerCharges)}"></td><td><input ${disabled} data-strategy-cost-field="benefits" type="number" min="0" step="0.01" value="${val(calc.benefits)}"></td><td><input ${disabled} data-strategy-cost-field="variablePay" type="number" min="0" step="0.01" value="${val(calc.variablePay)}"></td><td><input ${disabled} data-strategy-cost-field="overtime" type="number" min="0" step="0.01" value="${val(calc.overtime)}"></td><td><input ${disabled} data-strategy-cost-field="otherCosts" type="number" min="0" step="0.01" value="${val(calc.otherCosts)}"></td><td class="strategy-row-total" data-strategy-row-total>${strategyMoney(calc.totalCost)}</td><td class="strategy-person-actions"><button class="table-action danger" type="button" data-strategy-remove-person="${escapeHtml(person.id)}" ${editable?'':'disabled'} title="Remove apenas da base de custos estratégicos">Excluir dos custos</button></td></tr>`;
     }).join('');
   }
   function updateStrategyRowTotal(target){const row=target?.closest?.('[data-strategy-person-row]');if(!row)return;const get=name=>strategyParseNumber(row.querySelector(`[data-strategy-cost-field="${name}"]`)?.value);const calc=strategyCostEngine.calculatePersonCost({fte:get('fte'),salary:get('salary'),employerCharges:get('employerCharges'),benefits:get('benefits'),variablePay:get('variablePay'),overtime:get('overtime'),otherCosts:get('otherCosts')});const total=row.querySelector('[data-strategy-row-total]');if(total)total.textContent=strategyMoney(calc.totalCost)}
@@ -3952,6 +3954,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyEfficiencyDiagnostics(vm,displayAggregate);
     renderStrategyEfficiencyHistory(vm,displayAggregate);
   }
+  function strategyCapacityPersonRows(vm){
+    const selected=String(vm.state.squadCode||'all').toUpperCase(),peopleById=new Map((vm.financial.people||[]).map(person=>[String(person.id),person]));
+    return (vm.financial.costs||[]).map(cost=>{const person=peopleById.get(String(cost.personId));return{id:cost.personId,name:person?.name||'Sem nome',squadCode:String(cost.squadCode||person?.squadCode||'').toUpperCase(),nominalFte:safe(cost.fte),availabilityFactor:cost.availabilityFactor};}).filter(row=>selected==='ALL'||row.squadCode===selected);
+  }
   function strategyCapacityFoundation(vm,displayAggregate){
     const competence=vm.state.competence,selected=vm.state.squadCode,stats=strategyOperationalStatsBySquad(competence),selectedCode=String(selected||'all').toUpperCase();
     const scopedStats=selectedCode==='ALL'?Object.values(stats):[stats[selectedCode]].filter(Boolean),attendance=scopedStats.reduce((sum,row)=>sum+safe(row?.attendance),0),attendanceSource=scopedStats.length>0;
@@ -3960,16 +3966,36 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const row=(vm.financial.squadSummary||[]).find(item=>String(item.squadCode||'').toUpperCase()===selectedCode);
       if(row){resolutions=safe(row.resolutions);resolutionEntries=safe(row.resolutionEntries);}
     }
-    const fteSource=displayAggregate&&((safe(vm.summary.peopleCount)>0)||(safe(vm.summary.fte)>0));
+    const fteSource=displayAggregate&&((safe(vm.summary.peopleCount)>0)||(safe(vm.summary.fte)>0)),availabilityReady=displayAggregate&&vm.summary.availabilityComplete===true&&vm.summary.availableFte!=null;
     return strategyCapacityEngine.buildFoundation({
       scope:{competence,squadCode:selected,comparison:vm.state.comparison,demandUnit:'resolutions',competenceStatus:vm.competenceRecord?.status||'draft'},
-      metrics:{nominalFte:displayAggregate?safe(vm.summary.fte):0,peopleCount:displayAggregate?safe(vm.summary.peopleCount):0,attendance:displayAggregate?attendance:0,resolutions:displayAggregate?resolutions:0},
-      availability:{fte:fteSource,attendance:displayAggregate&&attendanceSource,resolutions:displayAggregate&&resolutionEntries>0,availabilityFactors:false,historicalCapacity:false}
+      metrics:{nominalFte:displayAggregate?safe(vm.summary.fte):0,availableFte:availabilityReady?vm.summary.availableFte:null,peopleCount:displayAggregate?safe(vm.summary.peopleCount):0,attendance:displayAggregate?attendance:0,resolutions:displayAggregate?resolutions:0},
+      availability:{fte:fteSource,attendance:displayAggregate&&attendanceSource,resolutions:displayAggregate&&resolutionEntries>0,availabilityFactors:availabilityReady,historicalCapacity:false}
     });
+  }
+  function renderStrategyAvailableCapacity(vm,foundation,displayAggregate){
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value},ready=foundation.availability.availabilityFactors;
+    set('#strategyCapacityAvailableFte',ready?strategyNumber(foundation.metrics.availableFte,2):'—');
+    set('#strategyCapacityAvailableNominalFte',foundation.availability.fte?strategyNumber(foundation.metrics.nominalFte,2):'—');
+    set('#strategyCapacityAvailableFteDetail',ready?strategyNumber(foundation.metrics.availableFte,2):'—');
+    set('#strategyCapacityUnavailableFte',ready?strategyNumber(foundation.metrics.unavailableFte,2):'—');
+    set('#strategyCapacityAvailabilityRate',ready&&foundation.metrics.availabilityRate!=null?fmtPct(foundation.metrics.availabilityRate):'—');
+    const squadBody=$('#strategyCapacitySquadRows');
+    if(squadBody){
+      if(!displayAggregate)squadBody.innerHTML='<tr><td colspan="7" class="muted">Sem permissão agregada.</td></tr>';
+      else{
+        let rows=(vm.financial.squadSummary||[]).filter(row=>safe(row.peopleCount)>0||safe(row.fte)>0);if(vm.state.squadCode!=='all')rows=rows.filter(row=>row.squadCode===vm.state.squadCode);
+        squadBody.innerHTML=rows.length?rows.map(row=>`<tr><td><strong>${escapeHtml(strategyGroupLabel(vm.context.squads.find(s=>s.code===row.squadCode)||{code:row.squadCode}))}</strong></td><td>${fmtInt(row.peopleCount||0)}</td><td>${strategyNumber(row.fte||0,2)}</td><td>${row.availableFte==null?'—':strategyNumber(row.availableFte,2)}</td><td>${row.unavailableFte==null?'—':strategyNumber(row.unavailableFte,2)}</td><td>${row.availabilityRate==null?'—':fmtPct(row.availabilityRate)}</td><td><span class="strategy-readiness-pill ${row.availabilityComplete?'ready':'partial'}">${row.availabilityComplete?'COMPLETA':'INCOMPLETA'}</span></td></tr>`).join(''):'<tr><td colspan="7" class="muted">Sem FTE atribuído neste escopo.</td></tr>';
+      }
+    }
+    const techBody=$('#strategyCapacityTechnicianRows');if(!techBody)return;
+    if(!strategyPeopleAccess()){techBody.innerHTML='<tr><td colspan="7" class="muted">Detalhes individuais protegidos para este usuário.</td></tr>';return;}
+    const rows=strategyCapacityEngine.buildAvailableCapacity(strategyCapacityPersonRows(vm)).rows;
+    techBody.innerHTML=rows.length?rows.map(row=>`<tr><td><strong>${escapeHtml(row.name)}</strong></td><td>${row.squadCode?escapeHtml(strategyGroupLabel(vm.context.squads.find(s=>s.code===row.squadCode)||{code:row.squadCode})):'—'}</td><td>${strategyNumber(row.nominalFte,2)}</td><td>${row.availabilityFactor==null?'—':fmtPct(row.availabilityFactor)}</td><td>${row.availableFte==null?'—':strategyNumber(row.availableFte,2)}</td><td>${row.unavailableFte==null?'—':strategyNumber(row.unavailableFte,2)}</td><td><span class="strategy-readiness-pill ${row.availabilityComplete?'ready':'partial'}">${row.availabilityComplete?'CALCULADO':'SEM BASE'}</span></td></tr>`).join(''):'<tr><td colspan="7" class="muted">Sem técnicos com FTE nesta competência.</td></tr>';
   }
   function renderStrategyCapacity(vm,displayAggregate){
     const foundation=strategyCapacityFoundation(vm,displayAggregate),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
-    const statusMap={ready:['BASE FUNDACIONAL PRONTA','good'],partial:['BASE PARCIAL','warn'],blocked:['BASE BLOQUEADA','bad']},status=statusMap[foundation.status]||['SEM BASE','neutral'];
+    const statusMap={ready:[foundation.availability.availabilityFactors?'CAPACIDADE DISPONÍVEL ATIVA':'BASE FUNDACIONAL PRONTA',foundation.availability.availabilityFactors?'good':'warn'],partial:['BASE PARCIAL','warn'],blocked:['BASE BLOQUEADA','bad']},status=statusMap[foundation.status]||['SEM BASE','neutral'];
     const badge=$('#strategyCapacityFoundationStatus');if(badge){badge.textContent=status[0];badge.className=`strategy-efficiency-status ${status[1]}`;}
     set('#strategyCapacityContextCompetence',vm.state.competence?strategyDataEngine.competenceLabel(vm.state.competence):'Sem competência');
     set('#strategyCapacityContextSquad',vm.state.squadCode==='all'?'Todos os Squads':strategyGroupLabel(vm.context.squads.find(s=>s.code===vm.state.squadCode)||{code:vm.state.squadCode}));
@@ -3981,10 +4007,11 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     set('#strategyCapacityResolutions',foundation.availability.resolutions?fmtInt(foundation.metrics.resolutions):'—');
     set('#strategyCapacityAttendancePerFte',foundation.metrics.attendancePerNominalFte==null?'—':strategyNumber(foundation.metrics.attendancePerNominalFte,1));
     set('#strategyCapacityResolutionsPerFte',foundation.metrics.resolutionsPerNominalFte==null?'—':strategyNumber(foundation.metrics.resolutionsPerNominalFte,1));
-    set('#strategyCapacityAvailableFte','Pendente');set('#strategyCapacityRequiredFte','Pendente');
+    set('#strategyCapacityRequiredFte','Pendente');
     const sourceNames={fte:'FTE nominal',attendance:'atendimentos',resolutions:'resoluções',availabilityFactors:'fatores de disponibilidade',historicalCapacity:'referência histórica de capacidade'};
-    const body=$('#strategyCapacityReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='base-ready'?'ready':'partial'}">${item.status==='base-ready'?'BASE DISPONÍVEL':'PENDENTE'}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>sourceNames[key]||key).join(', ')):'Bases atuais suficientes; cálculo será ativado na versão planejada.'}</td></tr>`).join('');
+    const body=$('#strategyCapacityReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='active'||item.status==='base-ready'?'ready':'partial'}">${item.status==='active'?'ATIVO':item.status==='base-ready'?'BASE DISPONÍVEL':'PENDENTE'}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>sourceNames[key]||key).join(', ')):item.id==='available-capacity'?'FTE disponível calculado por técnico e Squad.':'Bases atuais suficientes; cálculo será ativado na versão planejada.'}</td></tr>`).join('');
     const warnings=$('#strategyCapacityWarnings');if(warnings)warnings.innerHTML=foundation.warnings.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
+    renderStrategyAvailableCapacity(vm,foundation,displayAggregate);
   }
   function renderStrategy({skipLoad=false}={}){
     if(!canViewStrategy())return;
@@ -4003,7 +4030,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyContextStatus'))$('#strategyContextStatus').textContent=`${compLabel} • ${compStatus}`;
     if($('#strategyCostStatus'))$('#strategyCostStatus').textContent=vm.state.financialLoading?'Carregando...':displayAggregate?strategyMoney(vm.summary.totalCost):(canAggregate?'Carregando...':'Sem permissão agregada');
     if($('#strategyIsolationStatus'))$('#strategyIsolationStatus').textContent='Operacional somente leitura';
-    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError){const errorText=String(vm.state.financialError||''),historyMissing=/strategy_efficiency_snapshots|get_strategy_efficiency_history/i.test(errorText),resolutionMissing=/strategy_resolution_metrics|get_strategy_resolution/i.test(errorText),schemaDrift=/allocated_amount|allocation_method_snapshot|column\s+sca\./i.test(errorText),migration=historyMissing?'V2.58.8':resolutionMissing?'V2.58.2':schemaDrift?'V2.58.0 R5':'V2.57.6';$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>${migration}</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}}
+    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError){const errorText=String(vm.state.financialError||''),capacityMissing=/availability_factor|get_strategy_capacity_/i.test(errorText),historyMissing=/strategy_efficiency_snapshots|get_strategy_efficiency_history/i.test(errorText),resolutionMissing=/strategy_resolution_metrics|get_strategy_resolution/i.test(errorText),schemaDrift=/allocated_amount|allocation_method_snapshot|column\s+sca\./i.test(errorText),migration=capacityMissing?'V2.59.1':historyMissing?'V2.58.8':resolutionMissing?'V2.58.2':schemaDrift?'V2.58.0 R5':'V2.57.6';$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>${migration}</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}}
     const insight=vm.insights[0];if($('#strategyFoundationInsightTitle'))$('#strategyFoundationInsightTitle').textContent=insight?.title||'Custos pessoais separados do operacional';if($('#strategyFoundationInsightText'))$('#strategyFoundationInsightText').textContent=insight?.text||'';
     if($('#strategyExecutiveTotalCost'))$('#strategyExecutiveTotalCost').textContent=displayAggregate?strategyMoney(vm.summary.totalCost):'—';
     if($('#strategyExecutivePeopleCost'))$('#strategyExecutivePeopleCost').textContent=displayAggregate?strategyMoney(vm.summary.peopleCost):'—';
@@ -4043,7 +4070,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyOperationalEditor')){$('#strategyOperationalEditor').classList.toggle('hidden',!canEdit);$('#strategyOperationalEditor').classList.toggle('strategy-readonly',locked);}
     for(const id of ['strategyNewOperationalDescription','strategyNewOperationalCategory','strategyNewOperationalAmount','strategyNewOperationalScope','strategyNewOperationalSquad','strategyNewOperationalAllocation','strategyAddOperationalCostBtn','strategySaveOperationalCostsBtn'])if($("#"+id))$("#"+id).disabled=!effectiveEdit||!state.supabase;
     if($('#strategyNewOperationalSquad'))$('#strategyNewOperationalSquad').innerHTML=strategyPersonSquadOptions(vm,vm.state.squadCode==='all'?'':vm.state.squadCode,true);
-    if($('#strategyPeopleHint'))$('#strategyPeopleHint').textContent=canPeople?(locked?'Competência fechada: os valores estão congelados no snapshot oficial.':(vm.competenceRecord?'Valores vinculados à competência selecionada.':'Crie a competência financeira para registrar os custos mensais.')):'Custos individuais protegidos para este usuário.';
+    if($('#strategyPeopleHint'))$('#strategyPeopleHint').textContent=canPeople?(locked?'Competência fechada: os valores estão congelados no snapshot oficial.':(vm.competenceRecord?'Custos e disponibilidade vinculados à competência selecionada.':'Crie a competência financeira para registrar os custos mensais.')):'Custos individuais protegidos para este usuário.';
     if(!skipLoad&&state.supabase&&!vm.state.financialLoading&&strategyFinanceLoadedKey!==strategyFinanceKey())loadStrategyFinanceData().catch(err=>console.error(err));
   }
   async function ensureStrategyCompetenceRecord(competenceId){
@@ -4099,15 +4126,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const rows=[...$$('#strategyPeopleRows [data-strategy-person-row]')];if(!rows.length)return toast('Nenhuma pessoa disponível para salvar.');
     try{
       const comp=await ensureStrategyCompetenceRecord(competence),costRows=[];
-      for(const row of rows){const personId=row.dataset.strategyPersonRow,name=String(row.querySelector('[data-strategy-person-field="name"]')?.value||'').trim(),roleLabel=String(row.querySelector('[data-strategy-person-field="roleLabel"]')?.value||'').trim(),squadCode=String(row.querySelector('[data-strategy-person-field="squadCode"]')?.value||'').trim().toUpperCase(),get=f=>strategyParseNumber(row.querySelector(`[data-strategy-cost-field="${f}"]`)?.value),fte=Math.min(1,get('fte'));
+      for(const row of rows){const personId=row.dataset.strategyPersonRow,name=String(row.querySelector('[data-strategy-person-field="name"]')?.value||'').trim(),roleLabel=String(row.querySelector('[data-strategy-person-field="roleLabel"]')?.value||'').trim(),squadCode=String(row.querySelector('[data-strategy-person-field="squadCode"]')?.value||'').trim().toUpperCase(),get=f=>strategyParseNumber(row.querySelector(`[data-strategy-cost-field="${f}"]`)?.value),fte=Math.min(1,get('fte')),availabilityRaw=String(row.querySelector('[data-strategy-availability-field="availabilityPercent"]')?.value??'').trim(),availabilityPercent=availabilityRaw===''?null:Number(availabilityRaw);
         if(!name)throw new Error('Todas as pessoas precisam ter nome.');
+        if(availabilityPercent==null||!Number.isFinite(availabilityPercent)||availabilityPercent<0||availabilityPercent>100)throw new Error(`Informe a disponibilidade de ${name} entre 0% e 100%.`);
+        const availabilityFactor=availabilityPercent/100;
         const {error:personError}=await state.supabase.from('strategy_people').update({name,role_label:roleLabel||null,default_squad_code:squadCode||null,default_fte:fte,updated_by:state.user.userId,updated_at:new Date().toISOString()}).eq('id',personId).eq('organization_id',state.user.organizationId);if(personError)throw personError;
-        costRows.push({organization_id:state.user.organizationId,competence_id:comp.id,person_id:personId,squad_code_snapshot:squadCode||null,fte,salary:get('salary'),employer_charges:get('employerCharges'),benefits:get('benefits'),variable_pay:get('variablePay'),overtime:get('overtime'),other_costs:get('otherCosts'),source:'manual',updated_by:state.user.userId,updated_at:new Date().toISOString()});
+        costRows.push({organization_id:state.user.organizationId,competence_id:comp.id,person_id:personId,squad_code_snapshot:squadCode||null,fte,availability_factor:availabilityFactor,salary:get('salary'),employer_charges:get('employerCharges'),benefits:get('benefits'),variable_pay:get('variablePay'),overtime:get('overtime'),other_costs:get('otherCosts'),source:'manual',updated_by:state.user.userId,updated_at:new Date().toISOString()});
       }
-      const {data:savedCosts,error:costError}=await state.supabase.from('strategy_employee_costs').upsert(costRows,{onConflict:'organization_id,competence_id,person_id'}).select('id,competence_id,person_id,squad_code_snapshot,fte,salary,employer_charges,benefits,variable_pay,overtime,other_costs,total_cost,source,notes,created_at,updated_at');if(costError)throw costError;if((savedCosts||[]).length!==costRows.length)throw new Error(`Salvamento incompleto: ${(savedCosts||[]).length} de ${costRows.length} custo(s) confirmado(s).`);
+      const {data:savedCosts,error:costError}=await state.supabase.from('strategy_employee_costs').upsert(costRows,{onConflict:'organization_id,competence_id,person_id'}).select('id,competence_id,person_id,squad_code_snapshot,fte,availability_factor,salary,employer_charges,benefits,variable_pay,overtime,other_costs,total_cost,source,notes,created_at,updated_at');if(costError)throw costError;if((savedCosts||[]).length!==costRows.length)throw new Error(`Salvamento incompleto: ${(savedCosts||[]).length} de ${costRows.length} custo(s) confirmado(s).`);
       await logAuditEvent('strategy.people_costs_update',{entityType:'strategy_competence',entityId:comp.id,description:`Custos pessoais atualizados na competência ${competence}.`,metadata:{competence,peopleCount:costRows.length}});
-      strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Custos de ${costRows.length} pessoa${costRows.length===1?'':'s'} salvos.`);
-    }catch(err){console.error(err);toast(/strategy_employee_costs|row-level security|permission/i.test(String(err?.message||err))?'Não foi possível salvar os custos. Valide a migração V2.57.4 e o checkbox de Gestão Estratégica.':String(err?.message||err));}
+      strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Custos e disponibilidade de ${costRows.length} pessoa${costRows.length===1?'':'s'} salvos.`);
+    }catch(err){console.error(err);toast(/availability_factor|get_strategy_capacity_/i.test(String(err?.message||err))?'Não foi possível salvar a disponibilidade. Execute a migração V2.59.1.':/strategy_employee_costs|row-level security|permission/i.test(String(err?.message||err))?'Não foi possível salvar os custos. Valide a migração V2.57.4 e o checkbox de Gestão Estratégica.':String(err?.message||err));}
   }
   async function removeStrategyPersonFromCosts(personId){
     if(!strategyEditAccess())return toast('Seu usuário não possui permissão para excluir pessoas dos custos estratégicos.');

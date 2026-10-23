@@ -1,3 +1,14 @@
+## V2.59.1 — Capacidade disponível
+
+- ativa o primeiro indicador da Fase 4 com `CA-0.2.0-available-capacity`;
+- adiciona `availability_factor` por pessoa/competência;
+- calcula FTE disponível e FTE indisponível sem alterar custos;
+- consolida disponibilidade por técnico e Squad;
+- mantém agregados disponíveis sem expor custos pessoais;
+- preserva histórico fechado anterior sem presumir 100% de disponibilidade;
+- mantém capacidade utilizada, utilização e FTE necessário sem cálculo;
+- adiciona testes e documentação da V2.59.1.
+
 ## V2.59.0 — Fundação de Capacidade
 
 - inicia a Fase 4 com o motor `CA-0.1.0-capacity-foundation`;
