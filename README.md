@@ -1,3 +1,7 @@
+## V2.59.7 — Insights e diagnóstico de capacidade
+
+A V2.59.7 transforma os números de capacidade em leituras operacionais explicáveis. O motor cruza utilização e gap de FTE para diferenciar sobrecarga, déficit estrutural, baixa absorção, equilíbrio, folga e ociosidade potencial. O FCR aparece como evidência, sem criar uma meta automática. Não há migration nova nesta versão.
+
 ## V2.59.6 R1 — Hotfix do resumo de Capacidade
 
 - preserva no view model estratégico os campos estendidos de resolução e capacidade;

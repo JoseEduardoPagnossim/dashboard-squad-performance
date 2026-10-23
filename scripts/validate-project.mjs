@@ -134,6 +134,8 @@ for (const required of [
   'supabase/migrations/MIGRACAO_V2.59.5.sql',
   'tests/strategy-capacity-gap-v2596.test.js',
   'docs/CAPACIDADE_GAP_V2.59.6.md',
+  'tests/strategy-capacity-diagnostics-v2597.test.js',
+  'docs/CAPACIDADE_DIAGNOSTICOS_V2.59.7.md',
   'js/strategy-capacity.js',
   'supabase/migrations/MIGRACAO_V2.58.9.sql',
   'supabase/migrations/MIGRACAO_V2.58.2.sql',

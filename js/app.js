@@ -72,7 +72,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.59.6';
+  const APP_VERSION = '2.59.7';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3720,7 +3720,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
       if(seq!==strategyFinanceLoadSeq)return;
       strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.59.6',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.59.7',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
@@ -4094,9 +4094,33 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     body.innerHTML=rows.length?rows.map(row=>`<tr><td><strong>${escapeHtml(strategyGroupLabel(vm.context.squads.find(s=>s.code===row.code)||{code:row.code}))}</strong></td><td>${fmtInt(row.attendance)}</td><td>${row.availableFte==null?'—':strategyNumber(row.availableFte,2)}</td><td>${row.ready?strategyNumber(row.gap.requiredFte,2):'—'}</td><td>${row.ready?signed(row.gap.gapFte,2):'—'}</td><td>${row.ready?signed(row.gap.gapCapacityVolume,0):'—'}</td><td><span class="strategy-readiness-pill ${row.ready?(row.gap.tone==='good'?'ready':'partial'):'partial'}">${row.ready?escapeHtml(row.gap.label):'SEM BASE'}</span></td></tr>`).join(''):'<tr><td colspan="7" class="muted">Sem Squads com base de capacidade nesta competência.</td></tr>';
   }
 
+  function renderStrategyCapacityDiagnostics(vm,foundation,displayAggregate){
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value},selectedCode=String(vm.state.squadCode||'all').toUpperCase(),scopeCode=selectedCode==='ALL'?'ALL':selectedCode;
+    const current={attendance:foundation.availability.attendance?foundation.metrics.attendance:null,resolutions:foundation.availability.resolutions?foundation.metrics.resolutions:null,availableFte:foundation.metrics.availableFte,usedCapacityVolume:foundation.metrics.usedCapacityVolume,usedPerAvailableFte:foundation.metrics.usedPerAvailableFte};
+    const diagnostic=strategyCapacityEngine.buildCapacityDiagnostic({current,history:vm.financial.capacityHistory||[],competence:vm.state.competence,squadCode:scopeCode,comparison:vm.state.comparison}),ready=displayAggregate&&diagnostic.ready,e=diagnostic.evidence;
+    const signed=(value,digits=2)=>{if(value==null||!Number.isFinite(Number(value)))return'—';const n=Number(value),sign=n>1e-9?'+':n<-1e-9?'−':'';return`${sign}${strategyNumber(Math.abs(n),digits)}`;};
+    const status=$('#strategyCapacityDiagnosticStatus');if(status){status.textContent=displayAggregate?diagnostic.title:'SEM PERMISSÃO';status.className=`strategy-efficiency-status ${displayAggregate?diagnostic.tone:'neutral'}`;}
+    set('#strategyCapacityDiagnosticSituation',displayAggregate?diagnostic.title:'—');
+    set('#strategyCapacityDiagnosticUtilization',ready&&e.utilizationRate!=null?fmtPct(e.utilizationRate):'—');
+    set('#strategyCapacityDiagnosticGap',ready?signed(e.gapFte,2):'—');
+    set('#strategyCapacityDiagnosticFcr',displayAggregate&&e.fcr!=null?fmtPct(e.fcr):'—');
+    const summary=$('#strategyCapacityDiagnosticSummary');if(summary)summary.textContent=!displayAggregate?'Sem permissão agregada.':diagnostic.summary;
+    const evidence=$('#strategyCapacityDiagnosticEvidence');if(evidence){
+      if(!displayAggregate)evidence.textContent='—';
+      else if(!diagnostic.ready)evidence.textContent=e.missing?.length?`Base pendente: ${e.missing.join(', ')}.`:'Base comparável incompleta.';
+      else evidence.textContent=`FTE disponível ${strategyNumber(e.availableFte,2)} • FTE necessário ${strategyNumber(e.requiredFte,2)} • Gap ${signed(e.gapFte,2)} FTE • Utilização ${fmtPct(e.utilizationRate)}${e.fcr==null?'':` • FCR ${fmtPct(e.fcr)}`}.`;
+    }
+    const actions=$('#strategyCapacityDiagnosticActions');if(actions)actions.innerHTML=displayAggregate?diagnostic.actions.map(item=>`<li>${escapeHtml(item)}</li>`).join(''):'<li>Sem permissão agregada.</li>';
+    const body=$('#strategyCapacityDiagnosticSquadRows');if(!body)return;if(!displayAggregate){body.innerHTML='<tr><td colspan="7" class="muted">Sem permissão agregada.</td></tr>';return;}
+    const stats=strategyOperationalStatsBySquad(vm.state.competence),financialByCode=new Map((vm.financial.squadSummary||[]).map(row=>[String(row.squadCode||'').toUpperCase(),row]));let codes=[...new Set([...Object.keys(stats),...financialByCode.keys()])].filter(Boolean);if(selectedCode!=='ALL')codes=codes.filter(code=>code===selectedCode);
+    const rows=codes.map(code=>{const stat=stats[code]||{},fin=financialByCode.get(code)||{},attendance=safe(stat.attendance),resolutions=fin.resolutionEntries>0?safe(fin.resolutions):null,current={attendance,resolutions,availableFte:fin.availableFte,usedCapacityVolume:fin.usedCapacityVolume,usedPerAvailableFte:fin.usedPerAvailableFte};const d=strategyCapacityEngine.buildCapacityDiagnostic({current,history:vm.financial.capacityHistory||[],competence:vm.state.competence,squadCode:code,comparison:vm.state.comparison});return{code,d};}).sort((a,b)=>{const rank={bad:0,warn:1,good:2,neutral:3};return(rank[a.d.tone]??4)-(rank[b.d.tone]??4)||a.code.localeCompare(b.code,'pt-BR');});
+    body.innerHTML=rows.length?rows.map(({code,d})=>{const x=d.evidence;return`<tr><td><strong>${escapeHtml(strategyGroupLabel(vm.context.squads.find(s=>s.code===code)||{code}))}</strong></td><td><span class="strategy-readiness-pill ${d.tone==='good'?'ready':d.tone==='bad'?'pending':'partial'}">${escapeHtml(d.title)}</span></td><td>${d.ready&&x.utilizationRate!=null?fmtPct(x.utilizationRate):'—'}</td><td>${d.ready?signed(x.gapFte,2):'—'}</td><td>${d.ready?signed(x.gapCapacityVolume,0):'—'}</td><td>${x.fcr==null?'—':fmtPct(x.fcr)}</td><td>${escapeHtml(d.summary)}</td></tr>`;}).join(''):'<tr><td colspan="7" class="muted">Sem Squads com base para diagnóstico nesta competência.</td></tr>';
+  }
+
   function renderStrategyCapacity(vm,displayAggregate){
     const foundation=strategyCapacityFoundation(vm,displayAggregate),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
-    const statusMap={ready:[foundation.metrics.capacityGapFte!=null?'GAP DE CAPACIDADE ATIVO':foundation.metrics.requiredFte!=null?'FTE NECESSÁRIO ATIVO':foundation.metrics.usedCapacityComplete&&foundation.availability.availabilityFactors?'PRODUTIVIDADE / FTE ATIVA':foundation.metrics.utilizationRate!=null?'UTILIZAÇÃO ATIVA':foundation.metrics.usedCapacityComplete?'CAPACIDADE UTILIZADA ATIVA':foundation.availability.availabilityFactors?'CAPACIDADE DISPONÍVEL ATIVA':'BASE FUNDACIONAL PRONTA',foundation.availability.availabilityFactors?'good':'warn'],partial:['BASE PARCIAL','warn'],blocked:['BASE BLOQUEADA','bad']},status=statusMap[foundation.status]||['SEM BASE','neutral'];
+    const diagnosticActive=foundation.catalog.find(item=>item.id==='capacity-diagnostics')?.status==='active';
+    const statusMap={ready:[diagnosticActive?'DIAGNÓSTICO DE CAPACIDADE ATIVO':foundation.metrics.capacityGapFte!=null?'GAP DE CAPACIDADE ATIVO':foundation.metrics.requiredFte!=null?'FTE NECESSÁRIO ATIVO':foundation.metrics.usedCapacityComplete&&foundation.availability.availabilityFactors?'PRODUTIVIDADE / FTE ATIVA':foundation.metrics.utilizationRate!=null?'UTILIZAÇÃO ATIVA':foundation.metrics.usedCapacityComplete?'CAPACIDADE UTILIZADA ATIVA':foundation.availability.availabilityFactors?'CAPACIDADE DISPONÍVEL ATIVA':'BASE FUNDACIONAL PRONTA',foundation.availability.availabilityFactors?'good':'warn'],partial:['BASE PARCIAL','warn'],blocked:['BASE BLOQUEADA','bad']},status=statusMap[foundation.status]||['SEM BASE','neutral'];
     const badge=$('#strategyCapacityFoundationStatus');if(badge){badge.textContent=status[0];badge.className=`strategy-efficiency-status ${status[1]}`;}
     set('#strategyCapacityContextCompetence',vm.state.competence?strategyDataEngine.competenceLabel(vm.state.competence):'Sem competência');
     set('#strategyCapacityContextSquad',vm.state.squadCode==='all'?'Todos os Squads':strategyGroupLabel(vm.context.squads.find(s=>s.code===vm.state.squadCode)||{code:vm.state.squadCode}));
@@ -4110,7 +4134,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     set('#strategyCapacityResolutionsPerFte',foundation.metrics.resolutionsPerNominalFte==null?'—':strategyNumber(foundation.metrics.resolutionsPerNominalFte,1));
     set('#strategyCapacityRequiredFte',foundation.metrics.requiredFte==null?'—':strategyNumber(foundation.metrics.requiredFte,2));
     const sourceNames={fte:'FTE nominal',attendance:'atendimentos',resolutions:'resoluções',availabilityFactors:'fatores de disponibilidade',historicalCapacity:'referência histórica de capacidade',historicalAttendanceCapacity:'referência histórica de atendimentos/FTE'};
-    const body=$('#strategyCapacityReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='active'||item.status==='base-ready'?'ready':'partial'}">${item.status==='active'?'ATIVO':item.status==='base-ready'?'BASE DISPONÍVEL':'PENDENTE'}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>sourceNames[key]||key).join(', ')):item.id==='available-capacity'?'FTE disponível calculado por técnico e Squad.':item.id==='used-capacity'?'Carga absorvida calculada em resoluções e resoluções por FTE disponível.':item.id==='utilization'?'Taxa relativa e faixa de capacidade calculadas contra histórico fechado comparável.':item.id==='productivity-per-fte'?'Produtividade normalizada por FTE disponível ativa na V2.59.4.':item.id==='required-fte'?'FTE necessário calculado com demanda de atendimentos e histórico fechado de atendimentos/FTE.':item.id==='capacity-gap'?'Gap calculado entre FTE disponível e FTE necessário, também convertido em atendimentos.':'Bases atuais suficientes; cálculo será ativado na versão planejada.'}</td></tr>`).join('');
+    const body=$('#strategyCapacityReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='active'||item.status==='base-ready'?'ready':'partial'}">${item.status==='active'?'ATIVO':item.status==='base-ready'?'BASE DISPONÍVEL':'PENDENTE'}</span></td><td>${item.missing.length?escapeHtml(item.missing.map(key=>sourceNames[key]||key).join(', ')):item.id==='available-capacity'?'FTE disponível calculado por técnico e Squad.':item.id==='used-capacity'?'Carga absorvida calculada em resoluções e resoluções por FTE disponível.':item.id==='utilization'?'Taxa relativa e faixa de capacidade calculadas contra histórico fechado comparável.':item.id==='productivity-per-fte'?'Produtividade normalizada por FTE disponível ativa na V2.59.4.':item.id==='required-fte'?'FTE necessário calculado com demanda de atendimentos e histórico fechado de atendimentos/FTE.':item.id==='capacity-gap'?'Gap calculado entre FTE disponível e FTE necessário, também convertido em atendimentos.':item.id==='capacity-diagnostics'?'Diagnóstico operacional ativo cruzando gap, utilização, produtividade e FCR como evidência.':'Bases atuais suficientes; cálculo será ativado na versão planejada.'}</td></tr>`).join('');
     const warnings=$('#strategyCapacityWarnings');if(warnings)warnings.innerHTML=foundation.warnings.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
     renderStrategyAvailableCapacity(vm,foundation,displayAggregate);
     renderStrategyUsedCapacity(vm,foundation,displayAggregate);
@@ -4118,6 +4142,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyFteProductivity(vm,foundation,displayAggregate);
     renderStrategyRequiredFte(vm,foundation,displayAggregate);
     renderStrategyCapacityGap(vm,foundation,displayAggregate);
+    renderStrategyCapacityDiagnostics(vm,foundation,displayAggregate);
   }
   function renderStrategy({skipLoad=false}={}){
     if(!canViewStrategy())return;

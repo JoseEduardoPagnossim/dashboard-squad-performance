@@ -1,3 +1,14 @@
+## V2.59.7 — Insights e diagnóstico de capacidade
+
+- adiciona motor determinístico `CA-0.8.0-capacity-diagnostics`;
+- cruza gap de FTE com utilização histórica para explicar a situação operacional;
+- diferencia déficit com sobrecarga de déficit com baixa absorção;
+- diferencia folga saudável de capacidade ociosa potencial;
+- usa FCR apenas como evidência contextual, sem meta implícita;
+- adiciona diagnóstico consolidado e por Squad;
+- mantém decisão de contratação/redução fora do motor automático;
+- não adiciona migration nova.
+
 ## V2.59.6 R1 — Hotfix do resumo de Capacidade
 
 - preserva no view model estratégico os campos estendidos de resolução e capacidade;

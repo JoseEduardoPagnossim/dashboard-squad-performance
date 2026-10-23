@@ -5,10 +5,10 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='CA-0.7.0-capacity-gap';
+  const RULE_VERSION='CA-0.8.0-capacity-diagnostics';
   const DEMAND_UNITS=Object.freeze(['resolutions','attendance']);
   const FOUNDATION_SOURCES=Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity']);
-  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte','required-fte','capacity-gap']));
+  const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte','required-fte','capacity-gap','capacity-diagnostics']));
   const UTILIZATION_BANDS=Object.freeze({below:0.90,above:1.10});
   const COMPARISON_MONTHS=Object.freeze({previous:1,'3m':3,'6m':6,'12m':12});
   const ROADMAP_CATALOG=Object.freeze([
@@ -18,7 +18,7 @@
     Object.freeze({id:'productivity-per-fte',label:'Produtividade por FTE',version:'V2.59.4',requires:Object.freeze(['fte','resolutions','availabilityFactors'])}),
     Object.freeze({id:'required-fte',label:'FTE necessário',version:'V2.59.5',requires:Object.freeze(['attendance','historicalAttendanceCapacity'])}),
     Object.freeze({id:'capacity-gap',label:'Gap de capacidade',version:'V2.59.6',requires:Object.freeze(['fte','attendance','availabilityFactors','historicalAttendanceCapacity'])}),
-    Object.freeze({id:'capacity-diagnostics',label:'Insights de capacidade',version:'V2.59.7',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])}),
+    Object.freeze({id:'capacity-diagnostics',label:'Insights e diagnóstico de capacidade',version:'V2.59.7',requires:Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity'])}),
     Object.freeze({id:'capacity-history',label:'Snapshots e evolução',version:'V2.59.8',requires:Object.freeze(['fte','resolutions','availabilityFactors','historicalCapacity'])})
   ]);
 
@@ -170,6 +170,44 @@
     return Object.freeze({reference:required.reference,required:required.calculation,gap,ready:required.ready&&gap.ready});
   }
 
+  function currentFcr(attendance,resolutions){
+    const total=optionalNumber(attendance),resolved=optionalNumber(resolutions);
+    if(total==null||resolved==null||total<=0||resolved<0||resolved>total)return null;
+    return resolved/total;
+  }
+  function capacityDiagnosticRule(gapStatus,utilizationStatus){
+    const key=`${gapStatus}|${utilizationStatus}`;
+    const rules={
+      'deficit|above':Object.freeze({code:'deficit-overload',title:'DÉFICIT COM SOBRECARGA',tone:'bad',priority:'ALTA',summary:'A demanda exige mais FTE do que a estrutura disponível e a intensidade de resoluções por FTE está acima do histórico sustentável.',actions:Object.freeze(['Redistribuir carga, horários ou cobertura no curto prazo.','Validar se o déficit e a sobrecarga se repetem em competências fechadas.','Se o padrão persistir após ajustes operacionais, avaliar reforço de capacidade.'])}),
+      'deficit|within':Object.freeze({code:'deficit-structural',title:'DÉFICIT DE CAPACIDADE',tone:'bad',priority:'ALTA',summary:'A demanda exige mais FTE do que a estrutura disponível, enquanto a intensidade de resolução permanece dentro da faixa histórica.',actions:Object.freeze(['Revisar escala, disponibilidade e distribuição da demanda entre Squads.','Monitorar recorrência do déficit em competências fechadas.','Avaliar reforço de capacidade apenas se o déficit persistir.'])}),
+      'deficit|below':Object.freeze({code:'deficit-low-throughput',title:'DÉFICIT COM BAIXA ABSORÇÃO',tone:'warn',priority:'ATENÇÃO',summary:'A demanda aponta necessidade de mais FTE, mas as resoluções por FTE estão abaixo da referência histórica. Aumentar quadro sem investigar a causa pode mascarar perda de eficiência.',actions:Object.freeze(['Investigar FCR, backlog, complexidade dos chamados e fluxo de trabalho.','Comparar distribuição de demanda e produtividade entre técnicos/Squads.','Corrigir gargalos antes de concluir pela ampliação permanente da equipe.'])}),
+      'balanced|above':Object.freeze({code:'balanced-pressure',title:'EQUILÍBRIO SOB PRESSÃO',tone:'warn',priority:'ATENÇÃO',summary:'A estrutura disponível cobre a demanda estimada, mas a intensidade de resoluções está acima do histórico sustentável.',actions:Object.freeze(['Acompanhar a pressão operacional nas próximas competências.','Verificar concentração de carga em pessoas ou períodos específicos.','Preservar margem de contingência antes de reduzir capacidade.'])}),
+      'balanced|within':Object.freeze({code:'balanced-stable',title:'OPERAÇÃO EQUILIBRADA',tone:'good',priority:'ESTÁVEL',summary:'A força disponível está alinhada à necessidade estimada e a intensidade de resolução permanece dentro da faixa histórica.',actions:Object.freeze(['Manter a estrutura e acompanhar tendência de demanda e disponibilidade.','Usar o cenário como referência operacional, não como meta rígida.'])}),
+      'balanced|below':Object.freeze({code:'balanced-low-throughput',title:'ESTRUTURA ADEQUADA COM BAIXA ABSORÇÃO',tone:'warn',priority:'ATENÇÃO',summary:'A quantidade de FTE cobre a demanda estimada, porém as resoluções por FTE estão abaixo do histórico sustentável.',actions:Object.freeze(['Investigar processo, distribuição de chamados, backlog e FCR.','Comparar produtividade normalizada entre técnicos e Squads.','Evitar ampliar capacidade antes de entender a baixa absorção.'])}),
+      'excess|below':Object.freeze({code:'excess-idle',title:'CAPACIDADE OCIOSA POTENCIAL',tone:'warn',priority:'ATENÇÃO',summary:'Existe FTE disponível acima da necessidade estimada e a intensidade de resolução está abaixo da referência histórica.',actions:Object.freeze(['Avaliar redistribuição de pessoas, horários ou responsabilidades.','Verificar sazonalidade antes de reduzir estrutura.','Usar a folga para absorver backlog, treinamento ou atividades planejadas.'])}),
+      'excess|within':Object.freeze({code:'excess-reserve',title:'FOLGA DE CAPACIDADE',tone:'good',priority:'ESTÁVEL',summary:'A estrutura possui capacidade acima da demanda atual, enquanto a intensidade de resolução permanece dentro da faixa histórica.',actions:Object.freeze(['Tratar a folga como reserva operacional e acompanhar a tendência de demanda.','Avaliar redistribuição somente se o excesso for recorrente.'])}),
+      'excess|above':Object.freeze({code:'divergent-signals',title:'SINAIS DIVERGENTES',tone:'warn',priority:'ATENÇÃO',summary:'O dimensionamento por atendimentos indica folga, mas a intensidade de resoluções por FTE está acima da referência histórica. As duas leituras apontam comportamentos diferentes da operação.',actions:Object.freeze(['Validar mix e complexidade dos chamados, backlog e FCR.','Conferir se atendimentos e resoluções pertencem ao mesmo escopo e competência.','Evitar decisão estrutural até entender a divergência.'])})
+    };
+    return rules[key]||null;
+  }
+  function buildCapacityDiagnostic({current={},history=[],competence='',squadCode='ALL',comparison='previous'}={}){
+    const utilization=buildUtilization({current,history,competence,squadCode,comparison});
+    const gap=buildCapacityGap({current,history,competence,squadCode,comparison});
+    const attendance=optionalNumber(current.attendance),resolutions=optionalNumber(current.resolutions??current.usedCapacityVolume??current.usedVolume),fcr=currentFcr(attendance,resolutions);
+    const ready=utilization.ready&&gap.ready;
+    if(!ready){
+      const missing=[];
+      if(!gap.reference.ready)missing.push('histórico fechado de atendimentos/FTE');
+      if(!utilization.reference.ready)missing.push('histórico fechado de resoluções/FTE');
+      if(optionalNumber(current.availableFte)==null)missing.push('FTE disponível');
+      if(attendance==null)missing.push('atendimentos atuais');
+      if(resolutions==null)missing.push('resoluções atuais');
+      return Object.freeze({ready:false,code:'insufficient-base',title:'BASE INSUFICIENTE',tone:'neutral',priority:'SEM DIAGNÓSTICO',summary:'Ainda não há base comparável suficiente para explicar a situação de capacidade sem estimativas silenciosas.',actions:Object.freeze(['Completar disponibilidade, produção e histórico fechado da janela selecionada.']),evidence:Object.freeze({attendance,resolutions,fcr,availableFte:optionalNumber(current.availableFte),utilizationRate:null,gapFte:null,gapCapacityVolume:null,missing:Object.freeze([...new Set(missing)])}),utilization,gap});
+    }
+    const rule=capacityDiagnosticRule(gap.gap.status,utilization.utilization.status)||Object.freeze({code:'unclassified',title:'LEITURA NÃO CLASSIFICADA',tone:'neutral',priority:'ATENÇÃO',summary:'Os indicadores estão calculados, mas a combinação ainda não possui uma regra diagnóstica.',actions:Object.freeze(['Revisar os indicadores de capacidade do escopo.'])});
+    return Object.freeze({...rule,ready:true,evidence:Object.freeze({attendance:Math.max(0,attendance??0),resolutions:Math.max(0,resolutions??0),fcr,availableFte:gap.gap.availableFte,requiredFte:gap.gap.requiredFte,utilizationRate:utilization.utilization.utilizationRate,gapFte:gap.gap.gapFte,gapCapacityVolume:gap.gap.gapCapacityVolume,referenceResolutionPerFte:utilization.reference.referencePerFte,referenceAttendancePerFte:gap.reference.referenceAttendancePerFte}),utilization,gap});
+  }
+
   function classifyUtilization(rate){
     const value=optionalNumber(rate);if(value==null)return Object.freeze({status:'unavailable',label:'SEM REFERÊNCIA',tone:'neutral'});
     if(value<UTILIZATION_BANDS.below)return Object.freeze({status:'below',label:'ABAIXO DA CAPACIDADE',tone:'warn'});
@@ -270,6 +308,8 @@
     else warnings.push(`Utilização compara a carga atual com a mediana histórica da janela selecionada. Faixas: abaixo de ${Math.round(UTILIZATION_BANDS.below*100)}%, dentro entre ${Math.round(UTILIZATION_BANDS.below*100)}% e ${Math.round(UTILIZATION_BANDS.above*100)}%, acima de ${Math.round(UTILIZATION_BANDS.above*100)}%.`);
     if(!availability.historicalAttendanceCapacity)warnings.push('FTE necessário e gap de capacidade permanecem indisponíveis até a janela selecionada possuir competências anteriores fechadas com disponibilidade e atendimentos completos.');
     else{warnings.push('FTE necessário = atendimentos atuais ÷ mediana histórica de atendimentos por FTE disponível. Chamados não resolvidos continuam consumindo capacidade e, por isso, permanecem na demanda.');warnings.push('Gap de capacidade = FTE disponível − FTE necessário; o mesmo saldo é convertido em atendimentos pela referência histórica da janela.');}
+    if(!(availability.historicalCapacity&&availability.historicalAttendanceCapacity&&availability.availabilityFactors&&availability.attendance&&availability.resolutions))warnings.push('Insights de capacidade permanecem sem diagnóstico até existirem disponibilidade, produção atual e as duas referências históricas fechadas da janela selecionada.');
+    else warnings.push('O diagnóstico de capacidade cruza utilização e gap de FTE para explicar a situação operacional; o FCR entra como evidência contextual, sem meta implícita.');
     warnings.push('A referência histórica observada não é meta automática nem capacidade contratual; ela representa o padrão sustentável disponível na base fechada comparável.');
     warnings.push('FTE nominal representa força equivalente cadastrada; não deve ser interpretado como quantidade de pessoas.');
     warnings.push('Zero informado é dado válido; ausência de fonte permanece indisponível e não é convertida em zero.');
@@ -284,5 +324,5 @@
     });
   }
 
-  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyCapacityGap,calculateCapacityGap,buildCapacityGap,classifyUtilization,calculateUtilization,buildUtilization,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
+  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyCapacityGap,calculateCapacityGap,buildCapacityGap,currentFcr,capacityDiagnosticRule,buildCapacityDiagnostic,classifyUtilization,calculateUtilization,buildUtilization,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
 });
