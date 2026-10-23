@@ -1,3 +1,9 @@
+# V2.59.7 R1 - Hotfix de testes do pipeline
+
+- Corrige o pacote patch da V2.59.7 para incluir todas as expectativas históricas de versão/cache-buster atualizadas.
+- Reproduzido o cenário V2.59.6 R1 + patch V2.59.7: 71 falhas antes do hotfix.
+- Não altera regra de negócio, APP_VERSION, banco de dados ou motor da V2.59.7.
+
 ## V2.59.7 — Insights e diagnóstico de capacidade
 
 - adiciona motor determinístico `CA-0.8.0-capacity-diagnostics`;

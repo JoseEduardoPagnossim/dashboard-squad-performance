@@ -8,7 +8,7 @@ const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
 const pkg = require(join(root, 'package.json'));
 
 test('V2.57.8 trata reimportacao operacional como fotografia substitutiva',()=>{
-  assert.equal(pkg.version,'2.59.6');
+  assert.equal(pkg.version,'2.59.7');
   assert.match(app,/Reimportação operacional é uma fotografia substitutiva da competência aberta/);
   assert.doesNotMatch(app,/Preserva quem teve produção na competência mas não veio na extração atual/);
 });

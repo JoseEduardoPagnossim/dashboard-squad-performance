@@ -11,7 +11,7 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.57.4.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
-test('V2.57.7 publica motor financeiro e consolidação por Squad',()=>{assert.equal(pkg.version,'2.59.6');assert.equal(existsSync(migrationPath),true);assert.match(index,/strategySquadCostRows/);assert.match(index,/strategyOperationalRows/);assert.match(app,/get_strategy_financial_summary/);assert.match(app,/get_strategy_squad_cost_summary/);});
+test('V2.57.7 publica motor financeiro e consolidação por Squad',()=>{assert.equal(pkg.version,'2.59.7');assert.equal(existsSync(migrationPath),true);assert.match(index,/strategySquadCostRows/);assert.match(index,/strategyOperationalRows/);assert.match(app,/get_strategy_financial_summary/);assert.match(app,/get_strategy_squad_cost_summary/);});
 
 test('checkbox estratégico do MVP habilita custos pessoais e edição',()=>{const demo=access.demoAccessForRole('super_admin',true);assert.equal(demo.canViewStrategy,true);assert.equal(demo.canViewPeopleCosts,true);assert.equal(demo.canEditCosts,true);assert.match(app,/can_view_people_costs:enabled===true,can_edit_costs:enabled===true/);assert.match(migration,/where can_view_strategy = true/i);});
 

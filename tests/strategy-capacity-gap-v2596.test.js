@@ -9,15 +9,15 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('V2.59.6 publica gap de capacidade sem migration nova',()=>{
-  assert.equal(pkg.version,'2.59.6');
-  assert.equal(pkg.assetVersion,'2.59.6-r1');
-  assert.equal(capacity.RULE_VERSION,'CA-0.7.0-capacity-gap');
+  assert.equal(pkg.version,'2.59.7');
+  assert.equal(pkg.assetVersion,'2.59.7');
+  assert.equal(capacity.RULE_VERSION,'CA-0.8.0-capacity-diagnostics');
   assert.ok(existsSync(join(root,'docs','CAPACIDADE_GAP_V2.59.6.md')));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.6.sql')),false);
   assert.match(index,/INDICADOR V2\.59\.6/);
   assert.match(index,/strategyCapacityGapFte/);
   assert.match(index,/strategyCapacityGapSquadRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.6-r1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.59.7'));
   assert.match(app,/renderStrategyCapacityGap/);
 });
 

@@ -7,8 +7,8 @@ const pkg=require(join(root,'package.json'));
 const costEngine=require(join(root,'js','strategy-cost-engine.js'));
 
 test('V2.59.6 R1 preserva campos estendidos no resumo estratégico',()=>{
-  assert.equal(pkg.version,'2.59.6');
-  assert.equal(pkg.assetVersion,'2.59.6-r1');
+  assert.equal(pkg.version,'2.59.7');
+  assert.equal(pkg.assetVersion,'2.59.7');
   const merged=costEngine.mergeFinancialSummary({
     peopleCount:29,fte:29,totalCost:40000,attendance:4860,
     resolutions:4785,resolutionEntries:29,
@@ -26,8 +26,8 @@ test('V2.59.6 R1 preserva campos estendidos no resumo estratégico',()=>{
   assert.equal(merged.attendance,4860);
 });
 
-test('hotfix usa cache-buster próprio sem consumir V2.59.7',()=>{
+test('hotfix do resumo permanece coberto na V2.59.7',()=>{
   const index=readFileSync(join(root,'index.html'),'utf8');
-  assert.ok(index.includes('js/strategy-cost-engine.js?v=2.59.6-r1'));
-  assert.ok(index.includes('js/app.js?v=2.59.6-r1'));
+  assert.ok(index.includes('js/strategy-cost-engine.js?v=2.59.7'));
+  assert.ok(index.includes('js/app.js?v=2.59.7'));
 });

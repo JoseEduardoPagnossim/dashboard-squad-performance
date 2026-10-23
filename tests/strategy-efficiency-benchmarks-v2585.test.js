@@ -10,8 +10,8 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const doc=join(root,'docs','EFICIENCIA_BENCHMARKS_V2.58.5.md');
 
 test('V2.58.5 permanece preservada dentro da V2.58.9',()=>{
-  assert.equal(pkg.version,'2.59.6');
-  assert.equal(pkg.assetVersion,'2.59.6-r1');
+  assert.equal(pkg.version,'2.59.7');
+  assert.equal(pkg.assetVersion,'2.59.7');
   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
   assert.equal(existsSync(doc),true);
   assert.match(index,/INDICADOR V2\.58\.5/);
