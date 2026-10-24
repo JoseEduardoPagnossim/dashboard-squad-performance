@@ -60,7 +60,7 @@
   const strategyEngine = window.SoftenStrategy;
   if(!strategyEngine) throw new Error('SoftenStrategy não carregado. Verifique js/strategy.js.');
   const strategyController = strategyEngine.createController();
-  let strategyFinanceLoadSeq=0,strategyFinanceLoadedKey='',strategyFinanceLoadingKey='';
+  let strategyFinanceLoadSeq=0,strategyFinanceLoadedKey='',strategyFinanceLoadingKey='',strategyDirectRevenueEntries=[];
   const financeReportEngine = window.SoftenFinanceReportEngine;
   if(!financeReportEngine) throw new Error('SoftenFinanceReportEngine não carregado. Verifique js/finance-report-engine.js.');
   const {normalizeConfig:normalizeFinanceReportConfig,defaultConfig:defaultFinanceReportConfig,presetConfig:financeReportPresetConfig,selectedColumns:financeReportSelectedColumns,moveColumn:moveFinanceReportColumn,stepColumn:stepFinanceReportColumn,setVisible:setFinanceReportColumnVisible,columnById:financeReportColumnById,computedValue:financeReportComputedValue}=financeReportEngine;
@@ -74,7 +74,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.60.0';
+  const APP_VERSION = '2.60.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3671,16 +3671,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const requestedKey=strategyFinanceKey();if(!force&&(strategyFinanceLoadedKey===requestedKey||strategyFinanceLoadingKey===requestedKey))return;
     const seq=++strategyFinanceLoadSeq;strategyFinanceLoadingKey=requestedKey;strategyController.setFinancialLoading(true);
     try{
-      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{}});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
+      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{}});strategyDirectRevenueEntries=[];strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
       const org=state.user?.organizationId;if(!org)throw new Error('Organização não identificada para a Gestão Estratégica.');
       if(isSuperAdmin())await ensureOrgOverviewData({daily:false,technicians:false}).catch(()=>{});
       const {data:competenceRows,error:competenceError}=await state.supabase.from('strategy_competences').select('id,competence,status,notes,closed_at,closed_by,reopened_at,reopened_by,snapshot_revision,snapshot_version,rule_version,created_at,updated_at').eq('organization_id',org).order('competence',{ascending:true});if(competenceError)throw competenceError;
       if(seq!==strategyFinanceLoadSeq)return;
-      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{}});
-      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={};
+      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{}});
+      strategyDirectRevenueEntries=[];
+      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={};
       if(strategyPeopleAccess()&&st.competence){const operationalCodes=Object.keys(state.squads||{}).filter(Boolean);if(operationalCodes.length)await ensureMonthsLoaded(operationalCodes,[st.competence],{silent:true,strict:false}).catch(err=>console.warn('Produção individual indisponível para eficiência estratégica.',err));}
       if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
-        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError},{data:capacityUsedSummaryData,error:capacityUsedSummaryError},{data:capacityUsedSquadData,error:capacityUsedSquadError},{data:capacityHistoryData,error:capacityHistoryError},{data:resultFoundationData,error:resultFoundationError}]=await Promise.all([
+        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError},{data:capacityUsedSummaryData,error:capacityUsedSummaryError},{data:capacityUsedSquadData,error:capacityUsedSquadError},{data:capacityHistoryData,error:capacityHistoryError},{data:resultFoundationData,error:resultFoundationError},{data:resultDirectRevenueData,error:resultDirectRevenueError}]=await Promise.all([
           state.supabase.rpc('get_strategy_financial_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_squad_cost_summary',{p_competence:competenceDate}),
           state.supabase.rpc('get_strategy_financial_history',{p_squad_code:st.squadCode==='all'?null:st.squadCode}),
@@ -3693,12 +3694,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
           state.supabase.rpc('get_strategy_capacity_used_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_capacity_used_squad_summary',{p_competence:competenceDate}),
           state.supabase.rpc('get_strategy_capacity_snapshot_history'),
-          state.supabase.rpc('get_strategy_result_foundation',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode})
+          state.supabase.rpc('get_strategy_result_foundation',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
+          state.supabase.rpc('get_strategy_direct_revenue_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode})
         ]);
-        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;if(capacityUsedSummaryError)throw capacityUsedSummaryError;if(capacityUsedSquadError)throw capacityUsedSquadError;if(capacityHistoryError)throw capacityHistoryError;if(resultFoundationError)throw resultFoundationError;
+        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;if(capacityUsedSummaryError)throw capacityUsedSummaryError;if(capacityUsedSquadError)throw capacityUsedSquadError;if(capacityHistoryError)throw capacityHistoryError;if(resultFoundationError)throw resultFoundationError;if(resultDirectRevenueError)throw resultDirectRevenueError;
         efficiencyHistory=Array.isArray(efficiencyHistoryData)?efficiencyHistoryData:[];
         capacityHistory=Array.isArray(capacityHistoryData)?capacityHistoryData:[];
         resultFoundation={...(resultFoundationData||{}),source_available:true};
+        resultDirectRevenue={...(resultDirectRevenueData||{}),source_available:true};
         summary={...(summaryData||{}),...(resolutionSummaryData||{}),...(capacitySummaryData||{}),...(capacityUsedSummaryData||{})};
         const financialSquads=Array.isArray(squadData)?squadData:[],resolutionSquads=Array.isArray(resolutionSquadData)?resolutionSquadData:[],capacitySquads=Array.isArray(capacitySquadData)?capacitySquadData:[],capacityUsedSquads=Array.isArray(capacityUsedSquadData)?capacityUsedSquadData:[],resolutionBySquad=new Map(resolutionSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityBySquad=new Map(capacitySquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityUsedBySquad=new Map(capacityUsedSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),squadCodes=new Set([...financialSquads.map(row=>String(row.squad_code||'').toUpperCase()),...resolutionSquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacitySquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacityUsedSquads.map(row=>String(row.squad_code||'').toUpperCase())].filter(Boolean));
         squadSummary=[...squadCodes].map(code=>({...((financialSquads||[]).find(row=>String(row.squad_code||'').toUpperCase()===code)||{squad_code:code}),...(resolutionBySquad.get(code)||{}),...(capacityBySquad.get(code)||{}),...(capacityUsedBySquad.get(code)||{})}));
@@ -3719,12 +3722,20 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         }
       }
       if(strategyEditAccess()&&comp?.id){
-        const {data:opRows,error:opError}=await state.supabase.from('strategy_operational_costs').select('id,competence_id,description,category,amount,scope_type,squad_code,allocation_method,recurring,source,notes,created_at,updated_at').eq('organization_id',org).eq('competence_id',comp.id).order('description',{ascending:true});if(opError)throw opError;operationalCosts=opRows||[];
+        const [{data:opRows,error:opError},{data:directRows,error:directRowsError}]=await Promise.all([
+          state.supabase.from('strategy_operational_costs').select('id,competence_id,description,category,amount,scope_type,squad_code,allocation_method,recurring,source,notes,created_at,updated_at').eq('organization_id',org).eq('competence_id',comp.id).order('description',{ascending:true}),
+          state.supabase.from('strategy_result_events').select('id,competence_id,status,occurred_at,gross_amount,monthly_recurring_amount,annual_recurring_amount,currency,source,source_reference,description,direct_revenue_category,created_at').eq('organization_id',org).eq('competence_id',comp.id).eq('result_type','direct').order('occurred_at',{ascending:false})
+        ]);
+        if(opError)throw opError;if(directRowsError)throw directRowsError;operationalCosts=opRows||[];
         if(operationalCosts.length){const ids=operationalCosts.map(row=>row.id);const {data:allocationRows,error:allocationError}=await state.supabase.from('strategy_cost_allocations').select('id,operational_cost_id,squad_code,allocation_method_snapshot,basis_value,percentage,allocated_amount,created_at,updated_at').eq('organization_id',org).in('operational_cost_id',ids);if(allocationError)throw allocationError;allocations=allocationRows||[];}
+        const directEvents=directRows||[],directIds=directEvents.map(row=>row.id);let directAttributions=[];
+        if(directIds.length){const {data:attributionRows,error:attributionError}=await state.supabase.from('strategy_result_attributions').select('event_id,person_id,user_id_snapshot,technician_name_snapshot,squad_code_snapshot,attribution_role,attribution_share').eq('organization_id',org).in('event_id',directIds);if(attributionError)throw attributionError;directAttributions=attributionRows||[];}
+        const attrByEvent=new Map();for(const row of directAttributions){const list=attrByEvent.get(row.event_id)||[];list.push(strategyResultEngine.normalizeAttribution(row));attrByEvent.set(row.event_id,list);}
+        strategyDirectRevenueEntries=directEvents.map(row=>({...strategyResultEngine.normalizeEvent(row),attributions:attrByEvent.get(row.id)||[]}));
       }
       if(seq!==strategyFinanceLoadSeq)return;
-      strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.0',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+      strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.1',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
@@ -4183,6 +4194,46 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyCapacityHistory(vm,displayAggregate);
   }
 
+  function strategyDirectRevenuePersonOptions(vm,selected=''){
+    const squad=String(vm.state.squadCode||'all').toUpperCase(),rows=(vm.financial.people||[]).filter(row=>row.active!==false).filter(row=>squad==='ALL'||String(row.squadCode||'').toUpperCase()===squad).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+    return `<option value="">Selecione...</option>`+rows.map(row=>`<option value="${escapeHtml(row.id)}" ${String(row.id)===String(selected)?'selected':''}>${escapeHtml(row.name)}${row.squadCode?` • Squad ${escapeHtml(row.squadCode)}`:''}</option>`).join('');
+  }
+  function strategyDirectRevenueEntriesForScope(vm){
+    const squad=String(vm.state.squadCode||'all').toUpperCase();
+    if(squad==='ALL')return strategyDirectRevenueEntries;
+    return strategyDirectRevenueEntries.filter(row=>(row.attributions||[]).some(a=>String(a.squadCode||'').toUpperCase()===squad));
+  }
+  function strategyDirectRevenueDefaultDate(competence){
+    const id=String(competence||'');if(!/^\d{4}-\d{2}$/.test(id))return'';const today=new Date(),local=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;return local.startsWith(id)?local:`${id}-01`;
+  }
+  function renderStrategyDirectRevenue(vm,displayAggregate){
+    const direct=strategyResultEngine.buildDirectRevenue({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.resultDirectRevenue||{}}),ready=displayAggregate&&direct.sourceAvailable;
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    const status=$('#strategyDirectRevenueStatus');if(status){status.textContent=ready?'RECEITA DIRETA ATIVA':vm.state.financialLoading?'CARREGANDO':'SEM BASE';status.className=`strategy-efficiency-status ${ready?'good':'neutral'}`;}
+    set('#strategyDirectRevenueTotal',ready?strategyMoney(direct.revenueTotal):'—');
+    set('#strategyDirectRevenueEventCount',ready?Number(direct.eventCount||0).toLocaleString('pt-BR'):'—');
+    set('#strategyDirectRevenueTicket',ready?strategyMoney(direct.ticketAverage):'—');
+    set('#strategyDirectRevenueMrr',ready?strategyMoney(direct.monthlyRecurringAmount):'—');
+    set('#strategyDirectRevenueArr',ready?strategyMoney(direct.annualRecurringAmount):'—');
+    set('#strategyDirectRevenueAttributedCount',ready?Number(direct.attributedEventCount||0).toLocaleString('pt-BR'):'—');
+    set('#strategyDirectRevenueUnattributedCount',ready?Number(direct.unattributedEventCount||0).toLocaleString('pt-BR'):'—');
+    set('#strategyDirectRevenueSourceCount',ready?Number(direct.sourceCount||0).toLocaleString('pt-BR'):'—');
+    const categoryRows=$('#strategyDirectRevenueCategoryRows');if(categoryRows)categoryRows.innerHTML=ready?direct.categories.map(row=>`<tr><td><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small></td><td>${Number(row.eventCount||0).toLocaleString('pt-BR')}</td><td><strong>${strategyMoney(row.revenueTotal)}</strong></td><td>${strategyMoney(row.monthlyRecurringAmount)}</td><td>${strategyMoney(row.annualRecurringAmount)}</td></tr>`).join(''):'<tr><td colspan="5" class="muted">Sem base de Receita Direta.</td></tr>';
+
+    const canEdit=strategyEditAccess()&&strategyPeopleAccess()&&!strategyCompetenceLocked(vm)&&!!vm.competenceRecord&&!!state.supabase,editor=$('#strategyDirectRevenueEditor');if(editor){editor.classList.toggle('hidden',!strategyEditAccess()||!strategyPeopleAccess());editor.classList.toggle('strategy-readonly',!canEdit);}
+    const mode=$('#strategyDirectRevenueEditorMode');if(mode){mode.textContent=strategyCompetenceLocked(vm)?'COMPETÊNCIA FECHADA':canEdit?'EDIÇÃO HABILITADA':'SOMENTE LEITURA';mode.className=`strategy-readiness-pill ${canEdit?'ready':'pending'}`;}
+    const personSelect=$('#strategyDirectRevenuePerson');if(personSelect){const previous=personSelect.value;personSelect.innerHTML=strategyDirectRevenuePersonOptions(vm,previous);personSelect.disabled=!canEdit;}
+    for(const id of ['strategyDirectRevenueDate','strategyDirectRevenueCategory','strategyDirectRevenueAmount','strategyDirectRevenueMrrInput','strategyDirectRevenueArrInput','strategyDirectRevenueReference','strategyDirectRevenueDescription','strategyAddDirectRevenueBtn'])if($('#'+id))$('#'+id).disabled=!canEdit;
+    const date=$('#strategyDirectRevenueDate');if(date&&(!date.value||!date.value.startsWith(String(vm.state.competence||''))))date.value=strategyDirectRevenueDefaultDate(vm.state.competence);
+
+    const card=$('#strategyDirectRevenueEntriesCard');if(card)card.classList.toggle('hidden',!strategyEditAccess());
+    const entryRows=$('#strategyDirectRevenueEntryRows');if(entryRows&&strategyEditAccess()){
+      const rows=strategyDirectRevenueEntriesForScope(vm),categoryMap=new Map(strategyResultEngine.DIRECT_REVENUE_CATEGORIES.map(item=>[item.id,item.label]));
+      entryRows.innerHTML=rows.length?rows.map(row=>{const owner=(row.attributions||[]).find(a=>a.role==='owner')||(row.attributions||[])[0]||{},dateText=row.occurredAt?new Date(row.occurredAt).toLocaleDateString('pt-BR'):'—';return `<tr><td>${escapeHtml(dateText)}</td><td>${escapeHtml(categoryMap.get(row.directRevenueCategory)||row.directRevenueCategory||'—')}</td><td>${escapeHtml(owner.technicianName||'Sem atribuição')}</td><td>${owner.squadCode?`Squad ${escapeHtml(owner.squadCode)}`:'—'}</td><td>${escapeHtml(row.description||row.sourceReference||'—')}</td><td><strong>${strategyMoney(row.grossAmount)}</strong></td><td>${strategyMoney(row.monthlyRecurringAmount)}</td><td><span class="strategy-readiness-pill ${row.status==='confirmed'?'ready':'pending'}">${escapeHtml(row.status==='confirmed'?'CONFIRMADO':row.status==='cancelled'?'CANCELADO':'RASCUNHO')}</span></td><td>${row.status==='confirmed'&&!strategyCompetenceLocked(vm)?`<button type="button" class="table-action danger" data-strategy-cancel-direct="${escapeHtml(row.id)}">Cancelar</button>`:'—'}</td></tr>`}).join(''):'<tr><td colspan="9" class="muted">Nenhum lançamento de Receita Direta nesta competência.</td></tr>';
+    }
+    return direct;
+  }
+
   function renderStrategyResult(vm,displayAggregate){
     const aggregate=vm.financial.resultFoundation||{},foundation=strategyResultEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate}),ready=displayAggregate&&foundation.sourceAvailable;
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
@@ -4195,9 +4246,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     set('#strategyResultAttributedCount',count(foundation.counts.attributed));set('#strategyResultUnattributedCount',count(foundation.counts.unattributed));set('#strategyResultSourceCount',count(foundation.counts.sources));
     const comp=vm.state.competence?strategyDataEngine.competenceLabel(vm.state.competence):'sem competência',squad=vm.state.squadCode==='all'?'Todos os Squads':`Squad ${vm.state.squadCode}`,comparison={previous:'mês anterior','3m':'3 meses','6m':'6 meses','12m':'12 meses'}[vm.state.comparison]||vm.state.comparison;
     set('#strategyResultScopeText',`${comp} • ${squad} • comparação: ${comparison}. Filtros operacionais permanecem isolados.`);
+    renderStrategyDirectRevenue(vm,displayAggregate);
     const contracts={
       'result-foundation':'Contrato de eventos, atribuições, estados, deduplicação e filtros ativo.',
-      'direct-revenue':'Cálculo monetário reservado para a V2.60.1.',
+      'direct-revenue':'Receita confirmada, Up-sell nativo, ticket médio e recorrência separados ativos.',
       'influenced-revenue':'Atribuição econômica sem crédito integral reservada para a V2.60.2.',
       'protected-revenue':'MRR/ARR protegido e retenção reservados para a V2.60.3.',
       'result-by-technician':'Contribuição econômica individual entra na V2.60.4.',
@@ -4226,7 +4278,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyContextStatus'))$('#strategyContextStatus').textContent=`${compLabel} • ${compStatus}`;
     if($('#strategyCostStatus'))$('#strategyCostStatus').textContent=vm.state.financialLoading?'Carregando...':displayAggregate?strategyMoney(vm.summary.totalCost):(canAggregate?'Carregando...':'Sem permissão agregada');
     if($('#strategyIsolationStatus'))$('#strategyIsolationStatus').textContent='Operacional somente leitura';
-    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError){const errorText=String(vm.state.financialError||''),resultFoundationMissing=/strategy_result_events|strategy_result_attributions|get_strategy_result_foundation/i.test(errorText),capacitySnapshotMissing=/strategy_capacity_snapshots|get_strategy_capacity_snapshot_history/i.test(errorText),capacityUtilizationMissing=/get_strategy_capacity_utilization_history/i.test(errorText),capacityUsedMissing=/get_strategy_capacity_used_/i.test(errorText),capacityMissing=/availability_factor|get_strategy_capacity_(?!used_|utilization_|snapshot_)/i.test(errorText),historyMissing=/strategy_efficiency_snapshots|get_strategy_efficiency_history/i.test(errorText),resolutionMissing=/strategy_resolution_metrics|get_strategy_resolution/i.test(errorText),schemaDrift=/allocated_amount|allocation_method_snapshot|column\s+sca\./i.test(errorText),migration=resultFoundationMissing?'V2.60.0':capacitySnapshotMissing?'V2.59.8':capacityUtilizationMissing?'V2.59.3':capacityUsedMissing?'V2.59.2':capacityMissing?'V2.59.1':historyMissing?'V2.58.8':resolutionMissing?'V2.58.2':schemaDrift?'V2.58.0 R5':'V2.57.6';$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>${migration}</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}}
+    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError){const errorText=String(vm.state.financialError||''),resultDirectRevenueMissing=/direct_revenue_category|get_strategy_direct_revenue_summary|validate_strategy_direct_revenue_event/i.test(errorText),resultFoundationMissing=/strategy_result_events|strategy_result_attributions|get_strategy_result_foundation/i.test(errorText),capacitySnapshotMissing=/strategy_capacity_snapshots|get_strategy_capacity_snapshot_history/i.test(errorText),capacityUtilizationMissing=/get_strategy_capacity_utilization_history/i.test(errorText),capacityUsedMissing=/get_strategy_capacity_used_/i.test(errorText),capacityMissing=/availability_factor|get_strategy_capacity_(?!used_|utilization_|snapshot_)/i.test(errorText),historyMissing=/strategy_efficiency_snapshots|get_strategy_efficiency_history/i.test(errorText),resolutionMissing=/strategy_resolution_metrics|get_strategy_resolution/i.test(errorText),schemaDrift=/allocated_amount|allocation_method_snapshot|column\s+sca\./i.test(errorText),migration=resultDirectRevenueMissing?'V2.60.1':resultFoundationMissing?'V2.60.0':capacitySnapshotMissing?'V2.59.8':capacityUtilizationMissing?'V2.59.3':capacityUsedMissing?'V2.59.2':capacityMissing?'V2.59.1':historyMissing?'V2.58.8':resolutionMissing?'V2.58.2':schemaDrift?'V2.58.0 R5':'V2.57.6';$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>${migration}</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}}
     const insight=vm.insights[0];if($('#strategyFoundationInsightTitle'))$('#strategyFoundationInsightTitle').textContent=insight?.title||'Custos pessoais separados do operacional';if($('#strategyFoundationInsightText'))$('#strategyFoundationInsightText').textContent=insight?.text||'';
     if($('#strategyExecutiveTotalCost'))$('#strategyExecutiveTotalCost').textContent=displayAggregate?strategyMoney(vm.summary.totalCost):'—';
     if($('#strategyExecutivePeopleCost'))$('#strategyExecutivePeopleCost').textContent=displayAggregate?strategyMoney(vm.summary.peopleCost):'—';
@@ -4355,7 +4407,44 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){console.error(err);toast(/strategy_employee_costs|strategy_people|row-level security|permission/i.test(String(err?.message||err))?'Não foi possível excluir dos custos. Valide as permissões da Gestão Estratégica.':String(err?.message||err));}
   }
   function setStrategySection(section,{history='push'}={}){strategyController.setSection(section);if(state.currentView==='strategy'){renderStrategy();$('#pageTitle').textContent=STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Gestão Estratégica';updateBreadcrumbs();if(history!=='none')syncPersistentUrl({replace:history==='replace'});}}
-  async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();}
+  async function cancelStrategyDirectRevenue(eventId){
+    const vm=strategyController.viewModel(),id=String(eventId||'').trim();if(!id)return;
+    if(!strategyEditAccess()||!state.supabase)return toast('Sem permissão para cancelar Receita Direta.');
+    if(strategyCompetenceLocked(vm))return toast('A competência está fechada. Reabra antes de cancelar o lançamento.');
+    const row=strategyDirectRevenueEntries.find(item=>String(item.id)===id);if(!row)return toast('Lançamento não encontrado na competência atual.');
+    try{const {data,error}=await state.supabase.from('strategy_result_events').update({status:'cancelled',updated_by:state.user.userId,updated_at:new Date().toISOString()}).eq('id',id).eq('organization_id',state.user.organizationId).eq('result_type','direct').select('id,status').maybeSingle();if(error)throw error;if(!data?.id||data.status!=='cancelled')throw new Error('O cancelamento não foi confirmado pelo banco.');await logAuditEvent('strategy.direct_revenue_cancel',{entityType:'strategy_result_event',entityId:id,description:`Receita Direta cancelada: ${row.description||row.sourceReference||id}.`,metadata:{competence:vm.state.competence,amount:row.grossAmount,category:row.directRevenueCategory}});strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast('Receita Direta cancelada e mantida no histórico de auditoria.');}catch(err){console.error('Falha ao cancelar Receita Direta',err);toast(String(err?.message||err));}
+  }
+
+  async function addStrategyDirectRevenue(){
+    const vm=strategyController.viewModel();
+    if(!strategyEditAccess()||!strategyPeopleAccess())return toast('Seu usuário não possui permissão para registrar Receita Direta.');
+    if(!state.supabase)return toast('Receita Direta pode ser registrada somente no modo Supabase.');
+    if(!vm.competenceRecord)return toast('Crie a competência estratégica antes de registrar a receita.');
+    if(strategyCompetenceLocked(vm))return toast('A competência está fechada. Reabra antes de registrar novas receitas.');
+    const category=strategyResultEngine.normalizeDirectCategory($('#strategyDirectRevenueCategory')?.value),personId=String($('#strategyDirectRevenuePerson')?.value||'').trim(),amount=strategyParseNumber($('#strategyDirectRevenueAmount')?.value),mrr=strategyParseNumber($('#strategyDirectRevenueMrrInput')?.value),arr=strategyParseNumber($('#strategyDirectRevenueArrInput')?.value),date=String($('#strategyDirectRevenueDate')?.value||'').trim(),reference=String($('#strategyDirectRevenueReference')?.value||'').trim(),description=String($('#strategyDirectRevenueDescription')?.value||'').trim();
+    if(!category)return toast('Selecione uma categoria válida de Receita Direta.');
+    if(!personId)return toast('Selecione o técnico responsável pela Receita Direta.');
+    if(amount<=0)return toast('Informe um valor confirmado maior que zero.');
+    if(!description)return toast('Informe uma descrição breve da Receita Direta.');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!date.startsWith(`${vm.state.competence}-`))return toast('A data do lançamento deve pertencer à competência selecionada.');
+    const person=(vm.financial.people||[]).find(row=>String(row.id)===personId);if(!person)return toast('Técnico responsável não encontrado na base estratégica.');
+    const squadCode=String(person.squadCode||'').trim().toUpperCase();if(!squadCode)return toast('O técnico precisa estar vinculado a um Squad para registrar Receita Direta.');
+    let eventId='';
+    try{
+      const payload={organization_id:state.user.organizationId,competence_id:vm.competenceRecord.id,result_type:'direct',status:'confirmed',occurred_at:new Date(`${date}T12:00:00Z`).toISOString(),gross_amount:amount,monthly_recurring_amount:mrr,annual_recurring_amount:arr,currency:'BRL',direct_revenue_category:category,source:'manual',source_reference:reference||null,description,created_by:state.user.userId,updated_by:state.user.userId,updated_at:new Date().toISOString()};
+      const {data:event,error:eventError}=await state.supabase.from('strategy_result_events').insert(payload).select('id').single();if(eventError)throw eventError;if(!event?.id)throw new Error('O evento financeiro foi enviado, mas a gravação não foi confirmada.');eventId=event.id;
+      const attribution={organization_id:state.user.organizationId,event_id:eventId,person_id:person.id,user_id_snapshot:person.userId||null,technician_name_snapshot:person.name,squad_code_snapshot:squadCode,attribution_role:'owner',attribution_share:1,created_by:state.user.userId};
+      const {error:attributionError}=await state.supabase.from('strategy_result_attributions').insert(attribution);if(attributionError)throw attributionError;
+      await logAuditEvent('strategy.direct_revenue_create',{entityType:'strategy_result_event',entityId:eventId,description:`Receita Direta registrada: ${description}.`,metadata:{competence:vm.state.competence,category,amount,mrr,arr,personId:person.id,squadCode,sourceReference:reference||null}});
+      for(const id of ['strategyDirectRevenueAmount','strategyDirectRevenueMrrInput','strategyDirectRevenueArrInput','strategyDirectRevenueReference','strategyDirectRevenueDescription'])if($('#'+id))$('#'+id).value='';
+      strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Receita Direta de ${strategyMoney(amount)} registrada para ${person.name}.`);
+    }catch(err){
+      if(eventId){try{await state.supabase.from('strategy_result_events').delete().eq('id',eventId).eq('organization_id',state.user.organizationId)}catch(_){}}
+      console.error('Falha ao registrar Receita Direta',err);const msg=String(err?.message||err);toast(/source_reference|unique|duplicate/i.test(msg)?'Essa referência já foi usada em outro evento econômico.':msg);
+    }
+  }
+
+  async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);}
   async function handleStrategyChange(e){if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
 
   function renderHelp(){

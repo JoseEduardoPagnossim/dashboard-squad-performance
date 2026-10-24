@@ -1,3 +1,16 @@
+## V2.60.1 — Receita Direta
+
+- ativa o motor `RE-0.2.0-direct-revenue`;
+- mede somente eventos `direct` + `confirmed`;
+- define Receita Direta Total como soma de `gross_amount`;
+- mantém Novo MRR e Novo ARR separados para impedir dupla contagem;
+- adiciona Up-sell como categoria nativa de Receita Direta;
+- adiciona categorias de upgrade, módulo, serviço, treinamento, implantação, venda direta e outros;
+- adiciona lançamento manual com técnico responsável e atribuição `owner`;
+- adiciona ticket médio, composição por categoria e auditoria dos lançamentos;
+- aplica guard de integridade para categoria, valor positivo e moeda BRL;
+- cria `get_strategy_direct_revenue_summary()` e `MIGRACAO_V2.60.1.sql`.
+
 ## V2.60.0 — Fundação de Resultado
 
 - abre a Fase 5 com a nova seção estratégica `Resultado`;

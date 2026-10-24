@@ -1,3 +1,7 @@
+## V2.60.1 — Receita Direta
+
+A V2.60.1 ativa a primeira métrica monetária da Fase 5. Receita Direta considera apenas eventos confirmados e usa `gross_amount` como valor econômico do evento; Novo MRR e Novo ARR aparecem separadamente e não são somados novamente. Up-sell é categoria nativa e pode ser lançado diretamente na área Resultado com técnico responsável, referência e descrição. O motor passa a `RE-0.2.0-direct-revenue`. Execute `MIGRACAO_V2.60.1.sql` após a V2.60.0.
+
 ## V2.60.0 — Fundação de Resultado
 
 A Fase 5 começa com um domínio econômico separado para receita direta, influenciada e protegida. A V2.60.0 cria o contrato de eventos e atribuições, filtros estratégicos, deduplicação por origem e o motor `RE-0.1.0-result-foundation`. Esta versão publica apenas prontidão e contagens; os cálculos monetários entram nas versões V2.60.1 em diante. Execute `MIGRACAO_V2.60.0.sql`.

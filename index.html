@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.60.0" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.60.0" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.60.0" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.60.0" />
+  <link rel="stylesheet" href="css/styles.css?v=2.60.1" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.60.1" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.60.1" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.60.1" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.60.0 • Fase 5 — Fundação de Resultado</small>
+        <small class="login-version">V2.60.1 • Fase 5 — Receita Direta</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.60.0 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.60.1 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.60.0</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.60.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1397,7 +1397,7 @@
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.0</strong> no Supabase e valide as permissões.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.1</strong> no Supabase e valide as permissões.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1839,7 +1839,7 @@
 
           <div class="strategy-panel strategy-result-foundation-panel hidden" data-strategy-panel="result">
             <article class="strategy-placeholder-card strategy-wide-card strategy-result-card">
-              <span class="eyebrow">FASE 5 • V2.60.0</span>
+              <span class="eyebrow">FASE 5 • V2.60.1</span>
               <div class="strategy-section-heading"><div><h3>Fundação de Resultado</h3><p>Estrutura econômica isolada para registrar e auditar receita direta, influenciada e protegida sem misturar atribuição, recorrência ou origem do evento.</p></div><span id="strategyResultFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <section class="strategy-result-summary">
@@ -1861,6 +1861,50 @@
                 </div>
               </section>
 
+              <section class="strategy-direct-revenue-section">
+                <div class="strategy-section-heading"><div><span class="eyebrow">V2.60.1 • RECEITA DIRETA</span><h3>Receita diretamente atribuída ao time</h3><p>Somente eventos confirmados entram no total. Up-sell é uma categoria nativa. MRR e ARR são exibidos separadamente para não duplicar o valor financeiro.</p></div><span id="strategyDirectRevenueStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
+                <div class="strategy-metric-grid strategy-result-direct-kpis">
+                  <div class="strategy-metric"><span>Receita direta</span><strong id="strategyDirectRevenueTotal">—</strong><small>soma do valor confirmado</small></div>
+                  <div class="strategy-metric"><span>Eventos confirmados</span><strong id="strategyDirectRevenueEventCount">—</strong><small>somente Receita Direta</small></div>
+                  <div class="strategy-metric"><span>Ticket médio</span><strong id="strategyDirectRevenueTicket">—</strong><small>receita ÷ eventos</small></div>
+                  <div class="strategy-metric"><span>Novo MRR</span><strong id="strategyDirectRevenueMrr">—</strong><small>recorrência mensal adicionada</small></div>
+                  <div class="strategy-metric"><span>Novo ARR</span><strong id="strategyDirectRevenueArr">—</strong><small>recorrência anual adicionada</small></div>
+                </div>
+                <div class="strategy-result-integrity-grid strategy-direct-integrity-grid">
+                  <div><span>Com atribuição</span><strong id="strategyDirectRevenueAttributedCount">—</strong></div>
+                  <div><span>Sem atribuição</span><strong id="strategyDirectRevenueUnattributedCount">—</strong></div>
+                  <div><span>Origens</span><strong id="strategyDirectRevenueSourceCount">—</strong></div>
+                  <div><span>Motor</span><strong>RE-0.2.0</strong></div>
+                </div>
+
+                <div id="strategyDirectRevenueEditor" class="strategy-direct-revenue-editor">
+                  <div class="strategy-section-heading"><div><span class="eyebrow">LANÇAMENTO</span><h3>Registrar Receita Direta</h3><p>Use somente quando o próprio time realizou o fechamento. Se o time apenas identificou e encaminhou para o Comercial, o registro será Receita Influenciada na V2.60.2.</p></div><span id="strategyDirectRevenueEditorMode" class="strategy-readiness-pill pending">SOMENTE LEITURA</span></div>
+                  <div class="strategy-direct-form-grid">
+                    <label><span>Data</span><input id="strategyDirectRevenueDate" type="date"></label>
+                    <label><span>Categoria</span><select id="strategyDirectRevenueCategory"><option value="upsell">Up-sell</option><option value="plan_upgrade">Upgrade de plano</option><option value="module_addon">Módulo adicional</option><option value="service">Serviço avulso</option><option value="training">Treinamento adicional</option><option value="implementation">Implantação / setup</option><option value="direct_sale">Venda direta</option><option value="other">Outros</option></select></label>
+                    <label><span>Técnico responsável</span><select id="strategyDirectRevenuePerson"><option value="">Selecione...</option></select></label>
+                    <label><span>Valor confirmado</span><input id="strategyDirectRevenueAmount" type="number" min="0.01" step="0.01" placeholder="0,00"></label>
+                    <label><span>Novo MRR</span><input id="strategyDirectRevenueMrrInput" type="number" min="0" step="0.01" placeholder="0,00"></label>
+                    <label><span>Novo ARR</span><input id="strategyDirectRevenueArrInput" type="number" min="0" step="0.01" placeholder="0,00"></label>
+                    <label><span>Referência</span><input id="strategyDirectRevenueReference" type="text" maxlength="120" placeholder="CRM, pedido, contrato..."></label>
+                    <label class="strategy-direct-description"><span>Descrição</span><input id="strategyDirectRevenueDescription" type="text" maxlength="240" placeholder="Ex.: Up-sell do módulo financeiro"></label>
+                    <div class="strategy-direct-form-action"><button id="strategyAddDirectRevenueBtn" type="button" class="primary-btn">Registrar receita</button></div>
+                  </div>
+                </div>
+
+                <div class="strategy-direct-revenue-grid">
+                  <article class="strategy-history-card">
+                    <div class="strategy-section-heading"><div><span class="eyebrow">COMPOSIÇÃO</span><h3>Receita por categoria</h3><p>As categorias são mutuamente exclusivas no evento. Up-sell aparece separadamente das demais origens diretas.</p></div></div>
+                    <div class="table-wrap"><table class="strategy-people-table"><thead><tr><th>Categoria</th><th>Eventos</th><th>Receita</th><th>Novo MRR</th><th>Novo ARR</th></tr></thead><tbody id="strategyDirectRevenueCategoryRows"><tr><td colspan="5" class="muted">Carregando Receita Direta...</td></tr></tbody></table></div>
+                  </article>
+                  <article class="strategy-history-card" id="strategyDirectRevenueEntriesCard">
+                    <div class="strategy-section-heading"><div><span class="eyebrow">AUDITORIA</span><h3>Lançamentos da competência</h3><p>Detalhes visíveis somente para usuários com permissão de edição estratégica.</p></div></div>
+                    <div class="table-wrap"><table class="strategy-people-table"><thead><tr><th>Data</th><th>Categoria</th><th>Técnico</th><th>Squad</th><th>Descrição</th><th>Valor</th><th>MRR</th><th>Status</th><th>Ação</th></tr></thead><tbody id="strategyDirectRevenueEntryRows"><tr><td colspan="9" class="muted">Sem lançamentos carregados.</td></tr></tbody></table></div>
+                  </article>
+                </div>
+                <div class="strategy-productivity-explainer"><strong>Regra de contabilização</strong><span>Receita Direta Total = valor confirmado do evento. Novo MRR e Novo ARR são contexto de recorrência e não são adicionados novamente ao total. O filtro de Squad mostra eventos com participação atribuída ao Squad; a divisão econômica entre Squads será tratada na V2.60.5.</span></div>
+              </section>
+
               <section class="strategy-result-integrity">
                 <div class="strategy-section-heading"><div><span class="eyebrow">INTEGRIDADE</span><h3>Evento econômico ≠ atribuição</h3><p>Uma venda ou retenção existe uma única vez. Técnicos e Squads participantes são ligados ao evento separadamente para impedir duplicidade financeira.</p></div></div>
                 <div class="strategy-result-integrity-grid">
@@ -1878,7 +1922,7 @@
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Sem dupla contagem e sem atribuição implícita</h3></div><ul id="strategyResultWarnings"><li>Carregando regras da Fase 5.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 cria a estrutura, o contrato de dados e os filtros. Receita direta entra na V2.60.1; influenciada na V2.60.2; protegida na V2.60.3. Até lá, a fundação não fabrica valores monetários.</p></aside>
+            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 criou a fundação e a V2.60.1 ativa a Receita Direta com Up-sell, valores confirmados e recorrência separada. Receita influenciada entra na V2.60.2 e protegida na V2.60.3.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2359,36 +2403,36 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.60.0"></script>
-  <script src="js/finance-rules.js?v=2.60.0"></script>
-  <script src="js/finance-advanced.js?v=2.60.0"></script>
-  <script src="js/tv-engine.js?v=2.60.0"></script>
-  <script src="js/presentation.js?v=2.60.0"></script>
-  <script src="js/chart-engine.js?v=2.60.0"></script>
-  <script src="js/chart-export.js?v=2.60.0"></script>
-  <script src="js/import-engine.js?v=2.60.0"></script>
-  <script src="js/predictive-engine.js?v=2.60.0"></script>
-  <script src="js/alert-engine.js?v=2.60.0"></script>
-  <script src="js/settings-engine.js?v=2.60.0"></script>
-  <script src="js/performance-engine.js?v=2.60.0"></script>
-  <script src="js/navigation-engine.js?v=2.60.0"></script>
-  <script src="js/workspace-engine.js?v=2.60.0"></script>
-  <script src="js/filter-system.js?v=2.60.0"></script>
-  <script src="js/comparison-engine.js?v=2.60.0"></script>
-  <script src="js/finance-report-engine.js?v=2.60.0"></script>
-  <script src="js/design-system.js?v=2.60.0"></script>
-  <script src="js/strategy-access.js?v=2.60.0"></script>
-  <script src="js/strategy-data.js?v=2.60.0"></script>
-  <script src="js/strategy-cost-engine.js?v=2.60.0"></script>
-  <script src="js/strategy-efficiency.js?v=2.60.0"></script>
-  <script src="js/strategy-capacity.js?v=2.60.0"></script>
-  <script src="js/strategy-result.js?v=2.60.0"></script>
-  <script src="js/strategy-insights.js?v=2.60.0"></script>
-  <script src="js/strategy.js?v=2.60.0"></script>
+  <script src="js/business-calendar.js?v=2.60.1"></script>
+  <script src="js/finance-rules.js?v=2.60.1"></script>
+  <script src="js/finance-advanced.js?v=2.60.1"></script>
+  <script src="js/tv-engine.js?v=2.60.1"></script>
+  <script src="js/presentation.js?v=2.60.1"></script>
+  <script src="js/chart-engine.js?v=2.60.1"></script>
+  <script src="js/chart-export.js?v=2.60.1"></script>
+  <script src="js/import-engine.js?v=2.60.1"></script>
+  <script src="js/predictive-engine.js?v=2.60.1"></script>
+  <script src="js/alert-engine.js?v=2.60.1"></script>
+  <script src="js/settings-engine.js?v=2.60.1"></script>
+  <script src="js/performance-engine.js?v=2.60.1"></script>
+  <script src="js/navigation-engine.js?v=2.60.1"></script>
+  <script src="js/workspace-engine.js?v=2.60.1"></script>
+  <script src="js/filter-system.js?v=2.60.1"></script>
+  <script src="js/comparison-engine.js?v=2.60.1"></script>
+  <script src="js/finance-report-engine.js?v=2.60.1"></script>
+  <script src="js/design-system.js?v=2.60.1"></script>
+  <script src="js/strategy-access.js?v=2.60.1"></script>
+  <script src="js/strategy-data.js?v=2.60.1"></script>
+  <script src="js/strategy-cost-engine.js?v=2.60.1"></script>
+  <script src="js/strategy-efficiency.js?v=2.60.1"></script>
+  <script src="js/strategy-capacity.js?v=2.60.1"></script>
+  <script src="js/strategy-result.js?v=2.60.1"></script>
+  <script src="js/strategy-insights.js?v=2.60.1"></script>
+  <script src="js/strategy.js?v=2.60.1"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.60.0"></script>
+  <script src="js/app.js?v=2.60.1"></script>
 </body>
 </html>

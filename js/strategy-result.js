@@ -5,16 +5,27 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.1.0-result-foundation';
+  const RULE_VERSION='RE-0.2.0-direct-revenue';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
     protected:Object.freeze({id:'protected',label:'Receita protegida',version:'V2.60.3',description:'Receita existente preservada por retenção, recuperação ou prevenção de cancelamento.'})
   });
+  const DIRECT_REVENUE_CATEGORIES=Object.freeze([
+    Object.freeze({id:'upsell',label:'Up-sell',description:'Incremento de receita fechado diretamente pelo time.'}),
+    Object.freeze({id:'plan_upgrade',label:'Upgrade de plano',description:'Evolução para um plano de maior valor.'}),
+    Object.freeze({id:'module_addon',label:'Módulo adicional',description:'Venda de módulo ou recurso adicional.'}),
+    Object.freeze({id:'service',label:'Serviço avulso',description:'Serviço adicional cobrado fora da recorrência principal.'}),
+    Object.freeze({id:'training',label:'Treinamento adicional',description:'Treinamento adicional vendido pelo time.'}),
+    Object.freeze({id:'implementation',label:'Implantação / setup',description:'Implantação, setup ou configuração adicional cobrada.'}),
+    Object.freeze({id:'direct_sale',label:'Venda direta',description:'Venda fechada diretamente pelo time fora das demais categorias.'}),
+    Object.freeze({id:'other',label:'Outros',description:'Outra receita direta comprovada e documentada.'})
+  ]);
+  const DIRECT_CATEGORY_IDS=Object.freeze(DIRECT_REVENUE_CATEGORIES.map(item=>item.id));
   const EVENT_STATUSES=Object.freeze(['draft','confirmed','cancelled']);
   const CATALOG=Object.freeze([
     Object.freeze({id:'result-foundation',label:'Fundação de Resultado',version:'V2.60.0',state:'ready'}),
-    Object.freeze({id:'direct-revenue',label:'Receita direta',version:'V2.60.1',state:'planned'}),
+    Object.freeze({id:'direct-revenue',label:'Receita direta',version:'V2.60.1',state:'ready'}),
     Object.freeze({id:'influenced-revenue',label:'Receita influenciada',version:'V2.60.2',state:'planned'}),
     Object.freeze({id:'protected-revenue',label:'Receita protegida',version:'V2.60.3',state:'planned'}),
     Object.freeze({id:'result-by-technician',label:'Resultado por técnico',version:'V2.60.4',state:'planned'}),
@@ -30,6 +41,7 @@
   function cleanCode(value){return text(value).toUpperCase()}
   function normalizeType(value){const id=text(value).toLowerCase();return Object.prototype.hasOwnProperty.call(RESULT_TYPES,id)?id:''}
   function normalizeStatus(value){const id=text(value).toLowerCase();return EVENT_STATUSES.includes(id)?id:'draft'}
+  function normalizeDirectCategory(value){const id=text(value).toLowerCase();return DIRECT_CATEGORY_IDS.includes(id)?id:''}
   function normalizeScope(raw={}){
     const squadCode=cleanCode(raw.squadCode||raw.squad_code||'ALL');
     return Object.freeze({
@@ -50,6 +62,7 @@
       monthlyRecurringAmount:nonNegative(raw.monthly_recurring_amount??raw.monthlyRecurringAmount),
       annualRecurringAmount:nonNegative(raw.annual_recurring_amount??raw.annualRecurringAmount),
       currency:cleanCode(raw.currency||'BRL')||'BRL',
+      directRevenueCategory:normalizeDirectCategory(raw.direct_revenue_category??raw.directRevenueCategory),
       source:text(raw.source,'manual').toLowerCase(),
       sourceReference:text(raw.source_reference??raw.sourceReference),
       externalEntityType:text(raw.external_entity_type??raw.externalEntityType),
@@ -94,16 +107,75 @@
       direct:base.directCount,influenced:base.influencedCount,protected:base.protectedCount
     });
     const typeCards=Object.freeze(Object.values(RESULT_TYPES).map(def=>Object.freeze({...def,count:counts[def.id]})));
-    const catalog=Object.freeze(CATALOG.map(item=>Object.freeze({...item,status:item.id==='result-foundation'?(sourceReady?'ready':'pending'):'planned'})));
+    const catalog=Object.freeze(CATALOG.map(item=>Object.freeze({...item,status:item.state==='ready'?(sourceReady?'ready':'pending'):'planned'})));
     const warnings=Object.freeze([
       'Receita direta, influenciada e protegida são naturezas econômicas diferentes e não devem ser somadas como “receita gerada”.',
       'A classificação do evento é explícita: o motor não converte automaticamente uma oportunidade influenciada em receita direta.',
-      'Eventos cancelados ou estornados permanecem auditáveis, mas não devem compor métricas econômicas futuras.',
+      'Eventos cancelados ou estornados permanecem auditáveis, mas não compõem as métricas econômicas.',
       'Evento econômico e atribuição são entidades separadas para evitar duplicidade quando várias pessoas participam do mesmo resultado.',
-      'A V2.60.0 prepara a base e a auditoria; os cálculos monetários entram somente nas versões específicas da Fase 5.'
+      'Na Receita Direta, o total usa somente o valor confirmado do evento; MRR e ARR são exibidos separadamente e não são somados novamente.'
     ]);
     return Object.freeze({ruleVersion:RULE_VERSION,scope:normalizedScope,status:sourceReady?'ready':'pending',sourceAvailable:sourceReady,counts,typeCards,catalog,warnings});
   }
 
-  return{RULE_VERSION,RESULT_TYPES,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation};
+  function normalizeDirectCategoryAggregate(raw={}){
+    const category=normalizeDirectCategory(raw.category??raw.direct_revenue_category??raw.id);
+    return Object.freeze({
+      category,
+      eventCount:nonNegative(raw.event_count??raw.eventCount),
+      revenueTotal:nonNegative(raw.revenue_total??raw.revenueTotal),
+      monthlyRecurringAmount:nonNegative(raw.monthly_recurring_amount??raw.monthlyRecurringAmount),
+      annualRecurringAmount:nonNegative(raw.annual_recurring_amount??raw.annualRecurringAmount)
+    });
+  }
+  function normalizeDirectRevenueAggregate(raw={}){
+    const categories=Array.isArray(raw.categories)?raw.categories.map(normalizeDirectCategoryAggregate).filter(row=>row.category):[];
+    return Object.freeze({
+      sourceAvailable:raw.source_available===true||raw.sourceAvailable===true,
+      competence:text(raw.competence),
+      squadCode:cleanCode(raw.squad_code??raw.squadCode)||'ALL',
+      currency:cleanCode(raw.currency||'BRL')||'BRL',
+      eventCount:nonNegative(raw.event_count??raw.eventCount),
+      revenueTotal:nonNegative(raw.revenue_total??raw.revenueTotal),
+      monthlyRecurringAmount:nonNegative(raw.monthly_recurring_amount??raw.monthlyRecurringAmount),
+      annualRecurringAmount:nonNegative(raw.annual_recurring_amount??raw.annualRecurringAmount),
+      ticketAverage:nonNegative(raw.ticket_average??raw.ticketAverage),
+      attributedEventCount:nonNegative(raw.attributed_event_count??raw.attributedEventCount),
+      unattributedEventCount:nonNegative(raw.unattributed_event_count??raw.unattributedEventCount),
+      sourceCount:nonNegative(raw.source_count??raw.sourceCount),
+      categories:Object.freeze(categories)
+    });
+  }
+  function buildDirectRevenue({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeDirectRevenueAggregate(aggregate),ready=base.sourceAvailable===true;
+    const byCategory=new Map(base.categories.map(row=>[row.category,row]));
+    const categories=Object.freeze(DIRECT_REVENUE_CATEGORIES.map(def=>Object.freeze({...def,...(byCategory.get(def.id)||{category:def.id,eventCount:0,revenueTotal:0,monthlyRecurringAmount:0,annualRecurringAmount:0})})));
+    const eventCount=base.eventCount;
+    const ticketAverage=eventCount>0?base.revenueTotal/eventCount:0;
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,
+      scope:normalizedScope,
+      status:ready?'ready':'pending',
+      sourceAvailable:ready,
+      currency:base.currency,
+      eventCount,
+      revenueTotal:base.revenueTotal,
+      monthlyRecurringAmount:base.monthlyRecurringAmount,
+      annualRecurringAmount:base.annualRecurringAmount,
+      ticketAverage:base.ticketAverage>0?base.ticketAverage:ticketAverage,
+      attributedEventCount:base.attributedEventCount,
+      unattributedEventCount:base.unattributedEventCount,
+      sourceCount:base.sourceCount,
+      categories,
+      warnings:Object.freeze([
+        'Somente eventos de Receita Direta com status confirmado entram nos valores.',
+        'Receita Direta Total = soma de gross_amount. Novo MRR e Novo ARR são indicadores paralelos e não são adicionados ao total.',
+        'Up-sell é uma categoria nativa de Receita Direta.',
+        'Quando o time apenas identifica ou encaminha a oportunidade e outro setor fecha, o evento deve ser Receita Influenciada, não Direta.',
+        'O filtro de Squad nesta versão mostra eventos com participação atribuída ao Squad; a divisão econômica entre Squads entra na V2.60.5.'
+      ])
+    });
+  }
+
+  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue};
 });

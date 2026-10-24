@@ -187,6 +187,30 @@
       protectedCount:Math.max(0,num(source.protected_count??source.protectedCount))
     };
   }
+  function normalizeResultDirectRevenue(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},categories=Array.isArray(source.categories)?source.categories:[];
+    return{
+      sourceAvailable:source.source_available===true||source.sourceAvailable===true,
+      competence:competenceId(source.competence),
+      squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',
+      currency:cleanCode(source.currency)||'BRL',
+      eventCount:Math.max(0,num(source.event_count??source.eventCount)),
+      revenueTotal:Math.max(0,num(source.revenue_total??source.revenueTotal)),
+      monthlyRecurringAmount:Math.max(0,num(source.monthly_recurring_amount??source.monthlyRecurringAmount)),
+      annualRecurringAmount:Math.max(0,num(source.annual_recurring_amount??source.annualRecurringAmount)),
+      ticketAverage:Math.max(0,num(source.ticket_average??source.ticketAverage)),
+      attributedEventCount:Math.max(0,num(source.attributed_event_count??source.attributedEventCount)),
+      unattributedEventCount:Math.max(0,num(source.unattributed_event_count??source.unattributedEventCount)),
+      sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),
+      categories:categories.map(row=>({
+        category:String(row?.category||'').trim().toLowerCase(),
+        eventCount:Math.max(0,num(row?.event_count??row?.eventCount)),
+        revenueTotal:Math.max(0,num(row?.revenue_total??row?.revenueTotal)),
+        monthlyRecurringAmount:Math.max(0,num(row?.monthly_recurring_amount??row?.monthlyRecurringAmount)),
+        annualRecurringAmount:Math.max(0,num(row?.annual_recurring_amount??row?.annualRecurringAmount))
+      })).filter(row=>row.category)
+    };
+  }
 
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
@@ -212,7 +236,7 @@
       latestCompetence:competences.at(-1)||''
     });
   }
-  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={}}={}){
+  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={}}={}){
     const competenceRows=(competences||[]).map(normalizeCompetenceRow).filter(row=>row.competence);
     const personRows=(people||[]).map(normalizePersonRow).filter(row=>row.id&&row.name);
     const costRows=(costs||[]).map(normalizeEmployeeCostRow).filter(row=>row.personId);
@@ -235,8 +259,9 @@
       history:Object.freeze(historyRows.map(row=>Object.freeze({...row}))),
       efficiencyHistory:Object.freeze(efficiencyRows.map(row=>Object.freeze({...row,operation:Object.freeze({...row.operation}),squads:Object.freeze(row.squads.map(item=>Object.freeze({...item}))),benchmarks:Object.freeze({...row.benchmarks})}))),
       capacityHistory:Object.freeze(capacityRows.map(row=>Object.freeze({...row}))),
-      resultFoundation:Object.freeze(normalizeResultFoundation(resultFoundation||{}))
+      resultFoundation:Object.freeze(normalizeResultFoundation(resultFoundation||{})),
+      resultDirectRevenue:Object.freeze({...normalizeResultDirectRevenue(resultDirectRevenue||{}),categories:Object.freeze(normalizeResultDirectRevenue(resultDirectRevenue||{}).categories.map(row=>Object.freeze({...row})))})
     });
   }
-  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,buildOperationalContext,buildFinancialContext};
+  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,buildOperationalContext,buildFinancialContext};
 });
