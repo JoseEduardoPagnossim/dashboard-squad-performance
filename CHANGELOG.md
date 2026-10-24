@@ -1,3 +1,14 @@
+## V2.59.9 — Hardening e fechamento da Fase 4
+
+- atualiza o motor para `CA-1.0.0-phase4-hardening`;
+- torna a seleção de snapshots determinística por competência, Squad e revisão;
+- prioriza prévia de competência reaberta sobre fotografia congelada;
+- aplica fail-closed a snapshots com cobertura parcial, inconsistências ou contrato inválido;
+- preserva aliases de faltantes/inconsistências entre `strategy-data` e o motor;
+- limita FTE disponível histórico acima do nominal e invalida a linha para referência;
+- adiciona migration de imutabilidade e contratos defensivos do snapshot;
+- encerra a Fase 4 antes da abertura da Fase 5 — Resultado.
+
 # V2.59.8 — Snapshots, histórico e evolução da capacidade
 
 - cria `strategy_capacity_snapshots` com revisão vinculada ao snapshot financeiro da competência;

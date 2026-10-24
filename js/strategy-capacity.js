@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='CA-0.9.0-snapshots-history';
+  const RULE_VERSION='CA-1.0.0-phase4-hardening';
   const DEMAND_UNITS=Object.freeze(['resolutions','attendance']);
   const FOUNDATION_SOURCES=Object.freeze(['fte','attendance','resolutions','availabilityFactors','historicalCapacity','historicalAttendanceCapacity']);
   const ACTIVE_METRICS=Object.freeze(new Set(['available-capacity','used-capacity','utilization','productivity-per-fte','required-fte','capacity-gap','capacity-diagnostics','capacity-history']));
@@ -120,27 +120,40 @@
     const rows=(values||[]).map(optionalNumber).filter(v=>v!=null).sort((a,b)=>a-b);if(!rows.length)return null;const mid=Math.floor(rows.length/2);return rows.length%2?rows[mid]:(rows[mid-1]+rows[mid])/2;
   }
   function normalizeCapacityHistoryRow(raw={}){
-    const availableFte=optionalNumber(raw.availableFte??raw.available_fte),nominalFte=optionalNumber(raw.nominalFte??raw.nominal_fte),availabilityRate=optionalNumber(raw.availabilityRate??raw.availability_rate),usedVolume=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFte=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),attendanceVolume=optionalNumber(raw.attendanceVolume??raw.attendance_volume),attendancePerFte=optionalNumber(raw.attendancePerAvailableFte??raw.attendance_per_available_fte),resolutionRate=optionalNumber(raw.resolutionRate??raw.resolution_rate);
-    const source=['close','legacy_backfill','live_preview'].includes(raw.source)?raw.source:'close';
+    const availableFteRaw=optionalNumber(raw.availableFte??raw.available_fte),nominalFteRaw=optionalNumber(raw.nominalFte??raw.nominal_fte),availabilityRate=optionalNumber(raw.availabilityRate??raw.availability_rate),usedVolume=optionalNumber(raw.usedCapacityVolume??raw.used_capacity_volume),usedPerFte=optionalNumber(raw.usedPerAvailableFte??raw.used_per_available_fte),attendanceVolume=optionalNumber(raw.attendanceVolume??raw.attendance_volume),attendancePerFte=optionalNumber(raw.attendancePerAvailableFte??raw.attendance_per_available_fte),resolutionRate=optionalNumber(raw.resolutionRate??raw.resolution_rate);
+    const source=['close','legacy_backfill','live_preview'].includes(raw.source)?raw.source:'close',nominalFte=nominalFteRaw==null?null:Math.max(0,nominalFteRaw),availableWithinNominal=availableFteRaw==null||nominalFte==null||availableFteRaw<=nominalFte+1e-9,availableFte=availableFteRaw==null?null:Math.max(0,nominalFte==null?availableFteRaw:Math.min(availableFteRaw,nominalFte));
+    const revision=Math.max(0,num(raw.revision)),financialSnapshotRevision=Math.max(0,num(raw.financialSnapshotRevision??raw.financial_snapshot_revision)),snapshotVersion=text(raw.snapshotVersion??raw.snapshot_version),ruleVersion=text(raw.ruleVersion??raw.rule_version),contractPresent=revision>0||financialSnapshotRevision>0||snapshotVersion!==''||ruleVersion!=='',contractValid=!contractPresent||(source==='live_preview'?revision===0&&snapshotVersion!==''&&ruleVersion!=='':revision>0&&financialSnapshotRevision===revision&&snapshotVersion!==''&&ruleVersion!=='');
+    const availabilityMissing=Math.max(0,num(raw.availabilityMissing??raw.availability_missing)),demandMissing=Math.max(0,num(raw.demandMissing??raw.usedCapacityMissing??raw.used_capacity_missing)),attendanceMissing=Math.max(0,num(raw.attendanceMissing??raw.attendance_missing)),inconsistentCount=Math.max(0,num(raw.inconsistentCount??raw.inconsistentRows??raw.inconsistent_rows));
+    const availabilityFlag=raw.availability_complete===true||raw.availabilityComplete===true,availabilityComplete=contractPresent?contractValid&&availabilityFlag&&availabilityMissing===0&&availableFte!=null&&nominalFte!=null&&availableWithinNominal:availableFte!=null&&availableFte>=0;
+    const resolutionFlag=raw.complete===true||raw.used_capacity_complete===true||raw.usedCapacityComplete===true,attendanceFlag=raw.attendance_complete===true||raw.attendanceComplete===true;
+    const complete=resolutionFlag&&contractValid&&availabilityComplete&&availableFte>0&&usedPerFte!=null&&(contractPresent?demandMissing===0&&inconsistentCount===0&&usedVolume!=null:true);
+    const attendanceComplete=attendanceFlag&&contractValid&&availabilityComplete&&availableFte>0&&attendancePerFte!=null&&(contractPresent?attendanceMissing===0&&inconsistentCount===0&&attendanceVolume!=null:true);
     return Object.freeze({
-      competence:competenceId(raw.competence),squadCode:text(raw.squadCode??raw.squad_code,'ALL').toUpperCase(),status:text(raw.status,source==='live_preview'?'draft':'closed'),
-      revision:Math.max(0,num(raw.revision)),snapshotVersion:text(raw.snapshotVersion??raw.snapshot_version),ruleVersion:text(raw.ruleVersion??raw.rule_version),source,financialSnapshotRevision:Math.max(0,num(raw.financialSnapshotRevision??raw.financial_snapshot_revision)),createdAt:raw.createdAt??raw.created_at??null,
-      candidateCount:Math.max(0,num(raw.candidateCount??raw.candidate_count)),nominalFte:nominalFte==null?null:Math.max(0,nominalFte),availableFte:availableFte==null?null:Math.max(0,availableFte),availabilityRate:availabilityRate==null?null:clamp01(availabilityRate),
+      competence:competenceId(raw.competence),squadCode:text(raw.squadCode??raw.squad_code,'ALL').toUpperCase(),status:source==='live_preview'?'draft':'closed',
+      revision,snapshotVersion,ruleVersion,source,financialSnapshotRevision,contractPresent,contractValid,createdAt:raw.createdAt??raw.created_at??null,
+      candidateCount:Math.max(0,num(raw.candidateCount??raw.candidate_count)),nominalFte,availableFte,availabilityRate:availabilityRate==null?null:clamp01(availabilityRate),
       usedCapacityVolume:usedVolume==null?null:Math.max(0,usedVolume),usedPerAvailableFte:usedPerFte==null?null:Math.max(0,usedPerFte),
       attendanceVolume:attendanceVolume==null?null:Math.max(0,attendanceVolume),attendancePerAvailableFte:attendancePerFte==null?null:Math.max(0,attendancePerFte),resolutionRate:resolutionRate==null?null:clamp01(resolutionRate),
-      complete:raw.complete===true||raw.used_capacity_complete===true||raw.usedCapacityComplete===true,
-      attendanceComplete:raw.attendance_complete===true||raw.attendanceComplete===true,availabilityComplete:raw.availability_complete===true||raw.availabilityComplete===true,
-      availabilityMissing:Math.max(0,num(raw.availabilityMissing??raw.availability_missing)),demandMissing:Math.max(0,num(raw.demandMissing??raw.used_capacity_missing)),attendanceMissing:Math.max(0,num(raw.attendanceMissing??raw.attendance_missing)),inconsistentCount:Math.max(0,num(raw.inconsistentCount??raw.inconsistent_rows))
+      complete,attendanceComplete,availabilityComplete,availabilityMissing,demandMissing,attendanceMissing,inconsistentCount
     });
   }
+  function latestCapacitySnapshots(history=[]){
+    const selected=new Map(),priority={legacy_backfill:1,close:2,live_preview:3};
+    for(const raw of history||[]){
+      const row=normalizeCapacityHistoryRow(raw);if(!row.competence)continue;const key=`${row.competence}|${row.squadCode}`,current=selected.get(key);
+      const replace=!current||(row.source==='live_preview'&&current.source!=='live_preview')||(row.source!=='live_preview'&&current.source!=='live_preview'&&(row.revision>current.revision||(row.revision===current.revision&&(priority[row.source]||0)>(priority[current.source]||0))));
+      if(replace)selected.set(key,row);
+    }
+    return Object.freeze([...selected.values()].sort((a,b)=>a.competence.localeCompare(b.competence)||a.squadCode.localeCompare(b.squadCode,'pt-BR')));
+  }
   function buildHistoricalReference(history=[],options={}){
-    const comparison=normalizeComparison(options.comparison),requestedCount=COMPARISON_MONTHS[comparison],current=competenceId(options.competence),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase(),expected=priorCompetences(current,requestedCount),normalized=(history||[]).map(normalizeCapacityHistoryRow),byKey=new Map(normalized.map(row=>[`${row.competence}|${row.squadCode}`,row]));
+    const comparison=normalizeComparison(options.comparison),requestedCount=COMPARISON_MONTHS[comparison],current=competenceId(options.competence),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase(),expected=priorCompetences(current,requestedCount),normalized=latestCapacitySnapshots(history),byKey=new Map(normalized.map(row=>[`${row.competence}|${row.squadCode}`,row]));
     const samples=expected.map(id=>byKey.get(`${id}|${scope}`)||null),valid=samples.filter(row=>row&&row.status==='closed'&&row.complete&&row.usedPerAvailableFte!=null&&row.availableFte>0),ready=current!==''&&samples.length===requestedCount&&valid.length===requestedCount;
     const referencePerFte=ready?median(valid.map(row=>row.usedPerAvailableFte)):null;
     return Object.freeze({comparison,scope,requestedCount,expectedCompetences:Object.freeze(expected),sampleCount:valid.length,missingCount:requestedCount-valid.length,samples:Object.freeze(valid),ready:ready&&referencePerFte!=null&&referencePerFte>0,referencePerFte:referencePerFte!=null&&referencePerFte>0?referencePerFte:null});
   }
   function buildHistoricalAttendanceReference(history=[],options={}){
-    const comparison=normalizeComparison(options.comparison),requestedCount=COMPARISON_MONTHS[comparison],current=competenceId(options.competence),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase(),expected=priorCompetences(current,requestedCount),normalized=(history||[]).map(normalizeCapacityHistoryRow),byKey=new Map(normalized.map(row=>[`${row.competence}|${row.squadCode}`,row]));
+    const comparison=normalizeComparison(options.comparison),requestedCount=COMPARISON_MONTHS[comparison],current=competenceId(options.competence),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase(),expected=priorCompetences(current,requestedCount),normalized=latestCapacitySnapshots(history),byKey=new Map(normalized.map(row=>[`${row.competence}|${row.squadCode}`,row]));
     const samples=expected.map(id=>byKey.get(`${id}|${scope}`)||null),valid=samples.filter(row=>row&&row.status==='closed'&&row.attendanceComplete&&row.attendancePerAvailableFte!=null&&row.availableFte>0),ready=current!==''&&samples.length===requestedCount&&valid.length===requestedCount;
     const referenceAttendancePerFte=ready?median(valid.map(row=>row.attendancePerAvailableFte)):null;
     return Object.freeze({comparison,scope,requestedCount,expectedCompetences:Object.freeze(expected),sampleCount:valid.length,missingCount:requestedCount-valid.length,samples:Object.freeze(valid),ready:ready&&referenceAttendancePerFte!=null&&referenceAttendancePerFte>0,referenceAttendancePerFte:referenceAttendancePerFte!=null&&referenceAttendancePerFte>0?referenceAttendancePerFte:null});
@@ -234,7 +247,7 @@
   }
   function buildCapacityEvolution(history=[],options={}){
     const comparison=normalizeComparison(options.comparison),scope=text(options.squadCode,'ALL').toUpperCase()==='ALL'?'ALL':text(options.squadCode).toUpperCase();
-    const normalized=(history||[]).map(normalizeCapacityHistoryRow).filter(row=>row.competence&&row.squadCode===scope).sort((a,b)=>a.competence.localeCompare(b.competence));
+    const normalized=latestCapacitySnapshots(history).filter(row=>row.competence&&row.squadCode===scope);
     const calculated=normalized.map(row=>{
       const current={
         attendance:row.attendanceComplete?row.attendanceVolume:null,
@@ -354,5 +367,5 @@
     });
   }
 
-  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyCapacityGap,calculateCapacityGap,buildCapacityGap,currentFcr,capacityDiagnosticRule,buildCapacityDiagnostic,classifyUtilization,calculateUtilization,buildUtilization,capacityHistoryDelta,buildCapacityEvolution,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
+  return{RULE_VERSION,DEMAND_UNITS,FOUNDATION_SOURCES,ROADMAP_CATALOG,UTILIZATION_BANDS,COMPARISON_MONTHS,normalizeDemandUnit,normalizeScope,normalizeAvailability,observedPerFte,calculateAvailableFte,calculateUsedCapacity,normalizeCapacityPerson,normalizeUsedCapacityRow,summarizeCapacityRows,summarizeUsedCapacityRows,buildAvailableCapacity,buildUsedCapacity,competenceId,priorCompetences,median,normalizeCapacityHistoryRow,latestCapacitySnapshots,buildHistoricalReference,buildHistoricalAttendanceReference,calculateRequiredFte,buildRequiredFte,classifyCapacityGap,calculateCapacityGap,buildCapacityGap,currentFcr,capacityDiagnosticRule,buildCapacityDiagnostic,classifyUtilization,calculateUtilization,buildUtilization,capacityHistoryDelta,buildCapacityEvolution,productivityIndex,normalizeFteProductivityRow,summarizeFteProductivityRows,buildFteProductivity,buildFoundation};
 });

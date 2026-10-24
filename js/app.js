@@ -72,7 +72,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.59.8';
+  const APP_VERSION = '2.59.9';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3720,7 +3720,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
       if(seq!==strategyFinanceLoadSeq)return;
       strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.59.8',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.59.9',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
@@ -4130,9 +4130,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     };
   }
   function strategyCapacityHistoricalRows(vm){
-    const frozen=[...(vm.financial.capacityHistory||[])],live=strategyCapacityLivePreview(vm);
-    if(live){const index=frozen.findIndex(row=>row.competence===live.competence&&String(row.squadCode||'ALL').toUpperCase()===live.squadCode);if(index>=0)frozen.splice(index,1,live);else frozen.push(live);}
-    return frozen.sort((a,b)=>String(a.competence).localeCompare(String(b.competence))||String(a.squadCode||'ALL').localeCompare(String(b.squadCode||'ALL')));
+    const rows=[...(vm.financial.capacityHistory||[])],live=strategyCapacityLivePreview(vm);
+    if(live)rows.push(live);
+    return strategyCapacityEngine.latestCapacitySnapshots(rows);
   }
   function renderStrategyCapacityHistory(vm,displayAggregate){
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value},body=$('#strategyCapacityHistoryRows'),fteChart=$('#strategyCapacityEvolutionFteChart'),utilChart=$('#strategyCapacityEvolutionUtilizationChart'),scopeCode=String(vm.state.squadCode||'all').toUpperCase()==='ALL'?'ALL':String(vm.state.squadCode||'').toUpperCase();

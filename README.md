@@ -1,3 +1,7 @@
+## V2.59.9 — Hardening e fechamento da Fase 4
+
+A V2.59.9 estabiliza a Fase 4 de Capacidade. O histórico passa a escolher revisões de forma determinística, priorizar a prévia quando uma competência é reaberta e rejeitar referências incompletas ou inconsistentes. A migration torna snapshots de capacidade imutáveis e reforça o contrato do payload antes da Fase 5.
+
 ## V2.59.8 — Snapshots, histórico e evolução da capacidade
 
 A V2.59.8 transforma a Fase 4 em uma série histórica auditável. Ao fechar uma competência, o sistema congela FTE disponível, atendimentos, resoluções, FCR e métricas por FTE na mesma revisão do fechamento financeiro. A tela de Capacidade passa a mostrar snapshots oficiais, reconstruções legadas, prévia da competência aberta e evolução de FTE disponível x necessário e utilização. A referência histórica deixa de depender da base operacional viva.

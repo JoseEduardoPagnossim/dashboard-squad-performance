@@ -10,10 +10,10 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('release atual preserva o hardening de cache introduzido na R5',()=>{
-  assert.equal(pkg.version,'2.59.8');
-  assert.equal(pkg.assetVersion,'2.59.8');
-  assert.match(index,/js\/app\.js\?v=2\.59\.8/);
-  assert.match(index,/V2\.59\.8 • Histórico de capacidade/);
+  assert.equal(pkg.version,'2.59.9');
+  assert.equal(pkg.assetVersion,'2.59.9');
+  assert.match(index,/js\/app\.js\?v=2\.59\.9/);
+  assert.match(index,/V2\.59\.9 • Fase 4 estabilizada/);
 });
 
 test('R5 mantém compatibilidade com app antigo em cache sem reintroduzir referência inválida no app atual',()=>{
