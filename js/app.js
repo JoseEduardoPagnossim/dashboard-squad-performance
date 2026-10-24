@@ -74,7 +74,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.60.6';
+  const APP_VERSION = '2.60.7';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4393,6 +4393,21 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return{roi,tech};
   }
 
+  function renderStrategyResultDiagnostics(vm,displayAggregate,returnView=null){
+    const canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),canPeople=strategyPeopleAccess(),roi=returnView?.roi||strategyResultEngine.buildOperationalReturn({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.resultRoi||{}}),tech=canPeople?(returnView?.tech||strategyResultEngine.buildTechnicianOperationalReturn({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.resultTechnicianRoi||{}})):{},ready=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError&&roi.sourceAvailable;
+    const diagnostics=strategyResultEngine.buildResultDiagnostics({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},operational:ready?roi:{},technicians:canPeople&&ready?tech:{}}),set=(id,value)=>{const el=$(id);if(el)el.textContent=value},summary=diagnostics.summary;
+    const status=$('#strategyResultDiagnosticStatus');if(status){const label=!canAggregate?'SEM PERMISSÃO':!ready?(vm.state.financialLoading?'CARREGANDO':'SEM BASE'):summary.critical>0?'CRÍTICO':summary.attention>0?'ATENÇÃO':summary.healthy>0?'MONITORADO':'SEM BASE',tone=!ready?'neutral':summary.critical>0?'bad':summary.attention>0?'warn':summary.healthy>0?'good':'neutral';status.textContent=label;status.className=`strategy-efficiency-status ${tone}`;}
+    set('#strategyResultDiagnosticCritical',ready?Number(summary.critical||0).toLocaleString('pt-BR'):'—');
+    set('#strategyResultDiagnosticAttention',ready?Number(summary.attention||0).toLocaleString('pt-BR'):'—');
+    set('#strategyResultDiagnosticHealthy',ready?Number(summary.healthy||0).toLocaleString('pt-BR'):'—');
+    set('#strategyResultDiagnosticDataGaps',ready?Number(summary.dataGap||0).toLocaleString('pt-BR'):'—');
+    const priority=$('#strategyResultDiagnosticPriority'),item=ready?summary.priority:null;if(priority){priority.className=`strategy-diagnostic-priority ${strategyDiagnosticTone(item?.tone)}`;priority.innerHTML=item?`<div><span class="eyebrow">DIAGNÓSTICO PRIORITÁRIO</span><strong>${escapeHtml(item.label)} · ${escapeHtml(item.title)}</strong><p>${escapeHtml(item.detail)}</p></div><div><span>Próxima análise</span><strong>${escapeHtml(item.nextStep)}</strong></div>`:`<div><span class="eyebrow">DIAGNÓSTICO PRIORITÁRIO</span><strong>${canAggregate?'Sem base comparável':'Sem permissão agregada'}</strong><p>${canAggregate?'Complete custos e resultados econômicos para gerar uma leitura explicável.':'Os diagnósticos agregados exigem acesso aos indicadores estratégicos.'}</p></div>`;}
+    const squadBody=$('#strategyResultDiagnosticSquadRows');if(squadBody){if(!canAggregate)squadBody.innerHTML='<tr><td colspan="7" class="muted">Sem permissão para diagnóstico agregado.</td></tr>';else if(!ready)squadBody.innerHTML='<tr><td colspan="7" class="muted">Sem base de ROI e custo para diagnóstico.</td></tr>';else squadBody.innerHTML=diagnostics.squads.length?diagnostics.squads.map(row=>`<tr><td><strong>${escapeHtml(row.label)}</strong></td><td><span class="strategy-unit-cost-reading ${strategyDiagnosticTone(row.tone)}">${escapeHtml(row.title)}</span></td><td>${strategySignedPercent(row.evidence.directRoiPct)}</td><td>${strategyRatio(row.evidence.directCostCoverage)}</td><td>${strategyRatio(row.evidence.influencedImpactPerCost)}</td><td>${strategyRatio(row.evidence.protectedImpactPerCost)}</td><td>${escapeHtml(row.nextStep)}</td></tr>`).join(''):'<tr><td colspan="7" class="muted">Nenhum Squad com custo ou resultado neste escopo.</td></tr>';}
+    const techBody=$('#strategyResultDiagnosticTechRows');if(techBody){if(!canPeople)techBody.innerHTML='<tr><td colspan="8" class="muted">Diagnósticos individuais protegidos para este usuário.</td></tr>';else if(!ready)techBody.innerHTML='<tr><td colspan="8" class="muted">Sem base individual para diagnóstico.</td></tr>';else techBody.innerHTML=diagnostics.technicians.length?diagnostics.technicians.map(row=>`<tr><td><strong>${escapeHtml(row.label)}</strong></td><td>${row.squadCode?`Squad ${escapeHtml(row.squadCode)}`:'—'}</td><td><span class="strategy-unit-cost-reading ${strategyDiagnosticTone(row.tone)}">${escapeHtml(row.title)}</span></td><td>${strategySignedPercent(row.evidence.directRoiPct)}</td><td>${strategyRatio(row.evidence.directCostCoverage)}</td><td>${strategyRatio(row.evidence.influencedImpactPerCost)}</td><td>${strategyRatio(row.evidence.protectedImpactPerCost)}</td><td>${escapeHtml(row.nextStep)}</td></tr>`).join(''):'<tr><td colspan="8" class="muted">Nenhum técnico com base econômica neste escopo.</td></tr>';}
+    const guardrail=$('#strategyResultDiagnosticGuardrail');if(guardrail)guardrail.textContent='O painel explica combinações observadas e não presume causa. Valide recorrência, cobertura de lançamentos, janela de reconhecimento, carga de retenção, handoff comercial e contexto operacional antes de decidir.';
+    return diagnostics;
+  }
+
   function renderStrategyResult(vm,displayAggregate){
     const aggregate=vm.financial.resultFoundation||{},foundation=strategyResultEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate}),ready=displayAggregate&&foundation.sourceAvailable;
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
@@ -4410,7 +4425,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyProtectedRevenue(vm,displayAggregate);
     renderStrategyTechnicianResults(vm,displayAggregate);
     renderStrategySquadResults(vm,displayAggregate);
-    renderStrategyOperationalReturn(vm,displayAggregate);
+    const resultReturnView=renderStrategyOperationalReturn(vm,displayAggregate);
+    renderStrategyResultDiagnostics(vm,displayAggregate,resultReturnView);
     const contracts={
       'result-foundation':'Contrato de eventos, atribuições, estados, deduplicação e filtros ativo.',
       'direct-revenue':'Receita confirmada, Up-sell nativo, ticket médio e recorrência separados ativos.',
@@ -4419,7 +4435,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       'result-by-technician':'Contribuição econômica individual ativa com rateio auditável e naturezas separadas.',
       'result-by-squad':'Consolidação econômica por Squad ativa com rateio auditável e naturezas separadas.',
       'result-roi':'ROI direto, retorno líquido, cobertura de custo e impacto econômico por R$ de custo ativos.',
-      'result-diagnostics':'Diagnósticos explicáveis entram na V2.60.7.',
+      'result-diagnostics':'Diagnósticos explicáveis de retorno, influência e proteção ativos com guardrails contra causalidade automática.',
       'result-history':'Snapshots e evolução econômica entram na V2.60.8.'
     };
     const body=$('#strategyResultReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='ready'?'ready':'pending'}">${item.status==='ready'?'ATIVO':'PLANEJADO'}</span></td><td>${escapeHtml(contracts[item.id]||'Planejado para a Fase 5.')}</td></tr>`).join('');

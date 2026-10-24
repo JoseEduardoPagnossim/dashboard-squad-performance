@@ -1,3 +1,7 @@
+## V2.60.7 — Insights e diagnóstico de resultado
+
+A V2.60.7 transforma ROI, cobertura direta e os impactos de Receita Influenciada/Protegida em leituras operacionais explicáveis. O motor diferencia retorno direto forte, break-even, sinais de conversão a investigar, concentração em retenção, retorno abaixo do custo e lacunas de atribuição, sem afirmar causalidade automática. Não há migration nova: a versão reutiliza as fontes oficiais da V2.60.6.
+
 ## V2.60.4 — Resultado por técnico
 
 A V2.60.4 consolida a contribuição econômica individual de cada técnico sem somar Receita Direta, Influenciada e Protegida em um único número. O rateio usa `attribution_share` explícita quando disponível e divide somente o saldo restante entre participantes sem percentual, preservando reconciliação por evento. A visão individual exige permissão `people_costs`; ROI e cruzamento com custo permanecem reservados para a V2.60.6. Execute `MIGRACAO_V2.60.4.sql` após a V2.60.3.

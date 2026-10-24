@@ -1,3 +1,13 @@
+## V2.60.7 — Insights e diagnóstico de resultado
+
+- traduz ROI, cobertura e impactos econômicos em situações operacionais explicáveis;
+- diferencia retorno forte/positivo, proximidade do break-even, influência alta com retorno direto baixo, concentração em proteção, retorno abaixo do custo e lacunas de atribuição;
+- mantém Receita Direta como única base do ROI; Influenciada e Protegida entram apenas como contexto independente;
+- diagnósticos por operação, Squad e técnico com guardrail explícito contra causalidade automática;
+- técnico sem custo pessoal permanece visível, mas com diagnóstico econômico inconclusivo;
+- não exige migration nova; reutiliza as RPCs e custos oficiais da V2.60.6;
+- motor de Resultado atualizado para `RE-0.8.0-result-diagnostics`.
+
 ## V2.60.6 — ROI e retorno operacional
 
 - cruza Receita Direta com custo da operação, do Squad e do técnico;

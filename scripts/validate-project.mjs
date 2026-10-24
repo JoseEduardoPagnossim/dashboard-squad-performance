@@ -163,6 +163,8 @@ for (const required of [
   'tests/strategy-result-roi-v2606.test.js',
   'docs/RESULTADO_ROI_RETORNO_V2.60.6.md',
   'supabase/migrations/MIGRACAO_V2.60.6.sql',
+  'tests/strategy-result-diagnostics-v2607.test.js',
+  'docs/RESULTADO_DIAGNOSTICOS_V2.60.7.md',
   'js/strategy-result.js',
   'js/strategy-capacity.js',
   'supabase/migrations/MIGRACAO_V2.58.9.sql',

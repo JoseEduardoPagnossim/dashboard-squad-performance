@@ -13,14 +13,14 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','HARDENING_EFICIENCIA_V2.58.9.md');
 
 test('V2.58.9 fecha a Fase 3 com hardening versionado',()=>{
-  assert.equal(pkg.version,'2.60.6');
-  assert.equal(pkg.assetVersion,'2.60.6');
+  assert.equal(pkg.version,'2.60.7');
+  assert.equal(pkg.assetVersion,'2.60.7');
   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
-  assert.match(index,/V2\.60\.6/);
-  assert.ok(index.includes('js/strategy-efficiency.js?v=2.60.6'));
-  assert.ok(index.includes('js/app.js?v=2.60.6'));
+  assert.match(index,/V2\.60\.7/);
+  assert.ok(index.includes('js/strategy-efficiency.js?v=2.60.7'));
+  assert.ok(index.includes('js/app.js?v=2.60.7'));
 });
 
 test('null permanece sem base e nao vira zero nos calculos relativos',()=>{

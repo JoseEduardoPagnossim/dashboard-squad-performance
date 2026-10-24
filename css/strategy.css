@@ -307,3 +307,8 @@
 /* V2.60.4 - Resultado por tecnico */
 .strategy-technician-result-section{display:grid;gap:18px;padding-top:18px;border-top:1px solid var(--border)}
 .strategy-technician-result-section .strategy-history-card small{display:block;margin-top:4px;color:var(--muted);white-space:nowrap}
+
+/* V2.60.7 - insights e diagnostico de resultado */
+.strategy-result-diagnostics-section{margin-top:18px;border-color:color-mix(in srgb,var(--accent) 34%,var(--border))}
+.strategy-result-diagnostic-squad-table{min-width:1180px}.strategy-result-diagnostic-tech-table{min-width:1340px}
+.strategy-result-diagnostics-section .strategy-unit-cost-reading{white-space:nowrap}

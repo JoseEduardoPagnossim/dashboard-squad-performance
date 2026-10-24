@@ -11,9 +11,9 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.2.sql'),'utf8');
 
 test('V2.60.2 publica Receita Influenciada separada da Receita Direta',()=>{
-  assert.equal(pkg.version,'2.60.6');
-  assert.equal(pkg.assetVersion,'2.60.6');
-  assert.equal(result.RULE_VERSION,'RE-0.7.0-roi-return');
+  assert.equal(pkg.version,'2.60.7');
+  assert.equal(pkg.assetVersion,'2.60.7');
+  assert.equal(result.RULE_VERSION,'RE-0.8.0-result-diagnostics');
   assert.ok(result.INFLUENCE_STAGE_IDS.includes('originated'));
   assert.ok(result.INFLUENCE_STAGE_IDS.includes('qualified'));
   assert.ok(result.INFLUENCE_STAGE_IDS.includes('evolved'));
@@ -23,7 +23,7 @@ test('V2.60.2 publica Receita Influenciada separada da Receita Direta',()=>{
   assert.match(index,/strategyInfluencedRevenueTotal/);
   assert.match(index,/strategyInfluencedRevenueStage/);
   assert.match(index,/strategyAddInfluencedRevenueBtn/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.6'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.7'));
 });
 
 test('motor separa pipeline aberto de receita influenciada convertida',()=>{

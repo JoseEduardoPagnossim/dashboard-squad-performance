@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.7.0-roi-return';
+  const RULE_VERSION='RE-0.8.0-result-diagnostics';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -46,9 +46,10 @@
     Object.freeze({id:'result-by-technician',label:'Resultado por técnico',version:'V2.60.4',state:'ready'}),
     Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'ready'}),
     Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'ready'}),
-    Object.freeze({id:'result-diagnostics',label:'Insights e diagnóstico de resultado',version:'V2.60.7',state:'planned'}),
+    Object.freeze({id:'result-diagnostics',label:'Insights e diagnóstico de resultado',version:'V2.60.7',state:'ready'}),
     Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'planned'})
   ]);
+  const RESULT_DIAGNOSTIC_THRESHOLDS=Object.freeze({strongCoverage:1.25,breakEvenCoverage:1,nearBreakEvenCoverage:.85,materialImpactPerCost:1});
 
   function text(value,fallback=''){const out=String(value??'').trim();return out||fallback}
   function num(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
@@ -483,6 +484,47 @@
     ])});
   }
 
+  function resultDiagnosticLabel(raw={},kind='squad'){
+    if(kind==='operation')return 'Operação';
+    if(kind==='technician')return text(raw.technicianName??raw.technician_name,'Sem identificação');
+    const code=cleanCode(raw.squadCode??raw.squad_code);return code&&code!=='SEM SQUAD'?`Squad ${code}`:'Sem Squad';
+  }
+  function resultDiagnosticRule(fields){
+    const t=RESULT_DIAGNOSTIC_THRESHOLDS,c=fields.directCostCoverage,inf=fields.influencedImpactPerCost,prot=fields.protectedImpactPerCost;
+    if(c==null)return Object.freeze({code:'DATA_GAP',title:'BASE ECONÔMICA INCOMPLETA',tone:'neutral',priority:0,detail:'O custo necessário para interpretar retorno e cobertura não está disponível neste escopo.',nextStep:'Completar ou validar o custo da competência antes de interpretar retorno econômico.'});
+    if(fields.directRevenue===0&&fields.influencedRevenue===0&&fields.protectedRevenue===0)return Object.freeze({code:'ECONOMIC_ATTRIBUTION_GAP',title:'CUSTO SEM RESULTADO ECONÔMICO ATRIBUÍDO',tone:'bad',priority:3,detail:'Há custo registrado, mas nenhuma contribuição econômica foi atribuída nesta competência. Isso não prova ausência de valor; pode indicar lacuna de registro ou atuação sem evento econômico mensurado.',nextStep:'Auditar cobertura dos lançamentos de Receita Direta, Influenciada e Protegida antes de concluir baixa performance.'});
+    if(c>=t.strongCoverage)return Object.freeze({code:'DIRECT_RETURN_STRONG',title:'RETORNO DIRETO FORTE',tone:'good',priority:1,detail:'A Receita Direta cobre o custo com folga nesta competência. Influenciada e Protegida continuam como impactos complementares e não ampliam artificialmente o ROI.',nextStep:'Validar recorrência, concentração e repetibilidade do resultado antes de usar a leitura como referência de capacidade.'});
+    if(c>=t.breakEvenCoverage)return Object.freeze({code:'DIRECT_RETURN_POSITIVE',title:'RETORNO DIRETO POSITIVO',tone:'good',priority:1,detail:'A Receita Direta cobre o custo do escopo. O resultado está acima do break-even direto sem depender da soma de receitas influenciadas ou protegidas.',nextStep:'Monitorar estabilidade do retorno e a origem das receitas para verificar se o desempenho é recorrente.'});
+    if(c>=t.nearBreakEvenCoverage)return Object.freeze({code:'NEAR_BREAK_EVEN',title:'PRÓXIMO DO BREAK-EVEN DIRETO',tone:'warn',priority:2,detail:'A Receita Direta está próxima de cobrir o custo, mas ainda não alcança o break-even. Pequenas variações de custo ou conversão podem alterar a leitura.',nextStep:'Revisar custo, oportunidades em evolução e recorrência das receitas antes de qualquer ajuste estrutural.'});
+    if(inf!=null&&inf>=t.materialImpactPerCost&&fields.influencedRevenue>fields.directRevenue&&fields.influencedRevenue>=fields.protectedRevenue)return Object.freeze({code:'INFLUENCE_CONVERSION_SIGNAL',title:'INFLUÊNCIA ALTA, RETORNO DIRETO BAIXO',tone:'warn',priority:3,detail:'O valor influenciado é relevante em relação ao custo, enquanto a Receita Direta ainda não cobre a operação. O dado não prova falha de conversão; sinaliza que o handoff, fechamento e a janela de reconhecimento merecem investigação.',nextStep:'Auditar oportunidades influenciadas, status de conversão, responsável pelo fechamento e competência em que a receita foi reconhecida.'});
+    if(prot!=null&&prot>=t.materialImpactPerCost&&fields.protectedRevenue>fields.directRevenue)return Object.freeze({code:'PROTECTION_CONCENTRATION',title:'IMPACTO CONCENTRADO EM PROTEÇÃO',tone:'warn',priority:3,detail:'A operação preserva valor relevante, mas a Receita Direta não cobre o custo. Isso pode refletir um papel econômico de retenção e não deve ser tratado automaticamente como baixa performance comercial.',nextStep:'Separar a carga de retenção e validar MRR preservado, risco de churn e custo de proteção antes de comparar com metas de venda.'});
+    return Object.freeze({code:'DIRECT_RETURN_BELOW_COST',title:'RETORNO DIRETO ABAIXO DO CUSTO',tone:'bad',priority:3,detail:'A Receita Direta atribuída não cobre o custo nesta competência. Receitas Influenciada e Protegida permanecem evidências separadas e não corrigem o ROI por soma.',nextStep:'Revisar mix de atividades, cobertura de registros, custo e geração de Receita Direta antes de definir ação gerencial.'});
+  }
+  function diagnoseResultRow(raw={},kind='squad'){
+    const fields=normalizeRoiFields(raw),costAvailable=kind==='technician'?(raw.costAvailable===true||raw.cost_available===true):fields.totalCost>0,prepared={...fields,directCostCoverage:costAvailable?fields.directCostCoverage:null,influencedImpactPerCost:costAvailable?fields.influencedImpactPerCost:null,protectedImpactPerCost:costAvailable?fields.protectedImpactPerCost:null};
+    const rule=resultDiagnosticRule(prepared);
+    return Object.freeze({...rule,ready:prepared.directCostCoverage!=null,kind,label:resultDiagnosticLabel(raw,kind),squadCode:cleanCode(raw.squadCode??raw.squad_code),technicianKey:text(raw.technicianKey??raw.technician_key),evidence:Object.freeze({totalCost:prepared.totalCost,fte:prepared.fte,directRevenue:prepared.directRevenue,influencedRevenue:prepared.influencedRevenue,protectedRevenue:prepared.protectedRevenue,directNetReturn:prepared.directNetReturn,directRoiPct:prepared.directRoiPct,directCostCoverage:prepared.directCostCoverage,influencedImpactPerCost:prepared.influencedImpactPerCost,protectedImpactPerCost:prepared.protectedImpactPerCost}),causalGuardrail:'Diagnóstico baseado em sinais observados; não atribui causa sem evidência operacional adicional.'});
+  }
+  function summarizeResultDiagnostics(rows=[]){
+    const list=(Array.isArray(rows)?rows:[]).filter(Boolean),critical=list.filter(row=>row.tone==='bad').length,attention=list.filter(row=>row.tone==='warn').length,healthy=list.filter(row=>row.tone==='good').length,dataGap=list.filter(row=>row.tone==='neutral'||row.ready===false).length,comparable=list.filter(row=>row.ready!==false&&row.tone!=='neutral').length,toneWeight={bad:4,warn:3,good:2,neutral:1};
+    const priority=[...list].sort((a,b)=>(b.priority??0)-(a.priority??0)||(toneWeight[b.tone]||0)-(toneWeight[a.tone]||0)||(a.evidence?.directCostCoverage??Infinity)-(b.evidence?.directCostCoverage??Infinity))[0]||null;
+    return Object.freeze({critical,attention,healthy,dataGap,comparable,total:list.length,priority});
+  }
+  function buildResultDiagnostics({scope={},operational={},technicians={}}={}){
+    const normalizedScope=normalizeScope(scope),op=normalizeResultRoiAggregate(operational),tech=normalizeTechnicianRoiAggregate(technicians),scopeCode=normalizedScope.squadCode==='all'?'ALL':cleanCode(normalizedScope.squadCode);
+    const operation=diagnoseResultRow({...op,sourceAvailable:op.sourceAvailable},'operation');
+    let squads=op.rows.map(row=>diagnoseResultRow(row,'squad'));
+    let technicianRows=tech.rows.map(row=>diagnoseResultRow(row,'technician'));
+    if(scopeCode!=='ALL'){squads=squads.filter(row=>row.squadCode===scopeCode);technicianRows=technicianRows.filter(row=>row.squadCode===scopeCode);}
+    const visible=[operation,...squads,...technicianRows],summary=summarizeResultDiagnostics(visible);
+    return Object.freeze({ruleVersion:RULE_VERSION,thresholds:RESULT_DIAGNOSTIC_THRESHOLDS,scope:normalizedScope,status:op.sourceAvailable?'ready':'pending',operation,squads:Object.freeze(squads),technicians:Object.freeze(technicianRows),summary,warnings:Object.freeze([
+      'Diagnósticos explicam combinações de sinais; não afirmam causa sem evidência adicional.',
+      'ROI continua baseado somente em Receita Direta. Influenciada e Protegida são usadas como contexto econômico independente.',
+      'Leituras individuais exigem custo pessoal disponível e permanecem protegidas pela permissão people_costs.',
+      'Um alerta indica ponto de investigação gerencial, não decisão automática de contratação, corte ou cobrança.'
+    ])});
+  }
 
-  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn};
+
+  return{RULE_VERSION,RESULT_DIAGNOSTIC_THRESHOLDS,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn,resultDiagnosticRule,diagnoseResultRow,summarizeResultDiagnostics,buildResultDiagnostics};
 });

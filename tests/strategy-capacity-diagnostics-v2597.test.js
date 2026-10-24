@@ -13,8 +13,8 @@ function history({resolutionPerFte=250,attendancePerFte=300,squadCode='A'}={}){
 }
 
 test('V2.59.7 publica diagnostico de capacidade sem migration nova',()=>{
-  assert.equal(pkg.version,'2.60.6');
-  assert.equal(pkg.assetVersion,'2.60.6');
+  assert.equal(pkg.version,'2.60.7');
+  assert.equal(pkg.assetVersion,'2.60.7');
   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
   assert.ok(existsSync(join(root,'docs','CAPACIDADE_DIAGNOSTICOS_V2.59.7.md')));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.7.sql')),false);
@@ -22,7 +22,7 @@ test('V2.59.7 publica diagnostico de capacidade sem migration nova',()=>{
   assert.match(index,/strategyCapacityDiagnosticSituation/);
   assert.match(index,/strategyCapacityDiagnosticSquadRows/);
   assert.equal((index.match(/id=\"strategyCapacityDiagnosticSituation\"/g)||[]).length,1);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.60.6'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.60.7'));
   assert.match(app,/renderStrategyCapacityDiagnostics/);
 });
 
