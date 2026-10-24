@@ -1,3 +1,7 @@
+## V2.60.3 — Receita Protegida
+
+A V2.60.3 ativa a terceira natureza econômica da Fase 5. Retenção, recuperação e prevenção de cancelamento passam a ser acompanhadas como Receita Protegida, sempre separadas de Receita Direta e Influenciada. Casos em acompanhamento ficam como receita em risco; somente permanências validadas entram nos indicadores. MRR e ARR protegidos permanecem paralelos ao valor do período para evitar dupla contagem. Execute `MIGRACAO_V2.60.3.sql` após a V2.60.2.
+
 ## V2.60.2 — Receita Influenciada
 
 A Fase 5 passa a medir oportunidades em que Suporte/Onboarding participou da geração ou evolução da receita sem afirmar que o time fechou a venda. Oportunidades abertas ficam como pipeline; somente convertidas entram em Receita Influenciada.

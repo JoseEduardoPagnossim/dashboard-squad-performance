@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.3.0-influenced-revenue';
+  const RULE_VERSION='RE-0.4.0-protected-revenue';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -31,12 +31,18 @@
     Object.freeze({id:'other',label:'Outra influência',description:'Outra participação comprovada na geração ou evolução da receita.'})
   ]);
   const INFLUENCE_STAGE_IDS=Object.freeze(INFLUENCE_STAGES.map(item=>item.id));
+  const PROTECTED_REVENUE_TYPES=Object.freeze([
+    Object.freeze({id:'retention',label:'Retenção',description:'Cliente com intenção ou pedido de cancelamento que permaneceu ativo após atuação do time.'}),
+    Object.freeze({id:'recovery',label:'Recuperação',description:'Receita ou cliente recuperado após risco de perda, interrupção ou saída.'}),
+    Object.freeze({id:'cancellation_prevention',label:'Prevenção de cancelamento',description:'Atuação preventiva que neutralizou risco comprovado antes do cancelamento se concretizar.'})
+  ]);
+  const PROTECTED_TYPE_IDS=Object.freeze(PROTECTED_REVENUE_TYPES.map(item=>item.id));
   const EVENT_STATUSES=Object.freeze(['draft','confirmed','cancelled']);
   const CATALOG=Object.freeze([
     Object.freeze({id:'result-foundation',label:'Fundação de Resultado',version:'V2.60.0',state:'ready'}),
     Object.freeze({id:'direct-revenue',label:'Receita direta',version:'V2.60.1',state:'ready'}),
     Object.freeze({id:'influenced-revenue',label:'Receita influenciada',version:'V2.60.2',state:'ready'}),
-    Object.freeze({id:'protected-revenue',label:'Receita protegida',version:'V2.60.3',state:'planned'}),
+    Object.freeze({id:'protected-revenue',label:'Receita protegida',version:'V2.60.3',state:'ready'}),
     Object.freeze({id:'result-by-technician',label:'Resultado por técnico',version:'V2.60.4',state:'planned'}),
     Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'planned'}),
     Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'planned'}),
@@ -52,6 +58,7 @@
   function normalizeStatus(value){const id=text(value).toLowerCase();return EVENT_STATUSES.includes(id)?id:'draft'}
   function normalizeDirectCategory(value){const id=text(value).toLowerCase();return DIRECT_CATEGORY_IDS.includes(id)?id:''}
   function normalizeInfluenceStage(value){const id=text(value).toLowerCase();return INFLUENCE_STAGE_IDS.includes(id)?id:''}
+  function normalizeProtectedType(value){const id=text(value).toLowerCase();return PROTECTED_TYPE_IDS.includes(id)?id:''}
   function normalizeScope(raw={}){
     const squadCode=cleanCode(raw.squadCode||raw.squad_code||'ALL');
     return Object.freeze({
@@ -74,6 +81,9 @@
       currency:cleanCode(raw.currency||'BRL')||'BRL',
       directRevenueCategory:normalizeDirectCategory(raw.direct_revenue_category??raw.directRevenueCategory),
       influencedRevenueStage:normalizeInfluenceStage(raw.influenced_revenue_stage??raw.influencedRevenueStage),
+      protectedRevenueType:normalizeProtectedType(raw.protected_revenue_type??raw.protectedRevenueType),
+      protectionVerifiedAt:raw.protection_verified_at??raw.protectionVerifiedAt??null,
+      protectionLostAt:raw.protection_lost_at??raw.protectionLostAt??null,
       source:text(raw.source,'manual').toLowerCase(),
       sourceReference:text(raw.source_reference??raw.sourceReference),
       externalEntityType:text(raw.external_entity_type??raw.externalEntityType),
@@ -243,5 +253,66 @@
   }
 
 
-  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue};
+  function normalizeProtectedTypeAggregate(raw={}){
+    const type=normalizeProtectedType(raw.type??raw.protected_revenue_type??raw.id);
+    return Object.freeze({
+      type,
+      caseCount:nonNegative(raw.case_count??raw.caseCount),
+      draftCount:nonNegative(raw.draft_count??raw.draftCount),
+      protectedCount:nonNegative(raw.protected_count??raw.protectedCount),
+      lostCount:nonNegative(raw.lost_count??raw.lostCount),
+      protectedRevenueTotal:nonNegative(raw.protected_revenue_total??raw.protectedRevenueTotal),
+      atRiskAmount:nonNegative(raw.at_risk_amount??raw.atRiskAmount),
+      protectedMrr:nonNegative(raw.protected_mrr??raw.protectedMrr),
+      protectedArr:nonNegative(raw.protected_arr??raw.protectedArr),
+      atRiskMrr:nonNegative(raw.at_risk_mrr??raw.atRiskMrr),
+      atRiskArr:nonNegative(raw.at_risk_arr??raw.atRiskArr)
+    });
+  }
+  function normalizeProtectedRevenueAggregate(raw={}){
+    const types=Array.isArray(raw.types)?raw.types.map(normalizeProtectedTypeAggregate).filter(row=>row.type):[];
+    return Object.freeze({
+      sourceAvailable:raw.source_available===true||raw.sourceAvailable===true,
+      competence:text(raw.competence),
+      squadCode:cleanCode(raw.squad_code??raw.squadCode)||'ALL',
+      currency:cleanCode(raw.currency||'BRL')||'BRL',
+      caseCount:nonNegative(raw.case_count??raw.caseCount),
+      draftCount:nonNegative(raw.draft_count??raw.draftCount),
+      protectedCount:nonNegative(raw.protected_count??raw.protectedCount),
+      lostCount:nonNegative(raw.lost_count??raw.lostCount),
+      protectedRevenueTotal:nonNegative(raw.protected_revenue_total??raw.protectedRevenueTotal),
+      atRiskAmount:nonNegative(raw.at_risk_amount??raw.atRiskAmount),
+      protectedMrr:nonNegative(raw.protected_mrr??raw.protectedMrr),
+      protectedArr:nonNegative(raw.protected_arr??raw.protectedArr),
+      atRiskMrr:nonNegative(raw.at_risk_mrr??raw.atRiskMrr),
+      atRiskArr:nonNegative(raw.at_risk_arr??raw.atRiskArr),
+      protectionRate:Math.max(0,Math.min(1,num(raw.protection_rate??raw.protectionRate))),
+      attributedEventCount:nonNegative(raw.attributed_event_count??raw.attributedEventCount),
+      unattributedEventCount:nonNegative(raw.unattributed_event_count??raw.unattributedEventCount),
+      sourceCount:nonNegative(raw.source_count??raw.sourceCount),
+      types:Object.freeze(types)
+    });
+  }
+  function buildProtectedRevenue({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeProtectedRevenueAggregate(aggregate),ready=base.sourceAvailable===true;
+    const byType=new Map(base.types.map(row=>[row.type,row]));
+    const types=Object.freeze(PROTECTED_REVENUE_TYPES.map(def=>Object.freeze({...def,...(byType.get(def.id)||{type:def.id,caseCount:0,draftCount:0,protectedCount:0,lostCount:0,protectedRevenueTotal:0,atRiskAmount:0,protectedMrr:0,protectedArr:0,atRiskMrr:0,atRiskArr:0})})));
+    const closed=base.protectedCount+base.lostCount,protectionRate=closed>0?base.protectedCount/closed:0;
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,
+      caseCount:base.caseCount,draftCount:base.draftCount,protectedCount:base.protectedCount,lostCount:base.lostCount,
+      protectedRevenueTotal:base.protectedRevenueTotal,atRiskAmount:base.atRiskAmount,protectedMrr:base.protectedMrr,protectedArr:base.protectedArr,atRiskMrr:base.atRiskMrr,atRiskArr:base.atRiskArr,
+      protectionRate:base.protectionRate>0?base.protectionRate:protectionRate,attributedEventCount:base.attributedEventCount,unattributedEventCount:base.unattributedEventCount,sourceCount:base.sourceCount,types,
+      warnings:Object.freeze([
+        'Receita Protegida mede valor existente preservado; não é nova venda e permanece separada da Receita Direta e Influenciada.',
+        'Casos em acompanhamento são risco/pipeline de retenção e não entram como receita protegida até a permanência ser validada.',
+        'Um caso confirmado precisa ter data de validação e valor preservado em receita do período, MRR ou ARR.',
+        'Se a receita for perdida depois da confirmação, o evento deve ser marcado como perdido para deixar de compor a métrica ativa e permanecer auditável.',
+        'MRR e ARR protegidos são indicadores paralelos e não são somados novamente à Receita Protegida Total.'
+      ])
+    });
+  }
+
+
+  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue};
 });

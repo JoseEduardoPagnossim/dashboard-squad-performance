@@ -299,3 +299,7 @@
 /* V2.60.2 - receita influenciada */
 .strategy-influenced-revenue-section{display:grid;gap:18px;padding-top:18px;border-top:1px solid var(--border)}
 .strategy-influenced-revenue-section .strategy-history-card small{display:block;margin-top:4px;color:var(--muted)}
+
+/* V2.60.3 - Receita Protegida */
+.strategy-protected-revenue-section{display:grid;gap:18px;padding-top:18px;border-top:1px solid var(--border)}
+.strategy-protected-revenue-section .strategy-history-card small{display:block;margin-top:4px;color:var(--muted)}

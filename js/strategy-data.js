@@ -237,6 +237,33 @@
     };
   }
 
+  function normalizeResultProtectedRevenue(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},types=Array.isArray(source.types)?source.types:[];
+    return{
+      sourceAvailable:source.source_available===true||source.sourceAvailable===true,
+      competence:competenceId(source.competence),
+      squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',
+      currency:cleanCode(source.currency)||'BRL',
+      caseCount:Math.max(0,num(source.case_count??source.caseCount)),
+      draftCount:Math.max(0,num(source.draft_count??source.draftCount)),
+      protectedCount:Math.max(0,num(source.protected_count??source.protectedCount)),
+      lostCount:Math.max(0,num(source.lost_count??source.lostCount)),
+      protectedRevenueTotal:Math.max(0,num(source.protected_revenue_total??source.protectedRevenueTotal)),
+      atRiskAmount:Math.max(0,num(source.at_risk_amount??source.atRiskAmount)),
+      protectedMrr:Math.max(0,num(source.protected_mrr??source.protectedMrr)),
+      protectedArr:Math.max(0,num(source.protected_arr??source.protectedArr)),
+      atRiskMrr:Math.max(0,num(source.at_risk_mrr??source.atRiskMrr)),
+      atRiskArr:Math.max(0,num(source.at_risk_arr??source.atRiskArr)),
+      protectionRate:Math.max(0,Math.min(1,num(source.protection_rate??source.protectionRate))),
+      attributedEventCount:Math.max(0,num(source.attributed_event_count??source.attributedEventCount)),
+      unattributedEventCount:Math.max(0,num(source.unattributed_event_count??source.unattributedEventCount)),
+      sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),
+      types:types.map(row=>({
+        type:String(row?.type||'').trim().toLowerCase(),caseCount:Math.max(0,num(row?.case_count??row?.caseCount)),draftCount:Math.max(0,num(row?.draft_count??row?.draftCount)),protectedCount:Math.max(0,num(row?.protected_count??row?.protectedCount)),lostCount:Math.max(0,num(row?.lost_count??row?.lostCount)),protectedRevenueTotal:Math.max(0,num(row?.protected_revenue_total??row?.protectedRevenueTotal)),atRiskAmount:Math.max(0,num(row?.at_risk_amount??row?.atRiskAmount)),protectedMrr:Math.max(0,num(row?.protected_mrr??row?.protectedMrr)),protectedArr:Math.max(0,num(row?.protected_arr??row?.protectedArr)),atRiskMrr:Math.max(0,num(row?.at_risk_mrr??row?.atRiskMrr)),atRiskArr:Math.max(0,num(row?.at_risk_arr??row?.atRiskArr))
+      })).filter(row=>row.type)
+    };
+  }
+
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
     return{
@@ -261,7 +288,7 @@
       latestCompetence:competences.at(-1)||''
     });
   }
-  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={}}={}){
+  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={}}={}){
     const competenceRows=(competences||[]).map(normalizeCompetenceRow).filter(row=>row.competence);
     const personRows=(people||[]).map(normalizePersonRow).filter(row=>row.id&&row.name);
     const costRows=(costs||[]).map(normalizeEmployeeCostRow).filter(row=>row.personId);
@@ -286,8 +313,9 @@
       capacityHistory:Object.freeze(capacityRows.map(row=>Object.freeze({...row}))),
       resultFoundation:Object.freeze(normalizeResultFoundation(resultFoundation||{})),
       resultDirectRevenue:Object.freeze({...normalizeResultDirectRevenue(resultDirectRevenue||{}),categories:Object.freeze(normalizeResultDirectRevenue(resultDirectRevenue||{}).categories.map(row=>Object.freeze({...row})))}),
-      resultInfluencedRevenue:Object.freeze({...normalizeResultInfluencedRevenue(resultInfluencedRevenue||{}),stages:Object.freeze(normalizeResultInfluencedRevenue(resultInfluencedRevenue||{}).stages.map(row=>Object.freeze({...row})))})
+      resultInfluencedRevenue:Object.freeze({...normalizeResultInfluencedRevenue(resultInfluencedRevenue||{}),stages:Object.freeze(normalizeResultInfluencedRevenue(resultInfluencedRevenue||{}).stages.map(row=>Object.freeze({...row})))}),
+      resultProtectedRevenue:Object.freeze({...normalizeResultProtectedRevenue(resultProtectedRevenue||{}),types:Object.freeze(normalizeResultProtectedRevenue(resultProtectedRevenue||{}).types.map(row=>Object.freeze({...row})))})
     });
   }
-  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,normalizeResultInfluencedRevenue,buildOperationalContext,buildFinancialContext};
+  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,normalizeResultInfluencedRevenue,normalizeResultProtectedRevenue,buildOperationalContext,buildFinancialContext};
 });

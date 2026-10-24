@@ -1,3 +1,14 @@
+## V2.60.3 — Receita Protegida
+
+- ativa a terceira natureza econômica da Fase 5 com o motor `RE-0.4.0-protected-revenue`;
+- adiciona retenção, recuperação e prevenção de cancelamento como naturezas nativas;
+- separa casos em acompanhamento de proteções confirmadas e perdas;
+- mede Receita Protegida, MRR protegido, ARR protegido, risco aberto e taxa de proteção;
+- exige validação da permanência antes de contabilizar um caso confirmado;
+- permite retirar da métrica uma proteção posteriormente perdida sem apagar a auditoria;
+- mantém Receita Direta e Receita Influenciada independentes;
+- adiciona `MIGRACAO_V2.60.3.sql` e RPC agregada com filtro de Squad sem duplicidade.
+
 ## V2.60.2 — Receita Influenciada
 
 - ativa a segunda natureza econômica da Fase 5;
