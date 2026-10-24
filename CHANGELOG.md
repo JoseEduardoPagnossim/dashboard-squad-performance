@@ -1,3 +1,17 @@
+## V2.60.0 — Fundação de Resultado
+
+- abre a Fase 5 com a nova seção estratégica `Resultado`;
+- adiciona o motor `RE-0.1.0-result-foundation`;
+- separa receita direta, influenciada e protegida como naturezas econômicas independentes;
+- cria `strategy_result_events` e `strategy_result_attributions`;
+- evita duplicidade financeira ao separar evento econômico de participantes;
+- adiciona estados `draft`, `confirmed` e `cancelled`;
+- cria deduplicação por origem/referência;
+- adiciona RPC agregada de prontidão e contagens, sem somar valores monetários;
+- herda filtros estratégicos de competência, Squad e comparação;
+- mantém filtros operacionais isolados;
+- adiciona migration `MIGRACAO_V2.60.0.sql`.
+
 ## V2.59.9 — Hardening e fechamento da Fase 4
 
 - atualiza o motor para `CA-1.0.0-phase4-hardening`;

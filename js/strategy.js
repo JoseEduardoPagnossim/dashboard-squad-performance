@@ -11,11 +11,12 @@
   'use strict';
   if(!accessEngine||!dataEngine||!costEngine||!insightEngine)throw new Error('Dependências da Gestão Estratégica não carregadas.');
 
-  const VALID_SECTIONS=Object.freeze(['executive','efficiency','capacity','costs','assumptions']);
+  const VALID_SECTIONS=Object.freeze(['executive','efficiency','capacity','result','costs','assumptions']);
   const SECTION_META=Object.freeze({
     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
     efficiency:Object.freeze({label:'Eficiência',eyebrow:'EFICIÊNCIA RELATIVA'}),
     capacity:Object.freeze({label:'Capacidade',eyebrow:'CAPACIDADE OPERACIONAL'}),
+    result:Object.freeze({label:'Resultado',eyebrow:'RESULTADO ECONÔMICO'}),
     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });
@@ -45,7 +46,7 @@
     function setComparison(value){state={...state,comparison:normalizeComparison(value)};return getState()}
     function getState(){return{...state,access:{...state.access}}}
     function getContext(){const comps=availableCompetences(context,financial);return{squads:availableSquads(context).map(row=>({...row,competences:[...(row.competences||[])]})),operationalCompetences:[...context.competences],financialCompetences:financial.competences.map(row=>row.competence),competences:comps,latestCompetence:comps.at(-1)||context.latestCompetence}}
-    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),operationalCosts:financial.operationalCosts.map(row=>({...row})),allocations:financial.allocations.map(row=>({...row})),resolutionMetrics:financial.resolutionMetrics.map(row=>({...row})),summary:{...financial.summary},squadSummary:financial.squadSummary.map(row=>({...row})),history:financial.history.map(row=>({...row})),efficiencyHistory:(financial.efficiencyHistory||[]).map(row=>({...row,operation:{...row.operation},squads:(row.squads||[]).map(item=>({...item})),benchmarks:{...row.benchmarks}})),capacityHistory:(financial.capacityHistory||[]).map(row=>({...row}))}}
+    function getFinancialData(){return{competences:financial.competences.map(row=>({...row})),people:financial.people.map(row=>({...row})),costs:financial.costs.map(row=>({...row})),operationalCosts:financial.operationalCosts.map(row=>({...row})),allocations:financial.allocations.map(row=>({...row})),resolutionMetrics:financial.resolutionMetrics.map(row=>({...row})),summary:{...financial.summary},squadSummary:financial.squadSummary.map(row=>({...row})),history:financial.history.map(row=>({...row})),efficiencyHistory:(financial.efficiencyHistory||[]).map(row=>({...row,operation:{...row.operation},squads:(row.squads||[]).map(item=>({...item})),benchmarks:{...row.benchmarks}})),capacityHistory:(financial.capacityHistory||[]).map(row=>({...row})),resultFoundation:{...(financial.resultFoundation||{})}}}
     function selectedCompetenceRecord(){return financial.competences.find(row=>row.competence===state.competence)||null}
     function viewModel(){
       const snapshot=getState(),ctx=getContext(),fin=getFinancialData(),meta=SECTION_META[snapshot.section];

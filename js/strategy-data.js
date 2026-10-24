@@ -168,6 +168,26 @@
     };
   }
 
+
+  function normalizeResultFoundation(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    return{
+      sourceAvailable:source.source_available===true||source.sourceAvailable===true,
+      competence:competenceId(source.competence),
+      squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',
+      eventCount:Math.max(0,num(source.event_count??source.eventCount)),
+      confirmedCount:Math.max(0,num(source.confirmed_count??source.confirmedCount)),
+      draftCount:Math.max(0,num(source.draft_count??source.draftCount)),
+      cancelledCount:Math.max(0,num(source.cancelled_count??source.cancelledCount)),
+      attributedCount:Math.max(0,num(source.attributed_count??source.attributedCount)),
+      unattributedCount:Math.max(0,num(source.unattributed_count??source.unattributedCount)),
+      sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),
+      directCount:Math.max(0,num(source.direct_count??source.directCount)),
+      influencedCount:Math.max(0,num(source.influenced_count??source.influencedCount)),
+      protectedCount:Math.max(0,num(source.protected_count??source.protectedCount))
+    };
+  }
+
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
     return{
@@ -192,7 +212,7 @@
       latestCompetence:competences.at(-1)||''
     });
   }
-  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[]}={}){
+  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={}}={}){
     const competenceRows=(competences||[]).map(normalizeCompetenceRow).filter(row=>row.competence);
     const personRows=(people||[]).map(normalizePersonRow).filter(row=>row.id&&row.name);
     const costRows=(costs||[]).map(normalizeEmployeeCostRow).filter(row=>row.personId);
@@ -214,8 +234,9 @@
       squadSummary:Object.freeze(squadRows.map(row=>Object.freeze({...row}))),
       history:Object.freeze(historyRows.map(row=>Object.freeze({...row}))),
       efficiencyHistory:Object.freeze(efficiencyRows.map(row=>Object.freeze({...row,operation:Object.freeze({...row.operation}),squads:Object.freeze(row.squads.map(item=>Object.freeze({...item}))),benchmarks:Object.freeze({...row.benchmarks})}))),
-      capacityHistory:Object.freeze(capacityRows.map(row=>Object.freeze({...row})))
+      capacityHistory:Object.freeze(capacityRows.map(row=>Object.freeze({...row}))),
+      resultFoundation:Object.freeze(normalizeResultFoundation(resultFoundation||{}))
     });
   }
-  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,buildOperationalContext,buildFinancialContext};
+  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,buildOperationalContext,buildFinancialContext};
 });

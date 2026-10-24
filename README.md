@@ -1,3 +1,7 @@
+## V2.60.0 — Fundação de Resultado
+
+A Fase 5 começa com um domínio econômico separado para receita direta, influenciada e protegida. A V2.60.0 cria o contrato de eventos e atribuições, filtros estratégicos, deduplicação por origem e o motor `RE-0.1.0-result-foundation`. Esta versão publica apenas prontidão e contagens; os cálculos monetários entram nas versões V2.60.1 em diante. Execute `MIGRACAO_V2.60.0.sql`.
+
 ## V2.59.9 — Hardening e fechamento da Fase 4
 
 A V2.59.9 estabiliza a Fase 4 de Capacidade. O histórico passa a escolher revisões de forma determinística, priorizar a prévia quando uma competência é reaberta e rejeitar referências incompletas ou inconsistentes. A migration torna snapshots de capacidade imutáveis e reforça o contrato do payload antes da Fase 5.
