@@ -1,3 +1,10 @@
+## V2.60.5 — Resultado por Squad
+
+- Consolidação de Receita Direta, Influenciada e Protegida por Squad, sem total artificial entre naturezas.
+- Rateio econômico calculado antes do filtro, usando `attribution_share` e a mesma regra determinística da visão por técnico.
+- Nova RPC agregada `get_strategy_result_squad_summary`, sem exposição de dados individuais.
+- Fase 5 preparada para ROI e retorno operacional na V2.60.6.
+
 ## V2.60.4 — Resultado por técnico
 - consolida contribuição econômica individual sem somar naturezas distintas;
 - aplica attribution_share explícita e divide apenas o saldo remanescente entre participantes sem percentual;

@@ -234,3 +234,7 @@ Detalhes: `docs/GESTAO_ESTRATEGICA_FECHAMENTO_SNAPSHOTS_V2.57.6.md`.
 
 ## V2.60.4 — Resultado por técnico
 Consolida Receita Direta, Influenciada e Protegida por técnico usando atribuição econômica auditável. As três naturezas permanecem separadas e não formam um total composto.
+
+
+## V2.60.5 — Resultado por Squad
+A Fase 5 agora consolida Receita Direta, Influenciada e Protegida por Squad usando o mesmo rateio auditável da visão por técnico. As três naturezas continuam separadas; custo e ROI entram na V2.60.6.

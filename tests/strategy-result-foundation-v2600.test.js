@@ -14,18 +14,18 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.0.sql'),'utf8');
 
 test('V2.60.0 publica Fundação de Resultado isolada',()=>{
-  assert.equal(pkg.version,'2.60.4');
-  assert.equal(pkg.assetVersion,'2.60.4');
-  assert.equal(result.RULE_VERSION,'RE-0.5.0-technician-results');
+  assert.equal(pkg.version,'2.60.5');
+  assert.equal(pkg.assetVersion,'2.60.5');
+  assert.equal(result.RULE_VERSION,'RE-0.6.0-squad-results');
   assert.ok(strategy.VALID_SECTIONS.includes('result'));
   assert.equal(strategy.SECTION_META.result.label,'Resultado');
   assert.match(index,/data-strategy-section="result"/);
   assert.match(index,/data-strategy-panel="result"/);
   assert.match(index,/strategyResultEventCount/);
   assert.match(index,/strategyResultReadinessRows/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.4'));
-  assert.ok(index.indexOf('js/strategy-result.js?v=2.60.4')<index.indexOf('js/strategy.js?v=2.60.4'));
-  assert.ok(index.indexOf('js/strategy-result.js?v=2.60.4')<index.indexOf('js/app.js?v=2.60.4'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.5'));
+  assert.ok(index.indexOf('js/strategy-result.js?v=2.60.5')<index.indexOf('js/strategy.js?v=2.60.5'));
+  assert.ok(index.indexOf('js/strategy-result.js?v=2.60.5')<index.indexOf('js/app.js?v=2.60.5'));
   assert.ok(existsSync(join(root,'docs','RESULTADO_FUNDACAO_V2.60.0.md')));
 });
 

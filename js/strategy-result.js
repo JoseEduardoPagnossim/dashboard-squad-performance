@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.5.0-technician-results';
+  const RULE_VERSION='RE-0.6.0-squad-results';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -44,7 +44,7 @@
     Object.freeze({id:'influenced-revenue',label:'Receita influenciada',version:'V2.60.2',state:'ready'}),
     Object.freeze({id:'protected-revenue',label:'Receita protegida',version:'V2.60.3',state:'ready'}),
     Object.freeze({id:'result-by-technician',label:'Resultado por técnico',version:'V2.60.4',state:'ready'}),
-    Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'planned'}),
+    Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'ready'}),
     Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'planned'}),
     Object.freeze({id:'result-diagnostics',label:'Insights e diagnóstico de resultado',version:'V2.60.7',state:'planned'}),
     Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'planned'})
@@ -371,5 +371,60 @@
   }
 
 
-  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults};
+  function normalizeSquadResultRow(raw={}){
+    return Object.freeze({
+      squadCode:cleanCode(raw.squad_code??raw.squadCode)||'SEM SQUAD',
+      technicianCount:nonNegative(raw.technician_count??raw.technicianCount),
+      participationCount:nonNegative(raw.participation_count??raw.participationCount),
+      creditedEventCount:nonNegative(raw.credited_event_count??raw.creditedEventCount),
+      directEventCount:nonNegative(raw.direct_event_count??raw.directEventCount),
+      directRevenue:nonNegative(raw.direct_revenue??raw.directRevenue),
+      directMrr:nonNegative(raw.direct_mrr??raw.directMrr),
+      directArr:nonNegative(raw.direct_arr??raw.directArr),
+      influencedEventCount:nonNegative(raw.influenced_event_count??raw.influencedEventCount),
+      influencedRevenue:nonNegative(raw.influenced_revenue??raw.influencedRevenue),
+      influencedMrr:nonNegative(raw.influenced_mrr??raw.influencedMrr),
+      influencedArr:nonNegative(raw.influenced_arr??raw.influencedArr),
+      protectedEventCount:nonNegative(raw.protected_event_count??raw.protectedEventCount),
+      protectedRevenue:nonNegative(raw.protected_revenue??raw.protectedRevenue),
+      protectedMrr:nonNegative(raw.protected_mrr??raw.protectedMrr),
+      protectedArr:nonNegative(raw.protected_arr??raw.protectedArr),
+      directShareUnits:nonNegative(raw.direct_share_units??raw.directShareUnits),
+      influencedShareUnits:nonNegative(raw.influenced_share_units??raw.influencedShareUnits),
+      protectedShareUnits:nonNegative(raw.protected_share_units??raw.protectedShareUnits)
+    });
+  }
+  function normalizeSquadResultAggregate(raw={}){
+    const rows=Array.isArray(raw.rows)?raw.rows.map(normalizeSquadResultRow).filter(row=>row.squadCode):[];
+    return Object.freeze({
+      sourceAvailable:raw.source_available===true||raw.sourceAvailable===true,
+      competence:text(raw.competence),squadCode:cleanCode(raw.squad_code??raw.squadCode)||'ALL',currency:cleanCode(raw.currency||'BRL')||'BRL',
+      squadCount:nonNegative(raw.squad_count??raw.squadCount??rows.length),
+      technicianCount:nonNegative(raw.technician_count??raw.technicianCount),
+      participationCount:nonNegative(raw.participation_count??raw.participationCount),
+      creditedEventCount:nonNegative(raw.credited_event_count??raw.creditedEventCount),
+      directRevenue:nonNegative(raw.direct_revenue??raw.directRevenue),influencedRevenue:nonNegative(raw.influenced_revenue??raw.influencedRevenue),protectedRevenue:nonNegative(raw.protected_revenue??raw.protectedRevenue),
+      directMrr:nonNegative(raw.direct_mrr??raw.directMrr),influencedMrr:nonNegative(raw.influenced_mrr??raw.influencedMrr),protectedMrr:nonNegative(raw.protected_mrr??raw.protectedMrr),
+      rows:Object.freeze(rows)
+    });
+  }
+  function buildSquadResults({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeSquadResultAggregate(aggregate),ready=base.sourceAvailable===true;
+    const rows=Object.freeze([...base.rows].sort((a,b)=>b.participationCount-a.participationCount||a.squadCode.localeCompare(b.squadCode,'pt-BR')));
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,
+      squadCount:base.squadCount,technicianCount:base.technicianCount,participationCount:base.participationCount,creditedEventCount:base.creditedEventCount,
+      directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,
+      directMrr:base.directMrr,influencedMrr:base.influencedMrr,protectedMrr:base.protectedMrr,rows,
+      warnings:Object.freeze([
+        'Receita Direta, Influenciada e Protegida permanecem separadas por Squad e não formam um total econômico único.',
+        'O rateio econômico é calculado antes do filtro de Squad, impedindo redistribuição retroativa ao trocar a visualização.',
+        'Eventos compartilhados entre Squads respeitam attribution_share; o saldo sem percentual segue a mesma divisão determinística da visão por técnico.',
+        'Resultado por Squad é visão agregada. ROI, retorno líquido e comparação com custo entram somente na V2.60.6.'
+      ])
+    });
+  }
+
+
+  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults};
 });
