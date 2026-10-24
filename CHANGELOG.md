@@ -1,3 +1,14 @@
+## V2.60.8 — Snapshots, histórico e evolução do Resultado
+
+- congela o Resultado econômico no fechamento da competência em `strategy_result_snapshots`;
+- vincula cada snapshot à mesma revisão financeira oficial da competência;
+- preserva Receita Direta, Influenciada e Protegida como séries independentes;
+- bloqueia mutações de eventos e atribuições enquanto a competência estiver fechada;
+- adiciona histórico por operação ou Squad, respeitando o filtro estratégico;
+- calcula evolução de Receita Direta, ROI direto, Receita Protegida e custo entre fechamentos;
+- identifica reconstruções `legacy_backfill` separadamente de snapshots capturados no fechamento;
+- adiciona `MIGRACAO_V2.60.8.sql` e o motor `RE-0.9.0-result-history`.
+
 ## V2.60.7 — Insights e diagnóstico de resultado
 
 - traduz ROI, cobertura e impactos econômicos em situações operacionais explicáveis;

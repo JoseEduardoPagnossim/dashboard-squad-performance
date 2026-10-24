@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.60.7" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.60.7" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.60.7" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.60.7" />
+  <link rel="stylesheet" href="css/styles.css?v=2.60.8" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.60.8" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.60.8" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.60.8" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.60.7 • Fase 5 — Diagnóstico de Resultado</small>
+        <small class="login-version">V2.60.8 • Fase 5 — Histórico de Resultado</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.60.7 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.60.8 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.60.7</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.60.8</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1397,7 +1397,7 @@
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.6</strong> no Supabase e valide as permissões.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.8</strong> no Supabase e valide as permissões.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1839,7 +1839,7 @@
 
           <div class="strategy-panel strategy-result-foundation-panel hidden" data-strategy-panel="result">
             <article class="strategy-placeholder-card strategy-wide-card strategy-result-card">
-              <span class="eyebrow">FASE 5 • V2.60.7</span>
+              <span class="eyebrow">FASE 5 • V2.60.8</span>
               <div class="strategy-section-heading"><div><h3>Fundação de Resultado</h3><p>Estrutura econômica isolada para registrar e auditar receita direta, influenciada e protegida sem misturar atribuição, recorrência ou origem do evento.</p></div><span id="strategyResultFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <section class="strategy-result-summary">
@@ -2078,13 +2078,29 @@
                 <aside class="strategy-insight"><strong>Diagnóstico não é causa nem decisão automática</strong><p id="strategyResultDiagnosticGuardrail">O painel explica combinações observadas. Antes de agir, valide recorrência, cobertura dos lançamentos, janela de reconhecimento, carga de retenção, handoff comercial e contexto operacional.</p></aside>
               </section>
 
+              <section class="strategy-result-history-section" aria-labelledby="strategyResultHistoryTitle">
+                <div class="strategy-section-heading"><div><span class="eyebrow">V2.60.8 • SNAPSHOTS, HISTÓRICO E EVOLUÇÃO</span><h3 id="strategyResultHistoryTitle">Resultado congelado por competência</h3><p>Preserva o resultado econômico fechado e acompanha sua evolução sem recalcular competências antigas com regras ou custos atuais.</p></div><span id="strategyResultHistoryStatus" class="strategy-efficiency-status neutral">SEM SNAPSHOTS</span></div>
+                <div class="strategy-metric-grid strategy-result-direct-kpis">
+                  <div class="strategy-metric"><span>Competências congeladas</span><strong id="strategyResultHistoryCount">—</strong><small>snapshots disponíveis</small></div>
+                  <div class="strategy-metric"><span>Último fechamento</span><strong id="strategyResultHistoryLatest">—</strong><small id="strategyResultHistoryScope">evolução do escopo</small></div>
+                  <div class="strategy-metric"><span>Δ Receita Direta</span><strong id="strategyResultHistoryDirectDelta">—</strong><small>último fechamento × anterior</small></div>
+                  <div class="strategy-metric"><span>Δ ROI direto</span><strong id="strategyResultHistoryRoiDelta">—</strong><small>variação em pontos percentuais</small></div>
+                  <div class="strategy-metric"><span>Δ Receita Protegida</span><strong id="strategyResultHistoryProtectedDelta">—</strong><small>contexto independente</small></div>
+                </div>
+                <section class="strategy-diagnostic-card">
+                  <div class="strategy-section-heading"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Série histórica do Resultado</h3><p>Ao selecionar um Squad, a série usa exclusivamente os snapshots daquele Squad. Em “Todos”, usa a operação consolidada.</p></div></div>
+                  <div class="table-wrap"><table class="strategy-people-table strategy-result-history-table"><thead><tr><th>Competência</th><th>Custo</th><th>Receita direta</th><th>Δ direta</th><th>ROI direto</th><th>Influenciada</th><th>Protegida</th><th>MRR protegido</th><th>Cobertura</th><th>Snapshot</th></tr></thead><tbody id="strategyResultHistoryRows"><tr><td colspan="10" class="muted">Carregando histórico de Resultado...</td></tr></tbody></table></div>
+                </section>
+                <aside class="strategy-insight"><strong>Histórico não é recálculo</strong><p id="strategyResultHistoryWarning">Cada competência fechada usa sua própria fotografia econômica e a revisão financeira correspondente.</p></aside>
+              </section>
+
               <section class="strategy-result-integrity">
                 <div class="strategy-section-heading"><div><span class="eyebrow">INTEGRIDADE</span><h3>Evento econômico ≠ atribuição</h3><p>Uma venda ou retenção existe uma única vez. Técnicos e Squads participantes são ligados ao evento separadamente para impedir duplicidade financeira.</p></div></div>
                 <div class="strategy-result-integrity-grid">
                   <div><span>Eventos atribuídos</span><strong id="strategyResultAttributedCount">—</strong></div>
                   <div><span>Sem atribuição</span><strong id="strategyResultUnattributedCount">—</strong></div>
                   <div><span>Origens distintas</span><strong id="strategyResultSourceCount">—</strong></div>
-                  <div><span>Motor</span><strong>RE-0.8.0</strong></div>
+                  <div><span>Motor</span><strong>RE-0.9.0</strong></div>
                 </div>
               </section>
 
@@ -2095,7 +2111,7 @@
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Sem dupla contagem e sem atribuição implícita</h3></div><ul id="strategyResultWarnings"><li>Carregando regras da Fase 5.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 criou a fundação; V2.60.1–V2.60.3 ativaram as três naturezas econômicas; V2.60.4 e V2.60.5 consolidaram técnico e Squad; V2.60.6 adicionou ROI e retorno operacional; e a V2.60.7 traduz esses sinais em diagnósticos explicáveis, sem decisão automática.</p></aside>
+            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 criou a fundação; V2.60.1–V2.60.3 ativaram as três naturezas econômicas; V2.60.4 e V2.60.5 consolidaram técnico e Squad; V2.60.6 adicionou ROI e retorno operacional; a V2.60.7 traduz esses sinais em diagnósticos explicáveis; e a V2.60.8 congela o resultado por competência e habilita a evolução histórica.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2576,36 +2592,36 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.60.7"></script>
-  <script src="js/finance-rules.js?v=2.60.7"></script>
-  <script src="js/finance-advanced.js?v=2.60.7"></script>
-  <script src="js/tv-engine.js?v=2.60.7"></script>
-  <script src="js/presentation.js?v=2.60.7"></script>
-  <script src="js/chart-engine.js?v=2.60.7"></script>
-  <script src="js/chart-export.js?v=2.60.7"></script>
-  <script src="js/import-engine.js?v=2.60.7"></script>
-  <script src="js/predictive-engine.js?v=2.60.7"></script>
-  <script src="js/alert-engine.js?v=2.60.7"></script>
-  <script src="js/settings-engine.js?v=2.60.7"></script>
-  <script src="js/performance-engine.js?v=2.60.7"></script>
-  <script src="js/navigation-engine.js?v=2.60.7"></script>
-  <script src="js/workspace-engine.js?v=2.60.7"></script>
-  <script src="js/filter-system.js?v=2.60.7"></script>
-  <script src="js/comparison-engine.js?v=2.60.7"></script>
-  <script src="js/finance-report-engine.js?v=2.60.7"></script>
-  <script src="js/design-system.js?v=2.60.7"></script>
-  <script src="js/strategy-access.js?v=2.60.7"></script>
-  <script src="js/strategy-data.js?v=2.60.7"></script>
-  <script src="js/strategy-cost-engine.js?v=2.60.7"></script>
-  <script src="js/strategy-efficiency.js?v=2.60.7"></script>
-  <script src="js/strategy-capacity.js?v=2.60.7"></script>
-  <script src="js/strategy-result.js?v=2.60.7"></script>
-  <script src="js/strategy-insights.js?v=2.60.7"></script>
-  <script src="js/strategy.js?v=2.60.7"></script>
+  <script src="js/business-calendar.js?v=2.60.8"></script>
+  <script src="js/finance-rules.js?v=2.60.8"></script>
+  <script src="js/finance-advanced.js?v=2.60.8"></script>
+  <script src="js/tv-engine.js?v=2.60.8"></script>
+  <script src="js/presentation.js?v=2.60.8"></script>
+  <script src="js/chart-engine.js?v=2.60.8"></script>
+  <script src="js/chart-export.js?v=2.60.8"></script>
+  <script src="js/import-engine.js?v=2.60.8"></script>
+  <script src="js/predictive-engine.js?v=2.60.8"></script>
+  <script src="js/alert-engine.js?v=2.60.8"></script>
+  <script src="js/settings-engine.js?v=2.60.8"></script>
+  <script src="js/performance-engine.js?v=2.60.8"></script>
+  <script src="js/navigation-engine.js?v=2.60.8"></script>
+  <script src="js/workspace-engine.js?v=2.60.8"></script>
+  <script src="js/filter-system.js?v=2.60.8"></script>
+  <script src="js/comparison-engine.js?v=2.60.8"></script>
+  <script src="js/finance-report-engine.js?v=2.60.8"></script>
+  <script src="js/design-system.js?v=2.60.8"></script>
+  <script src="js/strategy-access.js?v=2.60.8"></script>
+  <script src="js/strategy-data.js?v=2.60.8"></script>
+  <script src="js/strategy-cost-engine.js?v=2.60.8"></script>
+  <script src="js/strategy-efficiency.js?v=2.60.8"></script>
+  <script src="js/strategy-capacity.js?v=2.60.8"></script>
+  <script src="js/strategy-result.js?v=2.60.8"></script>
+  <script src="js/strategy-insights.js?v=2.60.8"></script>
+  <script src="js/strategy.js?v=2.60.8"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.60.7"></script>
+  <script src="js/app.js?v=2.60.8"></script>
 </body>
 </html>

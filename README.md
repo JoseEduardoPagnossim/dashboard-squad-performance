@@ -1,3 +1,7 @@
+## V2.60.8 — Snapshots, histórico e evolução
+
+A V2.60.8 congela o Resultado econômico por competência. Cada fechamento cria um snapshot `RS-1.0.0` ligado à mesma revisão financeira, preservando custo, Receita Direta, Influenciada, Protegida, ROI direto e indicadores de impacto por Squad/operação. O histórico nunca recalcula competências antigas com a regra atual. Eventos e atribuições de Resultado ficam bloqueados no banco enquanto a competência estiver fechada. Execute `MIGRACAO_V2.60.8.sql` após a V2.60.6; a V2.60.7 não possui migration.
+
 ## V2.60.7 — Insights e diagnóstico de resultado
 
 A V2.60.7 transforma ROI, cobertura direta e os impactos de Receita Influenciada/Protegida em leituras operacionais explicáveis. O motor diferencia retorno direto forte, break-even, sinais de conversão a investigar, concentração em retenção, retorno abaixo do custo e lacunas de atribuição, sem afirmar causalidade automática. Não há migration nova: a versão reutiliza as fontes oficiais da V2.60.6.

@@ -74,7 +74,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.60.7';
+  const APP_VERSION = '2.60.8';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3673,17 +3673,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const requestedKey=strategyFinanceKey();if(!force&&(strategyFinanceLoadedKey===requestedKey||strategyFinanceLoadingKey===requestedKey))return;
     const seq=++strategyFinanceLoadSeq;strategyFinanceLoadingKey=requestedKey;strategyController.setFinancialLoading(true);
     try{
-      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{}});strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
+      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{},resultHistory:{}});strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
       const org=state.user?.organizationId;if(!org)throw new Error('Organização não identificada para a Gestão Estratégica.');
       if(isSuperAdmin())await ensureOrgOverviewData({daily:false,technicians:false}).catch(()=>{});
       const {data:competenceRows,error:competenceError}=await state.supabase.from('strategy_competences').select('id,competence,status,notes,closed_at,closed_by,reopened_at,reopened_by,snapshot_revision,snapshot_version,rule_version,created_at,updated_at').eq('organization_id',org).order('competence',{ascending:true});if(competenceError)throw competenceError;
       if(seq!==strategyFinanceLoadSeq)return;
-      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{}});
+      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{},resultHistory:{}});
       strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];
-      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={};
+      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={},resultHistory={};
       if(strategyPeopleAccess()&&st.competence){const operationalCodes=Object.keys(state.squads||{}).filter(Boolean);if(operationalCodes.length)await ensureMonthsLoaded(operationalCodes,[st.competence],{silent:true,strict:false}).catch(err=>console.warn('Produção individual indisponível para eficiência estratégica.',err));}
       if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
-        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError},{data:capacityUsedSummaryData,error:capacityUsedSummaryError},{data:capacityUsedSquadData,error:capacityUsedSquadError},{data:capacityHistoryData,error:capacityHistoryError},{data:resultFoundationData,error:resultFoundationError},{data:resultDirectRevenueData,error:resultDirectRevenueError},{data:resultInfluencedRevenueData,error:resultInfluencedRevenueError},{data:resultProtectedRevenueData,error:resultProtectedRevenueError},{data:resultSquadData,error:resultSquadError},{data:resultRoiData,error:resultRoiError}]=await Promise.all([
+        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError},{data:capacityUsedSummaryData,error:capacityUsedSummaryError},{data:capacityUsedSquadData,error:capacityUsedSquadError},{data:capacityHistoryData,error:capacityHistoryError},{data:resultFoundationData,error:resultFoundationError},{data:resultDirectRevenueData,error:resultDirectRevenueError},{data:resultInfluencedRevenueData,error:resultInfluencedRevenueError},{data:resultProtectedRevenueData,error:resultProtectedRevenueError},{data:resultSquadData,error:resultSquadError},{data:resultRoiData,error:resultRoiError},{data:resultHistoryData,error:resultHistoryError}]=await Promise.all([
           state.supabase.rpc('get_strategy_financial_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_squad_cost_summary',{p_competence:competenceDate}),
           state.supabase.rpc('get_strategy_financial_history',{p_squad_code:st.squadCode==='all'?null:st.squadCode}),
@@ -3701,9 +3701,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
           state.supabase.rpc('get_strategy_influenced_revenue_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_protected_revenue_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_result_squad_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
-          state.supabase.rpc('get_strategy_result_roi_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode})
+          state.supabase.rpc('get_strategy_result_roi_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
+          state.supabase.rpc('get_strategy_result_snapshot_history',{p_squad_code:st.squadCode==='all'?null:st.squadCode})
         ]);
-        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;if(capacityUsedSummaryError)throw capacityUsedSummaryError;if(capacityUsedSquadError)throw capacityUsedSquadError;if(capacityHistoryError)throw capacityHistoryError;if(resultFoundationError)throw resultFoundationError;if(resultDirectRevenueError)throw resultDirectRevenueError;if(resultInfluencedRevenueError)throw resultInfluencedRevenueError;if(resultProtectedRevenueError)throw resultProtectedRevenueError;if(resultSquadError)throw resultSquadError;if(resultRoiError)throw resultRoiError;
+        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;if(capacityUsedSummaryError)throw capacityUsedSummaryError;if(capacityUsedSquadError)throw capacityUsedSquadError;if(capacityHistoryError)throw capacityHistoryError;if(resultFoundationError)throw resultFoundationError;if(resultDirectRevenueError)throw resultDirectRevenueError;if(resultInfluencedRevenueError)throw resultInfluencedRevenueError;if(resultProtectedRevenueError)throw resultProtectedRevenueError;if(resultSquadError)throw resultSquadError;if(resultRoiError)throw resultRoiError;if(resultHistoryError)throw resultHistoryError;
         efficiencyHistory=Array.isArray(efficiencyHistoryData)?efficiencyHistoryData:[];
         capacityHistory=Array.isArray(capacityHistoryData)?capacityHistoryData:[];
         resultFoundation={...(resultFoundationData||{}),source_available:true};
@@ -3712,6 +3713,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         resultProtectedRevenue={...(resultProtectedRevenueData||{}),source_available:true};
         resultSquad={...(resultSquadData||{}),source_available:true};
         resultRoi={...(resultRoiData||{}),source_available:true};
+        resultHistory={...(resultHistoryData||{}),source_available:true};
         summary={...(summaryData||{}),...(resolutionSummaryData||{}),...(capacitySummaryData||{}),...(capacityUsedSummaryData||{})};
         const financialSquads=Array.isArray(squadData)?squadData:[],resolutionSquads=Array.isArray(resolutionSquadData)?resolutionSquadData:[],capacitySquads=Array.isArray(capacitySquadData)?capacitySquadData:[],capacityUsedSquads=Array.isArray(capacityUsedSquadData)?capacityUsedSquadData:[],resolutionBySquad=new Map(resolutionSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityBySquad=new Map(capacitySquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityUsedBySquad=new Map(capacityUsedSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),squadCodes=new Set([...financialSquads.map(row=>String(row.squad_code||'').toUpperCase()),...resolutionSquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacitySquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacityUsedSquads.map(row=>String(row.squad_code||'').toUpperCase())].filter(Boolean));
         squadSummary=[...squadCodes].map(code=>({...((financialSquads||[]).find(row=>String(row.squad_code||'').toUpperCase()===code)||{squad_code:code}),...(resolutionBySquad.get(code)||{}),...(capacityBySquad.get(code)||{}),...(capacityUsedBySquad.get(code)||{})}));
@@ -3757,8 +3759,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         strategyProtectedRevenueEntries=protectedEvents.map(row=>({...strategyResultEngine.normalizeEvent(row),attributions:attrByEvent.get(row.id)||[]}));
       }
       if(seq!==strategyFinanceLoadSeq)return;
-      strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue,resultInfluencedRevenue,resultProtectedRevenue,resultTechnician,resultSquad,resultRoi,resultTechnicianRoi});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.6',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+      strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue,resultInfluencedRevenue,resultProtectedRevenue,resultTechnician,resultSquad,resultRoi,resultTechnicianRoi,resultHistory});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.8',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
@@ -4408,6 +4410,27 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return diagnostics;
   }
 
+
+  function renderStrategyResultHistory(vm,displayAggregate){
+    const canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),history=strategyResultEngine.buildResultHistory({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},history:vm.financial.resultHistory||{}}),ready=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError&&history.sourceAvailable;
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    const status=$('#strategyResultHistoryStatus');if(status){status.textContent=!canAggregate?'SEM PERMISSÃO':ready?'HISTÓRICO CONGELADO':vm.state.financialLoading?'CARREGANDO':'SEM SNAPSHOTS';status.className=`strategy-efficiency-status ${ready&&history.rows.length?'good':'neutral'}`;}
+    const latest=history.latest,previous=history.previous,e=history.evolution,deltaMoney=value=>value==null?'—':`${value>0?'+':''}${strategyMoney(value)}`,deltaPp=value=>value==null?'—':`${value>0?'+':''}${Number(value).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`;
+    set('#strategyResultHistoryCount',ready?Number(e.competenceCount||0).toLocaleString('pt-BR'):'—');
+    set('#strategyResultHistoryLatest',latest?strategyDataEngine.competenceLabel(latest.competence):'—');
+    set('#strategyResultHistoryDirectDelta',latest&&previous?deltaMoney(e.directRevenueDelta):'—');
+    set('#strategyResultHistoryRoiDelta',latest&&previous?deltaPp(e.directRoiPctDelta):'—');
+    set('#strategyResultHistoryProtectedDelta',latest&&previous?deltaMoney(e.protectedRevenueDelta):'—');
+    const scope=$('#strategyResultHistoryScope');if(scope)scope.textContent=vm.state.squadCode==='all'?'Evolução da operação consolidada':'Evolução do Squad selecionado';
+    const body=$('#strategyResultHistoryRows');if(body){
+      if(!canAggregate)body.innerHTML='<tr><td colspan="10" class="muted">Sem permissão para histórico agregado.</td></tr>';
+      else if(!ready)body.innerHTML='<tr><td colspan="10" class="muted">Execute a migration V2.60.8 para habilitar snapshots de Resultado.</td></tr>';
+      else body.innerHTML=history.rows.length?[...history.rows].reverse().map((row,index,arr)=>{const older=arr[index+1]||null,delta=older?row.directRevenue-older.directRevenue:null;return `<tr><td><strong>${escapeHtml(strategyDataEngine.competenceLabel(row.competence))}</strong><small>rev. ${Number(row.revision||0)} · ${row.source==='legacy_backfill'?'reconstruído':'fechamento'}</small></td><td>${strategyMoney(row.totalCost)}</td><td><strong>${strategyMoney(row.directRevenue)}</strong></td><td>${older?deltaMoney(delta):'—'}</td><td>${row.directRoiPct==null?'—':strategySignedPercent(row.directRoiPct)}</td><td>${strategyMoney(row.influencedRevenue)}</td><td>${strategyMoney(row.protectedRevenue)}</td><td>${strategyMoney(row.protectedMrr)}</td><td>${row.directCostCoverage==null?'—':strategyRatio(row.directCostCoverage)}</td><td>${escapeHtml(row.snapshotVersion||'RS-1.0.0')}</td></tr>`}).join(''):'<tr><td colspan="10" class="muted">Nenhuma competência fechada com snapshot de Resultado neste escopo.</td></tr>';
+    }
+    const warning=$('#strategyResultHistoryWarning');if(warning)warning.textContent='Cada linha usa o snapshot congelado da competência e a mesma revisão financeira do fechamento. Registros legacy_backfill são reconstruções da melhor base disponível e ficam identificados.';
+    return history;
+  }
+
   function renderStrategyResult(vm,displayAggregate){
     const aggregate=vm.financial.resultFoundation||{},foundation=strategyResultEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate}),ready=displayAggregate&&foundation.sourceAvailable;
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
@@ -4427,6 +4450,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategySquadResults(vm,displayAggregate);
     const resultReturnView=renderStrategyOperationalReturn(vm,displayAggregate);
     renderStrategyResultDiagnostics(vm,displayAggregate,resultReturnView);
+    renderStrategyResultHistory(vm,displayAggregate);
     const contracts={
       'result-foundation':'Contrato de eventos, atribuições, estados, deduplicação e filtros ativo.',
       'direct-revenue':'Receita confirmada, Up-sell nativo, ticket médio e recorrência separados ativos.',
@@ -4436,7 +4460,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       'result-by-squad':'Consolidação econômica por Squad ativa com rateio auditável e naturezas separadas.',
       'result-roi':'ROI direto, retorno líquido, cobertura de custo e impacto econômico por R$ de custo ativos.',
       'result-diagnostics':'Diagnósticos explicáveis de retorno, influência e proteção ativos com guardrails contra causalidade automática.',
-      'result-history':'Snapshots e evolução econômica entram na V2.60.8.'
+      'result-history':'Snapshots imutáveis, histórico por competência e evolução econômica ativos.'
     };
     const body=$('#strategyResultReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='ready'?'ready':'pending'}">${item.status==='ready'?'ATIVO':'PLANEJADO'}</span></td><td>${escapeHtml(contracts[item.id]||'Planejado para a Fase 5.')}</td></tr>`).join('');
     const warnings=$('#strategyResultWarnings');if(warnings)warnings.innerHTML=foundation.warnings.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
@@ -4530,7 +4554,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   async function closeStrategyCompetence(){
     const vm=strategyController.viewModel();if(!vm.competenceRecord)return toast('Crie a competência financeira antes de fechar.');if(!strategyCloseAccess())return toast('Seu usuário não possui permissão para fechar competências estratégicas.');if(vm.competenceRecord.status==='closed')return toast('Esta competência já está fechada.');
     if(Number(vm.summary.unallocatedOperationalCost||0)>0)return toast('Regularize os custos operacionais sem rateio antes de fechar a competência.');
-    if(typeof window!=='undefined'&&typeof window.confirm==='function'&&!window.confirm(`Fechar ${strategyDataEngine.competenceLabel(vm.state.competence)}? Custos, rateios, produção e qualidade serão congelados em um snapshot oficial.`))return;
+    if(typeof window!=='undefined'&&typeof window.confirm==='function'&&!window.confirm(`Fechar ${strategyDataEngine.competenceLabel(vm.state.competence)}? Custos, rateios, produção, qualidade e resultado econômico serão congelados em snapshots oficiais.`))return;
     try{
       const {data,error}=await state.supabase.rpc('close_strategy_competence',{p_competence:strategyDataEngine.competenceDate(vm.state.competence)});if(error)throw error;
       await logAuditEvent('strategy.competence_close',{entityType:'strategy_competence',entityId:vm.competenceRecord.id,description:`Competência estratégica ${vm.state.competence} fechada.`,metadata:{competence:vm.state.competence,revision:data?.revision||null,snapshotVersion:data?.snapshot_version||null,fingerprint:data?.fingerprint||null}});

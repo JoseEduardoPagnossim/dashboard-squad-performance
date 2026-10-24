@@ -11,16 +11,16 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.3.sql'),'utf8');
 
 test('V2.60.3 publica Receita Protegida com retenção, recuperação e prevenção',()=>{
-  assert.equal(pkg.version,'2.60.7');
-  assert.equal(pkg.assetVersion,'2.60.7');
-  assert.equal(result.RULE_VERSION,'RE-0.8.0-result-diagnostics');
+  assert.equal(pkg.version,'2.60.8');
+  assert.equal(pkg.assetVersion,'2.60.8');
+  assert.equal(result.RULE_VERSION,'RE-0.9.0-result-history');
   assert.deepEqual(result.PROTECTED_TYPE_IDS,['retention','recovery','cancellation_prevention']);
   assert.ok(existsSync(join(root,'docs','RESULTADO_RECEITA_PROTEGIDA_V2.60.3.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.3.sql')));
   assert.match(index,/V2\.60\.3 • RECEITA PROTEGIDA/);
   assert.match(index,/strategyProtectedRevenueTotal/);
   assert.match(index,/strategyAddProtectedRevenueBtn/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.7'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.8'));
 });
 
 test('motor separa receita em risco, protegida e perdida sem somar recorrência no total',()=>{

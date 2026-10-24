@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.8.0-result-diagnostics';
+  const RULE_VERSION='RE-0.9.0-result-history';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -47,7 +47,7 @@
     Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'ready'}),
     Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'ready'}),
     Object.freeze({id:'result-diagnostics',label:'Insights e diagnóstico de resultado',version:'V2.60.7',state:'ready'}),
-    Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'planned'})
+    Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'ready'})
   ]);
   const RESULT_DIAGNOSTIC_THRESHOLDS=Object.freeze({strongCoverage:1.25,breakEvenCoverage:1,nearBreakEvenCoverage:.85,materialImpactPerCost:1});
 
@@ -526,5 +526,58 @@
   }
 
 
-  return{RULE_VERSION,RESULT_DIAGNOSTIC_THRESHOLDS,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn,resultDiagnosticRule,diagnoseResultRow,summarizeResultDiagnostics,buildResultDiagnostics};
+  function normalizeResultHistoryRow(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    const optional=value=>value===null||value===undefined||value===''?null:num(value,null);
+    return Object.freeze({
+      competence:text(source.competence),status:text(source.status,'closed'),revision:nonNegative(source.revision),
+      snapshotVersion:text(source.snapshot_version??source.snapshotVersion),ruleVersion:text(source.rule_version??source.ruleVersion),
+      source:text(source.source,'close'),financialSnapshotRevision:nonNegative(source.financial_snapshot_revision??source.financialSnapshotRevision),
+      snapshotFingerprint:text(source.snapshot_fingerprint??source.snapshotFingerprint),createdAt:source.created_at??source.createdAt??null,
+      squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',creditedEventCount:nonNegative(source.credited_event_count??source.creditedEventCount),
+      totalCost:nonNegative(source.total_cost??source.totalCost),fte:nonNegative(source.fte),
+      directRevenue:nonNegative(source.direct_revenue??source.directRevenue),directMrr:nonNegative(source.direct_mrr??source.directMrr),directArr:nonNegative(source.direct_arr??source.directArr),
+      influencedRevenue:nonNegative(source.influenced_revenue??source.influencedRevenue),influencedMrr:nonNegative(source.influenced_mrr??source.influencedMrr),influencedArr:nonNegative(source.influenced_arr??source.influencedArr),
+      protectedRevenue:nonNegative(source.protected_revenue??source.protectedRevenue),protectedMrr:nonNegative(source.protected_mrr??source.protectedMrr),protectedArr:nonNegative(source.protected_arr??source.protectedArr),
+      directNetReturn:optional(source.direct_net_return??source.directNetReturn),directRoiPct:optional(source.direct_roi_pct??source.directRoiPct),directCostCoverage:optional(source.direct_cost_coverage??source.directCostCoverage),
+      influencedImpactPerCost:optional(source.influenced_impact_per_cost??source.influencedImpactPerCost),protectedImpactPerCost:optional(source.protected_impact_per_cost??source.protectedImpactPerCost)
+    });
+  }
+  function normalizeResultHistory(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows:[];
+    return Object.freeze({sourceAvailable:source.source_available===true||source.sourceAvailable===true,squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',snapshotVersion:text(source.snapshot_version??source.snapshotVersion),ruleVersion:text(source.rule_version??source.ruleVersion),rows:Object.freeze(rows.map(normalizeResultHistoryRow).filter(row=>row.competence).sort((a,b)=>a.competence.localeCompare(b.competence)))});
+  }
+  function historyDelta(current,previous,key){
+    if(!current||!previous)return null;
+    const a=current[key],b=previous[key];
+    if(a===null||a===undefined||b===null||b===undefined)return null;
+    return num(a)-num(b);
+  }
+  function buildResultHistory({scope={},history={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeResultHistory(history),rows=[...base.rows];
+    const latest=rows.at(-1)||null,previous=rows.length>1?rows.at(-2):null;
+    const evolution=Object.freeze({
+      competenceCount:rows.length,
+      directRevenueDelta:historyDelta(latest,previous,'directRevenue'),
+      influencedRevenueDelta:historyDelta(latest,previous,'influencedRevenue'),
+      protectedRevenueDelta:historyDelta(latest,previous,'protectedRevenue'),
+      directRoiPctDelta:historyDelta(latest,previous,'directRoiPct'),
+      directCostCoverageDelta:historyDelta(latest,previous,'directCostCoverage'),
+      totalCostDelta:historyDelta(latest,previous,'totalCost'),
+      directRevenueChangePct:latest&&previous&&previous.directRevenue>0?((latest.directRevenue-previous.directRevenue)/previous.directRevenue)*100:null
+    });
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:base.sourceAvailable?'ready':'pending',sourceAvailable:base.sourceAvailable,
+      snapshotVersion:base.snapshotVersion||'RS-1.0.0',rows:Object.freeze(rows),latest,previous,evolution,
+      warnings:Object.freeze([
+        'Histórico usa somente snapshots de competências fechadas; competências passadas não são recalculadas com regras atuais.',
+        'Receita Direta, Influenciada e Protegida permanecem séries independentes e não são somadas em um total econômico artificial.',
+        'Snapshots legacy_backfill representam reconstrução com a melhor base disponível e devem ser lidos com essa ressalva.',
+        'ROI histórico continua baseado somente em Receita Direta e no custo congelado da mesma revisão financeira.'
+      ])
+    });
+  }
+
+
+  return{RULE_VERSION,RESULT_DIAGNOSTIC_THRESHOLDS,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn,resultDiagnosticRule,diagnoseResultRow,summarizeResultDiagnostics,buildResultDiagnostics,normalizeResultHistoryRow,normalizeResultHistory,buildResultHistory};
 });

@@ -14,7 +14,7 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.57.6.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.57.7 publica fechamento e snapshot revisionado',()=>{
-  assert.equal(pkg.version,'2.60.7');
+  assert.equal(pkg.version,'2.60.8');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/strategyCloseCompetenceBtn/);
   assert.match(index,/strategyReopenCompetenceBtn/);
