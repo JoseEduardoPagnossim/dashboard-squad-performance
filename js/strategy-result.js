@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.2.0-direct-revenue';
+  const RULE_VERSION='RE-0.3.0-influenced-revenue';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -22,11 +22,20 @@
     Object.freeze({id:'other',label:'Outros',description:'Outra receita direta comprovada e documentada.'})
   ]);
   const DIRECT_CATEGORY_IDS=Object.freeze(DIRECT_REVENUE_CATEGORIES.map(item=>item.id));
+  const INFLUENCE_STAGES=Object.freeze([
+    Object.freeze({id:'originated',label:'Originou oportunidade',description:'O time identificou e gerou a oportunidade.'}),
+    Object.freeze({id:'qualified',label:'Qualificou necessidade',description:'O time validou necessidade, impacto e aderência.'}),
+    Object.freeze({id:'evolved',label:'Evoluiu oportunidade',description:'O time ajudou a oportunidade a avançar no processo.'}),
+    Object.freeze({id:'negotiation_support',label:'Apoiou negociação',description:'O time forneceu apoio técnico ou operacional durante a negociação.'}),
+    Object.freeze({id:'handoff',label:'Encaminhou oportunidade',description:'O time realizou o handoff qualificado para o setor responsável pelo fechamento.'}),
+    Object.freeze({id:'other',label:'Outra influência',description:'Outra participação comprovada na geração ou evolução da receita.'})
+  ]);
+  const INFLUENCE_STAGE_IDS=Object.freeze(INFLUENCE_STAGES.map(item=>item.id));
   const EVENT_STATUSES=Object.freeze(['draft','confirmed','cancelled']);
   const CATALOG=Object.freeze([
     Object.freeze({id:'result-foundation',label:'Fundação de Resultado',version:'V2.60.0',state:'ready'}),
     Object.freeze({id:'direct-revenue',label:'Receita direta',version:'V2.60.1',state:'ready'}),
-    Object.freeze({id:'influenced-revenue',label:'Receita influenciada',version:'V2.60.2',state:'planned'}),
+    Object.freeze({id:'influenced-revenue',label:'Receita influenciada',version:'V2.60.2',state:'ready'}),
     Object.freeze({id:'protected-revenue',label:'Receita protegida',version:'V2.60.3',state:'planned'}),
     Object.freeze({id:'result-by-technician',label:'Resultado por técnico',version:'V2.60.4',state:'planned'}),
     Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'planned'}),
@@ -42,6 +51,7 @@
   function normalizeType(value){const id=text(value).toLowerCase();return Object.prototype.hasOwnProperty.call(RESULT_TYPES,id)?id:''}
   function normalizeStatus(value){const id=text(value).toLowerCase();return EVENT_STATUSES.includes(id)?id:'draft'}
   function normalizeDirectCategory(value){const id=text(value).toLowerCase();return DIRECT_CATEGORY_IDS.includes(id)?id:''}
+  function normalizeInfluenceStage(value){const id=text(value).toLowerCase();return INFLUENCE_STAGE_IDS.includes(id)?id:''}
   function normalizeScope(raw={}){
     const squadCode=cleanCode(raw.squadCode||raw.squad_code||'ALL');
     return Object.freeze({
@@ -63,6 +73,7 @@
       annualRecurringAmount:nonNegative(raw.annual_recurring_amount??raw.annualRecurringAmount),
       currency:cleanCode(raw.currency||'BRL')||'BRL',
       directRevenueCategory:normalizeDirectCategory(raw.direct_revenue_category??raw.directRevenueCategory),
+      influencedRevenueStage:normalizeInfluenceStage(raw.influenced_revenue_stage??raw.influencedRevenueStage),
       source:text(raw.source,'manual').toLowerCase(),
       sourceReference:text(raw.source_reference??raw.sourceReference),
       externalEntityType:text(raw.external_entity_type??raw.externalEntityType),
@@ -177,5 +188,60 @@
     });
   }
 
-  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue};
+  function normalizeInfluenceStageAggregate(raw={}){
+    const stage=normalizeInfluenceStage(raw.stage??raw.influenced_revenue_stage??raw.id);
+    return Object.freeze({
+      stage,
+      opportunityCount:nonNegative(raw.opportunity_count??raw.opportunityCount),
+      draftCount:nonNegative(raw.draft_count??raw.draftCount),
+      convertedCount:nonNegative(raw.converted_count??raw.convertedCount),
+      cancelledCount:nonNegative(raw.cancelled_count??raw.cancelledCount),
+      influencedRevenueTotal:nonNegative(raw.influenced_revenue_total??raw.influencedRevenueTotal),
+      openPotentialAmount:nonNegative(raw.open_potential_amount??raw.openPotentialAmount)
+    });
+  }
+  function normalizeInfluencedRevenueAggregate(raw={}){
+    const stages=Array.isArray(raw.stages)?raw.stages.map(normalizeInfluenceStageAggregate).filter(row=>row.stage):[];
+    return Object.freeze({
+      sourceAvailable:raw.source_available===true||raw.sourceAvailable===true,
+      competence:text(raw.competence),
+      squadCode:cleanCode(raw.squad_code??raw.squadCode)||'ALL',
+      currency:cleanCode(raw.currency||'BRL')||'BRL',
+      opportunityCount:nonNegative(raw.opportunity_count??raw.opportunityCount),
+      draftCount:nonNegative(raw.draft_count??raw.draftCount),
+      convertedCount:nonNegative(raw.converted_count??raw.convertedCount),
+      cancelledCount:nonNegative(raw.cancelled_count??raw.cancelledCount),
+      influencedRevenueTotal:nonNegative(raw.influenced_revenue_total??raw.influencedRevenueTotal),
+      openPotentialAmount:nonNegative(raw.open_potential_amount??raw.openPotentialAmount),
+      monthlyRecurringAmount:nonNegative(raw.monthly_recurring_amount??raw.monthlyRecurringAmount),
+      annualRecurringAmount:nonNegative(raw.annual_recurring_amount??raw.annualRecurringAmount),
+      conversionRate:Math.max(0,Math.min(1,num(raw.conversion_rate??raw.conversionRate))),
+      attributedEventCount:nonNegative(raw.attributed_event_count??raw.attributedEventCount),
+      unattributedEventCount:nonNegative(raw.unattributed_event_count??raw.unattributedEventCount),
+      sourceCount:nonNegative(raw.source_count??raw.sourceCount),
+      stages:Object.freeze(stages)
+    });
+  }
+  function buildInfluencedRevenue({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeInfluencedRevenueAggregate(aggregate),ready=base.sourceAvailable===true;
+    const byStage=new Map(base.stages.map(row=>[row.stage,row]));
+    const stages=Object.freeze(INFLUENCE_STAGES.map(def=>Object.freeze({...def,...(byStage.get(def.id)||{stage:def.id,opportunityCount:0,draftCount:0,convertedCount:0,cancelledCount:0,influencedRevenueTotal:0,openPotentialAmount:0})})));
+    const closed=base.convertedCount+base.cancelledCount,conversionRate=closed>0?base.convertedCount/closed:0;
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,
+      opportunityCount:base.opportunityCount,draftCount:base.draftCount,convertedCount:base.convertedCount,cancelledCount:base.cancelledCount,
+      influencedRevenueTotal:base.influencedRevenueTotal,openPotentialAmount:base.openPotentialAmount,monthlyRecurringAmount:base.monthlyRecurringAmount,annualRecurringAmount:base.annualRecurringAmount,
+      conversionRate:base.conversionRate>0?base.conversionRate:conversionRate,attributedEventCount:base.attributedEventCount,unattributedEventCount:base.unattributedEventCount,sourceCount:base.sourceCount,stages,
+      warnings:Object.freeze([
+        'Oportunidade em andamento é pipeline influenciado, não receita realizada.',
+        'Somente eventos influenciados confirmados entram em Receita Influenciada.',
+        'Receita Influenciada permanece separada da Receita Direta e não deve ser somada como se o time tivesse fechado ambas.',
+        'A referência externa identifica a oportunidade e impede que o mesmo evento seja registrado novamente como outra natureza econômica.',
+        'A etapa de influência descreve como o time participou; ela não define percentual de crédito econômico.'
+      ])
+    });
+  }
+
+
+  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue};
 });

@@ -11,9 +11,9 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.1.sql'),'utf8');
 
 test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
-  assert.equal(pkg.version,'2.60.1');
-  assert.equal(pkg.assetVersion,'2.60.1');
-  assert.equal(result.RULE_VERSION,'RE-0.2.0-direct-revenue');
+  assert.equal(pkg.version,'2.60.2');
+  assert.equal(pkg.assetVersion,'2.60.2');
+  assert.equal(result.RULE_VERSION,'RE-0.3.0-influenced-revenue');
   assert.ok(result.DIRECT_CATEGORY_IDS.includes('upsell'));
   assert.equal(result.DIRECT_REVENUE_CATEGORIES.find(x=>x.id==='upsell').label,'Up-sell');
   assert.ok(existsSync(join(root,'docs','RESULTADO_RECEITA_DIRETA_V2.60.1.md')));
@@ -22,7 +22,7 @@ test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
   assert.match(index,/strategyDirectRevenueTotal/);
   assert.match(index,/strategyDirectRevenueCategory/);
   assert.match(index,/strategyAddDirectRevenueBtn/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.1'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.2'));
 });
 
 test('motor soma somente valor confirmado e mantém MRR/ARR separados',()=>{
@@ -101,6 +101,6 @@ test('app carrega agregado, registra evento e cria atribuição owner',()=>{
 test('Receita Direta aparece ativa no roadmap e Influenciada/Protegida continuam planejadas',()=>{
   const foundation=result.buildFoundation({aggregate:{sourceAvailable:true}});
   assert.equal(foundation.catalog.find(x=>x.id==='direct-revenue').status,'ready');
-  assert.equal(foundation.catalog.find(x=>x.id==='influenced-revenue').status,'planned');
+  assert.equal(foundation.catalog.find(x=>x.id==='influenced-revenue').status,'ready');
   assert.equal(foundation.catalog.find(x=>x.id==='protected-revenue').status,'planned');
 });

@@ -1,3 +1,13 @@
+## V2.60.2 — Receita Influenciada
+
+- ativa a segunda natureza econômica da Fase 5;
+- separa oportunidade aberta de receita convertida;
+- adiciona etapas nativas de influência: origem, qualificação, evolução, apoio à negociação e handoff;
+- mede Receita Influenciada, pipeline aberto e conversão;
+- adiciona lançamento/auditoria por técnico e Squad;
+- preserva Receita Direta como natureza separada;
+- adiciona `MIGRACAO_V2.60.2.sql` e RPC agregada com filtro sem duplicidade.
+
 ## V2.60.1 — Receita Direta
 
 - ativa o motor `RE-0.2.0-direct-revenue`;

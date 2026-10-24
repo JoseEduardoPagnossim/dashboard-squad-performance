@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.60.1" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.60.1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.60.1" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.60.1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.60.2" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.60.2" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.60.2" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.60.2" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.60.1 • Fase 5 — Receita Direta</small>
+        <small class="login-version">V2.60.2 • Fase 5 — Receita Influenciada</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.60.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.60.2 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.60.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.60.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1397,7 +1397,7 @@
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.1</strong> no Supabase e valide as permissões.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.2</strong> no Supabase e valide as permissões.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1839,7 +1839,7 @@
 
           <div class="strategy-panel strategy-result-foundation-panel hidden" data-strategy-panel="result">
             <article class="strategy-placeholder-card strategy-wide-card strategy-result-card">
-              <span class="eyebrow">FASE 5 • V2.60.1</span>
+              <span class="eyebrow">FASE 5 • V2.60.2</span>
               <div class="strategy-section-heading"><div><h3>Fundação de Resultado</h3><p>Estrutura econômica isolada para registrar e auditar receita direta, influenciada e protegida sem misturar atribuição, recorrência ou origem do evento.</p></div><span id="strategyResultFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <section class="strategy-result-summary">
@@ -1874,7 +1874,7 @@
                   <div><span>Com atribuição</span><strong id="strategyDirectRevenueAttributedCount">—</strong></div>
                   <div><span>Sem atribuição</span><strong id="strategyDirectRevenueUnattributedCount">—</strong></div>
                   <div><span>Origens</span><strong id="strategyDirectRevenueSourceCount">—</strong></div>
-                  <div><span>Motor</span><strong>RE-0.2.0</strong></div>
+                  <div><span>Motor</span><strong>RE-0.3.0</strong></div>
                 </div>
 
                 <div id="strategyDirectRevenueEditor" class="strategy-direct-revenue-editor">
@@ -1905,13 +1905,59 @@
                 <div class="strategy-productivity-explainer"><strong>Regra de contabilização</strong><span>Receita Direta Total = valor confirmado do evento. Novo MRR e Novo ARR são contexto de recorrência e não são adicionados novamente ao total. O filtro de Squad mostra eventos com participação atribuída ao Squad; a divisão econômica entre Squads será tratada na V2.60.5.</span></div>
               </section>
 
+
+              <section class="strategy-influenced-revenue-section">
+                <div class="strategy-section-heading"><div><span class="eyebrow">V2.60.2 • RECEITA INFLUENCIADA</span><h3>Oportunidades geradas ou evoluídas pelo time</h3><p>Oportunidades podem ficar em andamento sem virar receita. Somente as convertidas entram no valor influenciado; o pipeline aberto aparece separadamente.</p></div><span id="strategyInfluencedRevenueStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
+                <div class="strategy-metric-grid strategy-result-direct-kpis">
+                  <div class="strategy-metric"><span>Receita influenciada</span><strong id="strategyInfluencedRevenueTotal">—</strong><small>somente oportunidades convertidas</small></div>
+                  <div class="strategy-metric"><span>Oportunidades</span><strong id="strategyInfluencedOpportunityCount">—</strong><small>em andamento + convertidas + encerradas</small></div>
+                  <div class="strategy-metric"><span>Convertidas</span><strong id="strategyInfluencedConvertedCount">—</strong><small>status confirmado</small></div>
+                  <div class="strategy-metric"><span>Taxa de conversão</span><strong id="strategyInfluencedConversionRate">—</strong><small>convertidas ÷ encerradas</small></div>
+                  <div class="strategy-metric"><span>Pipeline influenciado</span><strong id="strategyInfluencedOpenPotential">—</strong><small>valor potencial em andamento</small></div>
+                </div>
+                <div class="strategy-result-integrity-grid strategy-direct-integrity-grid">
+                  <div><span>Em andamento</span><strong id="strategyInfluencedDraftCount">—</strong></div>
+                  <div><span>Sem conversão</span><strong id="strategyInfluencedCancelledCount">—</strong></div>
+                  <div><span>Novo MRR convertido</span><strong id="strategyInfluencedMrr">—</strong></div>
+                  <div><span>Motor</span><strong>RE-0.3.0</strong></div>
+                </div>
+
+                <div id="strategyInfluencedRevenueEditor" class="strategy-direct-revenue-editor">
+                  <div class="strategy-section-heading"><div><span class="eyebrow">OPORTUNIDADE</span><h3>Registrar influência do time</h3><p>Use quando Suporte/Onboarding originou, qualificou ou ajudou a evoluir uma oportunidade que será fechada por outro setor.</p></div><span id="strategyInfluencedRevenueEditorMode" class="strategy-readiness-pill pending">SOMENTE LEITURA</span></div>
+                  <div class="strategy-direct-form-grid">
+                    <label><span>Data</span><input id="strategyInfluencedRevenueDate" type="date"></label>
+                    <label><span>Etapa de influência</span><select id="strategyInfluencedRevenueStage"><option value="originated">Originou oportunidade</option><option value="qualified">Qualificou necessidade</option><option value="evolved">Evoluiu oportunidade</option><option value="negotiation_support">Apoiou negociação</option><option value="handoff">Encaminhou oportunidade</option><option value="other">Outra influência</option></select></label>
+                    <label><span>Técnico participante</span><select id="strategyInfluencedRevenuePerson"><option value="">Selecione...</option></select></label>
+                    <label><span>Situação</span><select id="strategyInfluencedRevenueEntryStatus"><option value="draft">Em andamento</option><option value="confirmed">Convertida</option></select></label>
+                    <label><span>Valor da oportunidade</span><input id="strategyInfluencedRevenueAmount" type="number" min="0" step="0.01" placeholder="0,00"></label>
+                    <label><span>Novo MRR</span><input id="strategyInfluencedRevenueMrrInput" type="number" min="0" step="0.01" placeholder="0,00"></label>
+                    <label><span>Novo ARR</span><input id="strategyInfluencedRevenueArrInput" type="number" min="0" step="0.01" placeholder="0,00"></label>
+                    <label><span>Referência da oportunidade</span><input id="strategyInfluencedRevenueReference" type="text" maxlength="120" placeholder="CRM, oportunidade, proposta..."></label>
+                    <label class="strategy-direct-description"><span>Descrição</span><input id="strategyInfluencedRevenueDescription" type="text" maxlength="240" placeholder="Ex.: Identificou necessidade do módulo financeiro"></label>
+                    <div class="strategy-direct-form-action"><button id="strategyAddInfluencedRevenueBtn" type="button" class="primary-btn">Registrar oportunidade</button></div>
+                  </div>
+                </div>
+
+                <div class="strategy-direct-revenue-grid">
+                  <article class="strategy-history-card">
+                    <div class="strategy-section-heading"><div><span class="eyebrow">COMPOSIÇÃO</span><h3>Influência por etapa</h3><p>Mostra em qual ponto o time participou. A etapa não altera o valor da venda e não cria crédito integral por técnico.</p></div></div>
+                    <div class="table-wrap"><table class="strategy-people-table"><thead><tr><th>Etapa</th><th>Oportunidades</th><th>Convertidas</th><th>Receita influenciada</th><th>Pipeline aberto</th></tr></thead><tbody id="strategyInfluencedRevenueStageRows"><tr><td colspan="5" class="muted">Carregando Receita Influenciada...</td></tr></tbody></table></div>
+                  </article>
+                  <article class="strategy-history-card" id="strategyInfluencedRevenueEntriesCard">
+                    <div class="strategy-section-heading"><div><span class="eyebrow">AUDITORIA</span><h3>Oportunidades da competência</h3><p>O valor em andamento é pipeline; somente convertidas compõem Receita Influenciada.</p></div></div>
+                    <div class="table-wrap"><table class="strategy-people-table"><thead><tr><th>Data</th><th>Influência</th><th>Técnico</th><th>Squad</th><th>Descrição</th><th>Valor</th><th>Situação</th><th>Ação</th></tr></thead><tbody id="strategyInfluencedRevenueEntryRows"><tr><td colspan="8" class="muted">Sem oportunidades carregadas.</td></tr></tbody></table></div>
+                  </article>
+                </div>
+                <div class="strategy-productivity-explainer"><strong>Regra de atribuição</strong><span>Receita Influenciada reconhece participação comprovada sem afirmar que o Suporte/Onboarding fechou a venda. O valor convertido permanece separado da Receita Direta, e a mesma referência externa não pode ser usada em dois eventos econômicos.</span></div>
+              </section>
+
               <section class="strategy-result-integrity">
                 <div class="strategy-section-heading"><div><span class="eyebrow">INTEGRIDADE</span><h3>Evento econômico ≠ atribuição</h3><p>Uma venda ou retenção existe uma única vez. Técnicos e Squads participantes são ligados ao evento separadamente para impedir duplicidade financeira.</p></div></div>
                 <div class="strategy-result-integrity-grid">
                   <div><span>Eventos atribuídos</span><strong id="strategyResultAttributedCount">—</strong></div>
                   <div><span>Sem atribuição</span><strong id="strategyResultUnattributedCount">—</strong></div>
                   <div><span>Origens distintas</span><strong id="strategyResultSourceCount">—</strong></div>
-                  <div><span>Motor</span><strong>RE-0.1.0</strong></div>
+                  <div><span>Motor</span><strong>RE-0.3.0</strong></div>
                 </div>
               </section>
 
@@ -1922,7 +1968,7 @@
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Sem dupla contagem e sem atribuição implícita</h3></div><ul id="strategyResultWarnings"><li>Carregando regras da Fase 5.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 criou a fundação e a V2.60.1 ativa a Receita Direta com Up-sell, valores confirmados e recorrência separada. Receita influenciada entra na V2.60.2 e protegida na V2.60.3.</p></aside>
+            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 criou a fundação, a V2.60.1 ativou a Receita Direta e a V2.60.2 mede oportunidades influenciadas sem confundi-las com venda direta. Receita protegida entra na V2.60.3.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2403,36 +2449,36 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.60.1"></script>
-  <script src="js/finance-rules.js?v=2.60.1"></script>
-  <script src="js/finance-advanced.js?v=2.60.1"></script>
-  <script src="js/tv-engine.js?v=2.60.1"></script>
-  <script src="js/presentation.js?v=2.60.1"></script>
-  <script src="js/chart-engine.js?v=2.60.1"></script>
-  <script src="js/chart-export.js?v=2.60.1"></script>
-  <script src="js/import-engine.js?v=2.60.1"></script>
-  <script src="js/predictive-engine.js?v=2.60.1"></script>
-  <script src="js/alert-engine.js?v=2.60.1"></script>
-  <script src="js/settings-engine.js?v=2.60.1"></script>
-  <script src="js/performance-engine.js?v=2.60.1"></script>
-  <script src="js/navigation-engine.js?v=2.60.1"></script>
-  <script src="js/workspace-engine.js?v=2.60.1"></script>
-  <script src="js/filter-system.js?v=2.60.1"></script>
-  <script src="js/comparison-engine.js?v=2.60.1"></script>
-  <script src="js/finance-report-engine.js?v=2.60.1"></script>
-  <script src="js/design-system.js?v=2.60.1"></script>
-  <script src="js/strategy-access.js?v=2.60.1"></script>
-  <script src="js/strategy-data.js?v=2.60.1"></script>
-  <script src="js/strategy-cost-engine.js?v=2.60.1"></script>
-  <script src="js/strategy-efficiency.js?v=2.60.1"></script>
-  <script src="js/strategy-capacity.js?v=2.60.1"></script>
-  <script src="js/strategy-result.js?v=2.60.1"></script>
-  <script src="js/strategy-insights.js?v=2.60.1"></script>
-  <script src="js/strategy.js?v=2.60.1"></script>
+  <script src="js/business-calendar.js?v=2.60.2"></script>
+  <script src="js/finance-rules.js?v=2.60.2"></script>
+  <script src="js/finance-advanced.js?v=2.60.2"></script>
+  <script src="js/tv-engine.js?v=2.60.2"></script>
+  <script src="js/presentation.js?v=2.60.2"></script>
+  <script src="js/chart-engine.js?v=2.60.2"></script>
+  <script src="js/chart-export.js?v=2.60.2"></script>
+  <script src="js/import-engine.js?v=2.60.2"></script>
+  <script src="js/predictive-engine.js?v=2.60.2"></script>
+  <script src="js/alert-engine.js?v=2.60.2"></script>
+  <script src="js/settings-engine.js?v=2.60.2"></script>
+  <script src="js/performance-engine.js?v=2.60.2"></script>
+  <script src="js/navigation-engine.js?v=2.60.2"></script>
+  <script src="js/workspace-engine.js?v=2.60.2"></script>
+  <script src="js/filter-system.js?v=2.60.2"></script>
+  <script src="js/comparison-engine.js?v=2.60.2"></script>
+  <script src="js/finance-report-engine.js?v=2.60.2"></script>
+  <script src="js/design-system.js?v=2.60.2"></script>
+  <script src="js/strategy-access.js?v=2.60.2"></script>
+  <script src="js/strategy-data.js?v=2.60.2"></script>
+  <script src="js/strategy-cost-engine.js?v=2.60.2"></script>
+  <script src="js/strategy-efficiency.js?v=2.60.2"></script>
+  <script src="js/strategy-capacity.js?v=2.60.2"></script>
+  <script src="js/strategy-result.js?v=2.60.2"></script>
+  <script src="js/strategy-insights.js?v=2.60.2"></script>
+  <script src="js/strategy.js?v=2.60.2"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.60.1"></script>
+  <script src="js/app.js?v=2.60.2"></script>
 </body>
 </html>

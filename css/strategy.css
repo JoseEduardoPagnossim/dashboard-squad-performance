@@ -295,3 +295,7 @@
 .strategy-direct-revenue-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.45fr);gap:14px}
 @media(max-width:1180px){.strategy-result-direct-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.strategy-direct-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-direct-revenue-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.strategy-result-direct-kpis,.strategy-direct-integrity-grid,.strategy-direct-form-grid{grid-template-columns:1fr}.strategy-direct-description{grid-column:auto}.strategy-direct-form-action{justify-content:stretch}.strategy-direct-form-action button{width:100%}}
+
+/* V2.60.2 - receita influenciada */
+.strategy-influenced-revenue-section{display:grid;gap:18px;padding-top:18px;border-top:1px solid var(--border)}
+.strategy-influenced-revenue-section .strategy-history-card small{display:block;margin-top:4px;color:var(--muted)}

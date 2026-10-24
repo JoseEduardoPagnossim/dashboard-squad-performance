@@ -10,8 +10,8 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const doc=join(root,'docs','EFICIENCIA_DIAGNOSTICOS_V2.58.6.md');
 
 test('V2.58.6 publica insights e diagnostico explicavel sem migration nova',()=>{
-  assert.equal(pkg.version,'2.60.1');
-  assert.equal(pkg.assetVersion,'2.60.1');
+  assert.equal(pkg.version,'2.60.2');
+  assert.equal(pkg.assetVersion,'2.60.2');
   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
   assert.equal(existsSync(doc),true);
   assert.match(index,/INDICADOR V2\.58\.6/);

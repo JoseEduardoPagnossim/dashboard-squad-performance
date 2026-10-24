@@ -1,3 +1,7 @@
+## V2.60.2 — Receita Influenciada
+
+A Fase 5 passa a medir oportunidades em que Suporte/Onboarding participou da geração ou evolução da receita sem afirmar que o time fechou a venda. Oportunidades abertas ficam como pipeline; somente convertidas entram em Receita Influenciada.
+
 ## V2.60.1 — Receita Direta
 
 A V2.60.1 ativa a primeira métrica monetária da Fase 5. Receita Direta considera apenas eventos confirmados e usa `gross_amount` como valor econômico do evento; Novo MRR e Novo ARR aparecem separadamente e não são somados novamente. Up-sell é categoria nativa e pode ser lançado diretamente na área Resultado com técnico responsável, referência e descrição. O motor passa a `RE-0.2.0-direct-revenue`. Execute `MIGRACAO_V2.60.1.sql` após a V2.60.0.
