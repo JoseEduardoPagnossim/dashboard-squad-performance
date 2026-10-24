@@ -9,22 +9,30 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.8.sql'),'utf8');
 
+function frozen(competence,{revision=1,source='close',cost=100,direct=120,influenced=30,protectedRevenue=20,fingerprint='hist',financialRevision=revision,ruleVersion='RE-0.9.0-result-history'}={}){
+  return {
+    competence,status:'closed',revision,financial_snapshot_revision:financialRevision,snapshot_version:'RS-1.0.0',rule_version:ruleVersion,source,snapshot_fingerprint:fingerprint,squad_code:'ALL',credited_event_count:1,total_cost:cost,fte:1,
+    direct_revenue:direct,direct_mrr:0,direct_arr:0,influenced_revenue:influenced,influenced_mrr:0,influenced_arr:0,protected_revenue:protectedRevenue,protected_mrr:0,protected_arr:0,
+    direct_net_return:direct-cost,direct_roi_pct:cost>0?((direct-cost)/cost)*100:null,direct_cost_coverage:cost>0?direct/cost:null,influenced_impact_per_cost:cost>0?influenced/cost:null,protected_impact_per_cost:cost>0?protectedRevenue/cost:null
+  };
+}
+
 test('V2.60.8 publica snapshots e histórico de Resultado',()=>{
-  assert.equal(pkg.version,'2.60.8');
-  assert.equal(pkg.assetVersion,'2.60.8');
-  assert.equal(result.RULE_VERSION,'RE-0.9.0-result-history');
+  assert.equal(pkg.version,'2.60.9');
+  assert.equal(pkg.assetVersion,'2.60.9');
+  assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.CATALOG.find(item=>item.id==='result-history')?.state,'ready');
   assert.ok(existsSync(join(root,'docs','RESULTADO_HISTORICO_V2.60.8.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.8.sql')));
   assert.match(index,/V2\.60\.8 • SNAPSHOTS, HISTÓRICO E EVOLUÇÃO/);
   assert.match(index,/strategyResultHistoryRows/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.8'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.9'));
 });
 
 test('histórico ordena competências e calcula evolução entre snapshots fechados',()=>{
   const h=result.buildResultHistory({scope:{squadCode:'all'},history:{source_available:true,snapshot_version:'RS-1.0.0',rows:[
-    {competence:'2026-09',squad_code:'ALL',direct_revenue:1000,influenced_revenue:500,protected_revenue:200,total_cost:800,direct_roi_pct:25,direct_cost_coverage:1.25},
-    {competence:'2026-10',squad_code:'ALL',direct_revenue:1400,influenced_revenue:450,protected_revenue:500,total_cost:1000,direct_roi_pct:40,direct_cost_coverage:1.4}
+    frozen('2026-09',{cost:800,direct:1000,influenced:500,protectedRevenue:200,fingerprint:'sep'}),
+    frozen('2026-10',{cost:1000,direct:1400,influenced:450,protectedRevenue:500,fingerprint:'oct'})
   ]}});
   assert.equal(h.rows.length,2);
   assert.equal(h.latest.competence,'2026-10');
@@ -36,13 +44,13 @@ test('histórico ordena competências e calcula evolução entre snapshots fecha
 });
 
 test('histórico não cria total econômico somando naturezas distintas',()=>{
-  const h=result.buildResultHistory({history:{source_available:true,rows:[{competence:'2026-10',direct_revenue:100,influenced_revenue:200,protected_revenue:300}]}});
+  const h=result.buildResultHistory({history:{source_available:true,rows:[frozen('2026-10',{cost:50,direct:100,influenced:200,protectedRevenue:300})]}});
   assert.equal(Object.hasOwn(h.latest,'totalEconomicRevenue'),false);
   assert.equal(Object.hasOwn(h.evolution,'totalEconomicRevenueDelta'),false);
 });
 
 test('snapshot legacy_backfill permanece identificado e documentado como reconstrução',()=>{
-  const h=result.buildResultHistory({history:{source_available:true,rows:[{competence:'2026-10',source:'legacy_backfill'}]}});
+  const h=result.buildResultHistory({history:{source_available:true,rows:[frozen('2026-10',{source:'legacy_backfill'})]}});
   assert.equal(h.latest.source,'legacy_backfill');
   assert.ok(h.warnings.some(item=>/legacy_backfill/.test(item)));
 });
@@ -87,9 +95,9 @@ test('app carrega e renderiza snapshots sem recalcular competências antigas',()
 });
 
 test('roadmap marca V2.60.8 como ativa e mantém ROI baseado em Receita Direta',()=>{
-  assert.equal(result.CATALOG.at(-1).version,'V2.60.8');
-  assert.equal(result.CATALOG.at(-1).state,'ready');
-  const h=result.buildResultHistory({history:{source_available:true,rows:[{competence:'2026-10',direct_revenue:100,influenced_revenue:900,protected_revenue:900,total_cost:50,direct_roi_pct:100}]}});
+  assert.equal(result.CATALOG.find(item=>item.id==='result-history')?.version,'V2.60.8');
+  assert.equal(result.CATALOG.find(item=>item.id==='result-history')?.state,'ready');
+  const h=result.buildResultHistory({history:{source_available:true,rows:[frozen('2026-10',{cost:50,direct:100,influenced:900,protectedRevenue:900})]}});
   assert.equal(h.latest.directRoiPct,100);
   assert.equal(h.latest.directRevenue,100);
 });

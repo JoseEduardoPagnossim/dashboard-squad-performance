@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.60.8" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.60.8" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.60.8" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.60.8" />
+  <link rel="stylesheet" href="css/styles.css?v=2.60.9" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.60.9" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.60.9" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.60.9" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.60.8 • Fase 5 — Histórico de Resultado</small>
+        <small class="login-version">V2.60.9 • Fase 5 — Hardening de Resultado</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.60.8 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.60.9 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.60.8</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.60.9</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1397,7 +1397,7 @@
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.8</strong> no Supabase e valide as permissões.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.60.9</strong> no Supabase e valide as permissões.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -1839,7 +1839,7 @@
 
           <div class="strategy-panel strategy-result-foundation-panel hidden" data-strategy-panel="result">
             <article class="strategy-placeholder-card strategy-wide-card strategy-result-card">
-              <span class="eyebrow">FASE 5 • V2.60.8</span>
+              <span class="eyebrow">FASE 5 • V2.60.9</span>
               <div class="strategy-section-heading"><div><h3>Fundação de Resultado</h3><p>Estrutura econômica isolada para registrar e auditar receita direta, influenciada e protegida sem misturar atribuição, recorrência ou origem do evento.</p></div><span id="strategyResultFoundationStatus" class="strategy-efficiency-status neutral">SEM BASE</span></div>
 
               <section class="strategy-result-summary">
@@ -2094,24 +2094,35 @@
                 <aside class="strategy-insight"><strong>Histórico não é recálculo</strong><p id="strategyResultHistoryWarning">Cada competência fechada usa sua própria fotografia econômica e a revisão financeira correspondente.</p></aside>
               </section>
 
+              <section class="strategy-result-integrity strategy-result-hardening" aria-labelledby="strategyResultHardeningTitle">
+                <div class="strategy-section-heading"><div><span class="eyebrow">V2.60.9 • HARDENING E FECHAMENTO DA FASE 5</span><h3 id="strategyResultHardeningTitle">Integridade econômica e histórica</h3><p>Valida rateio antes do fechamento, rejeita snapshots inconsistentes e mantém a operação reconciliada mesmo enquanto existirem lançamentos ainda sem atribuição individual.</p></div></div>
+                <div class="strategy-result-integrity-grid">
+                  <div><span>Snapshots válidos</span><strong id="strategyResultHardeningEligible">—</strong></div>
+                  <div><span>Snapshots rejeitados</span><strong id="strategyResultHardeningInvalid">—</strong></div>
+                  <div><span>Competências reabertas</span><strong id="strategyResultHardeningReopened">—</strong></div>
+                  <div><span>Rateio econômico atual</span><strong id="strategyResultHardeningAllocation">—</strong></div>
+                </div>
+                <div class="strategy-productivity-explainer"><strong>Fechamento fail-closed</strong><span>Resultado confirmado sem 100% de atribuição efetiva bloqueia o fechamento. Snapshots inválidos não entram silenciosamente na evolução e a tabela bruta não possui leitura direta para usuários autenticados.</span></div>
+              </section>
+
               <section class="strategy-result-integrity">
                 <div class="strategy-section-heading"><div><span class="eyebrow">INTEGRIDADE</span><h3>Evento econômico ≠ atribuição</h3><p>Uma venda ou retenção existe uma única vez. Técnicos e Squads participantes são ligados ao evento separadamente para impedir duplicidade financeira.</p></div></div>
                 <div class="strategy-result-integrity-grid">
                   <div><span>Eventos atribuídos</span><strong id="strategyResultAttributedCount">—</strong></div>
                   <div><span>Sem atribuição</span><strong id="strategyResultUnattributedCount">—</strong></div>
                   <div><span>Origens distintas</span><strong id="strategyResultSourceCount">—</strong></div>
-                  <div><span>Motor</span><strong>RE-0.9.0</strong></div>
+                  <div><span>Motor</span><strong>RE-1.0.0</strong></div>
                 </div>
               </section>
 
               <section class="strategy-efficiency-readiness">
-                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Prontidão da Fase 5</h3><p>A fundação fica ativa agora; cálculos monetários são liberados somente nas versões específicas.</p></div></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Fase 5 concluída</h3><p>Fundação, receitas, atribuição, ROI, diagnósticos, histórico e hardening estão ativos sob contratos auditáveis e independentes.</p></div></div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Entrega</th><th>Versão</th><th>Estado</th><th>Contrato</th></tr></thead><tbody id="strategyResultReadinessRows"><tr><td colspan="4" class="muted">Carregando Fundação de Resultado...</td></tr></tbody></table></div>
               </section>
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Sem dupla contagem e sem atribuição implícita</h3></div><ul id="strategyResultWarnings"><li>Carregando regras da Fase 5.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Fase 5 iniciada</strong><p>A V2.60.0 criou a fundação; V2.60.1–V2.60.3 ativaram as três naturezas econômicas; V2.60.4 e V2.60.5 consolidaram técnico e Squad; V2.60.6 adicionou ROI e retorno operacional; a V2.60.7 traduz esses sinais em diagnósticos explicáveis; e a V2.60.8 congela o resultado por competência e habilita a evolução histórica.</p></aside>
+            <aside class="strategy-insight"><strong>Fase 5 concluída e estabilizada</strong><p>A V2.60.9 fecha o ciclo de Resultado: valida atribuição antes do fechamento, reconcilia o ROI consolidado, endurece snapshots e histórico em modo fail-closed e mantém Receita Direta, Influenciada e Protegida economicamente separadas.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2592,36 +2603,36 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.60.8"></script>
-  <script src="js/finance-rules.js?v=2.60.8"></script>
-  <script src="js/finance-advanced.js?v=2.60.8"></script>
-  <script src="js/tv-engine.js?v=2.60.8"></script>
-  <script src="js/presentation.js?v=2.60.8"></script>
-  <script src="js/chart-engine.js?v=2.60.8"></script>
-  <script src="js/chart-export.js?v=2.60.8"></script>
-  <script src="js/import-engine.js?v=2.60.8"></script>
-  <script src="js/predictive-engine.js?v=2.60.8"></script>
-  <script src="js/alert-engine.js?v=2.60.8"></script>
-  <script src="js/settings-engine.js?v=2.60.8"></script>
-  <script src="js/performance-engine.js?v=2.60.8"></script>
-  <script src="js/navigation-engine.js?v=2.60.8"></script>
-  <script src="js/workspace-engine.js?v=2.60.8"></script>
-  <script src="js/filter-system.js?v=2.60.8"></script>
-  <script src="js/comparison-engine.js?v=2.60.8"></script>
-  <script src="js/finance-report-engine.js?v=2.60.8"></script>
-  <script src="js/design-system.js?v=2.60.8"></script>
-  <script src="js/strategy-access.js?v=2.60.8"></script>
-  <script src="js/strategy-data.js?v=2.60.8"></script>
-  <script src="js/strategy-cost-engine.js?v=2.60.8"></script>
-  <script src="js/strategy-efficiency.js?v=2.60.8"></script>
-  <script src="js/strategy-capacity.js?v=2.60.8"></script>
-  <script src="js/strategy-result.js?v=2.60.8"></script>
-  <script src="js/strategy-insights.js?v=2.60.8"></script>
-  <script src="js/strategy.js?v=2.60.8"></script>
+  <script src="js/business-calendar.js?v=2.60.9"></script>
+  <script src="js/finance-rules.js?v=2.60.9"></script>
+  <script src="js/finance-advanced.js?v=2.60.9"></script>
+  <script src="js/tv-engine.js?v=2.60.9"></script>
+  <script src="js/presentation.js?v=2.60.9"></script>
+  <script src="js/chart-engine.js?v=2.60.9"></script>
+  <script src="js/chart-export.js?v=2.60.9"></script>
+  <script src="js/import-engine.js?v=2.60.9"></script>
+  <script src="js/predictive-engine.js?v=2.60.9"></script>
+  <script src="js/alert-engine.js?v=2.60.9"></script>
+  <script src="js/settings-engine.js?v=2.60.9"></script>
+  <script src="js/performance-engine.js?v=2.60.9"></script>
+  <script src="js/navigation-engine.js?v=2.60.9"></script>
+  <script src="js/workspace-engine.js?v=2.60.9"></script>
+  <script src="js/filter-system.js?v=2.60.9"></script>
+  <script src="js/comparison-engine.js?v=2.60.9"></script>
+  <script src="js/finance-report-engine.js?v=2.60.9"></script>
+  <script src="js/design-system.js?v=2.60.9"></script>
+  <script src="js/strategy-access.js?v=2.60.9"></script>
+  <script src="js/strategy-data.js?v=2.60.9"></script>
+  <script src="js/strategy-cost-engine.js?v=2.60.9"></script>
+  <script src="js/strategy-efficiency.js?v=2.60.9"></script>
+  <script src="js/strategy-capacity.js?v=2.60.9"></script>
+  <script src="js/strategy-result.js?v=2.60.9"></script>
+  <script src="js/strategy-insights.js?v=2.60.9"></script>
+  <script src="js/strategy.js?v=2.60.9"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.60.8"></script>
+  <script src="js/app.js?v=2.60.9"></script>
 </body>
 </html>

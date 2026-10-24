@@ -5,7 +5,9 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.9.0-result-history';
+  const RULE_VERSION='RE-1.0.0-phase5-hardening';
+  const RESULT_SNAPSHOT_VERSION='RS-1.0.0';
+  const RESULT_HARDENING_VERSION='RH-1.0.0';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -47,7 +49,8 @@
     Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'ready'}),
     Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'ready'}),
     Object.freeze({id:'result-diagnostics',label:'Insights e diagnóstico de resultado',version:'V2.60.7',state:'ready'}),
-    Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'ready'})
+    Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'ready'}),
+    Object.freeze({id:'result-hardening',label:'Hardening e fechamento da Fase 5',version:'V2.60.9',state:'ready'})
   ]);
   const RESULT_DIAGNOSTIC_THRESHOLDS=Object.freeze({strongCoverage:1.25,breakEvenCoverage:1,nearBreakEvenCoverage:.85,materialImpactPerCost:1});
 
@@ -437,6 +440,9 @@
     return{
       totalCost,fte,directRevenue,influencedRevenue,protectedRevenue,
       directMrr:nonNegative(raw.direct_mrr??raw.directMrr),influencedMrr:nonNegative(raw.influenced_mrr??raw.influencedMrr),protectedMrr:nonNegative(raw.protected_mrr??raw.protectedMrr),
+      unallocatedDirectRevenue:nonNegative(raw.unallocated_direct_revenue??raw.unallocatedDirectRevenue),
+      unallocatedInfluencedRevenue:nonNegative(raw.unallocated_influenced_revenue??raw.unallocatedInfluencedRevenue),
+      unallocatedProtectedRevenue:nonNegative(raw.unallocated_protected_revenue??raw.unallocatedProtectedRevenue),
       directNetReturn:directNetRaw!=null?directNetRaw:(totalCost>0?directRevenue-totalCost:null),
       directRoiPct:roiRaw!=null?roiRaw:(totalCost>0?(directRevenue-totalCost)/totalCost*100:null),
       directCostCoverage:coverageRaw!=null?Math.max(0,coverageRaw):(totalCost>0?directRevenue/totalCost:null),
@@ -458,12 +464,14 @@
     const rows=Object.freeze([...base.rows].sort((a,b)=>{
       const ar=a.directRoiPct==null?-Infinity:a.directRoiPct,br=b.directRoiPct==null?-Infinity:b.directRoiPct;return br-ar||b.directRevenue-a.directRevenue||a.squadCode.localeCompare(b.squadCode,'pt-BR');
     }));
-    return Object.freeze({ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,totalCost:base.totalCost,fte:base.fte,directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,directNetReturn:base.directNetReturn,directRoiPct:base.directRoiPct,directCostCoverage:base.directCostCoverage,influencedImpactPerCost:base.influencedImpactPerCost,protectedImpactPerCost:base.protectedImpactPerCost,directRevenuePerFte:base.directRevenuePerFte,protectedMrrPerFte:base.protectedMrrPerFte,rows,warnings:Object.freeze([
+    const allocationGap=base.unallocatedDirectRevenue+base.unallocatedInfluencedRevenue+base.unallocatedProtectedRevenue;
+    return Object.freeze({ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,totalCost:base.totalCost,fte:base.fte,directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,unallocatedDirectRevenue:base.unallocatedDirectRevenue,unallocatedInfluencedRevenue:base.unallocatedInfluencedRevenue,unallocatedProtectedRevenue:base.unallocatedProtectedRevenue,allocationComplete:allocationGap<=0.009,directNetReturn:base.directNetReturn,directRoiPct:base.directRoiPct,directCostCoverage:base.directCostCoverage,influencedImpactPerCost:base.influencedImpactPerCost,protectedImpactPerCost:base.protectedImpactPerCost,directRevenuePerFte:base.directRevenuePerFte,protectedMrrPerFte:base.protectedMrrPerFte,rows,warnings:Object.freeze([
       'ROI e retorno líquido usam somente Receita Direta confirmada como numerador econômico.',
       'Receita Influenciada e Protegida permanecem independentes e são exibidas apenas como impacto por R$ de custo.',
       'ROI direto = (Receita Direta - custo) / custo. Cobertura direta = Receita Direta / custo.',
       'Squad e operação usam custo total; o custo individual do técnico usa somente seu custo pessoal registrado.',
-      'Sem custo válido, ROI e razões por custo ficam indisponíveis em vez de assumir custo zero.'
+      'Sem custo válido, ROI e razões por custo ficam indisponíveis em vez de assumir custo zero.',
+      'Na operação consolidada, receita confirmada sem rateio continua no ROI e aparece separadamente como lacuna de atribuição; o fechamento exige rateio econômico completo.'
     ])});
   }
   function normalizeTechnicianRoiRow(raw={}){
@@ -526,26 +534,65 @@
   }
 
 
+  function resultHistoryOptional(value){
+    if(value===null||value===undefined||value==='')return null;
+    const n=Number(value);return Number.isFinite(n)?n:null;
+  }
+  function resultHistoryNonNegative(value){const n=resultHistoryOptional(value);return n==null?null:Math.max(0,n)}
+  function resultHistoryCloseEnough(a,b,tolerance=.01){return a!=null&&b!=null&&Math.abs(a-b)<=tolerance}
   function normalizeResultHistoryRow(raw={}){
-    const source=raw&&typeof raw==='object'?raw:{};
-    const optional=value=>value===null||value===undefined||value===''?null:num(value,null);
+    const source=raw&&typeof raw==='object'?raw:{},issues=[];
+    const competence=text(source.competence),status=text(source.status,'closed'),revision=resultHistoryNonNegative(source.revision),financialSnapshotRevision=resultHistoryNonNegative(source.financial_snapshot_revision??source.financialSnapshotRevision),snapshotVersion=text(source.snapshot_version??source.snapshotVersion),ruleVersion=text(source.rule_version??source.ruleVersion),snapshotSource=text(source.source,'close'),snapshotFingerprint=text(source.snapshot_fingerprint??source.snapshotFingerprint);
+    const creditedEventCount=resultHistoryNonNegative(source.credited_event_count??source.creditedEventCount),totalCost=resultHistoryNonNegative(source.total_cost??source.totalCost),fte=resultHistoryNonNegative(source.fte),directRevenue=resultHistoryNonNegative(source.direct_revenue??source.directRevenue),directMrr=resultHistoryNonNegative(source.direct_mrr??source.directMrr),directArr=resultHistoryNonNegative(source.direct_arr??source.directArr),influencedRevenue=resultHistoryNonNegative(source.influenced_revenue??source.influencedRevenue),influencedMrr=resultHistoryNonNegative(source.influenced_mrr??source.influencedMrr),influencedArr=resultHistoryNonNegative(source.influenced_arr??source.influencedArr),protectedRevenue=resultHistoryNonNegative(source.protected_revenue??source.protectedRevenue),protectedMrr=resultHistoryNonNegative(source.protected_mrr??source.protectedMrr),protectedArr=resultHistoryNonNegative(source.protected_arr??source.protectedArr);
+    const directNetReturn=resultHistoryOptional(source.direct_net_return??source.directNetReturn),directRoiPct=resultHistoryOptional(source.direct_roi_pct??source.directRoiPct),directCostCoverage=resultHistoryOptional(source.direct_cost_coverage??source.directCostCoverage),influencedImpactPerCost=resultHistoryOptional(source.influenced_impact_per_cost??source.influencedImpactPerCost),protectedImpactPerCost=resultHistoryOptional(source.protected_impact_per_cost??source.protectedImpactPerCost);
+    if(!competence)issues.push('competence');
+    if(status!=='closed')issues.push('status');
+    if(!revision||revision<1)issues.push('revision');
+    if(!financialSnapshotRevision||financialSnapshotRevision!==revision)issues.push('financial_revision');
+    if(snapshotVersion!==RESULT_SNAPSHOT_VERSION)issues.push('snapshot_version');
+    if(!ruleVersion)issues.push('rule_version');
+    if(!['close','legacy_backfill'].includes(snapshotSource))issues.push('source');
+    if(!snapshotFingerprint)issues.push('fingerprint');
+    const required={creditedEventCount,totalCost,fte,directRevenue,directMrr,directArr,influencedRevenue,influencedMrr,influencedArr,protectedRevenue,protectedMrr,protectedArr};
+    if(Object.values(required).some(value=>value==null))issues.push('required_metrics');
+    if(totalCost!=null&&totalCost>0){
+      const expectedNet=(directRevenue??0)-totalCost,expectedRoi=expectedNet/totalCost*100,expectedCoverage=(directRevenue??0)/totalCost;
+      if(!resultHistoryCloseEnough(directNetReturn,expectedNet,.02))issues.push('direct_net_return');
+      if(!resultHistoryCloseEnough(directRoiPct,expectedRoi,.02))issues.push('direct_roi_pct');
+      if(!resultHistoryCloseEnough(directCostCoverage,expectedCoverage,.0002))issues.push('direct_cost_coverage');
+    }else if(totalCost===0&&(directRoiPct!=null||directCostCoverage!=null)){issues.push('zero_cost_ratio')}
+    const contractValid=issues.length===0;
     return Object.freeze({
-      competence:text(source.competence),status:text(source.status,'closed'),revision:nonNegative(source.revision),
-      snapshotVersion:text(source.snapshot_version??source.snapshotVersion),ruleVersion:text(source.rule_version??source.ruleVersion),
-      source:text(source.source,'close'),financialSnapshotRevision:nonNegative(source.financial_snapshot_revision??source.financialSnapshotRevision),
-      snapshotFingerprint:text(source.snapshot_fingerprint??source.snapshotFingerprint),createdAt:source.created_at??source.createdAt??null,
-      squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',creditedEventCount:nonNegative(source.credited_event_count??source.creditedEventCount),
-      totalCost:nonNegative(source.total_cost??source.totalCost),fte:nonNegative(source.fte),
-      directRevenue:nonNegative(source.direct_revenue??source.directRevenue),directMrr:nonNegative(source.direct_mrr??source.directMrr),directArr:nonNegative(source.direct_arr??source.directArr),
-      influencedRevenue:nonNegative(source.influenced_revenue??source.influencedRevenue),influencedMrr:nonNegative(source.influenced_mrr??source.influencedMrr),influencedArr:nonNegative(source.influenced_arr??source.influencedArr),
-      protectedRevenue:nonNegative(source.protected_revenue??source.protectedRevenue),protectedMrr:nonNegative(source.protected_mrr??source.protectedMrr),protectedArr:nonNegative(source.protected_arr??source.protectedArr),
-      directNetReturn:optional(source.direct_net_return??source.directNetReturn),directRoiPct:optional(source.direct_roi_pct??source.directRoiPct),directCostCoverage:optional(source.direct_cost_coverage??source.directCostCoverage),
-      influencedImpactPerCost:optional(source.influenced_impact_per_cost??source.influencedImpactPerCost),protectedImpactPerCost:optional(source.protected_impact_per_cost??source.protectedImpactPerCost)
+      competence,status,revision:revision??0,snapshotVersion,ruleVersion,source:snapshotSource,financialSnapshotRevision:financialSnapshotRevision??0,
+      snapshotFingerprint,createdAt:source.created_at??source.createdAt??null,squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',creditedEventCount:creditedEventCount??0,
+      totalCost:totalCost??0,fte:fte??0,directRevenue:directRevenue??0,directMrr:directMrr??0,directArr:directArr??0,
+      influencedRevenue:influencedRevenue??0,influencedMrr:influencedMrr??0,influencedArr:influencedArr??0,
+      protectedRevenue:protectedRevenue??0,protectedMrr:protectedMrr??0,protectedArr:protectedArr??0,
+      directNetReturn,directRoiPct,directCostCoverage,influencedImpactPerCost,protectedImpactPerCost,
+      contractValid,complete:contractValid,contractIssues:Object.freeze(issues)
     });
   }
+  function latestResultSnapshots(rows=[]){
+    const byCompetence=new Map(),sourceRank={close:2,legacy_backfill:1};
+    for(const raw of rows||[]){
+      const row=raw&&raw.contractValid!==undefined?raw:normalizeResultHistoryRow(raw);if(!row.competence)continue;
+      const current=byCompetence.get(row.competence);
+      if(!current||row.revision>current.revision||(row.revision===current.revision&&(sourceRank[row.source]||0)>(sourceRank[current.source]||0)))byCompetence.set(row.competence,row);
+    }
+    return [...byCompetence.values()].sort((a,b)=>a.competence.localeCompare(b.competence));
+  }
   function normalizeResultHistory(raw={}){
-    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows:[];
-    return Object.freeze({sourceAvailable:source.source_available===true||source.sourceAvailable===true,squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',snapshotVersion:text(source.snapshot_version??source.snapshotVersion),ruleVersion:text(source.rule_version??source.ruleVersion),rows:Object.freeze(rows.map(normalizeResultHistoryRow).filter(row=>row.competence).sort((a,b)=>a.competence.localeCompare(b.competence)))});
+    const source=raw&&typeof raw==='object'?raw:{},rawRows=Array.isArray(source.rows)?source.rows:[],normalizedRows=rawRows.map(normalizeResultHistoryRow).filter(row=>row.competence),rows=latestResultSnapshots(normalizedRows),hardeningRaw=source.hardening&&typeof source.hardening==='object'?source.hardening:{};
+    const hardening=Object.freeze({
+      version:text(hardeningRaw.version),applied:text(hardeningRaw.version)===RESULT_HARDENING_VERSION,
+      latestSnapshotCount:nonNegative(hardeningRaw.latest_snapshot_count??hardeningRaw.latestSnapshotCount??rows.length),
+      closedSnapshotCount:nonNegative(hardeningRaw.closed_snapshot_count??hardeningRaw.closedSnapshotCount??rows.length),
+      eligibleSnapshotCount:nonNegative(hardeningRaw.eligible_snapshot_count??hardeningRaw.eligibleSnapshotCount??rows.filter(row=>row.contractValid).length),
+      invalidSnapshotCount:nonNegative(hardeningRaw.invalid_snapshot_count??hardeningRaw.invalidSnapshotCount??rows.filter(row=>!row.contractValid).length),
+      reopenedCompetenceCount:nonNegative(hardeningRaw.reopened_competence_count??hardeningRaw.reopenedCompetenceCount),
+      legacyBackfillCount:nonNegative(hardeningRaw.legacy_backfill_count??hardeningRaw.legacyBackfillCount??rows.filter(row=>row.source==='legacy_backfill').length)
+    });
+    return Object.freeze({sourceAvailable:source.source_available===true||source.sourceAvailable===true,squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',snapshotVersion:text(source.snapshot_version??source.snapshotVersion),ruleVersion:text(source.rule_version??source.ruleVersion),hardening,receivedCount:normalizedRows.length,rows:Object.freeze(rows)});
   }
   function historyDelta(current,previous,key){
     if(!current||!previous)return null;
@@ -554,7 +601,7 @@
     return num(a)-num(b);
   }
   function buildResultHistory({scope={},history={}}={}){
-    const normalizedScope=normalizeScope(scope),base=normalizeResultHistory(history),rows=[...base.rows];
+    const normalizedScope=normalizeScope(scope),base=normalizeResultHistory(history),selected=[...base.rows],invalidRows=selected.filter(row=>!row.contractValid),rows=selected.filter(row=>row.contractValid);
     const latest=rows.at(-1)||null,previous=rows.length>1?rows.at(-2):null;
     const evolution=Object.freeze({
       competenceCount:rows.length,
@@ -566,11 +613,13 @@
       totalCostDelta:historyDelta(latest,previous,'totalCost'),
       directRevenueChangePct:latest&&previous&&previous.directRevenue>0?((latest.directRevenue-previous.directRevenue)/previous.directRevenue)*100:null
     });
+    const integrity=Object.freeze({hardeningApplied:base.hardening.applied,receivedCount:base.receivedCount,eligibleCount:rows.length,invalidCount:Math.max(invalidRows.length,base.hardening.invalidSnapshotCount),reopenedCompetenceCount:base.hardening.reopenedCompetenceCount,legacyBackfillCount:base.hardening.legacyBackfillCount});
     return Object.freeze({
       ruleVersion:RULE_VERSION,scope:normalizedScope,status:base.sourceAvailable?'ready':'pending',sourceAvailable:base.sourceAvailable,
-      snapshotVersion:base.snapshotVersion||'RS-1.0.0',rows:Object.freeze(rows),latest,previous,evolution,
+      snapshotVersion:base.snapshotVersion||RESULT_SNAPSHOT_VERSION,rows:Object.freeze(rows),latest,previous,evolution,integrity,
       warnings:Object.freeze([
-        'Histórico usa somente snapshots de competências fechadas; competências passadas não são recalculadas com regras atuais.',
+        'Histórico usa somente snapshots válidos de competências fechadas; competências reabertas não permanecem como fotografia corrente.',
+        'Snapshots com contrato, revisão financeira ou fórmula de ROI inconsistente são rejeitados em modo fail-closed e não entram na evolução.',
         'Receita Direta, Influenciada e Protegida permanecem séries independentes e não são somadas em um total econômico artificial.',
         'Snapshots legacy_backfill representam reconstrução com a melhor base disponível e devem ser lidos com essa ressalva.',
         'ROI histórico continua baseado somente em Receita Direta e no custo congelado da mesma revisão financeira.'
@@ -579,5 +628,5 @@
   }
 
 
-  return{RULE_VERSION,RESULT_DIAGNOSTIC_THRESHOLDS,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn,resultDiagnosticRule,diagnoseResultRow,summarizeResultDiagnostics,buildResultDiagnostics,normalizeResultHistoryRow,normalizeResultHistory,buildResultHistory};
+  return{RULE_VERSION,RESULT_SNAPSHOT_VERSION,RESULT_HARDENING_VERSION,RESULT_DIAGNOSTIC_THRESHOLDS,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn,resultDiagnosticRule,diagnoseResultRow,summarizeResultDiagnostics,buildResultDiagnostics,normalizeResultHistoryRow,latestResultSnapshots,normalizeResultHistory,buildResultHistory};
 });

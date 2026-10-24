@@ -11,9 +11,9 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.1.sql'),'utf8');
 
 test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
-  assert.equal(pkg.version,'2.60.8');
-  assert.equal(pkg.assetVersion,'2.60.8');
-  assert.equal(result.RULE_VERSION,'RE-0.9.0-result-history');
+  assert.equal(pkg.version,'2.60.9');
+  assert.equal(pkg.assetVersion,'2.60.9');
+  assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.ok(result.DIRECT_CATEGORY_IDS.includes('upsell'));
   assert.equal(result.DIRECT_REVENUE_CATEGORIES.find(x=>x.id==='upsell').label,'Up-sell');
   assert.ok(existsSync(join(root,'docs','RESULTADO_RECEITA_DIRETA_V2.60.1.md')));
@@ -22,7 +22,7 @@ test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
   assert.match(index,/strategyDirectRevenueTotal/);
   assert.match(index,/strategyDirectRevenueCategory/);
   assert.match(index,/strategyAddDirectRevenueBtn/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.8'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.9'));
 });
 
 test('motor soma somente valor confirmado e mantém MRR/ARR separados',()=>{

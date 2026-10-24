@@ -1,3 +1,7 @@
+## V2.60.9 — Hardening e fechamento da Fase 5
+
+A V2.60.9 encerra a Fase 5 de Resultado. O ROI consolidado passa a reconciliar toda Receita Direta confirmada da operação mesmo antes do rateio individual; o fechamento exige 100% de atribuição econômica efetiva; snapshots tornam-se imutáveis, sem leitura direta e com validação de contrato/fingerprint; competências reabertas saem da série congelada; e o histórico funciona em modo fail-closed. A versão também corrige a propagação de `resultHistory` pelo controller estratégico. Execute `MIGRACAO_V2.60.9.sql` após a V2.60.8.
+
 ## V2.60.8 — Snapshots, histórico e evolução
 
 A V2.60.8 congela o Resultado econômico por competência. Cada fechamento cria um snapshot `RS-1.0.0` ligado à mesma revisão financeira, preservando custo, Receita Direta, Influenciada, Protegida, ROI direto e indicadores de impacto por Squad/operação. O histórico nunca recalcula competências antigas com a regra atual. Eventos e atribuições de Resultado ficam bloqueados no banco enquanto a competência estiver fechada. Execute `MIGRACAO_V2.60.8.sql` após a V2.60.6; a V2.60.7 não possui migration.

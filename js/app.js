@@ -74,7 +74,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.60.8';
+  const APP_VERSION = '2.60.9';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3760,7 +3760,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
       if(seq!==strategyFinanceLoadSeq)return;
       strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue,resultInfluencedRevenue,resultProtectedRevenue,resultTechnician,resultSquad,resultRoi,resultTechnicianRoi,resultHistory});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.8',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.9',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
@@ -4376,6 +4376,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     set('#strategyResultRoiCoverage',aggregateReady?strategyRatio(roi.directCostCoverage):'—');
     set('#strategyResultRoiInfluenced',aggregateReady?strategyRatio(roi.influencedImpactPerCost):'—');
     set('#strategyResultRoiProtected',aggregateReady?strategyRatio(roi.protectedImpactPerCost):'—');
+    set('#strategyResultHardeningAllocation',aggregateReady?(roi.allocationComplete?'ÍNTEGRO':'PENDENTE'):'—');
     const squadBody=$('#strategyResultRoiSquadRows');if(squadBody){
       if(!canAggregate)squadBody.innerHTML='<tr><td colspan="9" class="muted">Sem permissão para retorno operacional agregado.</td></tr>';
       else if(!aggregateReady)squadBody.innerHTML='<tr><td colspan="9" class="muted">Sem base de custo e resultado para calcular o ROI.</td></tr>';
@@ -4391,7 +4392,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       else if(!techReady)techBody.innerHTML='<tr><td colspan="10" class="muted">Sem base individual para cruzar contribuição e custo.</td></tr>';
       else techBody.innerHTML=tech.rows.length?tech.rows.map(row=>`<tr><td><strong>${escapeHtml(row.technicianName)}</strong></td><td>${row.squadCode?`Squad ${escapeHtml(row.squadCode)}`:'—'}</td><td>${row.costAvailable?strategyMoney(row.totalCost):'—'}</td><td>${row.costAvailable?strategyNumber(row.fte,2):'—'}</td><td><strong>${strategyMoney(row.directRevenue)}</strong></td><td>${row.directNetReturn==null?'—':strategyMoney(row.directNetReturn)}</td><td><strong>${strategySignedPercent(row.directRoiPct)}</strong></td><td>${strategyRatio(row.directCostCoverage)}</td><td>${strategyRatio(row.influencedImpactPerCost)}</td><td>${strategyRatio(row.protectedImpactPerCost)}</td></tr>`).join(''):'<tr><td colspan="10" class="muted">Nenhum técnico com contribuição econômica neste escopo.</td></tr>';
     }
-    const warning=$('#strategyResultRoiWarning');if(warning)warning.textContent='ROI usa apenas Receita Direta confirmada. Influenciada e Protegida são mostradas como impacto por R$ de custo e nunca entram no numerador do ROI.';
+    const warning=$('#strategyResultRoiWarning');if(warning)warning.textContent=roi.allocationComplete?'ROI usa apenas Receita Direta confirmada. Influenciada e Protegida são mostradas como impacto por R$ de custo e nunca entram no numerador do ROI.':'ROI consolidado inclui a Receita Direta confirmada ainda sem rateio; regularize a atribuição econômica antes do fechamento.';
     return{roi,tech};
   }
 
@@ -4414,20 +4415,24 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function renderStrategyResultHistory(vm,displayAggregate){
     const canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),history=strategyResultEngine.buildResultHistory({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},history:vm.financial.resultHistory||{}}),ready=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError&&history.sourceAvailable;
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
-    const status=$('#strategyResultHistoryStatus');if(status){status.textContent=!canAggregate?'SEM PERMISSÃO':ready?'HISTÓRICO CONGELADO':vm.state.financialLoading?'CARREGANDO':'SEM SNAPSHOTS';status.className=`strategy-efficiency-status ${ready&&history.rows.length?'good':'neutral'}`;}
+    const hardened=history.integrity?.hardeningApplied===true,invalidSnapshots=Number(history.integrity?.invalidCount||0);
+    const status=$('#strategyResultHistoryStatus');if(status){status.textContent=!canAggregate?'SEM PERMISSÃO':!ready?(vm.state.financialLoading?'CARREGANDO':'SEM SNAPSHOTS'):!hardened?'MIGRAÇÃO PENDENTE':invalidSnapshots>0?'INTEGRIDADE PENDENTE':'HISTÓRICO HARDENED';status.className=`strategy-efficiency-status ${ready&&hardened&&invalidSnapshots===0?'good':ready&&invalidSnapshots>0?'warn':'neutral'}`;}
     const latest=history.latest,previous=history.previous,e=history.evolution,deltaMoney=value=>value==null?'—':`${value>0?'+':''}${strategyMoney(value)}`,deltaPp=value=>value==null?'—':`${value>0?'+':''}${Number(value).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p.`;
     set('#strategyResultHistoryCount',ready?Number(e.competenceCount||0).toLocaleString('pt-BR'):'—');
     set('#strategyResultHistoryLatest',latest?strategyDataEngine.competenceLabel(latest.competence):'—');
     set('#strategyResultHistoryDirectDelta',latest&&previous?deltaMoney(e.directRevenueDelta):'—');
     set('#strategyResultHistoryRoiDelta',latest&&previous?deltaPp(e.directRoiPctDelta):'—');
     set('#strategyResultHistoryProtectedDelta',latest&&previous?deltaMoney(e.protectedRevenueDelta):'—');
+    set('#strategyResultHardeningEligible',hardened?Number(history.integrity?.eligibleCount||0).toLocaleString('pt-BR'):'—');
+    set('#strategyResultHardeningInvalid',hardened?Number(history.integrity?.invalidCount||0).toLocaleString('pt-BR'):'—');
+    set('#strategyResultHardeningReopened',hardened?Number(history.integrity?.reopenedCompetenceCount||0).toLocaleString('pt-BR'):'—');
     const scope=$('#strategyResultHistoryScope');if(scope)scope.textContent=vm.state.squadCode==='all'?'Evolução da operação consolidada':'Evolução do Squad selecionado';
     const body=$('#strategyResultHistoryRows');if(body){
       if(!canAggregate)body.innerHTML='<tr><td colspan="10" class="muted">Sem permissão para histórico agregado.</td></tr>';
-      else if(!ready)body.innerHTML='<tr><td colspan="10" class="muted">Execute a migration V2.60.8 para habilitar snapshots de Resultado.</td></tr>';
+      else if(!ready)body.innerHTML='<tr><td colspan="10" class="muted">Execute a migration V2.60.9 para habilitar o hardening e os snapshots de Resultado.</td></tr>';
       else body.innerHTML=history.rows.length?[...history.rows].reverse().map((row,index,arr)=>{const older=arr[index+1]||null,delta=older?row.directRevenue-older.directRevenue:null;return `<tr><td><strong>${escapeHtml(strategyDataEngine.competenceLabel(row.competence))}</strong><small>rev. ${Number(row.revision||0)} · ${row.source==='legacy_backfill'?'reconstruído':'fechamento'}</small></td><td>${strategyMoney(row.totalCost)}</td><td><strong>${strategyMoney(row.directRevenue)}</strong></td><td>${older?deltaMoney(delta):'—'}</td><td>${row.directRoiPct==null?'—':strategySignedPercent(row.directRoiPct)}</td><td>${strategyMoney(row.influencedRevenue)}</td><td>${strategyMoney(row.protectedRevenue)}</td><td>${strategyMoney(row.protectedMrr)}</td><td>${row.directCostCoverage==null?'—':strategyRatio(row.directCostCoverage)}</td><td>${escapeHtml(row.snapshotVersion||'RS-1.0.0')}</td></tr>`}).join(''):'<tr><td colspan="10" class="muted">Nenhuma competência fechada com snapshot de Resultado neste escopo.</td></tr>';
     }
-    const warning=$('#strategyResultHistoryWarning');if(warning)warning.textContent='Cada linha usa o snapshot congelado da competência e a mesma revisão financeira do fechamento. Registros legacy_backfill são reconstruções da melhor base disponível e ficam identificados.';
+    const warning=$('#strategyResultHistoryWarning');if(warning)warning.textContent=hardened?'Cada linha usa snapshot fechado com contrato, revisão financeira e fingerprint validados. Competências reabertas ficam fora da série até novo fechamento; legacy_backfill permanece identificado.':'A V2.60.9 ainda não foi detectada no histórico. Aplique a migration de hardening antes de usar a evolução como base de decisão.';
     return history;
   }
 
@@ -4460,7 +4465,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       'result-by-squad':'Consolidação econômica por Squad ativa com rateio auditável e naturezas separadas.',
       'result-roi':'ROI direto, retorno líquido, cobertura de custo e impacto econômico por R$ de custo ativos.',
       'result-diagnostics':'Diagnósticos explicáveis de retorno, influência e proteção ativos com guardrails contra causalidade automática.',
-      'result-history':'Snapshots imutáveis, histórico por competência e evolução econômica ativos.'
+      'result-history':'Snapshots imutáveis, histórico por competência e evolução econômica ativos.',
+      'result-hardening':'Atribuição completa no fechamento, snapshots fail-closed/imutáveis, ROI reconciliado e regressões da Fase 5 ativos.'
     };
     const body=$('#strategyResultReadinessRows');if(body)body.innerHTML=foundation.catalog.map(item=>`<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.version)}</td><td><span class="strategy-readiness-pill ${item.status==='ready'?'ready':'pending'}">${item.status==='ready'?'ATIVO':'PLANEJADO'}</span></td><td>${escapeHtml(contracts[item.id]||'Planejado para a Fase 5.')}</td></tr>`).join('');
     const warnings=$('#strategyResultWarnings');if(warnings)warnings.innerHTML=foundation.warnings.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
@@ -4559,7 +4565,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const {data,error}=await state.supabase.rpc('close_strategy_competence',{p_competence:strategyDataEngine.competenceDate(vm.state.competence)});if(error)throw error;
       await logAuditEvent('strategy.competence_close',{entityType:'strategy_competence',entityId:vm.competenceRecord.id,description:`Competência estratégica ${vm.state.competence} fechada.`,metadata:{competence:vm.state.competence,revision:data?.revision||null,snapshotVersion:data?.snapshot_version||null,fingerprint:data?.fingerprint||null}});
       strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Competência ${strategyDataEngine.competenceLabel(vm.state.competence)} fechada no snapshot #${data?.revision||1}.`);
-    }catch(err){console.error(err);const msg=String(err?.message||err);toast(/unallocated|allocation mismatch/i.test(msg)?'Não foi possível fechar: existem custos operacionais sem rateio válido.':/close competence access|42501|permission/i.test(msg)?'Seu usuário não possui permissão para fechar competências. Ative “Fechar competências” no Controle de Usuários.':msg);}
+    }catch(err){console.error(err);const msg=String(err?.message||err);toast(/strategy result close blocked|full economic attribution/i.test(msg)?'Não foi possível fechar: existem resultados confirmados sem atribuição econômica completa. Regularize o rateio por técnico/Squad e tente novamente.':/unallocated|allocation mismatch/i.test(msg)?'Não foi possível fechar: existem custos operacionais sem rateio válido.':/close competence access|42501|permission/i.test(msg)?'Seu usuário não possui permissão para fechar competências. Ative “Fechar competências” no Controle de Usuários.':msg);}
   }
   async function reopenStrategyCompetence(){
     const vm=strategyController.viewModel();if(!vm.competenceRecord||vm.competenceRecord.status!=='closed')return toast('A competência selecionada não está fechada.');if(!strategyCloseAccess())return toast('Seu usuário não possui permissão para reabrir competências estratégicas.');

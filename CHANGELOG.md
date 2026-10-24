@@ -1,3 +1,18 @@
+## V2.60.9 — Hardening e fechamento da Fase 5
+
+- fecha a Fase 5 com o motor `RE-1.0.0-phase5-hardening`;
+- corrige o ROI consolidado para usar toda Receita Direta confirmada da operação, sem perder eventos ainda não rateados;
+- mantém linhas por Squad usando o rateio econômico da V2.60.5 e expõe lacunas `unallocated_*_revenue`;
+- bloqueia fechamento com evento econômico elegível sem 100% de atribuição efetiva;
+- serializa validação de `attribution_share` por evento para evitar corrida concorrente acima de 100%;
+- revoga leitura direta de `strategy_result_snapshots` para `authenticated`;
+- adiciona contratos defensivos de versão, revisão, payload e fingerprint aos snapshots;
+- torna snapshots de Resultado imutáveis contra `UPDATE` e `DELETE`;
+- torna o histórico determinístico e fail-closed, excluindo competências reabertas e snapshots inválidos;
+- corrige a propagação de `resultHistory` e `hardening` pelo controller estratégico;
+- adiciona indicadores de integridade da V2.60.9 na área Resultado;
+- adiciona `MIGRACAO_V2.60.9.sql`, documentação e suíte de regressão da Fase 5.
+
 ## V2.60.8 — Snapshots, histórico e evolução do Resultado
 
 - congela o Resultado econômico no fechamento da competência em `strategy_result_snapshots`;

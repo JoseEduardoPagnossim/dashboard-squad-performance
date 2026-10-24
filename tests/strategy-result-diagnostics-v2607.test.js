@@ -9,9 +9,9 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('V2.60.7 publica insights de resultado sem migration nova',()=>{
-  assert.equal(pkg.version,'2.60.8');
-  assert.equal(pkg.assetVersion,'2.60.8');
-  assert.equal(result.RULE_VERSION,'RE-0.9.0-result-history');
+  assert.equal(pkg.version,'2.60.9');
+  assert.equal(pkg.assetVersion,'2.60.9');
+  assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.CATALOG.find(item=>item.id==='result-diagnostics')?.state,'ready');
   assert.ok(existsSync(join(root,'docs','RESULTADO_DIAGNOSTICOS_V2.60.7.md')));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.7.sql')),false);
@@ -19,7 +19,7 @@ test('V2.60.7 publica insights de resultado sem migration nova',()=>{
   assert.match(index,/strategyResultDiagnosticPriority/);
   assert.match(index,/strategyResultDiagnosticSquadRows/);
   assert.match(index,/strategyResultDiagnosticTechRows/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.60.8'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.60.9'));
 });
 
 test('retorno direto forte usa cobertura e não soma outras naturezas',()=>{
