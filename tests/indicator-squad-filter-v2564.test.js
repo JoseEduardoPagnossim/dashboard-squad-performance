@@ -15,7 +15,7 @@ function blockBetween(start,end){
 }
 
 test('V2.57.7 torna a troca de Squad deterministica',()=>{
-  assert.equal(pkg.version,'2.60.3');
+  assert.equal(pkg.version,'2.60.4');
   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
   assert.match(select,/selectionSeq=\+\+state\.squadSelectionSeq/);
   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
@@ -40,5 +40,5 @@ test('V2.57.7 publica todos os assets com o mesmo cache-bust',()=>{
   const current=refs.filter(x=>x.asset!=='js/audit-utils.js');
   assert.ok(current.length>5);
   assert.deepEqual([...new Set(current.map(x=>x.version))],[pkg.assetVersion]);
-  assert.ok(index.includes('V2.60.3'));
+  assert.ok(index.includes('V2.60.4'));
 });

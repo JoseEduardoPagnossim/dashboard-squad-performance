@@ -1,6 +1,6 @@
-## V2.60.3 — Receita Protegida
+## V2.60.4 — Resultado por técnico
 
-A V2.60.3 ativa a terceira natureza econômica da Fase 5. Retenção, recuperação e prevenção de cancelamento passam a ser acompanhadas como Receita Protegida, sempre separadas de Receita Direta e Influenciada. Casos em acompanhamento ficam como receita em risco; somente permanências validadas entram nos indicadores. MRR e ARR protegidos permanecem paralelos ao valor do período para evitar dupla contagem. Execute `MIGRACAO_V2.60.3.sql` após a V2.60.2.
+A V2.60.4 consolida a contribuição econômica individual de cada técnico sem somar Receita Direta, Influenciada e Protegida em um único número. O rateio usa `attribution_share` explícita quando disponível e divide somente o saldo restante entre participantes sem percentual, preservando reconciliação por evento. A visão individual exige permissão `people_costs`; ROI e cruzamento com custo permanecem reservados para a V2.60.6. Execute `MIGRACAO_V2.60.4.sql` após a V2.60.3.
 
 ## V2.60.2 — Receita Influenciada
 
@@ -230,3 +230,7 @@ A Gestão Estratégica passa a permitir fechamento controlado das competências 
 Execute `supabase/migrations/MIGRACAO_V2.57.6.sql` após as migrações anteriores da série 2.57.x.
 
 Detalhes: `docs/GESTAO_ESTRATEGICA_FECHAMENTO_SNAPSHOTS_V2.57.6.md`.
+
+
+## V2.60.4 — Resultado por técnico
+Consolida Receita Direta, Influenciada e Protegida por técnico usando atribuição econômica auditável. As três naturezas permanecem separadas e não formam um total composto.

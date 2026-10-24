@@ -303,3 +303,7 @@
 /* V2.60.3 - Receita Protegida */
 .strategy-protected-revenue-section{display:grid;gap:18px;padding-top:18px;border-top:1px solid var(--border)}
 .strategy-protected-revenue-section .strategy-history-card small{display:block;margin-top:4px;color:var(--muted)}
+
+/* V2.60.4 - Resultado por tecnico */
+.strategy-technician-result-section{display:grid;gap:18px;padding-top:18px;border-top:1px solid var(--border)}
+.strategy-technician-result-section .strategy-history-card small{display:block;margin-top:4px;color:var(--muted);white-space:nowrap}

@@ -1,3 +1,11 @@
+## V2.60.4 — Resultado por técnico
+- consolida contribuição econômica individual sem somar naturezas distintas;
+- aplica attribution_share explícita e divide apenas o saldo remanescente entre participantes sem percentual;
+- impede shares explícitos acima de 100% por evento;
+- adiciona RPC individual protegida por people_costs;
+- mostra Receita Direta, Influenciada, Protegida e MRR por técnico;
+- mantém ROI/custo fora do escopo até V2.60.6.
+
 ## V2.60.3 — Receita Protegida
 
 - ativa a terceira natureza econômica da Fase 5 com o motor `RE-0.4.0-protected-revenue`;
