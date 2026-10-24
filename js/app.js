@@ -74,7 +74,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.60.5';
+  const APP_VERSION = '2.60.6';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3567,6 +3567,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
   }
   function strategyMoney(value){return Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+  function strategySignedPercent(value){return value==null||!Number.isFinite(Number(value))?'—':`${Number(value).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`}
+  function strategyRatio(value){return value==null||!Number.isFinite(Number(value))?'—':`${Number(value).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}x`}
   function strategyNumber(value,digits=2){return Number(value||0).toLocaleString('pt-BR',{minimumFractionDigits:digits,maximumFractionDigits:digits})}
   function strategyPeopleAccess(){return strategyAccessEngine.canViewPeopleCosts(strategyAccess())}
   function strategyEditAccess(){return strategyAccessEngine.canEditCosts(strategyAccess())}
@@ -3671,17 +3673,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const requestedKey=strategyFinanceKey();if(!force&&(strategyFinanceLoadedKey===requestedKey||strategyFinanceLoadingKey===requestedKey))return;
     const seq=++strategyFinanceLoadSeq;strategyFinanceLoadingKey=requestedKey;strategyController.setFinancialLoading(true);
     try{
-      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{}});strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
+      if(!state.supabase){strategyController.setFinancialData({competences:[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{}});strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});return;}
       const org=state.user?.organizationId;if(!org)throw new Error('Organização não identificada para a Gestão Estratégica.');
       if(isSuperAdmin())await ensureOrgOverviewData({daily:false,technicians:false}).catch(()=>{});
       const {data:competenceRows,error:competenceError}=await state.supabase.from('strategy_competences').select('id,competence,status,notes,closed_at,closed_by,reopened_at,reopened_by,snapshot_revision,snapshot_version,rule_version,created_at,updated_at').eq('organization_id',org).order('competence',{ascending:true});if(competenceError)throw competenceError;
       if(seq!==strategyFinanceLoadSeq)return;
-      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{}});
+      strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{}});
       strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];
-      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={};
+      const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={};
       if(strategyPeopleAccess()&&st.competence){const operationalCodes=Object.keys(state.squads||{}).filter(Boolean);if(operationalCodes.length)await ensureMonthsLoaded(operationalCodes,[st.competence],{silent:true,strict:false}).catch(err=>console.warn('Produção individual indisponível para eficiência estratégica.',err));}
       if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
-        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError},{data:capacityUsedSummaryData,error:capacityUsedSummaryError},{data:capacityUsedSquadData,error:capacityUsedSquadError},{data:capacityHistoryData,error:capacityHistoryError},{data:resultFoundationData,error:resultFoundationError},{data:resultDirectRevenueData,error:resultDirectRevenueError},{data:resultInfluencedRevenueData,error:resultInfluencedRevenueError},{data:resultProtectedRevenueData,error:resultProtectedRevenueError},{data:resultSquadData,error:resultSquadError}]=await Promise.all([
+        const [{data:summaryData,error:summaryError},{data:squadData,error:squadError},{data:historyData,error:historyError},{data:resolutionSummaryData,error:resolutionSummaryError},{data:resolutionSquadData,error:resolutionSquadError},{data:resolutionHistoryData,error:resolutionHistoryError},{data:efficiencyHistoryData,error:efficiencyHistoryError},{data:capacitySummaryData,error:capacitySummaryError},{data:capacitySquadData,error:capacitySquadError},{data:capacityUsedSummaryData,error:capacityUsedSummaryError},{data:capacityUsedSquadData,error:capacityUsedSquadError},{data:capacityHistoryData,error:capacityHistoryError},{data:resultFoundationData,error:resultFoundationError},{data:resultDirectRevenueData,error:resultDirectRevenueError},{data:resultInfluencedRevenueData,error:resultInfluencedRevenueError},{data:resultProtectedRevenueData,error:resultProtectedRevenueError},{data:resultSquadData,error:resultSquadError},{data:resultRoiData,error:resultRoiError}]=await Promise.all([
           state.supabase.rpc('get_strategy_financial_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_squad_cost_summary',{p_competence:competenceDate}),
           state.supabase.rpc('get_strategy_financial_history',{p_squad_code:st.squadCode==='all'?null:st.squadCode}),
@@ -3698,9 +3700,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
           state.supabase.rpc('get_strategy_direct_revenue_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_influenced_revenue_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
           state.supabase.rpc('get_strategy_protected_revenue_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
-          state.supabase.rpc('get_strategy_result_squad_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode})
+          state.supabase.rpc('get_strategy_result_squad_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
+          state.supabase.rpc('get_strategy_result_roi_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode})
         ]);
-        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;if(capacityUsedSummaryError)throw capacityUsedSummaryError;if(capacityUsedSquadError)throw capacityUsedSquadError;if(capacityHistoryError)throw capacityHistoryError;if(resultFoundationError)throw resultFoundationError;if(resultDirectRevenueError)throw resultDirectRevenueError;if(resultInfluencedRevenueError)throw resultInfluencedRevenueError;if(resultProtectedRevenueError)throw resultProtectedRevenueError;if(resultSquadError)throw resultSquadError;
+        if(summaryError)throw summaryError;if(squadError)throw squadError;if(historyError)throw historyError;if(resolutionSummaryError)throw resolutionSummaryError;if(resolutionSquadError)throw resolutionSquadError;if(resolutionHistoryError)throw resolutionHistoryError;if(efficiencyHistoryError)throw efficiencyHistoryError;if(capacitySummaryError)throw capacitySummaryError;if(capacitySquadError)throw capacitySquadError;if(capacityUsedSummaryError)throw capacityUsedSummaryError;if(capacityUsedSquadError)throw capacityUsedSquadError;if(capacityHistoryError)throw capacityHistoryError;if(resultFoundationError)throw resultFoundationError;if(resultDirectRevenueError)throw resultDirectRevenueError;if(resultInfluencedRevenueError)throw resultInfluencedRevenueError;if(resultProtectedRevenueError)throw resultProtectedRevenueError;if(resultSquadError)throw resultSquadError;if(resultRoiError)throw resultRoiError;
         efficiencyHistory=Array.isArray(efficiencyHistoryData)?efficiencyHistoryData:[];
         capacityHistory=Array.isArray(capacityHistoryData)?capacityHistoryData:[];
         resultFoundation={...(resultFoundationData||{}),source_available:true};
@@ -3708,6 +3711,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         resultInfluencedRevenue={...(resultInfluencedRevenueData||{}),source_available:true};
         resultProtectedRevenue={...(resultProtectedRevenueData||{}),source_available:true};
         resultSquad={...(resultSquadData||{}),source_available:true};
+        resultRoi={...(resultRoiData||{}),source_available:true};
         summary={...(summaryData||{}),...(resolutionSummaryData||{}),...(capacitySummaryData||{}),...(capacityUsedSummaryData||{})};
         const financialSquads=Array.isArray(squadData)?squadData:[],resolutionSquads=Array.isArray(resolutionSquadData)?resolutionSquadData:[],capacitySquads=Array.isArray(capacitySquadData)?capacitySquadData:[],capacityUsedSquads=Array.isArray(capacityUsedSquadData)?capacityUsedSquadData:[],resolutionBySquad=new Map(resolutionSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityBySquad=new Map(capacitySquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),capacityUsedBySquad=new Map(capacityUsedSquads.map(row=>[String(row.squad_code||'').toUpperCase(),row])),squadCodes=new Set([...financialSquads.map(row=>String(row.squad_code||'').toUpperCase()),...resolutionSquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacitySquads.map(row=>String(row.squad_code||'').toUpperCase()),...capacityUsedSquads.map(row=>String(row.squad_code||'').toUpperCase())].filter(Boolean));
         squadSummary=[...squadCodes].map(code=>({...((financialSquads||[]).find(row=>String(row.squad_code||'').toUpperCase()===code)||{squad_code:code}),...(resolutionBySquad.get(code)||{}),...(capacityBySquad.get(code)||{}),...(capacityUsedBySquad.get(code)||{})}));
@@ -3728,9 +3732,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         }
       }
       if(strategyPeopleAccess()&&competenceDate){
-        const {data:resultTechnicianData,error:resultTechnicianError}=await state.supabase.rpc('get_strategy_result_technician_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode});
-        if(resultTechnicianError)throw resultTechnicianError;
+        const [{data:resultTechnicianData,error:resultTechnicianError},{data:resultTechnicianRoiData,error:resultTechnicianRoiError}]=await Promise.all([
+          state.supabase.rpc('get_strategy_result_technician_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode}),
+          state.supabase.rpc('get_strategy_result_technician_roi_summary',{p_competence:competenceDate,p_squad_code:st.squadCode==='all'?null:st.squadCode})
+        ]);
+        if(resultTechnicianError)throw resultTechnicianError;if(resultTechnicianRoiError)throw resultTechnicianRoiError;
         resultTechnician={...(resultTechnicianData||{}),source_available:true};
+        resultTechnicianRoi={...(resultTechnicianRoiData||{}),source_available:true};
       }
       if(strategyEditAccess()&&comp?.id){
         const [{data:opRows,error:opError},{data:directRows,error:directRowsError},{data:influencedRows,error:influencedRowsError},{data:protectedRows,error:protectedRowsError}]=await Promise.all([
@@ -3749,8 +3757,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         strategyProtectedRevenueEntries=protectedEvents.map(row=>({...strategyResultEngine.normalizeEvent(row),attributions:attrByEvent.get(row.id)||[]}));
       }
       if(seq!==strategyFinanceLoadSeq)return;
-      strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue,resultInfluencedRevenue,resultProtectedRevenue,resultTechnician,resultSquad});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
-    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.5',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
+      strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue,resultInfluencedRevenue,resultProtectedRevenue,resultTechnician,resultSquad,resultRoi,resultTechnicianRoi});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
+    }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.60.6',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
     if(renderAfter&&state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   function strategyCostForPerson(vm,personId){return vm.financial.costs.find(row=>String(row.personId)===String(personId))||null}
@@ -4353,6 +4361,38 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return result;
   }
 
+
+  function renderStrategyOperationalReturn(vm,displayAggregate){
+    const canAggregate=strategyAccessEngine.canViewAggregates(vm.state.access),roi=strategyResultEngine.buildOperationalReturn({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.resultRoi||{}}),aggregateReady=canAggregate&&!vm.state.financialLoading&&!vm.state.financialError&&roi.sourceAvailable;
+    const canPeople=strategyPeopleAccess(),tech=strategyResultEngine.buildTechnicianOperationalReturn({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.resultTechnicianRoi||{}}),techReady=canPeople&&!vm.state.financialLoading&&!vm.state.financialError&&tech.sourceAvailable;
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    const status=$('#strategyResultRoiStatus');if(status){status.textContent=!canAggregate?'SEM PERMISSÃO':aggregateReady?'ROI OPERACIONAL ATIVO':vm.state.financialLoading?'CARREGANDO':'SEM BASE';status.className=`strategy-efficiency-status ${aggregateReady?'good':'neutral'}`;}
+    set('#strategyResultRoiCost',aggregateReady?strategyMoney(roi.totalCost):'—');
+    set('#strategyResultRoiDirect',aggregateReady?strategyMoney(roi.directRevenue):'—');
+    set('#strategyResultRoiNet',aggregateReady&&roi.directNetReturn!=null?strategyMoney(roi.directNetReturn):'—');
+    set('#strategyResultRoiPct',aggregateReady?strategySignedPercent(roi.directRoiPct):'—');
+    set('#strategyResultRoiCoverage',aggregateReady?strategyRatio(roi.directCostCoverage):'—');
+    set('#strategyResultRoiInfluenced',aggregateReady?strategyRatio(roi.influencedImpactPerCost):'—');
+    set('#strategyResultRoiProtected',aggregateReady?strategyRatio(roi.protectedImpactPerCost):'—');
+    const squadBody=$('#strategyResultRoiSquadRows');if(squadBody){
+      if(!canAggregate)squadBody.innerHTML='<tr><td colspan="9" class="muted">Sem permissão para retorno operacional agregado.</td></tr>';
+      else if(!aggregateReady)squadBody.innerHTML='<tr><td colspan="9" class="muted">Sem base de custo e resultado para calcular o ROI.</td></tr>';
+      else squadBody.innerHTML=roi.rows.length?roi.rows.map(row=>`<tr><td><strong>${row.squadCode==='SEM SQUAD'?'Sem Squad':`Squad ${escapeHtml(row.squadCode)}`}</strong></td><td>${strategyMoney(row.totalCost)}</td><td>${strategyNumber(row.fte,2)}</td><td><strong>${strategyMoney(row.directRevenue)}</strong></td><td>${row.directNetReturn==null?'—':strategyMoney(row.directNetReturn)}</td><td><strong>${strategySignedPercent(row.directRoiPct)}</strong></td><td>${strategyRatio(row.directCostCoverage)}</td><td>${strategyRatio(row.influencedImpactPerCost)}</td><td>${strategyRatio(row.protectedImpactPerCost)}</td></tr>`).join(''):'<tr><td colspan="9" class="muted">Nenhum Squad com custo ou resultado nesta competência.</td></tr>';
+    }
+    const techStatus=$('#strategyTechnicianRoiStatus');if(techStatus){techStatus.textContent=!canPeople?'SEM PERMISSÃO':techReady?'ROI INDIVIDUAL ATIVO':vm.state.financialLoading?'CARREGANDO':'SEM BASE';techStatus.className=`strategy-efficiency-status ${techReady?'good':'neutral'}`;}
+    set('#strategyTechnicianRoiCosted',techReady?`${Number(tech.costedTechnicianCount||0).toLocaleString('pt-BR')} / ${Number(tech.technicianCount||0).toLocaleString('pt-BR')}`:'—');
+    set('#strategyTechnicianRoiCost',techReady?strategyMoney(tech.technicianCostTotal):'—');
+    set('#strategyTechnicianRoiNet',techReady&&tech.directNetReturn!=null?strategyMoney(tech.directNetReturn):'—');
+    set('#strategyTechnicianRoiPct',techReady?strategySignedPercent(tech.directRoiPct):'—');
+    const techBody=$('#strategyTechnicianRoiRows');if(techBody){
+      if(!canPeople)techBody.innerHTML='<tr><td colspan="10" class="muted">Detalhes individuais de custo e ROI protegidos para este usuário.</td></tr>';
+      else if(!techReady)techBody.innerHTML='<tr><td colspan="10" class="muted">Sem base individual para cruzar contribuição e custo.</td></tr>';
+      else techBody.innerHTML=tech.rows.length?tech.rows.map(row=>`<tr><td><strong>${escapeHtml(row.technicianName)}</strong></td><td>${row.squadCode?`Squad ${escapeHtml(row.squadCode)}`:'—'}</td><td>${row.costAvailable?strategyMoney(row.totalCost):'—'}</td><td>${row.costAvailable?strategyNumber(row.fte,2):'—'}</td><td><strong>${strategyMoney(row.directRevenue)}</strong></td><td>${row.directNetReturn==null?'—':strategyMoney(row.directNetReturn)}</td><td><strong>${strategySignedPercent(row.directRoiPct)}</strong></td><td>${strategyRatio(row.directCostCoverage)}</td><td>${strategyRatio(row.influencedImpactPerCost)}</td><td>${strategyRatio(row.protectedImpactPerCost)}</td></tr>`).join(''):'<tr><td colspan="10" class="muted">Nenhum técnico com contribuição econômica neste escopo.</td></tr>';
+    }
+    const warning=$('#strategyResultRoiWarning');if(warning)warning.textContent='ROI usa apenas Receita Direta confirmada. Influenciada e Protegida são mostradas como impacto por R$ de custo e nunca entram no numerador do ROI.';
+    return{roi,tech};
+  }
+
   function renderStrategyResult(vm,displayAggregate){
     const aggregate=vm.financial.resultFoundation||{},foundation=strategyResultEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate}),ready=displayAggregate&&foundation.sourceAvailable;
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
@@ -4370,6 +4410,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyProtectedRevenue(vm,displayAggregate);
     renderStrategyTechnicianResults(vm,displayAggregate);
     renderStrategySquadResults(vm,displayAggregate);
+    renderStrategyOperationalReturn(vm,displayAggregate);
     const contracts={
       'result-foundation':'Contrato de eventos, atribuições, estados, deduplicação e filtros ativo.',
       'direct-revenue':'Receita confirmada, Up-sell nativo, ticket médio e recorrência separados ativos.',
@@ -4377,7 +4418,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       'protected-revenue':'Retenção, recuperação, prevenção, MRR/ARR protegido e perdas auditáveis ativos.',
       'result-by-technician':'Contribuição econômica individual ativa com rateio auditável e naturezas separadas.',
       'result-by-squad':'Consolidação econômica por Squad ativa com rateio auditável e naturezas separadas.',
-      'result-roi':'Cruzamento com custos, eficiência e capacidade entra na V2.60.6.',
+      'result-roi':'ROI direto, retorno líquido, cobertura de custo e impacto econômico por R$ de custo ativos.',
       'result-diagnostics':'Diagnósticos explicáveis entram na V2.60.7.',
       'result-history':'Snapshots e evolução econômica entram na V2.60.8.'
     };
@@ -4401,7 +4442,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyContextStatus'))$('#strategyContextStatus').textContent=`${compLabel} • ${compStatus}`;
     if($('#strategyCostStatus'))$('#strategyCostStatus').textContent=vm.state.financialLoading?'Carregando...':displayAggregate?strategyMoney(vm.summary.totalCost):(canAggregate?'Carregando...':'Sem permissão agregada');
     if($('#strategyIsolationStatus'))$('#strategyIsolationStatus').textContent='Operacional somente leitura';
-    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError){const errorText=String(vm.state.financialError||''),resultSquadMissing=/get_strategy_result_squad_summary/i.test(errorText),resultTechnicianMissing=/get_strategy_result_technician_summary|attribution shares exceed 100|strategy_result_attributions_share_guard/i.test(errorText),resultProtectedRevenueMissing=/protected_revenue_type|protection_verified_at|protection_lost_at|get_strategy_protected_revenue_summary|validate_strategy_protected_revenue_event/i.test(errorText),resultInfluencedRevenueMissing=/influenced_revenue_stage|get_strategy_influenced_revenue_summary|validate_strategy_influenced_revenue_event/i.test(errorText),resultDirectRevenueMissing=/direct_revenue_category|get_strategy_direct_revenue_summary|validate_strategy_direct_revenue_event/i.test(errorText),resultFoundationMissing=/strategy_result_events|strategy_result_attributions|get_strategy_result_foundation/i.test(errorText),capacitySnapshotMissing=/strategy_capacity_snapshots|get_strategy_capacity_snapshot_history/i.test(errorText),capacityUtilizationMissing=/get_strategy_capacity_utilization_history/i.test(errorText),capacityUsedMissing=/get_strategy_capacity_used_/i.test(errorText),capacityMissing=/availability_factor|get_strategy_capacity_(?!used_|utilization_|snapshot_)/i.test(errorText),historyMissing=/strategy_efficiency_snapshots|get_strategy_efficiency_history/i.test(errorText),resolutionMissing=/strategy_resolution_metrics|get_strategy_resolution/i.test(errorText),schemaDrift=/allocated_amount|allocation_method_snapshot|column\s+sca\./i.test(errorText),migration=resultSquadMissing?'V2.60.5':resultTechnicianMissing?'V2.60.4':resultProtectedRevenueMissing?'V2.60.3':resultInfluencedRevenueMissing?'V2.60.2':resultDirectRevenueMissing?'V2.60.1':resultFoundationMissing?'V2.60.0':capacitySnapshotMissing?'V2.59.8':capacityUtilizationMissing?'V2.59.3':capacityUsedMissing?'V2.59.2':capacityMissing?'V2.59.1':historyMissing?'V2.58.8':resolutionMissing?'V2.58.2':schemaDrift?'V2.58.0 R5':'V2.57.6';$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>${migration}</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}}
+    if($('#strategyMigrationWarning')){$('#strategyMigrationWarning').classList.toggle('hidden',!vm.state.financialError&&vm.state.access.remoteAvailable!==false);if(vm.state.financialError){const errorText=String(vm.state.financialError||''),resultRoiMissing=/get_strategy_result_roi_summary|get_strategy_result_technician_roi_summary/i.test(errorText),resultSquadMissing=/get_strategy_result_squad_summary/i.test(errorText),resultTechnicianMissing=/get_strategy_result_technician_summary|attribution shares exceed 100|strategy_result_attributions_share_guard/i.test(errorText),resultProtectedRevenueMissing=/protected_revenue_type|protection_verified_at|protection_lost_at|get_strategy_protected_revenue_summary|validate_strategy_protected_revenue_event/i.test(errorText),resultInfluencedRevenueMissing=/influenced_revenue_stage|get_strategy_influenced_revenue_summary|validate_strategy_influenced_revenue_event/i.test(errorText),resultDirectRevenueMissing=/direct_revenue_category|get_strategy_direct_revenue_summary|validate_strategy_direct_revenue_event/i.test(errorText),resultFoundationMissing=/strategy_result_events|strategy_result_attributions|get_strategy_result_foundation/i.test(errorText),capacitySnapshotMissing=/strategy_capacity_snapshots|get_strategy_capacity_snapshot_history/i.test(errorText),capacityUtilizationMissing=/get_strategy_capacity_utilization_history/i.test(errorText),capacityUsedMissing=/get_strategy_capacity_used_/i.test(errorText),capacityMissing=/availability_factor|get_strategy_capacity_(?!used_|utilization_|snapshot_)/i.test(errorText),historyMissing=/strategy_efficiency_snapshots|get_strategy_efficiency_history/i.test(errorText),resolutionMissing=/strategy_resolution_metrics|get_strategy_resolution/i.test(errorText),schemaDrift=/allocated_amount|allocation_method_snapshot|column\s+sca\./i.test(errorText),migration=resultRoiMissing?'V2.60.6':resultSquadMissing?'V2.60.5':resultTechnicianMissing?'V2.60.4':resultProtectedRevenueMissing?'V2.60.3':resultInfluencedRevenueMissing?'V2.60.2':resultDirectRevenueMissing?'V2.60.1':resultFoundationMissing?'V2.60.0':capacitySnapshotMissing?'V2.59.8':capacityUtilizationMissing?'V2.59.3':capacityUsedMissing?'V2.59.2':capacityMissing?'V2.59.1':historyMissing?'V2.58.8':resolutionMissing?'V2.58.2':schemaDrift?'V2.58.0 R5':'V2.57.6';$('#strategyMigrationWarning').innerHTML=`Não foi possível carregar os dados estratégicos. Execute a migração <strong>${migration}</strong> e valide as permissões. <small>${escapeHtml(vm.state.financialError)}</small>`;}}
     const insight=vm.insights[0];if($('#strategyFoundationInsightTitle'))$('#strategyFoundationInsightTitle').textContent=insight?.title||'Custos pessoais separados do operacional';if($('#strategyFoundationInsightText'))$('#strategyFoundationInsightText').textContent=insight?.text||'';
     if($('#strategyExecutiveTotalCost'))$('#strategyExecutiveTotalCost').textContent=displayAggregate?strategyMoney(vm.summary.totalCost):'—';
     if($('#strategyExecutivePeopleCost'))$('#strategyExecutivePeopleCost').textContent=displayAggregate?strategyMoney(vm.summary.peopleCost):'—';

@@ -236,5 +236,9 @@ Detalhes: `docs/GESTAO_ESTRATEGICA_FECHAMENTO_SNAPSHOTS_V2.57.6.md`.
 Consolida Receita Direta, Influenciada e Protegida por técnico usando atribuição econômica auditável. As três naturezas permanecem separadas e não formam um total composto.
 
 
+## V2.60.6 — ROI e retorno operacional
+
+A Fase 5 agora cruza Resultado com a base de custos. O ROI principal considera somente Receita Direta confirmada: `(Receita Direta - custo) / custo`. Receita Influenciada e Protegida permanecem independentes e são apresentadas como impacto por R$ de custo. A visão por Squad usa custo total rateado; a visão por técnico usa custo pessoal e respeita a permissão `people_costs`.
+
 ## V2.60.5 — Resultado por Squad
 A Fase 5 agora consolida Receita Direta, Influenciada e Protegida por Squad usando o mesmo rateio auditável da visão por técnico. As três naturezas continuam separadas; custo e ROI entram na V2.60.6.

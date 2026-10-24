@@ -31,8 +31,8 @@ test('UI points schema-drift errors to the R5 migration',()=>{
 });
 
 test('R5 permanece preservada como migration histórica após a V2.58.9',()=>{
-  assert.equal(pkg.version,'2.60.5');
-  assert.equal(pkg.assetVersion,'2.60.5');
-  assert.match(index,/js\/app\.js\?v=2\.60\.5/);
+  assert.equal(pkg.version,'2.60.6');
+  assert.equal(pkg.assetVersion,'2.60.6');
+  assert.match(index,/js\/app\.js\?v=2\.60\.6/);
   assert.match(migration,/notify pgrst,'reload schema'/);
 });

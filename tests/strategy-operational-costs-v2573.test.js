@@ -16,7 +16,7 @@ const migration=readFileSync(migrationPath,'utf8');
 // removidas do motor atual.
 
 test('compatibilidade: custos operacionais usam o motor financeiro atual da V2.57.7',()=>{
-  assert.equal(pkg.version,'2.60.5');
+  assert.equal(pkg.version,'2.60.6');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(typeof costEngine.calculateOperationalAllocations,'function');
   assert.equal(typeof costEngine.summarizeOperationalCosts,'function');

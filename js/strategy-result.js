@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='RE-0.6.0-squad-results';
+  const RULE_VERSION='RE-0.7.0-roi-return';
   const RESULT_TYPES=Object.freeze({
     direct:Object.freeze({id:'direct',label:'Receita direta',version:'V2.60.1',description:'Receita comprovadamente atribuída à atuação do time.'}),
     influenced:Object.freeze({id:'influenced',label:'Receita influenciada',version:'V2.60.2',description:'Receita em que o time participou da origem, qualificação ou evolução, sem atribuição integral.'}),
@@ -45,7 +45,7 @@
     Object.freeze({id:'protected-revenue',label:'Receita protegida',version:'V2.60.3',state:'ready'}),
     Object.freeze({id:'result-by-technician',label:'Resultado por técnico',version:'V2.60.4',state:'ready'}),
     Object.freeze({id:'result-by-squad',label:'Resultado por Squad',version:'V2.60.5',state:'ready'}),
-    Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'planned'}),
+    Object.freeze({id:'result-roi',label:'ROI e retorno operacional',version:'V2.60.6',state:'ready'}),
     Object.freeze({id:'result-diagnostics',label:'Insights e diagnóstico de resultado',version:'V2.60.7',state:'planned'}),
     Object.freeze({id:'result-history',label:'Snapshots, histórico e evolução',version:'V2.60.8',state:'planned'})
   ]);
@@ -365,7 +365,7 @@
         'As três naturezas permanecem separadas por técnico e não formam um total econômico único.',
         'attribution_share explícita tem precedência; o saldo sem percentual é dividido entre os demais participantes do mesmo evento.',
         'A soma dos créditos individuais de cada natureza nunca pode ultrapassar o valor do evento econômico.',
-        'Resultado por técnico exige acesso a dados individuais estratégicos; ROI e comparação com custo entram somente na V2.60.6.'
+        'Resultado por técnico exige acesso a dados individuais estratégicos; ROI e retorno usam essa atribuição na camada V2.60.6.'
       ])
     });
   }
@@ -420,11 +420,69 @@
         'Receita Direta, Influenciada e Protegida permanecem separadas por Squad e não formam um total econômico único.',
         'O rateio econômico é calculado antes do filtro de Squad, impedindo redistribuição retroativa ao trocar a visualização.',
         'Eventos compartilhados entre Squads respeitam attribution_share; o saldo sem percentual segue a mesma divisão determinística da visão por técnico.',
-        'Resultado por Squad é visão agregada. ROI, retorno líquido e comparação com custo entram somente na V2.60.6.'
+        'Resultado por Squad é visão agregada. ROI e retorno líquido usam esta consolidação na camada V2.60.6.'
       ])
     });
   }
 
 
-  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults};
+  function nullableNumber(value){
+    if(value===null||value===undefined||value==='')return null;
+    const n=Number(value);return Number.isFinite(n)?n:null;
+  }
+  function normalizeRoiFields(raw={}){
+    const totalCost=nonNegative(raw.total_cost??raw.totalCost),fte=nonNegative(raw.fte),directRevenue=nonNegative(raw.direct_revenue??raw.directRevenue),influencedRevenue=nonNegative(raw.influenced_revenue??raw.influencedRevenue),protectedRevenue=nonNegative(raw.protected_revenue??raw.protectedRevenue);
+    const directNetRaw=nullableNumber(raw.direct_net_return??raw.directNetReturn),roiRaw=nullableNumber(raw.direct_roi_pct??raw.directRoiPct),coverageRaw=nullableNumber(raw.direct_cost_coverage??raw.directCostCoverage),influencedImpactRaw=nullableNumber(raw.influenced_impact_per_cost??raw.influencedImpactPerCost),protectedImpactRaw=nullableNumber(raw.protected_impact_per_cost??raw.protectedImpactPerCost),directPerFteRaw=nullableNumber(raw.direct_revenue_per_fte??raw.directRevenuePerFte),protectedMrrPerFteRaw=nullableNumber(raw.protected_mrr_per_fte??raw.protectedMrrPerFte);
+    return{
+      totalCost,fte,directRevenue,influencedRevenue,protectedRevenue,
+      directMrr:nonNegative(raw.direct_mrr??raw.directMrr),influencedMrr:nonNegative(raw.influenced_mrr??raw.influencedMrr),protectedMrr:nonNegative(raw.protected_mrr??raw.protectedMrr),
+      directNetReturn:directNetRaw!=null?directNetRaw:(totalCost>0?directRevenue-totalCost:null),
+      directRoiPct:roiRaw!=null?roiRaw:(totalCost>0?(directRevenue-totalCost)/totalCost*100:null),
+      directCostCoverage:coverageRaw!=null?Math.max(0,coverageRaw):(totalCost>0?directRevenue/totalCost:null),
+      influencedImpactPerCost:influencedImpactRaw!=null?Math.max(0,influencedImpactRaw):(totalCost>0?influencedRevenue/totalCost:null),
+      protectedImpactPerCost:protectedImpactRaw!=null?Math.max(0,protectedImpactRaw):(totalCost>0?protectedRevenue/totalCost:null),
+      directRevenuePerFte:directPerFteRaw!=null?Math.max(0,directPerFteRaw):(fte>0?directRevenue/fte:null),
+      protectedMrrPerFte:protectedMrrPerFteRaw!=null?Math.max(0,protectedMrrPerFteRaw):(fte>0?nonNegative(raw.protected_mrr??raw.protectedMrr)/fte:null)
+    };
+  }
+  function normalizeSquadRoiRow(raw={}){
+    return Object.freeze({squadCode:cleanCode(raw.squad_code??raw.squadCode)||'SEM SQUAD',peopleCost:nonNegative(raw.people_cost??raw.peopleCost),operationalCost:nonNegative(raw.operational_cost??raw.operationalCost),...normalizeRoiFields(raw)});
+  }
+  function normalizeResultRoiAggregate(raw={}){
+    const rows=Array.isArray(raw.rows)?raw.rows.map(normalizeSquadRoiRow).filter(row=>row.squadCode):[];
+    return Object.freeze({sourceAvailable:raw.source_available===true||raw.sourceAvailable===true,competence:text(raw.competence),squadCode:cleanCode(raw.squad_code??raw.squadCode)||'ALL',currency:cleanCode(raw.currency||'BRL')||'BRL',...normalizeRoiFields(raw),rows:Object.freeze(rows)});
+  }
+  function buildOperationalReturn({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeResultRoiAggregate(aggregate),ready=base.sourceAvailable===true;
+    const rows=Object.freeze([...base.rows].sort((a,b)=>{
+      const ar=a.directRoiPct==null?-Infinity:a.directRoiPct,br=b.directRoiPct==null?-Infinity:b.directRoiPct;return br-ar||b.directRevenue-a.directRevenue||a.squadCode.localeCompare(b.squadCode,'pt-BR');
+    }));
+    return Object.freeze({ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,totalCost:base.totalCost,fte:base.fte,directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,directNetReturn:base.directNetReturn,directRoiPct:base.directRoiPct,directCostCoverage:base.directCostCoverage,influencedImpactPerCost:base.influencedImpactPerCost,protectedImpactPerCost:base.protectedImpactPerCost,directRevenuePerFte:base.directRevenuePerFte,protectedMrrPerFte:base.protectedMrrPerFte,rows,warnings:Object.freeze([
+      'ROI e retorno líquido usam somente Receita Direta confirmada como numerador econômico.',
+      'Receita Influenciada e Protegida permanecem independentes e são exibidas apenas como impacto por R$ de custo.',
+      'ROI direto = (Receita Direta - custo) / custo. Cobertura direta = Receita Direta / custo.',
+      'Squad e operação usam custo total; o custo individual do técnico usa somente seu custo pessoal registrado.',
+      'Sem custo válido, ROI e razões por custo ficam indisponíveis em vez de assumir custo zero.'
+    ])});
+  }
+  function normalizeTechnicianRoiRow(raw={}){
+    return Object.freeze({technicianKey:text(raw.technician_key??raw.technicianKey),personId:text(raw.person_id??raw.personId)||null,userId:text(raw.user_id??raw.userId)||null,technicianName:text(raw.technician_name??raw.technicianName,'Sem identificação'),squadCode:cleanCode(raw.squad_code??raw.squadCode),costAvailable:raw.cost_available===true||raw.costAvailable===true,...normalizeRoiFields(raw)});
+  }
+  function normalizeTechnicianRoiAggregate(raw={}){
+    const rows=Array.isArray(raw.rows)?raw.rows.map(normalizeTechnicianRoiRow).filter(row=>row.technicianKey||row.personId||row.userId):[];
+    const directNetRaw=nullableNumber(raw.direct_net_return??raw.directNetReturn),roiRaw=nullableNumber(raw.direct_roi_pct??raw.directRoiPct),coverageRaw=nullableNumber(raw.direct_cost_coverage??raw.directCostCoverage);
+    return Object.freeze({sourceAvailable:raw.source_available===true||raw.sourceAvailable===true,competence:text(raw.competence),squadCode:cleanCode(raw.squad_code??raw.squadCode)||'ALL',currency:cleanCode(raw.currency||'BRL')||'BRL',technicianCount:nonNegative(raw.technician_count??raw.technicianCount??rows.length),costedTechnicianCount:nonNegative(raw.costed_technician_count??raw.costedTechnicianCount),technicianCostTotal:nonNegative(raw.technician_cost_total??raw.technicianCostTotal),directRevenue:nonNegative(raw.direct_revenue??raw.directRevenue),influencedRevenue:nonNegative(raw.influenced_revenue??raw.influencedRevenue),protectedRevenue:nonNegative(raw.protected_revenue??raw.protectedRevenue),directNetReturn:directNetRaw,directRoiPct:roiRaw,directCostCoverage:coverageRaw,rows:Object.freeze(rows)});
+  }
+  function buildTechnicianOperationalReturn({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeTechnicianRoiAggregate(aggregate),ready=base.sourceAvailable===true;
+    const rows=Object.freeze([...base.rows].sort((a,b)=>{const ar=a.directRoiPct==null?-Infinity:a.directRoiPct,br=b.directRoiPct==null?-Infinity:b.directRoiPct;return br-ar||b.directRevenue-a.directRevenue||a.technicianName.localeCompare(b.technicianName,'pt-BR');}));
+    return Object.freeze({ruleVersion:RULE_VERSION,scope:normalizedScope,status:ready?'ready':'pending',sourceAvailable:ready,currency:base.currency,technicianCount:base.technicianCount,costedTechnicianCount:base.costedTechnicianCount,technicianCostTotal:base.technicianCostTotal,directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,directNetReturn:base.directNetReturn,directRoiPct:base.directRoiPct,directCostCoverage:base.directCostCoverage,rows,warnings:Object.freeze([
+      'ROI individual usa somente Receita Direta atribuída e custo pessoal do técnico.',
+      'Influenciada/R$ custo e Protegida/R$ custo são indicadores de impacto, não ROI.',
+      'Técnicos sem custo pessoal vinculado permanecem visíveis, mas com ROI indisponível.'
+    ])});
+  }
+
+
+  return{RULE_VERSION,RESULT_TYPES,DIRECT_REVENUE_CATEGORIES,DIRECT_CATEGORY_IDS,INFLUENCE_STAGES,INFLUENCE_STAGE_IDS,PROTECTED_REVENUE_TYPES,PROTECTED_TYPE_IDS,EVENT_STATUSES,CATALOG,normalizeType,normalizeStatus,normalizeDirectCategory,normalizeInfluenceStage,normalizeProtectedType,normalizeScope,normalizeEvent,normalizeAttribution,normalizeFoundationAggregate,buildFoundation,normalizeDirectCategoryAggregate,normalizeDirectRevenueAggregate,buildDirectRevenue,normalizeInfluenceStageAggregate,normalizeInfluencedRevenueAggregate,buildInfluencedRevenue,normalizeProtectedTypeAggregate,normalizeProtectedRevenueAggregate,buildProtectedRevenue,normalizeTechnicianResultRow,normalizeTechnicianResultAggregate,buildTechnicianResults,normalizeSquadResultRow,normalizeSquadResultAggregate,buildSquadResults,normalizeRoiFields,normalizeSquadRoiRow,normalizeResultRoiAggregate,buildOperationalReturn,normalizeTechnicianRoiRow,normalizeTechnicianRoiAggregate,buildTechnicianOperationalReturn};
 });

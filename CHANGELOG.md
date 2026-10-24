@@ -1,3 +1,13 @@
+## V2.60.6 — ROI e retorno operacional
+
+- cruza Receita Direta com custo da operação, do Squad e do técnico;
+- adiciona retorno líquido direto, ROI direto e cobertura de custo;
+- mantém Receita Influenciada e Protegida fora do ROI, exibindo impacto por R$ de custo;
+- usa custo total no nível operacional/Squad e custo pessoal no nível individual;
+- técnicos sem custo permanecem auditáveis com ROI indisponível;
+- adiciona RPCs agregada e individual para o cruzamento financeiro;
+- motor de Resultado atualizado para `RE-0.7.0-roi-return`.
+
 ## V2.60.5 — Resultado por Squad
 
 - Consolidação de Receita Direta, Influenciada e Protegida por Squad, sem total artificial entre naturezas.

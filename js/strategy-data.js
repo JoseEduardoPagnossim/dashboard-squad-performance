@@ -310,6 +310,30 @@
   }
 
 
+  function normalizeResultRoiRow(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    return{
+      squadCode:cleanCode(source.squad_code??source.squadCode)||'SEM SQUAD',
+      totalCost:Math.max(0,num(source.total_cost??source.totalCost)),peopleCost:Math.max(0,num(source.people_cost??source.peopleCost)),operationalCost:Math.max(0,num(source.operational_cost??source.operationalCost)),fte:Math.max(0,num(source.fte)),
+      directRevenue:Math.max(0,num(source.direct_revenue??source.directRevenue)),influencedRevenue:Math.max(0,num(source.influenced_revenue??source.influencedRevenue)),protectedRevenue:Math.max(0,num(source.protected_revenue??source.protectedRevenue)),
+      directMrr:Math.max(0,num(source.direct_mrr??source.directMrr)),influencedMrr:Math.max(0,num(source.influenced_mrr??source.influencedMrr)),protectedMrr:Math.max(0,num(source.protected_mrr??source.protectedMrr)),
+      directNetReturn:optionalNumber(source.direct_net_return??source.directNetReturn),directRoiPct:optionalNumber(source.direct_roi_pct??source.directRoiPct),directCostCoverage:optionalNumber(source.direct_cost_coverage??source.directCostCoverage),
+      influencedImpactPerCost:optionalNumber(source.influenced_impact_per_cost??source.influencedImpactPerCost),protectedImpactPerCost:optionalNumber(source.protected_impact_per_cost??source.protectedImpactPerCost),directRevenuePerFte:optionalNumber(source.direct_revenue_per_fte??source.directRevenuePerFte),protectedMrrPerFte:optionalNumber(source.protected_mrr_per_fte??source.protectedMrrPerFte)
+    };
+  }
+  function normalizeResultRoi(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows:[];
+    return{sourceAvailable:source.source_available===true||source.sourceAvailable===true,competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',currency:cleanCode(source.currency)||'BRL',totalCost:Math.max(0,num(source.total_cost??source.totalCost)),fte:Math.max(0,num(source.fte)),directRevenue:Math.max(0,num(source.direct_revenue??source.directRevenue)),influencedRevenue:Math.max(0,num(source.influenced_revenue??source.influencedRevenue)),protectedRevenue:Math.max(0,num(source.protected_revenue??source.protectedRevenue)),directNetReturn:optionalNumber(source.direct_net_return??source.directNetReturn),directRoiPct:optionalNumber(source.direct_roi_pct??source.directRoiPct),directCostCoverage:optionalNumber(source.direct_cost_coverage??source.directCostCoverage),influencedImpactPerCost:optionalNumber(source.influenced_impact_per_cost??source.influencedImpactPerCost),protectedImpactPerCost:optionalNumber(source.protected_impact_per_cost??source.protectedImpactPerCost),directRevenuePerFte:optionalNumber(source.direct_revenue_per_fte??source.directRevenuePerFte),protectedMrrPerFte:optionalNumber(source.protected_mrr_per_fte??source.protectedMrrPerFte),rows:rows.map(normalizeResultRoiRow).filter(row=>row.squadCode)};
+  }
+  function normalizeResultTechnicianRoiRow(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    return{technicianKey:cleanText(source.technician_key??source.technicianKey),personId:cleanText(source.person_id??source.personId)||null,userId:cleanText(source.user_id??source.userId)||null,technicianName:cleanText(source.technician_name??source.technicianName)||'Sem identificação',squadCode:cleanCode(source.squad_code??source.squadCode),costAvailable:source.cost_available===true||source.costAvailable===true,totalCost:Math.max(0,num(source.total_cost??source.totalCost)),fte:Math.max(0,num(source.fte)),directRevenue:Math.max(0,num(source.direct_revenue??source.directRevenue)),influencedRevenue:Math.max(0,num(source.influenced_revenue??source.influencedRevenue)),protectedRevenue:Math.max(0,num(source.protected_revenue??source.protectedRevenue)),directNetReturn:optionalNumber(source.direct_net_return??source.directNetReturn),directRoiPct:optionalNumber(source.direct_roi_pct??source.directRoiPct),directCostCoverage:optionalNumber(source.direct_cost_coverage??source.directCostCoverage),influencedImpactPerCost:optionalNumber(source.influenced_impact_per_cost??source.influencedImpactPerCost),protectedImpactPerCost:optionalNumber(source.protected_impact_per_cost??source.protectedImpactPerCost),directRevenuePerFte:optionalNumber(source.direct_revenue_per_fte??source.directRevenuePerFte)};
+  }
+  function normalizeResultTechnicianRoi(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows:[];
+    return{sourceAvailable:source.source_available===true||source.sourceAvailable===true,competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',currency:cleanCode(source.currency)||'BRL',technicianCount:Math.max(0,num(source.technician_count??source.technicianCount)),costedTechnicianCount:Math.max(0,num(source.costed_technician_count??source.costedTechnicianCount)),technicianCostTotal:Math.max(0,num(source.technician_cost_total??source.technicianCostTotal)),directRevenue:Math.max(0,num(source.direct_revenue??source.directRevenue)),influencedRevenue:Math.max(0,num(source.influenced_revenue??source.influencedRevenue)),protectedRevenue:Math.max(0,num(source.protected_revenue??source.protectedRevenue)),directNetReturn:optionalNumber(source.direct_net_return??source.directNetReturn),directRoiPct:optionalNumber(source.direct_roi_pct??source.directRoiPct),directCostCoverage:optionalNumber(source.direct_cost_coverage??source.directCostCoverage),rows:rows.map(normalizeResultTechnicianRoiRow).filter(row=>row.technicianKey||row.personId||row.userId)};
+  }
+
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
     return{
@@ -334,7 +358,7 @@
       latestCompetence:competences.at(-1)||''
     });
   }
-  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={}}={}){
+  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={}}={}){
     const competenceRows=(competences||[]).map(normalizeCompetenceRow).filter(row=>row.competence);
     const personRows=(people||[]).map(normalizePersonRow).filter(row=>row.id&&row.name);
     const costRows=(costs||[]).map(normalizeEmployeeCostRow).filter(row=>row.personId);
@@ -362,8 +386,10 @@
       resultInfluencedRevenue:Object.freeze({...normalizeResultInfluencedRevenue(resultInfluencedRevenue||{}),stages:Object.freeze(normalizeResultInfluencedRevenue(resultInfluencedRevenue||{}).stages.map(row=>Object.freeze({...row})))}),
       resultProtectedRevenue:Object.freeze({...normalizeResultProtectedRevenue(resultProtectedRevenue||{}),types:Object.freeze(normalizeResultProtectedRevenue(resultProtectedRevenue||{}).types.map(row=>Object.freeze({...row})))}),
       resultTechnician:Object.freeze({...normalizeResultTechnician(resultTechnician||{}),rows:Object.freeze(normalizeResultTechnician(resultTechnician||{}).rows.map(row=>Object.freeze({...row})))}),
-      resultSquad:Object.freeze({...normalizeResultSquad(resultSquad||{}),rows:Object.freeze(normalizeResultSquad(resultSquad||{}).rows.map(row=>Object.freeze({...row})))})
+      resultSquad:Object.freeze({...normalizeResultSquad(resultSquad||{}),rows:Object.freeze(normalizeResultSquad(resultSquad||{}).rows.map(row=>Object.freeze({...row})))}),
+      resultRoi:Object.freeze({...normalizeResultRoi(resultRoi||{}),rows:Object.freeze(normalizeResultRoi(resultRoi||{}).rows.map(row=>Object.freeze({...row})))}),
+      resultTechnicianRoi:Object.freeze({...normalizeResultTechnicianRoi(resultTechnicianRoi||{}),rows:Object.freeze(normalizeResultTechnicianRoi(resultTechnicianRoi||{}).rows.map(row=>Object.freeze({...row})))})
     });
   }
-  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,normalizeResultInfluencedRevenue,normalizeResultProtectedRevenue,normalizeResultTechnicianRow,normalizeResultTechnician,normalizeResultSquadRow,normalizeResultSquad,buildOperationalContext,buildFinancialContext};
+  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,normalizeResultInfluencedRevenue,normalizeResultProtectedRevenue,normalizeResultTechnicianRow,normalizeResultTechnician,normalizeResultSquadRow,normalizeResultSquad,normalizeResultRoiRow,normalizeResultRoi,normalizeResultTechnicianRoiRow,normalizeResultTechnicianRoi,buildOperationalContext,buildFinancialContext};
 });
