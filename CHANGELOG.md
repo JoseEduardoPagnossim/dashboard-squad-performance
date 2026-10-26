@@ -1,3 +1,11 @@
+## V2.61.3 — Resultado econômico por Produto
+
+- sincroniza eventos econômicos elegíveis da Fase 5 para Produto/Squad;
+- preserva o rateio efetivo por Squad e saldo `UNALLOCATED`;
+- separa Receita Direta, Influenciada e Protegida por Produto, com MRR/ARR paralelos;
+- mantém `UNCLASSIFIED` explícito e reconcilia cada natureza contra o Resultado oficial;
+- adiciona RPCs, interface, documentação e testes da V2.61.3.
+
 ## V2.61.2 — Custo por Produto
 
 - sincroniza custos de pessoas e operacionais oficiais para a camada Produto/Squad;

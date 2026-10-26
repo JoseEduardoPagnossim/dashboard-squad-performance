@@ -1,3 +1,9 @@
+# V2.61.3 — Resultado econômico por Produto
+
+Separa Receita Direta, Influenciada e Protegida por Produto, preservando rateio por Squad, MRR/ARR, Não classificado e reconciliação com a Fase 5.
+
+Detalhes: `docs/PRODUTO_SQUAD_RESULTADO_V2.61.3.md`.
+
 # V2.61.2 — Custo por Produto
 
 A Fase 6 passa a calcular Cost to Serve, custo por atendimento, resolução e cliente atendido por Produto, usando o custo financeiro oficial e Atendimentos por Produto como driver auditável de rateio.

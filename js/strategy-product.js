@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='PS-0.3.0-product-cost';
+  const RULE_VERSION='PS-0.4.0-product-result';
   const UNCLASSIFIED_CODE='UNCLASSIFIED';
   const SOURCE_DOMAINS=Object.freeze([
     Object.freeze({id:'attendance',label:'Atendimentos',valueKind:'quantity',next:'V2.61.1'}),
@@ -26,7 +26,7 @@
     Object.freeze({id:'product-squad-foundation',label:'Fundação Produto/Squad',version:'V2.61.0',state:'ready'}),
     Object.freeze({id:'demand-by-product',label:'Demanda por Produto',version:'V2.61.1',state:'ready'}),
     Object.freeze({id:'cost-by-product',label:'Custo por Produto',version:'V2.61.2',state:'ready'}),
-    Object.freeze({id:'result-by-product',label:'Resultado econômico por Produto',version:'V2.61.3',state:'planned'}),
+    Object.freeze({id:'result-by-product',label:'Resultado econômico por Produto',version:'V2.61.3',state:'ready'}),
     Object.freeze({id:'unit-economics-product',label:'Unit Economics por Produto',version:'V2.61.4',state:'planned'}),
     Object.freeze({id:'squad-comparison',label:'Comparativo entre Squads',version:'V2.61.5',state:'planned'}),
     Object.freeze({id:'product-squad-matrix',label:'Matriz Produto × Squad',version:'V2.61.6',state:'planned'}),
@@ -159,6 +159,50 @@
     });
   }
 
+  function normalizeResultRow(raw={}){
+    const code=cleanCode(raw.product_code??raw.productCode)||UNCLASSIFIED_CODE,name=text(raw.product_name??raw.productName)||(code===UNCLASSIFIED_CODE?'Não classificado':code),unclassified=raw.unclassified===true||code===UNCLASSIFIED_CODE;
+    return Object.freeze({
+      productCode:code,productName:name,unclassified,
+      directRevenue:Math.max(0,num(raw.direct_revenue??raw.directRevenue)),directMrr:Math.max(0,num(raw.direct_mrr??raw.directMrr)),directArr:Math.max(0,num(raw.direct_arr??raw.directArr)),
+      influencedRevenue:Math.max(0,num(raw.influenced_revenue??raw.influencedRevenue)),influencedMrr:Math.max(0,num(raw.influenced_mrr??raw.influencedMrr)),influencedArr:Math.max(0,num(raw.influenced_arr??raw.influencedArr)),
+      protectedRevenue:Math.max(0,num(raw.protected_revenue??raw.protectedRevenue)),protectedMrr:Math.max(0,num(raw.protected_mrr??raw.protectedMrr)),protectedArr:Math.max(0,num(raw.protected_arr??raw.protectedArr))
+    });
+  }
+  function normalizeResult(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows.map(normalizeResultRow):[];
+    return Object.freeze({
+      sourceAvailable:source.source_available===true||source.sourceAvailable===true,
+      competence:text(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',currency:text(source.currency)||'BRL',sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),
+      directRevenue:Math.max(0,num(source.direct_revenue??source.directRevenue)),influencedRevenue:Math.max(0,num(source.influenced_revenue??source.influencedRevenue)),protectedRevenue:Math.max(0,num(source.protected_revenue??source.protectedRevenue)),
+      directMrr:Math.max(0,num(source.direct_mrr??source.directMrr)),influencedMrr:Math.max(0,num(source.influenced_mrr??source.influencedMrr)),protectedMrr:Math.max(0,num(source.protected_mrr??source.protectedMrr)),
+      directClassified:Math.max(0,num(source.direct_classified??source.directClassified)),influencedClassified:Math.max(0,num(source.influenced_classified??source.influencedClassified)),protectedClassified:Math.max(0,num(source.protected_classified??source.protectedClassified)),
+      directUnclassified:Math.max(0,num(source.direct_unclassified??source.directUnclassified)),influencedUnclassified:Math.max(0,num(source.influenced_unclassified??source.influencedUnclassified)),protectedUnclassified:Math.max(0,num(source.protected_unclassified??source.protectedUnclassified)),
+      directCoveragePct:clampPct(source.direct_coverage_pct??source.directCoveragePct),influencedCoveragePct:clampPct(source.influenced_coverage_pct??source.influencedCoveragePct),protectedCoveragePct:clampPct(source.protected_coverage_pct??source.protectedCoveragePct),
+      officialDirectRevenue:Math.max(0,num(source.official_direct_revenue??source.officialDirectRevenue)),officialInfluencedRevenue:Math.max(0,num(source.official_influenced_revenue??source.officialInfluencedRevenue)),officialProtectedRevenue:Math.max(0,num(source.official_protected_revenue??source.officialProtectedRevenue)),
+      rows:Object.freeze(rows)
+    });
+  }
+  function buildResult({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeResult(aggregate);
+    const rows=base.rows.slice().sort((a,b)=>Number(a.unclassified)-Number(b.unclassified)||b.directRevenue-a.directRevenue||b.influencedRevenue-a.influencedRevenue||b.protectedRevenue-a.protectedRevenue||a.productName.localeCompare(b.productName,'pt-BR'));
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:base.sourceAvailable?'ready':'pending',sourceAvailable:base.sourceAvailable,currency:base.currency,sourceCount:base.sourceCount,
+      directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,directMrr:base.directMrr,influencedMrr:base.influencedMrr,protectedMrr:base.protectedMrr,
+      directClassified:base.directClassified,influencedClassified:base.influencedClassified,protectedClassified:base.protectedClassified,directUnclassified:base.directUnclassified,influencedUnclassified:base.influencedUnclassified,protectedUnclassified:base.protectedUnclassified,
+      directCoveragePct:base.directCoveragePct,influencedCoveragePct:base.influencedCoveragePct,protectedCoveragePct:base.protectedCoveragePct,
+      officialDirectRevenue:base.officialDirectRevenue,officialInfluencedRevenue:base.officialInfluencedRevenue,officialProtectedRevenue:base.officialProtectedRevenue,
+      reconciled:Object.freeze({direct:Math.abs(base.directRevenue-base.officialDirectRevenue)<=0.01,influenced:Math.abs(base.influencedRevenue-base.officialInfluencedRevenue)<=0.01,protected:Math.abs(base.protectedRevenue-base.officialProtectedRevenue)<=0.01}),
+      rows:Object.freeze(rows),
+      warnings:Object.freeze([
+        'Receita Direta, Influenciada e Protegida permanecem naturezas econômicas independentes e nunca são somadas em um total único.',
+        'O rateio por Squad replica o attribution_share efetivo da Fase 5 antes da classificação por Produto.',
+        'Qualquer parcela sem Produto permanece em Não classificado e continua no denominador de cobertura da respectiva natureza.',
+        'MRR e ARR são indicadores paralelos e não são somados novamente ao gross_amount.',
+        'Os totais por Produto devem reconciliar separadamente com as três naturezas oficiais de Resultado do mesmo escopo.'
+      ])
+    });
+  }
+
   function buildFoundation({scope={},aggregate={}}={}){
     const normalizedScope=normalizeScope(scope),base=normalizeFoundation(aggregate),catalog=CATALOG.map(item=>Object.freeze({...item,status:item.state==='ready'?'ready':'planned'}));
     const coverageReady=base.sourceCount>0&&base.classificationCoveragePct!=null;
@@ -174,10 +218,10 @@
         'Uma fonte pode ser distribuída entre vários produtos, mas a soma das participações nunca pode ultrapassar 100%.',
         'Qualquer saldo ainda não atribuído permanece explicitamente como Não classificado; ele nunca é descartado do denominador de cobertura.',
         'Atendimentos, resoluções, custos, FTE e resultado econômico usam o mesmo contrato de fonte + atribuição para permitir reconciliação futura.',
-        'A V2.61.2 ativa Custo por Produto usando Atendimentos como driver auditável; resultado econômico e unit economics continuam reservados às próximas versões.'
+        'A V2.61.3 ativa Resultado econômico por Produto com Direta, Influenciada e Protegida separadas; Unit Economics continua reservado à próxima versão.'
       ])
     });
   }
 
-  return{RULE_VERSION,UNCLASSIFIED_CODE,SOURCE_DOMAINS,SOURCE_DOMAIN_IDS,DEMAND_METRICS,CATALOG,normalizeScope,normalizeProduct,normalizeDomainRow,normalizeFoundation,normalizeDemandRow,normalizeDemand,buildDemand,normalizeCostRow,normalizeCost,buildCost,buildFoundation};
+  return{RULE_VERSION,UNCLASSIFIED_CODE,SOURCE_DOMAINS,SOURCE_DOMAIN_IDS,DEMAND_METRICS,CATALOG,normalizeScope,normalizeProduct,normalizeDomainRow,normalizeFoundation,normalizeDemandRow,normalizeDemand,buildDemand,normalizeCostRow,normalizeCost,buildCost,normalizeResultRow,normalizeResult,buildResult,buildFoundation};
 });
