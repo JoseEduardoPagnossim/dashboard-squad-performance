@@ -1,3 +1,11 @@
+# V2.61.4 — Unit Economics por Produto
+
+Cruza Demanda, Cost to Serve, FTE alocado e Resultado econômico por Produto, mantendo ROI exclusivo da Receita Direta e Influenciada/Protegida como indicadores independentes de impacto.
+
+Detalhes: `docs/PRODUTO_SQUAD_UNIT_ECONOMICS_V2.61.4.md`.
+
+---
+
 # V2.61.3 — Resultado econômico por Produto
 
 Separa Receita Direta, Influenciada e Protegida por Produto, preservando rateio por Squad, MRR/ARR, Não classificado e reconciliação com a Fase 5.

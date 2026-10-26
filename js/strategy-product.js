@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='PS-0.4.0-product-result';
+  const RULE_VERSION='PS-0.5.0-unit-economics';
   const UNCLASSIFIED_CODE='UNCLASSIFIED';
   const SOURCE_DOMAINS=Object.freeze([
     Object.freeze({id:'attendance',label:'Atendimentos',valueKind:'quantity',next:'V2.61.1'}),
@@ -27,7 +27,7 @@
     Object.freeze({id:'demand-by-product',label:'Demanda por Produto',version:'V2.61.1',state:'ready'}),
     Object.freeze({id:'cost-by-product',label:'Custo por Produto',version:'V2.61.2',state:'ready'}),
     Object.freeze({id:'result-by-product',label:'Resultado econômico por Produto',version:'V2.61.3',state:'ready'}),
-    Object.freeze({id:'unit-economics-product',label:'Unit Economics por Produto',version:'V2.61.4',state:'planned'}),
+    Object.freeze({id:'unit-economics-product',label:'Unit Economics por Produto',version:'V2.61.4',state:'ready'}),
     Object.freeze({id:'squad-comparison',label:'Comparativo entre Squads',version:'V2.61.5',state:'planned'}),
     Object.freeze({id:'product-squad-matrix',label:'Matriz Produto × Squad',version:'V2.61.6',state:'planned'}),
     Object.freeze({id:'mix-concentration',label:'Mix, concentração e dependência',version:'V2.61.7',state:'planned'}),
@@ -203,6 +203,71 @@
     });
   }
 
+  function normalizeUnitEconomicsRow(raw={}){
+    const code=cleanCode(raw.product_code??raw.productCode)||UNCLASSIFIED_CODE,name=text(raw.product_name??raw.productName)||(code===UNCLASSIFIED_CODE?'Não classificado':code),unclassified=raw.unclassified===true||code===UNCLASSIFIED_CODE;
+    const availableFteRaw=optionalNumber(raw.available_fte??raw.availableFte),nominalFteRaw=optionalNumber(raw.nominal_fte??raw.nominalFte);
+    return Object.freeze({
+      productCode:code,productName:name,unclassified,
+      attendance:Math.max(0,num(raw.attendance)),tickets:Math.max(0,num(raw.tickets)),clients:Math.max(0,num(raw.clients)),resolutions:Math.max(0,num(raw.resolutions)),
+      peopleCost:Math.max(0,num(raw.people_cost??raw.peopleCost)),operationalCost:Math.max(0,num(raw.operational_cost??raw.operationalCost)),totalCost:Math.max(0,num(raw.total_cost??raw.totalCost)),
+      nominalFte:nominalFteRaw==null?null:Math.max(0,nominalFteRaw),availableFte:availableFteRaw==null?null:Math.max(0,availableFteRaw),
+      directRevenue:Math.max(0,num(raw.direct_revenue??raw.directRevenue)),influencedRevenue:Math.max(0,num(raw.influenced_revenue??raw.influencedRevenue)),protectedRevenue:Math.max(0,num(raw.protected_revenue??raw.protectedRevenue)),
+      directMrr:Math.max(0,num(raw.direct_mrr??raw.directMrr)),influencedMrr:Math.max(0,num(raw.influenced_mrr??raw.influencedMrr)),protectedMrr:Math.max(0,num(raw.protected_mrr??raw.protectedMrr))
+    });
+  }
+  function normalizeUnitEconomics(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows.map(normalizeUnitEconomicsRow):[],availableFteRaw=optionalNumber(source.available_fte??source.availableFte),officialAvailableRaw=optionalNumber(source.official_available_fte??source.officialAvailableFte);
+    return Object.freeze({
+      sourceAvailable:source.source_available===true||source.sourceAvailable===true,
+      competence:text(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',allocationDriver:text(source.allocation_driver??source.allocationDriver)||'attendance',
+      attendanceTotal:Math.max(0,num(source.attendance_total??source.attendanceTotal)),resolutionsTotal:Math.max(0,num(source.resolutions_total??source.resolutionsTotal)),clientsTotal:Math.max(0,num(source.clients_total??source.clientsTotal)),
+      totalCost:Math.max(0,num(source.total_cost??source.totalCost)),directRevenue:Math.max(0,num(source.direct_revenue??source.directRevenue)),influencedRevenue:Math.max(0,num(source.influenced_revenue??source.influencedRevenue)),protectedRevenue:Math.max(0,num(source.protected_revenue??source.protectedRevenue)),protectedMrr:Math.max(0,num(source.protected_mrr??source.protectedMrr)),
+      nominalFte:Math.max(0,num(source.nominal_fte??source.nominalFte)),availableFte:availableFteRaw==null?null:Math.max(0,availableFteRaw),availabilityComplete:source.availability_complete===true||source.availabilityComplete===true,
+      classifiedNominalFte:Math.max(0,num(source.classified_nominal_fte??source.classifiedNominalFte)),unclassifiedNominalFte:Math.max(0,num(source.unclassified_nominal_fte??source.unclassifiedNominalFte)),fteCoveragePct:clampPct(source.fte_coverage_pct??source.fteCoveragePct),
+      officialNominalFte:Math.max(0,num(source.official_nominal_fte??source.officialNominalFte)),officialAvailableFte:officialAvailableRaw==null?null:Math.max(0,officialAvailableRaw),nominalFteReconciliationGap:optionalNumber(source.nominal_fte_reconciliation_gap??source.nominalFteReconciliationGap)??0,availableFteReconciliationGap:optionalNumber(source.available_fte_reconciliation_gap??source.availableFteReconciliationGap),
+      demandReconciled:source.demand_reconciled!==false&&source.demandReconciled!==false,costReconciled:source.cost_reconciled!==false&&source.costReconciled!==false,directReconciled:source.direct_reconciled!==false&&source.directReconciled!==false,influencedReconciled:source.influenced_reconciled!==false&&source.influencedReconciled!==false,protectedReconciled:source.protected_reconciled!==false&&source.protectedReconciled!==false,fteReconciled:source.fte_reconciled!==false&&source.fteReconciled!==false,
+      attendanceSourceAvailable:source.attendance_source_available===true||source.attendanceSourceAvailable===true,resolutionSourceAvailable:source.resolution_source_available===true||source.resolutionSourceAvailable===true,clientSourceAvailable:source.client_source_available===true||source.clientSourceAvailable===true,
+      rows:Object.freeze(rows)
+    });
+  }
+  function unitMetrics(row,availability={}){
+    const cost=row.totalCost,availableFte=row.availableFte;
+    return Object.freeze({...row,
+      costPerAttendance:availability.attendance&&row.attendance>0?cost/row.attendance:null,
+      costPerResolution:availability.resolution&&row.resolutions>0?cost/row.resolutions:null,
+      costPerClient:availability.client&&row.clients>0?cost/row.clients:null,
+      attendancePerAvailableFte:availability.fte&&availableFte!=null&&availableFte>0?row.attendance/availableFte:null,
+      resolutionsPerAvailableFte:availability.fte&&availability.resolution&&availableFte!=null&&availableFte>0?row.resolutions/availableFte:null,
+      directRevenuePerAvailableFte:availability.fte&&availableFte!=null&&availableFte>0?row.directRevenue/availableFte:null,
+      directRoiPct:cost>0?(row.directRevenue-cost)/cost*100:null,
+      directCostCoveragePct:cost>0?row.directRevenue/cost*100:null,
+      influencedPerCost:cost>0?row.influencedRevenue/cost:null,
+      protectedPerCost:cost>0?row.protectedRevenue/cost:null,
+      protectedMrrPerCost:cost>0?row.protectedMrr/cost:null
+    });
+  }
+  function buildUnitEconomics({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeUnitEconomics(aggregate),availability={attendance:base.attendanceSourceAvailable,resolution:base.resolutionSourceAvailable,client:base.clientSourceAvailable,fte:base.availabilityComplete&&base.availableFte!=null};
+    const rows=base.rows.map(row=>unitMetrics(row,availability)).sort((a,b)=>Number(a.unclassified)-Number(b.unclassified)||((b.directRoiPct??-Infinity)-(a.directRoiPct??-Infinity))||b.directRevenue-a.directRevenue||a.productName.localeCompare(b.productName,'pt-BR'));
+    const total=unitMetrics({productCode:'ALL',productName:'Operação',unclassified:false,attendance:base.attendanceTotal,tickets:0,clients:base.clientsTotal,resolutions:base.resolutionsTotal,peopleCost:0,operationalCost:0,totalCost:base.totalCost,nominalFte:base.nominalFte,availableFte:base.availableFte,directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,directMrr:0,influencedMrr:0,protectedMrr:base.protectedMrr},availability);
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:base.sourceAvailable?'ready':'pending',sourceAvailable:base.sourceAvailable,allocationDriver:base.allocationDriver,
+      attendanceTotal:base.attendanceTotal,resolutionsTotal:base.resolutionsTotal,clientsTotal:base.clientsTotal,totalCost:base.totalCost,directRevenue:base.directRevenue,influencedRevenue:base.influencedRevenue,protectedRevenue:base.protectedRevenue,protectedMrr:base.protectedMrr,
+      nominalFte:base.nominalFte,availableFte:base.availableFte,availabilityComplete:base.availabilityComplete,classifiedNominalFte:base.classifiedNominalFte,unclassifiedNominalFte:base.unclassifiedNominalFte,fteCoveragePct:base.fteCoveragePct,
+      officialNominalFte:base.officialNominalFte,officialAvailableFte:base.officialAvailableFte,nominalFteReconciliationGap:base.nominalFteReconciliationGap,availableFteReconciliationGap:base.availableFteReconciliationGap,
+      reconciled:Object.freeze({demand:base.demandReconciled,cost:base.costReconciled,direct:base.directReconciled,influenced:base.influencedReconciled,protected:base.protectedReconciled,fte:base.fteReconciled}),
+      attendanceSourceAvailable:base.attendanceSourceAvailable,resolutionSourceAvailable:base.resolutionSourceAvailable,clientSourceAvailable:base.clientSourceAvailable,
+      total,rows:Object.freeze(rows),
+      warnings:Object.freeze([
+        'ROI por Produto usa somente Receita Direta: (Receita Direta - Cost to Serve) / Cost to Serve. Influenciada e Protegida não entram no numerador.',
+        'FTE por Produto é FTE alocado pelo driver de Atendimentos dentro do Squad; ele representa consumo equivalente de capacidade, não apontamento de horas por Produto.',
+        'Receita Influenciada/R$ de custo e Receita Protegida/R$ de custo são indicadores de impacto e não são tratados como ROI.',
+        'Custo por atendimento, resolução e cliente só aparece quando o respectivo denominador possui fonte válida.',
+        'Não classificado permanece nos totais de demanda, custo, FTE e resultado para preservar a reconciliação da operação.'
+      ])
+    });
+  }
+
   function buildFoundation({scope={},aggregate={}}={}){
     const normalizedScope=normalizeScope(scope),base=normalizeFoundation(aggregate),catalog=CATALOG.map(item=>Object.freeze({...item,status:item.state==='ready'?'ready':'planned'}));
     const coverageReady=base.sourceCount>0&&base.classificationCoveragePct!=null;
@@ -218,10 +283,10 @@
         'Uma fonte pode ser distribuída entre vários produtos, mas a soma das participações nunca pode ultrapassar 100%.',
         'Qualquer saldo ainda não atribuído permanece explicitamente como Não classificado; ele nunca é descartado do denominador de cobertura.',
         'Atendimentos, resoluções, custos, FTE e resultado econômico usam o mesmo contrato de fonte + atribuição para permitir reconciliação futura.',
-        'A V2.61.3 ativa Resultado econômico por Produto com Direta, Influenciada e Protegida separadas; Unit Economics continua reservado à próxima versão.'
+        'A V2.61.4 ativa Unit Economics por Produto, cruzando demanda, custo, FTE alocado e resultado sem misturar as naturezas econômicas.'
       ])
     });
   }
 
-  return{RULE_VERSION,UNCLASSIFIED_CODE,SOURCE_DOMAINS,SOURCE_DOMAIN_IDS,DEMAND_METRICS,CATALOG,normalizeScope,normalizeProduct,normalizeDomainRow,normalizeFoundation,normalizeDemandRow,normalizeDemand,buildDemand,normalizeCostRow,normalizeCost,buildCost,normalizeResultRow,normalizeResult,buildResult,buildFoundation};
+  return{RULE_VERSION,UNCLASSIFIED_CODE,SOURCE_DOMAINS,SOURCE_DOMAIN_IDS,DEMAND_METRICS,CATALOG,normalizeScope,normalizeProduct,normalizeDomainRow,normalizeFoundation,normalizeDemandRow,normalizeDemand,buildDemand,normalizeCostRow,normalizeCost,buildCost,normalizeResultRow,normalizeResult,buildResult,normalizeUnitEconomicsRow,normalizeUnitEconomics,buildUnitEconomics,buildFoundation};
 });

@@ -13,16 +13,16 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.61.1.sql');
 const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_DEMANDA_V2.61.1.md');
 
-test('V2.61.2 ativa Demanda por Produto no catálogo da Fase 6',()=>{
-  assert.equal(pkg.version,'2.61.3');
-  assert.equal(pkg.assetVersion,'2.61.3');
-  assert.equal(product.RULE_VERSION,'PS-0.4.0-product-result');
+test('V2.61.1 mantém Demanda por Produto ativa na Fase 6',()=>{
+  assert.equal(pkg.version,'2.61.4');
+  assert.equal(pkg.assetVersion,'2.61.4');
+  assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG.find(x=>x.id==='product-squad-foundation').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='demand-by-product').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
-  assert.match(index,/V2\.61\.3 • Fase 6 — Resultado econômico por Produto/);
+  assert.match(index,/V2\.61\.4 • Fase 6 — Unit Economics por Produto/);
 });
 
 test('motor mantém Atendimentos como denominador exclusivo da participação na demanda',()=>{
@@ -104,6 +104,6 @@ test('V2.61.2 permanece estável após ativação de Custo por Produto',()=>{
   const demand=product.CATALOG.find(x=>x.id==='demand-by-product');
   assert.equal(demand.state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
-  assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'planned');
+  assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
   assert.match(readFileSync(docPath,'utf8'),/V2\.61\.2.*Custo por Produto/s);
 });

@@ -15,7 +15,7 @@ const migration = readFileSync(migrationPath, 'utf8');
 const schema = readFileSync(join(root, 'supabase', 'schema.sql'), 'utf8');
 
 test('V2.57.7 publica competências, pessoas e custos pessoais', () => {
-  assert.equal(pkg.version, '2.61.3');
+  assert.equal(pkg.version, '2.61.4');
   assert.equal(existsSync(migrationPath), true);
   assert.match(index, /id="strategyNewCompetenceInput"/);
   assert.match(index, /id="strategyPeopleRows"/);

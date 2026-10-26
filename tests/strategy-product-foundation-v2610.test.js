@@ -14,21 +14,21 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_FUNDACAO_V2.61.0.md');
 
 test('V2.61.0 inicia a Fase 6 com Fundação Produto/Squad versionada',()=>{
-  assert.equal(pkg.version,'2.61.3');
-  assert.equal(pkg.assetVersion,'2.61.3');
-  assert.equal(product.RULE_VERSION,'PS-0.4.0-product-result');
+  assert.equal(pkg.version,'2.61.4');
+  assert.equal(pkg.assetVersion,'2.61.4');
+  assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG[0].version,'V2.61.0');
   assert.equal(product.CATALOG[0].state,'ready');
   assert.equal(product.CATALOG.at(-1).version,'V2.61.9');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/FASE 6 • V2\.61\.0/);
-  assert.ok(index.includes('js/strategy-product.js?v=2.61.3'));
-  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.3')<index.indexOf('js/strategy.js?v=2.61.3'));
-  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.3')<index.indexOf('js/app.js?v=2.61.3'));
+  assert.ok(index.includes('js/strategy-product.js?v=2.61.4'));
+  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.4')<index.indexOf('js/strategy.js?v=2.61.4'));
+  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.4')<index.indexOf('js/app.js?v=2.61.4'));
 });
 
-test('motor define os seis domínios fundacionais sem antecipar unit economics',()=>{
+test('motor mantém os seis domínios fundacionais após ativação de Unit Economics',()=>{
   assert.deepEqual(product.SOURCE_DOMAINS.map(x=>x.id),['attendance','resolution','people_cost','operational_cost','fte','result']);
   assert.equal(product.SOURCE_DOMAIN_IDS.has('attendance'),true);
   assert.equal(product.SOURCE_DOMAIN_IDS.has('result'),true);
@@ -37,7 +37,7 @@ test('motor define os seis domínios fundacionais sem antecipar unit economics',
   assert.equal(f.readiness.catalogReady,true);
   assert.equal(f.readiness.coverageReady,false);
   assert.ok(f.warnings.some(x=>/não classificado/i.test(x)));
-  assert.equal(f.catalog.filter(x=>x.status==='ready').length,4);
+  assert.equal(f.catalog.filter(x=>x.status==='ready').length,5);
 });
 
 test('cobertura preserva saldo não classificado no denominador',()=>{

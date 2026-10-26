@@ -211,3 +211,7 @@ Execute `MIGRACAO_V2.59.5.sql` depois da V2.59.3 (a V2.59.4 não possui migratio
 
 ### V2.61.2 — Custo por Produto
 Execute `MIGRACAO_V2.61.2.sql` depois da V2.61.1. A migration adiciona `sync_strategy_product_cost_sources(date,text)` e `get_strategy_product_cost_summary(date,text)`. O sincronizador reutiliza custos oficiais de pessoas/operação, usa Atendimentos por Produto como driver e mantém o saldo como Não classificado. Não é necessário republicar Edge Functions.
+
+### V2.61.4 — Unit Economics por Produto
+Execute `MIGRACAO_V2.61.4.sql` depois da V2.61.3. A migration adiciona `sync_strategy_product_unit_economics_sources(date,text)` e `get_strategy_product_unit_economics_summary(date,text)`. A sincronização atualiza Demanda/Custo/Resultado, cria FTE nominal/disponível por Squad e replica o driver de Atendimentos para Produto. ROI continua exclusivo da Receita Direta. Não é necessário republicar Edge Functions.
+

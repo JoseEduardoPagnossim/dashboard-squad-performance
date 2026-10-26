@@ -1,3 +1,11 @@
+## V2.61.4 — Unit Economics por Produto
+
+- cruza Demanda, Cost to Serve, FTE alocado e Resultado econômico por Produto;
+- ativa `nominal_fte` e `available_fte` na dimensão Produto/Squad usando Atendimentos como driver auditável;
+- calcula ROI exclusivamente com Receita Direta e mantém Influenciada/Protegida como impacto por R$ de custo;
+- preserva Não classificado e reconciliação separada de custo, FTE e naturezas econômicas;
+- adiciona RPCs, interface, documentação e testes da V2.61.4.
+
 ## V2.61.3 — Resultado econômico por Produto
 
 - sincroniza eventos econômicos elegíveis da Fase 5 para Produto/Squad;

@@ -14,15 +14,15 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_CUSTO_V2.61.2.md');
 
 test('V2.61.2 ativa Custo por Produto e preserva roadmap posterior',()=>{
-  assert.equal(pkg.version,'2.61.3');
-  assert.equal(pkg.assetVersion,'2.61.3');
-  assert.equal(product.RULE_VERSION,'PS-0.4.0-product-result');
+  assert.equal(pkg.version,'2.61.4');
+  assert.equal(pkg.assetVersion,'2.61.4');
+  assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/V2\.61\.2 • CUSTO POR PRODUTO/);
-  assert.ok(index.includes('js/strategy-product.js?v=2.61.3'));
+  assert.ok(index.includes('js/strategy-product.js?v=2.61.4'));
 });
 
 test('motor calcula Cost to Serve e custos unitários sem inventar denominadores',()=>{
@@ -95,9 +95,9 @@ test('interface publica Cost to Serve, custos unitários e sincronização',()=>
   assert.match(app,/productCostMissing=.*V2\.61\.2/s);
 });
 
-test('V2.61.2 não antecipa Resultado econômico ou Unit Economics por Produto',()=>{
+test('V2.61.2 permanece estável após Resultado e Unit Economics por Produto',()=>{
   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
-  assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'planned');
+  assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
   const doc=readFileSync(docPath,'utf8');
   assert.match(doc,/não calcula Receita Direta\/Influenciada\/Protegida por Produto/i);
 });
