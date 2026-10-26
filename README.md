@@ -1,3 +1,17 @@
+# V2.61.1 — Demanda por Produto
+
+A Fase 6 agora mede Atendimentos, participação na demanda, Clientes atendidos, Chamados e Resoluções por Produto, mantendo Não classificado no denominador e sem inferir métricas ausentes.
+
+Detalhes: `docs/PRODUTO_SQUAD_DEMANDA_V2.61.1.md`.
+
+---
+
+# V2.61.0 — Fundação Produto/Squad
+
+A Fase 6 começa com uma dimensão oficial de Produto e um contrato único de fontes + atribuições para relacionar atendimentos, resoluções, custos, FTE e resultado econômico. O saldo sem atribuição permanece como **Não classificado**, e nenhuma fonte pode ultrapassar 100% de rateio entre produtos.
+
+Detalhes: `docs/PRODUTO_SQUAD_FUNDACAO_V2.61.0.md`.
+
 ## V2.60.9 — Hardening e fechamento da Fase 5
 
 A V2.60.9 encerra a Fase 5 de Resultado. O ROI consolidado passa a reconciliar toda Receita Direta confirmada da operação mesmo antes do rateio individual; o fechamento exige 100% de atribuição econômica efetiva; snapshots tornam-se imutáveis, sem leitura direta e com validação de contrato/fingerprint; competências reabertas saem da série congelada; e o histórico funciona em modo fail-closed. A versão também corrige a propagação de `resultHistory` pelo controller estratégico. Execute `MIGRACAO_V2.60.9.sql` após a V2.60.8.

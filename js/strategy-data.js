@@ -346,6 +346,29 @@
   }
 
 
+  function normalizeProductFoundationProduct(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},aliases=Array.isArray(source.aliases)?source.aliases:[];
+    return{id:cleanText(source.id),code:cleanCode(source.code),name:cleanText(source.name),active:source.active!==false,aliasCount:Math.max(0,num(source.alias_count??source.aliasCount??aliases.length)),source:cleanText(source.source)||'manual',updatedAt:source.updated_at??source.updatedAt??null};
+  }
+  function normalizeProductFoundationDomain(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    return{domain:cleanText(source.domain??source.source_domain),sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),fullyClassifiedCount:Math.max(0,num(source.fully_classified_count??source.fullyClassifiedCount)),partiallyClassifiedCount:Math.max(0,num(source.partially_classified_count??source.partiallyClassifiedCount)),unclassifiedCount:Math.max(0,num(source.unclassified_count??source.unclassifiedCount)),allocatedShare:Math.max(0,num(source.allocated_share??source.allocatedShare)),coveragePct:optionalNumber(source.coverage_pct??source.coveragePct)};
+  }
+  function normalizeProductFoundation(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},products=Array.isArray(source.products)?source.products:[],domains=Array.isArray(source.domains)?source.domains:[];
+    return{sourceAvailable:source.source_available===true||source.sourceAvailable===true,competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',productCount:Math.max(0,num(source.product_count??source.productCount)),activeProductCount:Math.max(0,num(source.active_product_count??source.activeProductCount)),sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),fullyClassifiedSourceCount:Math.max(0,num(source.fully_classified_source_count??source.fullyClassifiedSourceCount)),partiallyClassifiedSourceCount:Math.max(0,num(source.partially_classified_source_count??source.partiallyClassifiedSourceCount)),unclassifiedSourceCount:Math.max(0,num(source.unclassified_source_count??source.unclassifiedSourceCount)),allocatedShare:Math.max(0,num(source.allocated_share??source.allocatedShare)),unclassifiedShare:Math.max(0,num(source.unclassified_share??source.unclassifiedShare)),classificationCoveragePct:optionalNumber(source.classification_coverage_pct??source.classificationCoveragePct),products:products.map(normalizeProductFoundationProduct).filter(row=>row.id||row.code),domains:domains.map(normalizeProductFoundationDomain).filter(row=>row.domain)};
+  }
+
+
+  function normalizeProductDemandRow(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{};
+    const code=cleanCode(source.product_code??source.productCode)||'UNCLASSIFIED';return{productCode:code,productName:cleanText(source.product_name??source.productName)||(code==='UNCLASSIFIED'?'Não classificado':code),unclassified:source.unclassified===true||code==='UNCLASSIFIED',attendance:Math.max(0,num(source.attendance)),tickets:Math.max(0,num(source.tickets??source.ticket_count??source.ticketCount)),clients:Math.max(0,num(source.clients??source.client_count??source.clientCount)),resolutions:Math.max(0,num(source.resolutions??source.resolution_count??source.resolutionCount))};
+  }
+  function normalizeProductDemand(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows:[];
+    return{sourceAvailable:source.source_available===true||source.sourceAvailable===true,competence:competenceId(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',attendanceTotal:Math.max(0,num(source.attendance_total??source.attendanceTotal)),attendanceClassified:Math.max(0,num(source.attendance_classified??source.attendanceClassified)),attendanceUnclassified:Math.max(0,num(source.attendance_unclassified??source.attendanceUnclassified)),attendanceCoveragePct:optionalNumber(source.attendance_coverage_pct??source.attendanceCoveragePct),ticketTotal:Math.max(0,num(source.ticket_total??source.ticketTotal)),ticketClassified:Math.max(0,num(source.ticket_classified??source.ticketClassified)),ticketUnclassified:Math.max(0,num(source.ticket_unclassified??source.ticketUnclassified)),ticketCoveragePct:optionalNumber(source.ticket_coverage_pct??source.ticketCoveragePct),clientTotal:Math.max(0,num(source.client_total??source.clientTotal)),clientClassified:Math.max(0,num(source.client_classified??source.clientClassified)),clientUnclassified:Math.max(0,num(source.client_unclassified??source.clientUnclassified)),clientCoveragePct:optionalNumber(source.client_coverage_pct??source.clientCoveragePct),resolutionTotal:Math.max(0,num(source.resolution_total??source.resolutionTotal)),resolutionClassified:Math.max(0,num(source.resolution_classified??source.resolutionClassified)),resolutionUnclassified:Math.max(0,num(source.resolution_unclassified??source.resolutionUnclassified)),resolutionCoveragePct:optionalNumber(source.resolution_coverage_pct??source.resolutionCoveragePct),attendanceSourceAvailable:source.attendance_source_available===true||source.attendanceSourceAvailable===true,ticketSourceAvailable:source.ticket_source_available===true||source.ticketSourceAvailable===true,clientSourceAvailable:source.client_source_available===true||source.clientSourceAvailable===true,resolutionSourceAvailable:source.resolution_source_available===true||source.resolutionSourceAvailable===true,rows:rows.map(normalizeProductDemandRow).filter(row=>row.productCode)};
+  }
+
   function normalizePeopleSummary(raw={}){
     const source=raw&&typeof raw==='object'?raw:{};
     return{
@@ -370,7 +393,7 @@
       latestCompetence:competences.at(-1)||''
     });
   }
-  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={},resultHistory={}}={}){
+  function buildFinancialContext({competences=[],people=[],costs=[],operationalCosts=[],allocations=[],resolutionMetrics=[],summary=null,squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={},resultHistory={},productFoundation={},productDemand={}}={}){
     const competenceRows=(competences||[]).map(normalizeCompetenceRow).filter(row=>row.competence);
     const personRows=(people||[]).map(normalizePersonRow).filter(row=>row.id&&row.name);
     const costRows=(costs||[]).map(normalizeEmployeeCostRow).filter(row=>row.personId);
@@ -401,8 +424,10 @@
       resultSquad:Object.freeze({...normalizeResultSquad(resultSquad||{}),rows:Object.freeze(normalizeResultSquad(resultSquad||{}).rows.map(row=>Object.freeze({...row})))}),
       resultRoi:Object.freeze({...normalizeResultRoi(resultRoi||{}),rows:Object.freeze(normalizeResultRoi(resultRoi||{}).rows.map(row=>Object.freeze({...row})))}),
       resultTechnicianRoi:Object.freeze({...normalizeResultTechnicianRoi(resultTechnicianRoi||{}),rows:Object.freeze(normalizeResultTechnicianRoi(resultTechnicianRoi||{}).rows.map(row=>Object.freeze({...row})))}),
-      resultHistory:Object.freeze({...normalizeResultHistory(resultHistory||{}),rows:Object.freeze(normalizeResultHistory(resultHistory||{}).rows.map(row=>Object.freeze({...row})))})
+      resultHistory:Object.freeze({...normalizeResultHistory(resultHistory||{}),rows:Object.freeze(normalizeResultHistory(resultHistory||{}).rows.map(row=>Object.freeze({...row})))}),
+      productFoundation:Object.freeze({...normalizeProductFoundation(productFoundation||{}),products:Object.freeze(normalizeProductFoundation(productFoundation||{}).products.map(row=>Object.freeze({...row}))),domains:Object.freeze(normalizeProductFoundation(productFoundation||{}).domains.map(row=>Object.freeze({...row})))}),
+      productDemand:Object.freeze({...normalizeProductDemand(productDemand||{}),rows:Object.freeze(normalizeProductDemand(productDemand||{}).rows.map(row=>Object.freeze({...row})))})
     });
   }
-  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,normalizeResultInfluencedRevenue,normalizeResultProtectedRevenue,normalizeResultTechnicianRow,normalizeResultTechnician,normalizeResultSquadRow,normalizeResultSquad,normalizeResultRoiRow,normalizeResultRoi,normalizeResultTechnicianRoiRow,normalizeResultTechnicianRoi,normalizeResultHistoryRow,normalizeResultHistory,buildOperationalContext,buildFinancialContext};
+  return{num,optionalNumber,competenceId,competenceDate,normalizeSquads,collectCompetences,competenceLabel,normalizeCompetenceRow,normalizePersonRow,normalizeEmployeeCostRow,normalizeOperationalCostRow,normalizeAllocationRow,normalizeResolutionMetricRow,normalizePeopleSummary,normalizeFinancialSummary,normalizeSquadFinancialRow,normalizeFinancialHistoryRow,normalizeEfficiencyMetric,normalizeEfficiencyHistoryRow,normalizeCapacityHistoryRow,normalizeResultFoundation,normalizeResultDirectRevenue,normalizeResultInfluencedRevenue,normalizeResultProtectedRevenue,normalizeResultTechnicianRow,normalizeResultTechnician,normalizeResultSquadRow,normalizeResultSquad,normalizeResultRoiRow,normalizeResultRoi,normalizeResultTechnicianRoiRow,normalizeResultTechnicianRoi,normalizeResultHistoryRow,normalizeResultHistory,normalizeProductFoundationProduct,normalizeProductFoundationDomain,normalizeProductFoundation,normalizeProductDemandRow,normalizeProductDemand,buildOperationalContext,buildFinancialContext};
 });

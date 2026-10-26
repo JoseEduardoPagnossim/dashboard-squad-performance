@@ -38,6 +38,7 @@ const financeReportEngineScriptPosition = index.indexOf('js/finance-report-engin
 const designSystemScriptPosition = index.indexOf('js/design-system.js');
 const strategyEfficiencyScriptPosition = index.indexOf('js/strategy-efficiency.js');
 const strategyCapacityScriptPosition = index.indexOf('js/strategy-capacity.js');
+const strategyProductScriptPosition = index.indexOf('js/strategy-product.js');
 const strategyScriptPosition = index.indexOf('js/strategy.js');
 const appScriptPosition = index.indexOf('js/app.js');
 if (businessCalendarScriptPosition < 0) errors.push('index.html não carrega js/business-calendar.js.');
@@ -59,9 +60,12 @@ if (financeReportEngineScriptPosition < 0) errors.push('index.html não carrega 
 if (designSystemScriptPosition < 0) errors.push('index.html não carrega js/design-system.js.');
 if (strategyEfficiencyScriptPosition < 0) errors.push('index.html não carrega js/strategy-efficiency.js.');
 if (strategyCapacityScriptPosition < 0) errors.push('index.html não carrega js/strategy-capacity.js.');
+if (strategyProductScriptPosition < 0) errors.push('index.html não carrega js/strategy-product.js.');
 if (strategyEfficiencyScriptPosition >= 0 && strategyScriptPosition >= 0 && strategyEfficiencyScriptPosition > strategyScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/strategy.js.');
 if (strategyEfficiencyScriptPosition >= 0 && appScriptPosition >= 0 && strategyEfficiencyScriptPosition > appScriptPosition) errors.push('js/strategy-efficiency.js deve carregar antes de js/app.js.');
 if (strategyCapacityScriptPosition >= 0 && appScriptPosition >= 0 && strategyCapacityScriptPosition > appScriptPosition) errors.push('js/strategy-capacity.js deve carregar antes de js/app.js.');
+if (strategyProductScriptPosition >= 0 && strategyScriptPosition >= 0 && strategyProductScriptPosition > strategyScriptPosition) errors.push('js/strategy-product.js deve carregar antes de js/strategy.js.');
+if (strategyProductScriptPosition >= 0 && appScriptPosition >= 0 && strategyProductScriptPosition > appScriptPosition) errors.push('js/strategy-product.js deve carregar antes de js/app.js.');
 if (appScriptPosition >= 0 && businessCalendarScriptPosition > appScriptPosition) errors.push('js/business-calendar.js deve ser carregado antes de js/app.js.');
 if (financeScriptPosition >= 0 && businessCalendarScriptPosition >= 0 && businessCalendarScriptPosition > financeScriptPosition) errors.push('js/business-calendar.js deve carregar antes de js/finance-rules.js.');
 if (appScriptPosition >= 0 && financeScriptPosition > appScriptPosition) errors.push('js/finance-rules.js deve ser carregado antes de js/app.js.');
@@ -171,6 +175,13 @@ for (const required of [
   'tests/strategy-result-hardening-v2609.test.js',
   'docs/HARDENING_RESULTADO_V2.60.9.md',
   'supabase/migrations/MIGRACAO_V2.60.9.sql',
+  'tests/strategy-product-foundation-v2610.test.js',
+  'docs/PRODUTO_SQUAD_FUNDACAO_V2.61.0.md',
+  'supabase/migrations/MIGRACAO_V2.61.0.sql',
+  'tests/strategy-product-demand-v2611.test.js',
+  'docs/PRODUTO_SQUAD_DEMANDA_V2.61.1.md',
+  'supabase/migrations/MIGRACAO_V2.61.1.sql',
+  'js/strategy-product.js',
   'js/strategy-result.js',
   'js/strategy-capacity.js',
   'supabase/migrations/MIGRACAO_V2.58.9.sql',

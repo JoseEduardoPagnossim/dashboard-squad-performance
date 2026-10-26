@@ -1,3 +1,22 @@
+## V2.61.1 — Demanda por Produto
+
+- ativa Atendimentos, participação na demanda, Clientes atendidos, Chamados e Resoluções por Produto;
+- sincroniza Atendimentos de `technician_monthly` e Resoluções de `strategy_resolution_metrics`;
+- não infere Clientes ou Chamados a partir de Atendimentos;
+- mantém o saldo não atribuído como `Não classificado`;
+- adiciona RPC agregada de demanda e botão de sincronização na aba Produto/Squad.
+
+## V2.61.0 — Fundação Produto/Squad
+
+- inicia a Fase 6 com catálogo organizacional de Produtos;
+- adiciona registro unificado de fontes para atendimentos, resoluções, custos, FTE e resultado;
+- adiciona atribuição Produto ↔ fonte com `allocation_share` e proteção contra soma acima de 100%;
+- mantém saldo residual como **Não classificado**;
+- bloqueia mutações de fontes/atribuições em competência fechada;
+- adiciona RPC agregada de cobertura e prontidão por domínio;
+- adiciona a aba estratégica Produto/Squad e editor de catálogo;
+- não altera as regras econômicas consolidadas da Fase 5.
+
 ## V2.60.9 — Hardening e fechamento da Fase 5
 
 - fecha a Fase 5 com o motor `RE-1.0.0-phase5-hardening`;

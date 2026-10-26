@@ -312,3 +312,24 @@
 .strategy-result-diagnostics-section{margin-top:18px;border-color:color-mix(in srgb,var(--accent) 34%,var(--border))}
 .strategy-result-diagnostic-squad-table{min-width:1180px}.strategy-result-diagnostic-tech-table{min-width:1340px}
 .strategy-result-diagnostics-section .strategy-unit-cost-reading{white-space:nowrap}
+
+/* V2.61.0 - Fundacao Produto/Squad */
+.strategy-product-foundation-card{display:grid;gap:18px}
+.strategy-product-foundation-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.strategy-product-foundation-section,.strategy-product-catalog-section{display:grid;gap:14px;padding-top:18px;border-top:1px solid var(--border)}
+.strategy-product-domain-table{min-width:980px}.strategy-product-catalog-table{min-width:760px}
+.strategy-product-editor{display:grid;gap:12px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}
+.strategy-product-editor.strategy-readonly{display:none}
+.strategy-product-form-grid{display:grid;grid-template-columns:minmax(140px,.55fr) minmax(220px,1fr) minmax(260px,1.4fr) auto;gap:12px;align-items:end}
+.strategy-product-form-grid label{display:grid;gap:6px}.strategy-product-form-grid label>span{font-size:.74rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.strategy-product-form-grid input{width:100%}.strategy-product-form-action{display:flex;align-items:end}
+.strategy-product-coverage{display:inline-flex;align-items:center;gap:6px;font-weight:800;white-space:nowrap}.strategy-product-coverage.good{color:var(--success)}.strategy-product-coverage.warn{color:var(--warn)}.strategy-product-coverage.bad{color:var(--danger)}
+@media(max-width:1180px){.strategy-product-foundation-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-product-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-product-aliases{grid-column:span 2}}
+@media(max-width:680px){.strategy-product-foundation-kpis,.strategy-product-form-grid{grid-template-columns:1fr}.strategy-product-aliases{grid-column:auto}.strategy-product-form-action button{width:100%}}
+.strategy-product-demand-section{display:grid;gap:14px;padding-top:18px;border-top:1px solid var(--border)}
+.strategy-product-demand-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+.strategy-product-demand-table{min-width:980px}.strategy-product-demand-table tr.strategy-product-unclassified td{background:color-mix(in srgb,var(--warn) 6%,transparent)}
+.strategy-product-demand-note{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--muted);font-size:.78rem;line-height:1.45}
+.strategy-section-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:1180px){.strategy-product-demand-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.strategy-product-demand-kpis{grid-template-columns:1fr}.strategy-section-actions{justify-content:flex-start}}
