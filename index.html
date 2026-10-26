@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.61.1" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.61.1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.61.1" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.61.1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.61.2" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.61.2" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.61.2" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.61.2" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.61.1 • Fase 6 — Demanda por Produto</small>
+        <small class="login-version">V2.61.2 • Fase 6 — Custo por Produto</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.61.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.61.2 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.61.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.61.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -1397,7 +1397,7 @@
             <span class="strategy-foundation-badge">Fase 4 • Capacidade utilizada</span>
           </section>
 
-          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.61.1</strong> no Supabase e valide as permissões.</div>
+          <div id="strategyMigrationWarning" class="strategy-access-warning hidden">Os dados estratégicos não puderam ser carregados. Execute as migrações aplicáveis até <strong>V2.61.2</strong> no Supabase e valide as permissões.</div>
 
           <section class="strategy-status-grid" aria-label="Status da Gestão Estratégica">
             <article class="strategy-status-card"><span>Acesso</span><strong id="strategyAccessStatus">—</strong></article>
@@ -2154,6 +2154,19 @@
                 <div id="strategyProductDemandSourceNote" class="strategy-product-demand-note">A participação na demanda usa Atendimentos como denominador e mantém Não classificado na conta.</div>
               </section>
 
+              <section class="strategy-product-cost-section">
+                <div class="strategy-section-heading"><div><span class="eyebrow">V2.61.2 • CUSTO POR PRODUTO</span><h3>Cost to Serve e custo unitário</h3><p>Custo de pessoas e operacional seguem as fontes financeiras oficiais. Atendimentos por Produto são o driver auditável do rateio dentro de cada Squad.</p></div><div class="strategy-section-actions"><span id="strategyProductCostStatus" class="strategy-efficiency-status neutral">CARREGANDO</span><button class="btn secondary" id="strategySyncProductCostBtn" type="button">↻ Sincronizar custos</button></div></div>
+                <div class="strategy-metric-grid strategy-product-cost-kpis">
+                  <div class="strategy-metric"><span>Cost to Serve</span><strong id="strategyProductCostTotal">—</strong><small>custo total do escopo</small></div>
+                  <div class="strategy-metric"><span>Cobertura classificada</span><strong id="strategyProductCostCoverage">—</strong><small>custo atribuído a Produtos</small></div>
+                  <div class="strategy-metric"><span>Custo de pessoas</span><strong id="strategyProductCostPeople">—</strong><small>fonte estratégica oficial</small></div>
+                  <div class="strategy-metric"><span>Custo operacional</span><strong id="strategyProductCostOperational">—</strong><small>rateio oficial por Squad</small></div>
+                  <div class="strategy-metric"><span>Não classificado</span><strong id="strategyProductCostUnclassified">—</strong><small>custo sem Produto</small></div>
+                </div>
+                <div class="table-wrap"><table class="strategy-people-table strategy-product-cost-table"><thead><tr><th>Produto</th><th>Cost to Serve</th><th>% do custo</th><th>Pessoas</th><th>Operacional</th><th>Custo / atendimento</th><th>Custo / resolução</th><th>Custo / cliente</th><th>Driver</th></tr></thead><tbody id="strategyProductCostRows"><tr><td colspan="9" class="muted">Carregando Custo por Produto...</td></tr></tbody></table></div>
+                <div id="strategyProductCostSourceNote" class="strategy-product-demand-note">O custo deve reconciliar com a mesma competência financeira e manter Não classificado na conta.</div>
+              </section>
+
               <section class="strategy-product-catalog-section">
                 <div class="strategy-section-heading"><div><span class="eyebrow">CATÁLOGO DE PRODUTOS</span><h3>Identidade estável para comparações</h3><p>O código identifica o produto no histórico. Renomear ou desativar um produto não apaga os snapshots gravados nas atribuições.</p></div><span id="strategyProductEditorMode" class="strategy-mini-badge">Somente leitura</span></div>
                 <div id="strategyProductEditor" class="strategy-product-editor">
@@ -2168,13 +2181,13 @@
               </section>
 
               <section class="strategy-efficiency-readiness">
-                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Fase 6 iniciada</h3><p>A Fundação está ativa; demanda, custos, resultado econômico, unit economics e comparações entram sobre o mesmo contrato nas próximas versões.</p></div></div>
+                <div class="strategy-section-heading"><div><span class="eyebrow">ROADMAP TÉCNICO</span><h3>Fase 6 iniciada</h3><p>Fundação, Demanda e Custo por Produto estão ativos; resultado econômico, unit economics e comparações entram sobre o mesmo contrato nas próximas versões.</p></div></div>
                 <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table"><thead><tr><th>Entrega</th><th>Versão</th><th>Estado</th><th>Contrato</th></tr></thead><tbody id="strategyProductReadinessRows"><tr><td colspan="4" class="muted">Carregando roadmap Produto/Squad...</td></tr></tbody></table></div>
               </section>
 
               <section class="strategy-efficiency-contract"><div><span class="eyebrow">REGRAS DA FUNDAÇÃO</span><h3>Não classificado faz parte da conta</h3></div><ul id="strategyProductWarnings"><li>Carregando regras da Fase 6.</li></ul></section>
             </article>
-            <aside class="strategy-insight"><strong>Demanda por Produto ativa</strong><p>A V2.61.1 mede volume e participação por Produto sem inferir Clientes ou Chamados. Custos e unit economics continuam separados para as próximas versões.</p></aside>
+            <aside class="strategy-insight"><strong>Custo por Produto ativo</strong><p>A V2.61.2 calcula Cost to Serve e custos unitários usando o custo financeiro oficial e Atendimentos como driver de rateio. Resultado econômico e Unit Economics permanecem nas próximas versões.</p></aside>
           </div>
 
           <div class="strategy-panel hidden" data-strategy-panel="costs">
@@ -2655,37 +2668,37 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.61.1"></script>
-  <script src="js/finance-rules.js?v=2.61.1"></script>
-  <script src="js/finance-advanced.js?v=2.61.1"></script>
-  <script src="js/tv-engine.js?v=2.61.1"></script>
-  <script src="js/presentation.js?v=2.61.1"></script>
-  <script src="js/chart-engine.js?v=2.61.1"></script>
-  <script src="js/chart-export.js?v=2.61.1"></script>
-  <script src="js/import-engine.js?v=2.61.1"></script>
-  <script src="js/predictive-engine.js?v=2.61.1"></script>
-  <script src="js/alert-engine.js?v=2.61.1"></script>
-  <script src="js/settings-engine.js?v=2.61.1"></script>
-  <script src="js/performance-engine.js?v=2.61.1"></script>
-  <script src="js/navigation-engine.js?v=2.61.1"></script>
-  <script src="js/workspace-engine.js?v=2.61.1"></script>
-  <script src="js/filter-system.js?v=2.61.1"></script>
-  <script src="js/comparison-engine.js?v=2.61.1"></script>
-  <script src="js/finance-report-engine.js?v=2.61.1"></script>
-  <script src="js/design-system.js?v=2.61.1"></script>
-  <script src="js/strategy-access.js?v=2.61.1"></script>
-  <script src="js/strategy-data.js?v=2.61.1"></script>
-  <script src="js/strategy-cost-engine.js?v=2.61.1"></script>
-  <script src="js/strategy-efficiency.js?v=2.61.1"></script>
-  <script src="js/strategy-capacity.js?v=2.61.1"></script>
-  <script src="js/strategy-result.js?v=2.61.1"></script>
-  <script src="js/strategy-product.js?v=2.61.1"></script>
-  <script src="js/strategy-insights.js?v=2.61.1"></script>
-  <script src="js/strategy.js?v=2.61.1"></script>
+  <script src="js/business-calendar.js?v=2.61.2"></script>
+  <script src="js/finance-rules.js?v=2.61.2"></script>
+  <script src="js/finance-advanced.js?v=2.61.2"></script>
+  <script src="js/tv-engine.js?v=2.61.2"></script>
+  <script src="js/presentation.js?v=2.61.2"></script>
+  <script src="js/chart-engine.js?v=2.61.2"></script>
+  <script src="js/chart-export.js?v=2.61.2"></script>
+  <script src="js/import-engine.js?v=2.61.2"></script>
+  <script src="js/predictive-engine.js?v=2.61.2"></script>
+  <script src="js/alert-engine.js?v=2.61.2"></script>
+  <script src="js/settings-engine.js?v=2.61.2"></script>
+  <script src="js/performance-engine.js?v=2.61.2"></script>
+  <script src="js/navigation-engine.js?v=2.61.2"></script>
+  <script src="js/workspace-engine.js?v=2.61.2"></script>
+  <script src="js/filter-system.js?v=2.61.2"></script>
+  <script src="js/comparison-engine.js?v=2.61.2"></script>
+  <script src="js/finance-report-engine.js?v=2.61.2"></script>
+  <script src="js/design-system.js?v=2.61.2"></script>
+  <script src="js/strategy-access.js?v=2.61.2"></script>
+  <script src="js/strategy-data.js?v=2.61.2"></script>
+  <script src="js/strategy-cost-engine.js?v=2.61.2"></script>
+  <script src="js/strategy-efficiency.js?v=2.61.2"></script>
+  <script src="js/strategy-capacity.js?v=2.61.2"></script>
+  <script src="js/strategy-result.js?v=2.61.2"></script>
+  <script src="js/strategy-product.js?v=2.61.2"></script>
+  <script src="js/strategy-insights.js?v=2.61.2"></script>
+  <script src="js/strategy.js?v=2.61.2"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.61.1"></script>
+  <script src="js/app.js?v=2.61.2"></script>
 </body>
 </html>

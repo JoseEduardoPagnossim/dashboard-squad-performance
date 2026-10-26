@@ -333,3 +333,8 @@
 .strategy-section-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:1180px){.strategy-product-demand-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.strategy-product-demand-kpis{grid-template-columns:1fr}.strategy-section-actions{justify-content:flex-start}}
+.strategy-product-cost-section{display:grid;gap:14px;padding-top:18px;border-top:1px solid var(--border)}
+.strategy-product-cost-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+.strategy-product-cost-table{min-width:1260px}.strategy-product-cost-table tr.strategy-product-unclassified td{background:color-mix(in srgb,var(--warn) 6%,transparent)}
+@media(max-width:1180px){.strategy-product-cost-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.strategy-product-cost-kpis{grid-template-columns:1fr}}

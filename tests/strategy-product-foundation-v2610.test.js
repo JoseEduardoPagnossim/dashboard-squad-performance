@@ -14,18 +14,18 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_FUNDACAO_V2.61.0.md');
 
 test('V2.61.0 inicia a Fase 6 com Fundação Produto/Squad versionada',()=>{
-  assert.equal(pkg.version,'2.61.1');
-  assert.equal(pkg.assetVersion,'2.61.1');
-  assert.equal(product.RULE_VERSION,'PS-0.2.0-product-demand');
+  assert.equal(pkg.version,'2.61.2');
+  assert.equal(pkg.assetVersion,'2.61.2');
+  assert.equal(product.RULE_VERSION,'PS-0.3.0-product-cost');
   assert.equal(product.CATALOG[0].version,'V2.61.0');
   assert.equal(product.CATALOG[0].state,'ready');
   assert.equal(product.CATALOG.at(-1).version,'V2.61.9');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/FASE 6 • V2\.61\.0/);
-  assert.ok(index.includes('js/strategy-product.js?v=2.61.1'));
-  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.1')<index.indexOf('js/strategy.js?v=2.61.1'));
-  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.1')<index.indexOf('js/app.js?v=2.61.1'));
+  assert.ok(index.includes('js/strategy-product.js?v=2.61.2'));
+  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.2')<index.indexOf('js/strategy.js?v=2.61.2'));
+  assert.ok(index.indexOf('js/strategy-product.js?v=2.61.2')<index.indexOf('js/app.js?v=2.61.2'));
 });
 
 test('motor define os seis domínios fundacionais sem antecipar unit economics',()=>{
@@ -37,7 +37,7 @@ test('motor define os seis domínios fundacionais sem antecipar unit economics',
   assert.equal(f.readiness.catalogReady,true);
   assert.equal(f.readiness.coverageReady,false);
   assert.ok(f.warnings.some(x=>/não classificado/i.test(x)));
-  assert.equal(f.catalog.filter(x=>x.status==='ready').length,2);
+  assert.equal(f.catalog.filter(x=>x.status==='ready').length,3);
 });
 
 test('cobertura preserva saldo não classificado no denominador',()=>{

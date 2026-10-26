@@ -5,7 +5,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const RULE_VERSION='PS-0.2.0-product-demand';
+  const RULE_VERSION='PS-0.3.0-product-cost';
   const UNCLASSIFIED_CODE='UNCLASSIFIED';
   const SOURCE_DOMAINS=Object.freeze([
     Object.freeze({id:'attendance',label:'Atendimentos',valueKind:'quantity',next:'V2.61.1'}),
@@ -25,7 +25,7 @@
   const CATALOG=Object.freeze([
     Object.freeze({id:'product-squad-foundation',label:'Fundação Produto/Squad',version:'V2.61.0',state:'ready'}),
     Object.freeze({id:'demand-by-product',label:'Demanda por Produto',version:'V2.61.1',state:'ready'}),
-    Object.freeze({id:'cost-by-product',label:'Custo por Produto',version:'V2.61.2',state:'planned'}),
+    Object.freeze({id:'cost-by-product',label:'Custo por Produto',version:'V2.61.2',state:'ready'}),
     Object.freeze({id:'result-by-product',label:'Resultado econômico por Produto',version:'V2.61.3',state:'planned'}),
     Object.freeze({id:'unit-economics-product',label:'Unit Economics por Produto',version:'V2.61.4',state:'planned'}),
     Object.freeze({id:'squad-comparison',label:'Comparativo entre Squads',version:'V2.61.5',state:'planned'}),
@@ -112,6 +112,53 @@
       ])
     });
   }
+
+  function normalizeCostRow(raw={}){
+    const code=cleanCode(raw.product_code??raw.productCode)||UNCLASSIFIED_CODE,name=text(raw.product_name??raw.productName)||(code===UNCLASSIFIED_CODE?'Não classificado':code),unclassified=raw.unclassified===true||code===UNCLASSIFIED_CODE;
+    const peopleCost=Math.max(0,num(raw.people_cost??raw.peopleCost)),operationalCost=Math.max(0,num(raw.operational_cost??raw.operationalCost)),totalCost=Math.max(0,num(raw.total_cost??raw.totalCost??peopleCost+operationalCost));
+    return Object.freeze({
+      productCode:code,productName:name,unclassified,peopleCost,operationalCost,totalCost,
+      attendance:Math.max(0,num(raw.attendance)),tickets:Math.max(0,num(raw.tickets)),clients:Math.max(0,num(raw.clients)),resolutions:Math.max(0,num(raw.resolutions))
+    });
+  }
+  function normalizeCost(raw={}){
+    const source=raw&&typeof raw==='object'?raw:{},rows=Array.isArray(source.rows)?source.rows.map(normalizeCostRow):[],totalCost=Math.max(0,num(source.total_cost??source.totalCost));
+    return Object.freeze({
+      sourceAvailable:source.source_available===true||source.sourceAvailable===true,
+      competence:text(source.competence),squadCode:cleanCode(source.squad_code??source.squadCode)||'ALL',allocationDriver:text(source.allocation_driver??source.allocationDriver)||'attendance',sourceCount:Math.max(0,num(source.source_count??source.sourceCount)),
+      peopleCost:Math.max(0,num(source.people_cost??source.peopleCost)),operationalCost:Math.max(0,num(source.operational_cost??source.operationalCost)),totalCost,
+      classifiedCost:Math.max(0,num(source.classified_cost??source.classifiedCost)),unclassifiedCost:Math.max(0,num(source.unclassified_cost??source.unclassifiedCost)),costCoveragePct:clampPct(source.cost_coverage_pct??source.costCoveragePct),
+      financialTotalCost:Math.max(0,num(source.financial_total_cost??source.financialTotalCost)),reconciliationGap:optionalNumber(source.reconciliation_gap??source.reconciliationGap)??0,
+      attendanceSourceAvailable:source.attendance_source_available===true||source.attendanceSourceAvailable===true,
+      resolutionSourceAvailable:source.resolution_source_available===true||source.resolutionSourceAvailable===true,
+      clientSourceAvailable:source.client_source_available===true||source.clientSourceAvailable===true,
+      rows:Object.freeze(rows)
+    });
+  }
+  function buildCost({scope={},aggregate={}}={}){
+    const normalizedScope=normalizeScope(scope),base=normalizeCost(aggregate),denominator=base.totalCost;
+    const rows=base.rows.map(row=>Object.freeze({...row,
+      costSharePct:denominator>0?row.totalCost/denominator*100:null,
+      costPerAttendance:base.attendanceSourceAvailable&&row.attendance>0?row.totalCost/row.attendance:null,
+      costPerResolution:base.resolutionSourceAvailable&&row.resolutions>0?row.totalCost/row.resolutions:null,
+      costPerClient:base.clientSourceAvailable&&row.clients>0?row.totalCost/row.clients:null
+    })).sort((a,b)=>Number(a.unclassified)-Number(b.unclassified)||b.totalCost-a.totalCost||a.productName.localeCompare(b.productName,'pt-BR'));
+    return Object.freeze({
+      ruleVersion:RULE_VERSION,scope:normalizedScope,status:base.sourceAvailable?'ready':'pending',sourceAvailable:base.sourceAvailable,allocationDriver:base.allocationDriver,sourceCount:base.sourceCount,
+      peopleCost:base.peopleCost,operationalCost:base.operationalCost,totalCost:base.totalCost,classifiedCost:base.classifiedCost,unclassifiedCost:base.unclassifiedCost,costCoveragePct:base.costCoveragePct,
+      financialTotalCost:base.financialTotalCost,reconciliationGap:base.reconciliationGap,reconciled:Math.abs(base.reconciliationGap)<=0.01,
+      attendanceSourceAvailable:base.attendanceSourceAvailable,resolutionSourceAvailable:base.resolutionSourceAvailable,clientSourceAvailable:base.clientSourceAvailable,
+      rows:Object.freeze(rows),
+      warnings:Object.freeze([
+        'Cost to Serve = custo de pessoas + custo operacional atribuídos ao Produto; nenhuma receita entra nesta fórmula.',
+        'Atendimentos por Produto são o driver padrão do rateio dentro de cada Squad na V2.61.2.',
+        'A parcela de Atendimentos ainda Não classificada carrega a mesma parcela de custo e permanece visível.',
+        'Custo por atendimento, resolução e cliente só é calculado quando o respectivo denominador existe e possui fonte válida.',
+        'O custo total Produto + Não classificado deve reconciliar com o custo financeiro oficial da mesma competência e escopo.'
+      ])
+    });
+  }
+
   function buildFoundation({scope={},aggregate={}}={}){
     const normalizedScope=normalizeScope(scope),base=normalizeFoundation(aggregate),catalog=CATALOG.map(item=>Object.freeze({...item,status:item.state==='ready'?'ready':'planned'}));
     const coverageReady=base.sourceCount>0&&base.classificationCoveragePct!=null;
@@ -127,10 +174,10 @@
         'Uma fonte pode ser distribuída entre vários produtos, mas a soma das participações nunca pode ultrapassar 100%.',
         'Qualquer saldo ainda não atribuído permanece explicitamente como Não classificado; ele nunca é descartado do denominador de cobertura.',
         'Atendimentos, resoluções, custos, FTE e resultado econômico usam o mesmo contrato de fonte + atribuição para permitir reconciliação futura.',
-        'A V2.61.1 ativa Demanda por Produto; custos, resultado econômico e unit economics continuam reservados às próximas versões.'
+        'A V2.61.2 ativa Custo por Produto usando Atendimentos como driver auditável; resultado econômico e unit economics continuam reservados às próximas versões.'
       ])
     });
   }
 
-  return{RULE_VERSION,UNCLASSIFIED_CODE,SOURCE_DOMAINS,SOURCE_DOMAIN_IDS,DEMAND_METRICS,CATALOG,normalizeScope,normalizeProduct,normalizeDomainRow,normalizeFoundation,normalizeDemandRow,normalizeDemand,buildDemand,buildFoundation};
+  return{RULE_VERSION,UNCLASSIFIED_CODE,SOURCE_DOMAINS,SOURCE_DOMAIN_IDS,DEMAND_METRICS,CATALOG,normalizeScope,normalizeProduct,normalizeDomainRow,normalizeFoundation,normalizeDemandRow,normalizeDemand,buildDemand,normalizeCostRow,normalizeCost,buildCost,buildFoundation};
 });

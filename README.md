@@ -1,3 +1,11 @@
+# V2.61.2 — Custo por Produto
+
+A Fase 6 passa a calcular Cost to Serve, custo por atendimento, resolução e cliente atendido por Produto, usando o custo financeiro oficial e Atendimentos por Produto como driver auditável de rateio.
+
+Detalhes: `docs/PRODUTO_SQUAD_CUSTO_V2.61.2.md`.
+
+---
+
 # V2.61.1 — Demanda por Produto
 
 A Fase 6 agora mede Atendimentos, participação na demanda, Clientes atendidos, Chamados e Resoluções por Produto, mantendo Não classificado no denominador e sem inferir métricas ausentes.

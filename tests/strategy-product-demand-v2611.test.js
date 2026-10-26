@@ -13,16 +13,16 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.61.1.sql');
 const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_DEMANDA_V2.61.1.md');
 
-test('V2.61.1 ativa Demanda por Produto no catálogo da Fase 6',()=>{
-  assert.equal(pkg.version,'2.61.1');
-  assert.equal(pkg.assetVersion,'2.61.1');
-  assert.equal(product.RULE_VERSION,'PS-0.2.0-product-demand');
+test('V2.61.2 ativa Demanda por Produto no catálogo da Fase 6',()=>{
+  assert.equal(pkg.version,'2.61.2');
+  assert.equal(pkg.assetVersion,'2.61.2');
+  assert.equal(product.RULE_VERSION,'PS-0.3.0-product-cost');
   assert.equal(product.CATALOG.find(x=>x.id==='product-squad-foundation').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='demand-by-product').state,'ready');
-  assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'planned');
+  assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
-  assert.match(index,/V2\.61\.1 • Fase 6 — Demanda por Produto/);
+  assert.match(index,/V2\.61\.2 • Fase 6 — Custo por Produto/);
 });
 
 test('motor mantém Atendimentos como denominador exclusivo da participação na demanda',()=>{
@@ -97,13 +97,13 @@ test('interface publica KPIs e tabela da Demanda por Produto',()=>{
   assert.match(app,/get_strategy_product_demand_summary/);
   assert.match(app,/sync_strategy_product_demand_sources/);
   assert.match(app,/strategy\.product_demand_sync/);
-  assert.match(app,/productDemandMissing=.*get_strategy_product_demand_summary.*sync_strategy_product_demand_sources.*V2\.61\.1/s);
+  assert.match(app,/productDemandMissing=.*get_strategy_product_demand_summary.*sync_strategy_product_demand_sources.*V2\.61\.2/s);
 });
 
-test('V2.61.1 não antecipa Custo ou Unit Economics por Produto',()=>{
+test('V2.61.2 permanece estável após ativação de Custo por Produto',()=>{
   const demand=product.CATALOG.find(x=>x.id==='demand-by-product');
   assert.equal(demand.state,'ready');
-  assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'planned');
+  assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'planned');
   assert.match(readFileSync(docPath,'utf8'),/V2\.61\.2.*Custo por Produto/s);
 });

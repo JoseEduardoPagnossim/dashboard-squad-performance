@@ -1,3 +1,12 @@
+## V2.61.2 — Custo por Produto
+
+- sincroniza custos de pessoas e operacionais oficiais para a camada Produto/Squad;
+- usa Atendimentos por Produto como driver padrão e auditável do rateio dentro de cada Squad;
+- mantém custo residual como **Não classificado**;
+- calcula Cost to Serve, participação no custo, custo/atendimento, custo/resolução e custo/cliente;
+- reconcilia o total Produto + Não classificado com o custo financeiro oficial do mesmo escopo;
+- adiciona RPCs de sincronização/resumo, interface, documentação e testes da V2.61.2.
+
 ## V2.61.1 — Demanda por Produto
 
 - ativa Atendimentos, participação na demanda, Clientes atendidos, Chamados e Resoluções por Produto;

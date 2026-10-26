@@ -208,3 +208,6 @@ Execute `MIGRACAO_V2.59.3.sql` depois da V2.59.2. A migration cria `get_strategy
 
 Execute `MIGRACAO_V2.59.5.sql` depois da V2.59.3 (a V2.59.4 não possui migration). Ela cria a base agregada da coluna `Resolve` da Qualidade Completa, publica `get_operational_fcr_overview_range(date,date)`, sincroniza `strategy_resolution_metrics` por `sync_strategy_resolution_metrics_from_quality(date,text)` e amplia `get_strategy_capacity_utilization_history()` com atendimentos por FTE disponível para o cálculo de FTE necessário. Não é necessário republicar Edge Functions.
 
+
+### V2.61.2 — Custo por Produto
+Execute `MIGRACAO_V2.61.2.sql` depois da V2.61.1. A migration adiciona `sync_strategy_product_cost_sources(date,text)` e `get_strategy_product_cost_summary(date,text)`. O sincronizador reutiliza custos oficiais de pessoas/operação, usa Atendimentos por Produto como driver e mantém o saldo como Não classificado. Não é necessário republicar Edge Functions.
