@@ -1,3 +1,10 @@
+## V2.61.4 R1 — Hotfix do status oficial nos Indicadores
+
+- Card **Técnicos acima da referência** agora usa os status oficiais da competência, iguais aos da matriz de técnicos.
+- Removida a contagem baseada em `periodStatus` para este KPI, evitando 100% ACIMA em recortes parciais quando existem técnicos ABAIXO oficialmente.
+- Adicionado teste de regressão específico.
+- Sem migration.
+
 ## V2.61.4 — Unit Economics por Produto
 
 - cruza Demanda, Cost to Serve, FTE alocado e Resultado econômico por Produto;

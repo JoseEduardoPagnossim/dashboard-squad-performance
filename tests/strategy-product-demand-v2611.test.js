@@ -15,7 +15,7 @@ const docPath=join(root,'docs','PRODUTO_SQUAD_DEMANDA_V2.61.1.md');
 
 test('V2.61.1 mantém Demanda por Produto ativa na Fase 6',()=>{
   assert.equal(pkg.version,'2.61.4');
-  assert.equal(pkg.assetVersion,'2.61.4');
+  assert.equal(pkg.assetVersion,'2.61.4-r1');
   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG.find(x=>x.id==='product-squad-foundation').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='demand-by-product').state,'ready');

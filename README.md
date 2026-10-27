@@ -1,3 +1,11 @@
+## V2.61.4 R1 — Hotfix do status oficial nos Indicadores
+
+- corrige o card **Técnicos acima da referência** para usar a mesma classificação oficial da matriz por competência;
+- elimina divergência causada pelo `periodStatus` recalculado em recortes parciais;
+- não altera a regra 2 de 4 critérios nem os status já persistidos;
+- não exige migration;
+- usa cache-buster uniforme `2.61.4-r1` nos assets, sem consumir a V2.61.5.
+
 # V2.61.4 — Unit Economics por Produto
 
 Cruza Demanda, Cost to Serve, FTE alocado e Resultado econômico por Produto, mantendo ROI exclusivo da Receita Direta e Influenciada/Protegida como indicadores independentes de impacto.
