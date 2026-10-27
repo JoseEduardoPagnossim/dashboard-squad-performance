@@ -1,0 +1,10 @@
+V2.61.9 - Snapshots, historico e hardening Fase 6
+Base: V2.61.8
+1. Fazer backup.
+2. Executar supabase/migrations/MIGRACAO_V2.61.9.sql no Supabase.
+3. Extrair na raiz do projeto V2.61.8.
+4. npm run check e validar no Supabase.
+5. Fechar competencia para congelar; para competencias ja fechadas, usar Congelar revisao atual.
+ATENCAO: snapshots nao sao reconstruidos retroativamente sem fonte atual.
+Testes: 764 aprovados.
+Commit: feat(strategy): fecha Fase 6 com snapshots e historico V2.61.9

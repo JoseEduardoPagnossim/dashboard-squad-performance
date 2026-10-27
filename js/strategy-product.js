@@ -32,7 +32,7 @@
     Object.freeze({id:'product-squad-matrix',label:'Matriz Produto × Squad',version:'V2.61.6',state:'ready'}),
     Object.freeze({id:'mix-concentration',label:'Mix, concentração e dependência',version:'V2.61.8',state:'ready'}),
     Object.freeze({id:'product-squad-diagnostics',label:'Insights e diagnóstico Produto/Squad',version:'V2.61.8',state:'planned'}),
-    Object.freeze({id:'product-squad-history-hardening',label:'Snapshots, histórico e hardening',version:'V2.61.9',state:'planned'})
+    Object.freeze({id:'product-squad-history-hardening',label:'Snapshots, histórico e hardening',version:'V2.61.9',state:'ready'})
   ]);
 
   function num(value){const n=Number(value);return Number.isFinite(n)?n:0}

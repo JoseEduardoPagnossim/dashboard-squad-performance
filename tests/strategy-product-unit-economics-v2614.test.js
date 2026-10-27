@@ -14,15 +14,15 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_UNIT_ECONOMICS_V2.61.4.md');
 
 test('V2.61.4 ativa Unit Economics por Produto e mantém comparativos posteriores',()=>{
-  assert.equal(pkg.version,'2.61.8');
-  assert.equal(pkg.assetVersion,'2.61.8-r1');
+  assert.equal(pkg.version,'2.61.9');
+  assert.equal(pkg.assetVersion,'2.61.9-r1');
   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='squad-comparison').state,'ready');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/V2\.61\.4 • UNIT ECONOMICS POR PRODUTO/);
-  assert.ok(index.includes('js/strategy-product.js?v=2.61.8-r1'));
+  assert.ok(index.includes('js/strategy-product.js?v=2.61.9-r1'));
 });
 
 test('motor cruza custo, demanda, FTE e Receita Direta no ROI por Produto',()=>{

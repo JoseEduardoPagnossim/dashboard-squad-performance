@@ -1,3 +1,9 @@
+## V2.61.9 — Snapshots, histórico e hardening da Fase 6
+- Registro imutável, por revisão, de Unit Economics Produto/Squad no fechamento.
+- Histórico de competências e revisões; atualização manual e diagnóstico de integridade.
+- Proteção de acesso ao histórico via RLS e congelamento por RPC de competência fechada.
+- Nova migration MIGRACAO_V2.61.9.sql necessária.
+
 ## V2.61.8 — Insights e diagnóstico Produto/Squad
 
 - Diagnósticos interpretáveis para custo unitário, produtividade por FTE, resolução/atendimento e resultado direto por Produto × Squad.

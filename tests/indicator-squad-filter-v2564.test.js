@@ -15,7 +15,7 @@ function blockBetween(start,end){
 }
 
 test('V2.57.7 torna a troca de Squad deterministica',()=>{
-  assert.equal(pkg.version,'2.61.8');
+  assert.equal(pkg.version,'2.61.9');
   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
   assert.match(select,/selectionSeq=\+\+state\.squadSelectionSeq/);
   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
