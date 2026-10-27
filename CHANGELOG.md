@@ -1,3 +1,9 @@
+## V2.61.8 — Insights e diagnóstico Produto/Squad
+
+- Diagnósticos interpretáveis para custo unitário, produtividade por FTE, resolução/atendimento e resultado direto por Produto × Squad.
+- Critérios e evidências legíveis, filtros e indicação de dados parciais.
+- Sem alterações em modelos existentes e sem migration de banco.
+
 ## V2.61.7 — Mix, concentração e dependência
 
 - Distribuição por Produto e Squad de atendimentos, custos e receitas separadas por natureza.

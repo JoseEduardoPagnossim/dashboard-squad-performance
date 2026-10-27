@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.61.7';
+  const APP_VERSION = '2.61.8';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4553,6 +4553,22 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(note)note.textContent=`${view.metricLabel} • ${view.sourceCount} Squad(s) • Total: ${val(view.total)} • HHI por produto: ${view.productStats.hhi==null?'—':strategyNumber(view.productStats.hhi,3)}. ${[...view.alerts,...view.warnings].join(' ')||'Sem alertas de concentração.'} Concentração não determina desempenho nem risco de churn.`;
   }
 
+  function renderStrategyProductDiagnostics(vm,displayAggregate){
+    const body=$('#strategyProductDiagnosticsRows'),status=$('#strategyProductDiagnosticsStatus'),note=$('#strategyProductDiagnosticsNote'),productEl=$('#strategyProductDiagnosticsProduct'),levelEl=$('#strategyProductDiagnosticsLevel');if(!body)return;
+    if(!displayAggregate){body.innerHTML='<tr><td colspan="4" class="muted">Sem permissão para visualizar diagnósticos financeiros.</td></tr>';if(status)status.textContent='SEM PERMISSÃO';return;}
+    const names=Object.fromEntries((vm.context.squads||[]).map(r=>[r.code,r.name||r.code]));
+    for(const el of [productEl,levelEl])if(el&&!el.dataset.productDiagnosticsBound){el.addEventListener('change',()=>renderStrategy({skipLoad:true}));el.dataset.productDiagnosticsBound='1';}
+    const base=window.SoftenStrategyProductDiagnostics.build({summaries:strategyProductSquadMatrixSummaries,squadNames:names,selectedSquad:vm.state.squadCode});
+    if(productEl){const products=[...new Map(strategyProductSquadMatrixSummaries.flatMap(s=>(s.view?.rows||[]).filter(r=>!r.unclassified&&r.productCode).map(r=>[r.productCode,r.productName||r.productCode]))).entries()].sort((a,b)=>String(a[1]).localeCompare(String(b[1]),'pt-BR'));const signature=products.map(p=>p[0]).join('|');if(productEl.dataset.signature!==signature){const old=productEl.value;productEl.innerHTML='<option value="all">Todos os produtos</option>'+products.map(([code,name])=>`<option value="${escapeHtml(code)}">${escapeHtml(name)}</option>`).join('');productEl.dataset.signature=signature;productEl.value=products.some(p=>p[0]===old)?old:'all';}}
+    const view=productEl?.value==='all'?base:window.SoftenStrategyProductDiagnostics.build({summaries:strategyProductSquadMatrixSummaries,squadNames:names,selectedSquad:vm.state.squadCode,selectedProduct:productEl.value});
+    const items=view.items.filter(i=>levelEl?.value==='all'||!levelEl?.value||i.level===levelEl.value),set=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+    set('#strategyProductDiagnosticsAttention',view.items.filter(i=>i.level==='attention').length);set('#strategyProductDiagnosticsObserve',view.items.filter(i=>i.level==='observe').length);set('#strategyProductDiagnosticsProducts',view.scannedProducts);set('#strategyProductDiagnosticsSquads',view.sourceCount);
+    const evidence=e=>Object.entries(e).filter(([k,v])=>v!==null&&v!==undefined).map(([k,v])=>`${k}: ${typeof v==='number'?strategyNumber(v,2):String(v)}`).join(' • ');
+    body.innerHTML=items.length?items.map(i=>`<tr><td>${i.level==='attention'?'ATENÇÃO':'ACOMPANHAR'}</td><td><strong>${escapeHtml(i.evidence.product)}</strong><small>${escapeHtml(i.evidence.squad)}</small></td><td><strong>${escapeHtml(i.title)}</strong><small>${escapeHtml(i.description)}</small></td><td><small>${escapeHtml(evidence(i.evidence))}</small></td></tr>`).join(''):'<tr><td colspan="4" class="muted">Sem situações identificadas com os critérios e fontes válidas selecionados. Isso não comprova ausência de problemas.</td></tr>';
+    if(status){status.textContent=view.partial?'DADOS PARCIAIS':view.sourceCount?'DIAGNÓSTICOS ATIVOS':'SEM DADOS';status.className=`strategy-efficiency-status ${view.partial?'warn':view.sourceCount?'good':'neutral'}`;}
+    if(note)note.textContent=`Competência ${vm.state.competence} • Mínimo de 10 atendimentos por célula; diferença de 30% em custo/produtividade ou 20% em resolução frente à média por produto. A comparação de pares exige duas fontes válidas. ${view.warnings.join(' ')} A análise é descritiva e não estabelece causalidade, FCR oficial ou risco de churn.`;
+  }
+
   function renderStrategyProduct(vm,displayAggregate){
     const foundation=strategyProductEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.productFoundation||{}}),ready=displayAggregate&&foundation.sourceAvailable,canEdit=strategyEditAccess(),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
     const status=$('#strategyProductFoundationStatus');if(status){status.textContent=!strategyAccessEngine.canViewAggregates(vm.state.access)?'SEM PERMISSÃO':!ready?(vm.state.financialLoading?'CARREGANDO':'MIGRAÇÃO PENDENTE'):foundation.activeProductCount>0?'FUNDAÇÃO ATIVA':'CATÁLOGO VAZIO';status.className=`strategy-efficiency-status ${ready&&foundation.activeProductCount>0?'good':'neutral'}`;}
@@ -4700,6 +4716,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategySquadComparison(vm,displayAggregate);
     renderStrategyProductSquadMatrix(vm,displayAggregate);
     renderStrategyProductConcentration(vm,displayAggregate);
+    renderStrategyProductDiagnostics(vm,displayAggregate);
     if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
     if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
     if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';

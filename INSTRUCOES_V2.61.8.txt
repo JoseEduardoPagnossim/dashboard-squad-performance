@@ -1,0 +1,6 @@
+V2.61.8 - Insights e diagnostico Produto/Squad
+Base necessaria: V2.61.7.
+Extraia na raiz do projeto V2.61.7 preservando as subpastas.
+Sem migrations novas.
+Validado com npm run check: 760 testes aprovados.
+Commit: feat(strategy): implementa diagnosticos Produto x Squad V2.61.8
