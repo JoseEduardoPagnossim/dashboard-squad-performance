@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.61.6';
+  const APP_VERSION = '2.61.7';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4537,6 +4537,22 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(note)note.textContent=`${view.rows.length} produto(s) × ${view.squads.length} Squad(s) • ${vm.state.competence} • Melhor/pior apenas entre dois ou mais valores válidos, sem atribuir desempenho a dados ausentes. Receita influenciada e protegida não entram no ROI direto.${view.warnings.length?' Fontes incompletas: '+view.warnings.join('; '):''}`;
   }
 
+  function renderStrategyProductConcentration(vm,displayAggregate){
+    const status=$('#strategyProductConcentrationStatus'),body=$('#strategyConcentrationProductRows'),squadBody=$('#strategyConcentrationSquadRows'),note=$('#strategyProductConcentrationNote'),selector=$('#strategyProductConcentrationMetric');
+    if(!body||!squadBody)return;
+    if(!displayAggregate){body.innerHTML='<tr><td colspan="4" class="muted">Sem permissão para acessar dados estratégicos.</td></tr>';squadBody.innerHTML='<tr><td colspan="5" class="muted">Acesso restrito.</td></tr>';if(status)status.textContent='SEM PERMISSÃO';return;}
+    if(selector&&!selector.dataset.concentrationBound){selector.addEventListener('change',()=>renderStrategy({skipLoad:true}));selector.dataset.concentrationBound='1';}
+    const names=Object.fromEntries((vm.context.squads||[]).map(r=>[r.code,r.name||r.code]));
+    const view=window.SoftenStrategyProductConcentration.analyze({summaries:strategyProductSquadMatrixSummaries,squadNames:names,metric:selector?.value||'attendance',selectedSquad:vm.state.squadCode});
+    const pct=v=>v==null?'—':strategyProductCoverageText(v*100),val=v=>v==null?'—':view.metric==='attendance'?strategyNumber(v,0):strategyMoney(v);
+    const text=(id,v)=>{const el=$(id);if(el)el.textContent=v};
+    text('#strategyConcentrationTopProduct',pct(view.productStats.top1));text('#strategyConcentrationTopSquad',pct(view.squadStats.top1));text('#strategyConcentrationUnclassified',pct(view.unclassifiedShare));text('#strategyConcentrationTop3',pct(view.productStats.top3));
+    body.innerHTML=view.products.length?view.products.map(p=>`<tr><td><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.code)}</small></td><td>${val(p.value)}</td><td>${pct(p.share)}</td><td>${p.squads.length}</td></tr>`).join(''):'<tr><td colspan="4" class="muted">Nenhuma fonte válida para este indicador.</td></tr>';
+    squadBody.innerHTML=view.dependencies.length?view.dependencies.map(d=>`<tr><td><strong>${escapeHtml(d.squadName)}</strong></td><td>${val(d.value)}</td><td>${pct(view.squads.find(s=>s.code===d.squadCode)?.share)}</td><td>${escapeHtml(d.topProductCode||'—')}</td><td>${pct(d.topProductShare)}${d.highConcentration?' • CONCENTRADO':''}</td></tr>`).join(''):'<tr><td colspan="5" class="muted">Nenhum Squad com fonte válida.</td></tr>';
+    if(status){status.textContent=view.partial?'DADOS PARCIAIS':view.sourceCount?'ATIVO':'SEM DADOS';status.className=`strategy-efficiency-status ${view.partial?'warn':view.sourceCount?'good':'neutral'}`;}
+    if(note)note.textContent=`${view.metricLabel} • ${view.sourceCount} Squad(s) • Total: ${val(view.total)} • HHI por produto: ${view.productStats.hhi==null?'—':strategyNumber(view.productStats.hhi,3)}. ${[...view.alerts,...view.warnings].join(' ')||'Sem alertas de concentração.'} Concentração não determina desempenho nem risco de churn.`;
+  }
+
   function renderStrategyProduct(vm,displayAggregate){
     const foundation=strategyProductEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.productFoundation||{}}),ready=displayAggregate&&foundation.sourceAvailable,canEdit=strategyEditAccess(),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
     const status=$('#strategyProductFoundationStatus');if(status){status.textContent=!strategyAccessEngine.canViewAggregates(vm.state.access)?'SEM PERMISSÃO':!ready?(vm.state.financialLoading?'CARREGANDO':'MIGRAÇÃO PENDENTE'):foundation.activeProductCount>0?'FUNDAÇÃO ATIVA':'CATÁLOGO VAZIO';status.className=`strategy-efficiency-status ${ready&&foundation.activeProductCount>0?'good':'neutral'}`;}
@@ -4683,6 +4699,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyProduct(vm,displayAggregate);
     renderStrategySquadComparison(vm,displayAggregate);
     renderStrategyProductSquadMatrix(vm,displayAggregate);
+    renderStrategyProductConcentration(vm,displayAggregate);
     if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
     if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
     if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';

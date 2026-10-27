@@ -26,8 +26,8 @@ function frozen(competence,{revision=1,source='close',cost=100,direct=120,influe
 }
 
 test('V2.60.9 fecha a Fase 5 com hardening versionado',()=>{
-  assert.equal(pkg.version,'2.61.6');
-  assert.equal(pkg.assetVersion,'2.61.6-r1');
+  assert.equal(pkg.version,'2.61.7');
+  assert.equal(pkg.assetVersion,'2.61.7-r1');
   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.RESULT_SNAPSHOT_VERSION,'RS-1.0.0');
   assert.equal(result.RESULT_HARDENING_VERSION,'RH-1.0.0');
@@ -36,7 +36,7 @@ test('V2.60.9 fecha a Fase 5 com hardening versionado',()=>{
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.61.6-r1'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.61.7-r1'));
 });
 
 test('historico escolhe maior revisao e desempata fechamento oficial sobre backfill',()=>{

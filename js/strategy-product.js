@@ -30,7 +30,7 @@
     Object.freeze({id:'unit-economics-product',label:'Unit Economics por Produto',version:'V2.61.4',state:'ready'}),
     Object.freeze({id:'squad-comparison',label:'Comparativo entre Squads',version:'V2.61.5',state:'ready'}),
     Object.freeze({id:'product-squad-matrix',label:'Matriz Produto × Squad',version:'V2.61.6',state:'ready'}),
-    Object.freeze({id:'mix-concentration',label:'Mix, concentração e dependência',version:'V2.61.7',state:'planned'}),
+    Object.freeze({id:'mix-concentration',label:'Mix, concentração e dependência',version:'V2.61.7',state:'ready'}),
     Object.freeze({id:'product-squad-diagnostics',label:'Insights e diagnóstico Produto/Squad',version:'V2.61.8',state:'planned'}),
     Object.freeze({id:'product-squad-history-hardening',label:'Snapshots, histórico e hardening',version:'V2.61.9',state:'planned'})
   ]);

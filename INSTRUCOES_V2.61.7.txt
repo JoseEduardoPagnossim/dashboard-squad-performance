@@ -1,0 +1,6 @@
+V2.61.7 - Mix, concentracao e dependencia
+Base necessaria: V2.61.6.
+Extrair os arquivos sobre a raiz do projeto V2.61.6, preservando subpastas.
+Nenhuma migration nova.
+Validacao: npm run check (755 testes aprovados).
+Commit: feat(strategy): implementa mix, concentracao e dependencia V2.61.7

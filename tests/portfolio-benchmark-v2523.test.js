@@ -10,7 +10,7 @@ const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 const pkg = require(join(root, 'package.json'));
 
 test('V2.52.3 adiciona benchmark consolidado abaixo dos cards de Squad', () => {
-  assert.equal(pkg.version, '2.61.6');
+  assert.equal(pkg.version, '2.61.7');
   assert.match(index, /id="portfolioBenchmarkCard"/);
   assert.match(index, /Taxa consolidada de avaliação × benchmark/);
   assert.match(index, /Objetivo 60% • limite mínimo 20%/);
@@ -44,7 +44,7 @@ test('renderer aceita controle por série e o gráfico entra no fluxo de exporta
 });
 
 test('V2.52.3 atualiza cache e permanece frontend-only', () => {
-  assert.ok(index.includes('js/app.js?v=2.61.6-r1'));
-  assert.ok(index.includes('css/styles.css?v=2.61.6-r1'));
+  assert.ok(index.includes('js/app.js?v=2.61.7-r1'));
+  assert.ok(index.includes('css/styles.css?v=2.61.7-r1'));
   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
 });

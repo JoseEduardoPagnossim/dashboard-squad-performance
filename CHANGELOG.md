@@ -1,3 +1,10 @@
+## V2.61.7 — Mix, concentração e dependência
+
+- Distribuição por Produto e Squad de atendimentos, custos e receitas separadas por natureza.
+- Participação, concentração top-1 e top-3, HHI, dependência por Squad e saldos não classificados.
+- Fonte: resumos reconciliados da V2.61.4 por Squad. Sem migration.
+- Alertas descritivos e aviso explícito sobre fontes incompletas.
+
 ## V2.61.6 — Matriz Produto × Squad
 - Matriz comparativa por produto, Squad e indicador, usando Unit Economics da V2.61.4.
 - Destaques relativos com tratamento de empates, ausência de fontes e denominadores inválidos.
