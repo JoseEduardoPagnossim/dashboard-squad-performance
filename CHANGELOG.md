@@ -1,3 +1,9 @@
+## V2.62.6 - Comparativo entre cenários (Fase 7)
+- Quatro alternativas simultâneas por mesma competência, Squad e revisão: Atual, Otimista, Conservador e Personalizado.
+- Motor read-only combina a V2.62.5 de ROI direto, a V2.62.2 de FTE e a V2.62.4 de capacidade em colunas independentes.
+- Premissas ilustrativas explícitas, sem causar receitas automáticas por FTE ou demanda; fontes financeiras não conciliadas deixam apenas a dimensão econômica indisponível.
+- Painel com diferenças versus cenário atual, entradas personalizadas, tratamento de fontes e testes sem migration.
+
 ## V2.62.5 — Simulação de resultados econômicos
 - Projeção isolada de Receita Direta, Influenciada, Protegida, custo pessoal e despesa operacional.
 - ROI e retorno líquido simulados somente com Receita Direta; impacto das demais receitas exposto separadamente.

@@ -345,3 +345,8 @@
 .strategy-product-squad-matrix-section td.strategy-matrix-best{background:color-mix(in srgb,var(--success) 13%,transparent);font-weight:800}
 .strategy-product-squad-matrix-section td.strategy-matrix-worst{background:color-mix(in srgb,var(--danger, #dc5555) 10%,transparent)}
 .strategy-product-squad-matrix-section table{min-width:620px}
+
+/* V2.62.6: comparison is scrollable on narrow screens; percentages retain their unit. */
+.strategy-scenario-comparison-table{min-width:970px}
+.strategy-scenario-comparison-table td{vertical-align:top;white-space:nowrap}
+.strategy-comparison-delta{display:block;margin-top:4px;font-size:.72rem;color:var(--text-muted,#718096);white-space:nowrap;font-weight:400}

@@ -199,5 +199,104 @@
       ratios,assumptions:Object.freeze(rates),
       note:'Receita direta é a única receita considerada no retorno líquido e ROI. Receitas influenciada e protegida são impactos independentes, não caixa adicional.'});
   }
-  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand,simulateCapacity,ECONOMIC_FIELDS,createEconomicBaseline,simulateEconomic});
+  // V2.62.6: four independent alternatives share the SAME read-only baseline.
+  // Presets are illustrative assumptions, not forecasts or probability estimates.
+  const COMPARISON_PRESETS=Object.freeze({
+    current:Object.freeze({demandPct:0,hires:0,exits:0,transfersIn:0,transfersOut:0,currentHours:44,newHours:44,directRevenue:0,influencedRevenue:0,protectedRevenue:0,peopleCost:0,operationalCost:0}),
+    optimistic:Object.freeze({demandPct:15,hires:1,exits:0,transfersIn:0,transfersOut:0,currentHours:44,newHours:44,directRevenue:12,influencedRevenue:10,protectedRevenue:5,peopleCost:4,operationalCost:2}),
+    conservative:Object.freeze({demandPct:-10,hires:0,exits:0,transfersIn:0,transfersOut:0,currentHours:44,newHours:44,directRevenue:-10,influencedRevenue:-10,protectedRevenue:-5,peopleCost:5,operationalCost:8})
+  });
+  const COMPARISON_ORDER=Object.freeze(['current','optimistic','conservative','custom']);
+  const COMPARISON_METRICS=Object.freeze([
+    Object.freeze({key:'attendance',label:'Atendimentos',unit:'integer',group:'Operação'}),
+    Object.freeze({key:'availableFte',label:'FTE disponível',unit:'fte',group:'Capacidade'}),
+    Object.freeze({key:'requiredFte',label:'FTE necessário',unit:'fte',group:'Capacidade'}),
+    Object.freeze({key:'utilizationPct',label:'Utilização',unit:'pct',group:'Capacidade'}),
+    Object.freeze({key:'idleFte',label:'Ociosidade',unit:'fte',group:'Capacidade'}),
+    Object.freeze({key:'overloadFte',label:'Sobrecarga',unit:'fte',group:'Capacidade'}),
+    Object.freeze({key:'gapFte',label:'Gap de capacidade',unit:'fte',group:'Capacidade'}),
+    Object.freeze({key:'directRevenue',label:'Receita direta',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'influencedRevenue',label:'Receita influenciada',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'protectedRevenue',label:'Receita protegida',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'peopleCost',label:'Custo de pessoal',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'operationalCost',label:'Custo operacional',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'totalCost',label:'Custo total',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'directNet',label:'Resultado líquido direto',unit:'money',group:'Resultado'}),
+    Object.freeze({key:'directRoiPct',label:'ROI direto',unit:'pct',group:'Resultado'})
+  ]);
+  const COMPARISON_PERCENT_FIELDS=Object.freeze(['demandPct',...ECONOMIC_FIELDS]);
+  function normalizeComparisonAssumptions(raw={}){
+    // Never silently accept an invalid or non-numeric user hypothesis.
+    const options={};
+    for(const key of COMPARISON_PERCENT_FIELDS){
+      if(raw[key]!==undefined&&String(raw[key]).trim()==='')throw new RangeError('Premissa '+key+' não pode ficar vazia.');
+      options[key]=parsePercent(raw[key]??0);
+    }
+    for(const key of ['hires','exits','transfersIn','transfersOut'])options[key]=parseHeadcount(raw[key]??0,key);
+    options.currentHours=parseHours(raw.currentHours??44,'Jornada de origem');
+    options.newHours=parseHours(raw.newHours??44,'Jornada projetada');
+    return Object.freeze(options);
+  }
+  function compareScenarios(input={},custom={}){
+    const base=input.economicBase;
+    if(!base||!base.competence||!base.squadCode||!base.amounts)throw new Error('Escopo econômico obrigatório para comparar cenários.');
+    const wf=input.workforceBase;
+    if(!wf||wf.competence!==base.competence||wf.squadCode!==base.squadCode||wf.revision!==base.revision)
+      throw new Error('Competência, Squad ou revisão de FTE diferente da base econômica.');
+    const availableAttendance=num(input.baselineAttendance),reference=num(input.referenceAttendancePerFte);
+    const demandReady=input.attendanceSourceAvailable===true&&availableAttendance!==null&&availableAttendance>=0;
+    const refReady=input.capacityReferenceAvailable===true&&reference!==null&&reference>0;
+    const results={};
+    for(const id of COMPARISON_ORDER){
+      const assumptions=normalizeComparisonAssumptions(id==='custom'?custom:COMPARISON_PRESETS[id]);
+      const economic=simulateEconomic(base,assumptions);
+      const attendance=demandReady?Math.max(0,Math.round(availableAttendance*(1+assumptions.demandPct/100))):null;
+      // One invalid team hypothesis must not destroy other scenario columns.
+      let workforce=null,teamError=null;
+      try{workforce=simulateWorkforce(wf,assumptions);}catch(err){teamError=String(err.message||err);}
+      const capacity=simulateCapacity({baselineAttendance:demandReady?availableAttendance:null,
+        availableFte:wf.fte,referenceAttendancePerFte:refReady?reference:null,
+        projectedAttendance:attendance,projectedFte:workforce?.projectedFte??null});
+      const financialReady=economic.status==='simulated';
+      const workforceReady=workforce?.status==='simulated';
+      const capacityReady=capacity.status==='simulated';
+      const metrics=Object.freeze({attendance,
+        availableFte:workforceReady?workforce.projectedFte:null,
+        requiredFte:capacityReady?capacity.requiredFte:null,
+        utilizationPct:capacityReady?capacity.utilizationPct:null,
+        idleFte:capacityReady?capacity.idleFte:null,
+        overloadFte:capacityReady?capacity.overloadFte:null,
+        gapFte:capacityReady?capacity.gapFte:null,
+        directRevenue:economic.projected.directRevenue,
+        influencedRevenue:economic.projected.influencedRevenue,
+        protectedRevenue:economic.projected.protectedRevenue,
+        peopleCost:economic.projected.peopleCost,
+        operationalCost:economic.projected.operationalCost,
+        totalCost:economic.projected.totalCost,
+        directNet:economic.projected.directNet,
+        directRoiPct:economic.projected.directRoiPct});
+      results[id]=Object.freeze({id,assumptions,metrics,
+        status:Object.freeze({demand:demandReady?'simulated':'insufficient_data',workforce:workforceReady?'simulated':'insufficient_data',capacity:capacityReady?'simulated':'insufficient_data',economic:economic.status}),
+        issues:Object.freeze([...(teamError?[teamError]:[]),...(!financialReady?['Base financeira indisponível ou não conciliada.']:[]),
+          ...(!demandReady?['Sem fonte válida de atendimentos.']:[]),
+          ...(!workforceReady&&!teamError?['FTE disponível não confirmado.']:[]),
+          ...(!refReady?['Sem produtividade histórica por FTE.']:[])]),
+        allocationComplete:base.allocationComplete,official:id==='current',persisted:false});
+    }
+    const current=results.current.metrics;
+    const delta={};
+    for(const id of COMPARISON_ORDER){
+      const values={};
+      for(const metric of COMPARISON_METRICS){
+        const value=results[id].metrics[metric.key],baseline=current[metric.key];
+        values[metric.key]=value===null||baseline===null?null:value-baseline;
+      }
+      delta[id]=Object.freeze(values);
+    }
+    return Object.freeze({ruleVersion:'SC-COMPARISON-1.0.0',competence:base.competence,squadCode:base.squadCode,
+      revision:base.revision,official:false,persisted:false,order:COMPARISON_ORDER,
+      scenarios:Object.freeze(results),delta:Object.freeze(delta),
+      note:'Premissas ilustrativas não são previsões. Receitas não variam por FTE ou demanda sem hipótese explícita. Somente receita direta integra ROI.'});
+  }
+  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand,simulateCapacity,ECONOMIC_FIELDS,createEconomicBaseline,simulateEconomic,COMPARISON_PRESETS,COMPARISON_ORDER,COMPARISON_METRICS,normalizeComparisonAssumptions,compareScenarios});
 });

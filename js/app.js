@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.62.5';
+  const APP_VERSION = '2.62.6';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4710,14 +4710,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const engine=window.SoftenStrategyScenarios;
     if(!engine||!$('#strategyScenarioBase'))return;
     const type=$('#strategyScenarioType')?.value||'cost';
-    $('#strategyScenarioVariation')?.closest('label')?.classList.toggle('hidden',type==='economic');
+    $('#strategyScenarioVariation')?.closest('label')?.classList.toggle('hidden',type==='economic'||type==='comparison');
     const variation=Number($('#strategyScenarioVariation')?.value||0);
     const stats=strategyOperationalStatsBySquad(vm.state.competence);
     const attendance=vm.state.squadCode==='all'?Object.values(stats).reduce((sum,row)=>sum+safe(row.attendance),0):safe(stats[vm.state.squadCode]?.attendance);
     const baseline=engine.createBaseline({competence:vm.state.competence,squadCode:vm.state.squadCode,revision:vm.competenceRecord?.snapshotRevision||null,cost:allowed?vm.summary.totalCost:null,fte:allowed?vm.summary.fte:null,attendance:allowed?attendance:null});
     const format=(n)=>n==null?'—':type==='cost'?strategyMoney(n):strategyNumber(n,type==='fte'?2:0);
     try{
-      if(type!=='economic'){
+      if(type!=='economic'&&type!=='comparison'){
         const result=engine.simulate(baseline,type,variation);
         $('#strategyScenarioBase').textContent=format(result.baselineValue);
         $('#strategyScenarioProjection').textContent=format(result.projectedValue);
@@ -4725,7 +4725,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         $('#strategyScenarioWarning').textContent=result.status==='insufficient_data'?'Fonte indisponível ou incompleta: nenhuma projeção foi inventada.':'Simulação em memória; não altera custos, competência, FTE, dados operacionais ou snapshots. Mudanças nesta versão são projeções isoladas de um indicador, não efeitos em cadeia.';
       }else{
         $('#strategyScenarioBase').textContent='—';$('#strategyScenarioProjection').textContent='—';$('#strategyScenarioDelta').textContent='—';
-        $('#strategyScenarioWarning').textContent='Somente a Receita Direta integra o ROI. Influenciada e Protegida são impactos separados. Projeção sem persistência.';
+        $('#strategyScenarioWarning').textContent=type==='comparison'?'Quatro alternativas, uma única base: os resultados comparáveis são exibidos na tabela abaixo.':'Somente a Receita Direta integra o ROI. Influenciada e Protegida são impactos separados. Projeção sem persistência.';
       }
       $('#strategyScenarioContext').textContent=`${vm.state.competence||'Sem competência'} • ${vm.state.squadCode==='all'?'Todos os Squads':vm.state.squadCode} • Revisão ${baseline.revision??'não fechada'} • Fonte somente leitura`;
     }catch(err){$('#strategyScenarioProjection').textContent='—';$('#strategyScenarioDelta').textContent='—';$('#strategyScenarioWarning').textContent=String(err.message||err);}
@@ -4816,6 +4816,52 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
               ' Receita influenciada e protegida não são somadas à receita direta nem ao retorno líquido. As premissas não decorrem automaticamente da demanda ou da equipe.';
           }
         }catch(err){empty();$('#scenarioEconomicWarning').textContent=String(err.message||err);}
+      }
+    }
+    const comparisonPanel=$('#strategyScenarioComparisonSection');if(comparisonPanel){
+      comparisonPanel.classList.toggle('hidden',type!=='comparison');
+      if(type==='comparison'){
+        const body=$('#scenarioComparisonRows');
+        const blank=message=>{body.innerHTML='<tr><td colspan="5" class="muted">'+escapeHtml(message)+'</td></tr>';};
+        try{
+          const summary=vm.summary||{},scope={competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison};
+          const roi=strategyResultEngine.buildOperationalReturn({scope,aggregate:vm.financial.resultRoi||{}});
+          const economic=engine.createEconomicBaseline({competence:scope.competence,squadCode:scope.squadCode,revision:baseline.revision,
+            sourceAvailable:allowed&&roi.sourceAvailable,allocationComplete:roi.allocationComplete,
+            resultCompetence:roi.scope?.competence,resultSquadCode:roi.scope?.squadCode,
+            totalCost:allowed?summary.totalCost:null,resultCost:allowed?roi.totalCost:null,
+            peopleCost:allowed?summary.peopleCost:null,operationalCost:allowed?summary.operationalCost:null,
+            directRevenue:allowed?roi.directRevenue:null,influencedRevenue:allowed?roi.influencedRevenue:null,protectedRevenue:allowed?roi.protectedRevenue:null});
+          const workforce=engine.createWorkforceBaseline({competence:scope.competence,squadCode:scope.squadCode,revision:baseline.revision,
+            fte:allowed&&summary.availabilityComplete===true?summary.availableFte:null});
+          const historical=strategyCapacityAttendanceReference(vm,scope.squadCode==='all'?'ALL':scope.squadCode);
+          const scopeStats=scope.squadCode==='all'?Object.values(stats):[stats[scope.squadCode]].filter(Boolean);
+          const hasDemand=allowed&&scopeStats.length>0&&scopeStats.every(row=>typeof row?.attendance==='number'&&Number.isFinite(row.attendance)&&row.attendance>=0)&&scopeStats.some(row=>row.attendance>0);
+          const custom={};$$('[data-scenario-comparison]').forEach(input=>{custom[input.dataset.scenarioComparison]=input.value;});
+          const compared=engine.compareScenarios({economicBase:economic,workforceBase:workforce,
+            baselineAttendance:hasDemand?scopeStats.reduce((sum,row)=>sum+Number(row.attendance),0):null,
+            attendanceSourceAvailable:hasDemand,
+            referenceAttendancePerFte:allowed&&historical.ready?historical.referenceAttendancePerFte:null,
+            capacityReferenceAvailable:allowed&&historical.ready},custom);
+          const fmt=(value,unit)=>value===null||!Number.isFinite(value)?'—':unit==='money'?strategyMoney(value):unit==='pct'?strategyNumber(value,1)+'%':strategyNumber(value,unit==='integer'?0:2);
+          const deltaLabel=(change,unit)=>change===null||!Number.isFinite(change)?'':`<small class="strategy-comparison-delta">${change>0?'+':''}${unit==='pct'?strategyNumber(change,1)+' p.p.':fmt(change,unit)} vs. atual</small>`;
+          body.innerHTML=engine.COMPARISON_METRICS.map(metric=>{
+            const cells=engine.COMPARISON_ORDER.map(id=>{
+              const value=compared.scenarios[id].metrics[metric.key];
+              const isCurrent=id==='current',change=compared.delta[id][metric.key];
+              return `<td><strong>${fmt(value,metric.unit)}</strong>${!isCurrent&&value!==null&&change!==null?deltaLabel(change,metric.unit):''}</td>`;
+            });
+            return `<tr><td><strong>${escapeHtml(metric.label)}</strong><small class="strategy-comparison-delta">${escapeHtml(metric.group)}</small></td>${cells.join('')}</tr>`;
+          }).join('');
+          const warnings=engine.COMPARISON_ORDER.map(id=>{
+            const item=compared.scenarios[id];
+            return item.issues.length?`${id==='current'?'Atual':id==='optimistic'?'Otimista':id==='conservative'?'Conservador':'Personalizado'}: ${item.issues.join(' ')}`:null;
+          }).filter(Boolean);
+          $('#scenarioComparisonWarning').textContent=(warnings.length?warnings.join(' | '):'Fontes de custo, equipe e capacidade conciliadas.')+
+            (economic.reconciled&&!economic.allocationComplete?' Atenção: receitas com alocação incompleta.':'')+
+            ' Projeções locais sem persistência. Transferências internas não elevam o FTE global. ROI exclusivo da receita direta.';
+          $('#strategyScenarioWarning').textContent='Comparação entre quatro cenários calculados sobre a mesma competência, Squad e revisão. Premissas ilustrativas; projeções não são previsões garantidas.';
+        }catch(err){blank(String(err.message||err));$('#scenarioComparisonWarning').textContent='Não foi possível comparar: '+String(err.message||err);}
       }
     }
     const costPanel=$('#strategyScenarioCostSection');if(costPanel){
@@ -5126,7 +5172,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
   }
 
-  $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation, #view-strategy [data-scenario-cost], #view-strategy #strategyScenarioOperationalShare, #view-strategy #strategyScenarioWorkforceSection input, #view-strategy #scenarioDemandProduct, #view-strategy #scenarioDemandVariation, #view-strategy #scenarioDemandResolutionRate, #view-strategy #strategyScenarioCapacitySection input, #view-strategy #strategyScenarioEconomicSection input').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
+  $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation, #view-strategy [data-scenario-cost], #view-strategy #strategyScenarioOperationalShare, #view-strategy #strategyScenarioWorkforceSection input, #view-strategy #scenarioDemandProduct, #view-strategy #scenarioDemandVariation, #view-strategy #scenarioDemandResolutionRate, #view-strategy #strategyScenarioCapacitySection input, #view-strategy #strategyScenarioEconomicSection input, #view-strategy #strategyScenarioComparisonSection input').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
   async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
 
