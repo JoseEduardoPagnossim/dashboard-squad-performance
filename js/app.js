@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.62.3';
+  const APP_VERSION = '2.62.4';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4753,6 +4753,27 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         }catch(err){for(const id of ['scenarioDemandAttendanceBase','scenarioDemandAttendanceProjected','scenarioDemandResolutionBase','scenarioDemandResolutionProjected'])$('#'+id).textContent='—';$('#scenarioDemandWarning').textContent=String(err.message||err);}
       }
     }
+    const capacityPanel=$('#strategyScenarioCapacitySection');if(capacityPanel){
+      capacityPanel.classList.toggle('hidden',type!=='capacity');
+      if(type==='capacity'){
+        const ids=['scenarioCapacityUtilization','scenarioCapacityRequired','scenarioCapacityIdle','scenarioCapacityOverload','scenarioCapacityGap'];
+        try{
+          const capacityScope=vm.state.squadCode==='all'?'ALL':vm.state.squadCode;
+          const historical=strategyCapacityAttendanceReference(vm,capacityScope);
+          const workforce=engine.simulateWorkforce(engine.createWorkforceBaseline({competence:vm.state.competence,squadCode:vm.state.squadCode,revision:baseline.revision,fte:allowed?vm.summary.availableFte:null}),{
+            hires:$('#scenarioCapacityHires')?.value??0,exits:$('#scenarioCapacityExits')?.value??0,
+            currentHours:$('#scenarioCapacityHoursCurrent')?.value??44,newHours:$('#scenarioCapacityHoursNew')?.value??44});
+          const demandVariation=engine.parsePercent($('#scenarioCapacityDemandVariation')?.value??0);
+          const demandProjected=attendance*(1+demandVariation/100);
+          const result=engine.simulateCapacity({baselineAttendance:allowed?attendance:null,availableFte:allowed&&vm.summary.availabilityComplete?vm.summary.availableFte:null,
+            referenceAttendancePerFte:allowed&&historical.ready?historical.referenceAttendancePerFte:null,
+            projectedAttendance:allowed?demandProjected:null,projectedFte:workforce.projectedFte});
+          const values=[result.utilizationPct,result.requiredFte,result.idleFte,result.overloadFte,result.gapFte];
+          ids.forEach((id,i)=>{$('#'+id).textContent=values[i]===null?'—':strategyNumber(values[i],i===0?1:2)+(i===0?'%':'');});
+          $('#scenarioCapacityWarning').textContent=result.status==='simulated'?'Projeção baseada em produtividade histórica por FTE e capacidade disponível. A demanda simulada não altera o histórico oficial.':'Dados insuficientes de FTE disponível, demanda ou produtividade histórica. Sem cálculo artificial.';
+        }catch(err){ids.forEach(id=>{$('#'+id).textContent='—';});$('#scenarioCapacityWarning').textContent=String(err.message||err);}
+      }
+    }
     const costPanel=$('#strategyScenarioCostSection');if(costPanel){
       costPanel.classList.toggle('hidden',type!=='cost');
       if(type==='cost'){
@@ -5061,7 +5082,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
   }
 
-  $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation, #view-strategy [data-scenario-cost], #view-strategy #strategyScenarioOperationalShare, #view-strategy #strategyScenarioWorkforceSection input, #view-strategy #scenarioDemandProduct, #view-strategy #scenarioDemandVariation, #view-strategy #scenarioDemandResolutionRate').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
+  $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation, #view-strategy [data-scenario-cost], #view-strategy #strategyScenarioOperationalShare, #view-strategy #strategyScenarioWorkforceSection input, #view-strategy #scenarioDemandProduct, #view-strategy #scenarioDemandVariation, #view-strategy #scenarioDemandResolutionRate, #view-strategy #strategyScenarioCapacitySection input').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
   async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
 

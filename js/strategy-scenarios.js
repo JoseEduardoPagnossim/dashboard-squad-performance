@@ -128,5 +128,18 @@
     const projectedResolutions=valid&&rows.every(row=>row.projectedResolutions!==null)?sum('projectedResolutions'):null;
     return Object.freeze({ruleVersion:'SC-DEMAND-1.0.0',official:false,persisted:false,status:valid&&projectedResolutions!==null?'simulated':'insufficient_data',competence:base.competence,squadCode:base.squadCode,revision:base.revision,productCode:selected,variationPct,resolutionRateDeltaPct,baselineAttendance:originalAttendance,baselineResolutions:originalResolutions,projectedAttendance,projectedResolutions,deltaAttendance:projectedAttendance===null?null:projectedAttendance-originalAttendance,deltaResolutions:projectedResolutions===null?null:projectedResolutions-originalResolutions,rows:Object.freeze(rows)});
   }
-  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand});
+  // V2.62.4: demand and workforce assumptions feed an isolated capacity projection.
+  function simulateCapacity(input={}){
+    const attendance=num(input.baselineAttendance),available=num(input.availableFte),reference=num(input.referenceAttendancePerFte);
+    const projectedAttendance=num(input.projectedAttendance),projectedFte=num(input.projectedFte);
+    const valid=[attendance,available,reference,projectedAttendance,projectedFte].every(v=>v!==null&&v>=0)&&reference>0;
+    if(!valid)return Object.freeze({status:'insufficient_data',official:false,persisted:false,requiredFte:null,utilizationPct:null,idleFte:null,overloadFte:null,gapFte:null,projectedAttendance:null,projectedFte:null});
+    const requiredFte=projectedAttendance/reference;
+    const gapFte=projectedFte-requiredFte;
+    const utilizationPct=projectedFte>0?requiredFte/projectedFte*100:(requiredFte===0?0:null);
+    return Object.freeze({ruleVersion:'SC-CAPACITY-1.0.0',status:utilizationPct===null?'insufficient_data':'simulated',official:false,persisted:false,
+      projectedAttendance,projectedFte,baselineAttendance:attendance,baselineAvailableFte:available,
+      referenceAttendancePerFte:reference,requiredFte,utilizationPct,idleFte:Math.max(0,gapFte),overloadFte:Math.max(0,-gapFte),gapFte});
+  }
+  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand,simulateCapacity});
 });

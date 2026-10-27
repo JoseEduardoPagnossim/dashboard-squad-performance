@@ -1,3 +1,7 @@
+## V2.62.4 — Simulação de produtividade e capacidade
+- Cruzamento isolado de demanda projetada, FTE projetado e referência histórica para utilização, ociosidade, sobrecarga e FTE necessário.
+- Sem alterações na base de dados oficial e sem migration.
+
 ## V2.62.3 — Simulação de demanda
 - Projeções isoladas de atendimentos e resoluções por produto e Squad, usando demanda já sincronizada.
 - Taxa de resoluções preservada ou ajustada explicitamente em pontos percentuais; validação de denominadores, fontes e dados ausentes.

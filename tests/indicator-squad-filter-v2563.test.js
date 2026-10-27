@@ -13,7 +13,7 @@ function blockBetween(start,end){
   return app.slice(a,b);
 }
 test('V2.57.7 troca Squad em Qualidade pelo fluxo global aguardado',()=>{
-  assert.equal(pkg.version,'2.62.3');
+  assert.equal(pkg.version,'2.62.4');
   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
   assert.doesNotMatch(select,/hydrateIndicatorSquadFilter|indicatorHydration/);
@@ -37,7 +37,7 @@ test('V2.57.7 permite recarga forcada do mesmo carregador mensal',()=>{
 });
 test('V2.57.7 publica cache-bust completo sem migration',()=>{
   for(const asset of ['css/styles.css','css/design-system.css','css/presentation.css','js/performance-engine.js','js/filter-system.js','js/app.js']){
-    assert.ok(index.includes(`${asset}?v=2.62.3-r1`),asset);
+    assert.ok(index.includes(`${asset}?v=2.62.4-r1`),asset);
   }
   assert.ok(index.includes('V2.60.7'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));

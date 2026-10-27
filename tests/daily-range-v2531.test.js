@@ -13,7 +13,7 @@ const migration=readFileSync(migrationPath,'utf8');
 const schema=readFileSync(join(root,'supabase','schema.sql'),'utf8');
 
 test('V2.57.7 consulta consolidados diarios somente no periodo ativo e pagina a resposta',()=>{
-  assert.equal(pkg.version,'2.62.3');
+  assert.equal(pkg.version,'2.62.4');
   assert.match(app,/function orgDailyRequestedRange\(\)/);
   assert.match(app,/fetchRpcPaged\('get_org_daily_attendance_overview_range',params\)/);
   assert.match(app,/fetchRpcPaged\('get_org_technician_daily_overview_range',params\)/);
@@ -43,8 +43,8 @@ test('V2.57.7 permite rolar o menu do select sem fecha-lo',()=>{
 
 test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
   assert.ok(index.includes('V2.60.7'));
-  assert.ok(index.includes('css/styles.css?v=2.62.3-r1'));
-  assert.ok(index.includes('js/design-system.js?v=2.62.3-r1'));
-  assert.ok(index.includes('js/app.js?v=2.62.3-r1'));
-  assert.match(app,/APP_VERSION = '2\.62\.3'/);
+  assert.ok(index.includes('css/styles.css?v=2.62.4-r1'));
+  assert.ok(index.includes('js/design-system.js?v=2.62.4-r1'));
+  assert.ok(index.includes('js/app.js?v=2.62.4-r1'));
+  assert.match(app,/APP_VERSION = '2\.62\.4'/);
 });
