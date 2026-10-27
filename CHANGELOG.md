@@ -1,3 +1,8 @@
+## V2.62.3 — Simulação de demanda
+- Projeções isoladas de atendimentos e resoluções por produto e Squad, usando demanda já sincronizada.
+- Taxa de resoluções preservada ou ajustada explicitamente em pontos percentuais; validação de denominadores, fontes e dados ausentes.
+- Sem migration ou escrita em banco.
+
 ## V2.62.2 — Simulação de equipe e FTE
 - Contratações, desligamentos, transferências e jornadas em simulação isolada.
 - Transferências não geram FTE agregado; sem persistência ou alterações operacionais.

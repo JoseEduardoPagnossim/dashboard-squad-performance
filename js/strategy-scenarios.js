@@ -95,5 +95,38 @@
       transferNetFte:(transfersIn*unitNew-transfersOut*unitCurrent),movementFte,
       note:'Simulação agregada de FTE; não modifica pessoas, escalas, custos nem histórico.'});
   }
-  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce});
+  // V2.62.3: product demand projections are read-only and preserve the official source.
+  function createDemandBaseline(input={}){
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(input.competence||'')))throw new Error('Competência inválida.');
+    const raw=Array.isArray(input.rows)?input.rows:[];
+    const rows=raw.map((r,i)=>{
+      const a=num(r.attendance),v=num(r.resolutions);
+      const valid=a!==null&&v!==null&&a>=0&&v>=0&&v<=a&&Number.isInteger(a)&&Number.isInteger(v);
+      return Object.freeze({code:String(r.productCode??r.code??i),name:String(r.productName??r.name??'Não classificado'),attendance:valid?a:null,resolutions:valid?v:null,valid});
+    });
+    const available=input.attendanceSourceAvailable===true&&input.resolutionSourceAvailable===true;
+    return Object.freeze({competence:String(input.competence),squadCode:String(input.squadCode||'all'),revision:input.revision??null,available,rows:Object.freeze(rows)});
+  }
+  function simulateDemand(base,options={}){
+    if(!base||!Array.isArray(base.rows))throw new Error('Base de demanda inválida.');
+    const variationPct=parsePercent(options.variationPct??0);
+    const resolutionRateDeltaPct=Number(options.resolutionRateDeltaPct??0);
+    if(!Number.isFinite(resolutionRateDeltaPct)||resolutionRateDeltaPct< -100||resolutionRateDeltaPct>100)throw new RangeError('Ajuste da taxa de resolução deve estar entre -100 e 100 pontos percentuais.');
+    const selected=String(options.productCode??'all');
+    const target=selected==='all'?base.rows:base.rows.filter(row=>row.code===selected);
+    const valid=base.available&&target.length>0&&target.every(row=>row.valid);
+    const rows=valid?target.map(row=>{
+      const attendance=Math.max(0,Math.round(row.attendance*(1+variationPct/100)));
+      const rate=row.attendance>0?row.resolutions/row.attendance:null;
+      const newRate=rate===null?null:Math.max(0,Math.min(1,rate+resolutionRateDeltaPct/100));
+      const resolutions=newRate===null?null:Math.min(attendance,Math.round(attendance*newRate));
+      return Object.freeze({...row,projectedAttendance:attendance,projectedResolutions:resolutions,baselineRate:rate,projectedRate:newRate});
+    }):[];
+    const sum=(key)=>rows.reduce((total,row)=>total+row[key],0);
+    const originalAttendance=valid?sum('attendance'):null,originalResolutions=valid?sum('resolutions'):null;
+    const projectedAttendance=valid?sum('projectedAttendance'):null;
+    const projectedResolutions=valid&&rows.every(row=>row.projectedResolutions!==null)?sum('projectedResolutions'):null;
+    return Object.freeze({ruleVersion:'SC-DEMAND-1.0.0',official:false,persisted:false,status:valid&&projectedResolutions!==null?'simulated':'insufficient_data',competence:base.competence,squadCode:base.squadCode,revision:base.revision,productCode:selected,variationPct,resolutionRateDeltaPct,baselineAttendance:originalAttendance,baselineResolutions:originalResolutions,projectedAttendance,projectedResolutions,deltaAttendance:projectedAttendance===null?null:projectedAttendance-originalAttendance,deltaResolutions:projectedResolutions===null?null:projectedResolutions-originalResolutions,rows:Object.freeze(rows)});
+  }
+  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand});
 });
