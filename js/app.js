@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.61.4';
+  const APP_VERSION = '2.61.5';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4491,6 +4491,18 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function strategyProductCoverageTone(value){const n=Number(value);if(!Number.isFinite(n))return'neutral';return n>=95?'good':n>=70?'warn':'bad'}
   function strategyProductDemandCount(value,available=true){if(!available)return'—';const n=Number(value);if(!Number.isFinite(n))return'—';return n.toLocaleString('pt-BR',{minimumFractionDigits:Number.isInteger(n)?0:1,maximumFractionDigits:1});}
   function strategyProductRatioText(value){const n=Number(value);return Number.isFinite(n)?`${n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}x`:'—'}
+  function renderStrategySquadComparison(vm,displayAggregate){
+    const body=$('#strategySquadComparisonRows'),status=$('#strategySquadComparisonStatus'),note=$('#strategySquadComparisonNote');
+    if(!body)return;
+    if(!displayAggregate){body.innerHTML='<tr><td colspan="14" class="muted">Sem permissão para visualizar dados financeiros.</td></tr>';if(status)status.textContent='SEM PERMISSÃO';return;}
+    const names=Object.fromEntries((vm.context.squads||[]).map(row=>[row.code,row.name||row.code]));
+    const comparison=window.SoftenStrategySquadComparison.build({squads:vm.financial.squadSummary||[],result:vm.financial.resultSquad||{},scope:vm.state.squadCode,names});
+    if(status){status.textContent=comparison.rows.length?'COMPARATIVO ATIVO':'SEM DADOS';status.className=`strategy-efficiency-status ${comparison.rows.length?'good':'neutral'}`;}
+    const money=v=>v==null?'—':strategyMoney(v),number=(v,d=1)=>v==null?'—':strategyNumber(v,d),pct=v=>v==null?'—':strategyProductCoverageText(v*100);
+    body.innerHTML=comparison.rows.length?comparison.rows.map(r=>`<tr><td><strong>${escapeHtml(r.name)}</strong><small>${escapeHtml(r.code)}</small></td><td>${number(r.attendance,0)}</td><td>${number(r.fte,2)}</td><td>${money(r.totalCost)}</td><td>${money(r.costPerAttendance)}</td><td>${money(r.costPerResolution)}</td><td>${number(r.attendancePerFte)}</td><td>${pct(r.fcr)}</td><td>${number(r.capacityUsed)}</td><td>${money(r.directRevenue)}</td><td>${money(r.influencedRevenue)}</td><td>${money(r.protectedRevenue)}</td><td>${money(r.directNet)}</td><td>${pct(r.directRoi)}</td></tr>`).join(''):'<tr><td colspan="14" class="muted">Nenhum Squad com dados consolidados para esta competência e filtro.</td></tr>';
+    if(note)note.textContent=`${comparison.rows.length} Squad(s) • Competência ${vm.state.competence} • Capac. utilizada em volume oficial (não percentual). FTE ausente aparece como —; ROI considera exclusivamente receita direta.`;
+  }
+
   function renderStrategyProduct(vm,displayAggregate){
     const foundation=strategyProductEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.productFoundation||{}}),ready=displayAggregate&&foundation.sourceAvailable,canEdit=strategyEditAccess(),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
     const status=$('#strategyProductFoundationStatus');if(status){status.textContent=!strategyAccessEngine.canViewAggregates(vm.state.access)?'SEM PERMISSÃO':!ready?(vm.state.financialLoading?'CARREGANDO':'MIGRAÇÃO PENDENTE'):foundation.activeProductCount>0?'FUNDAÇÃO ATIVA':'CATÁLOGO VAZIO';status.className=`strategy-efficiency-status ${ready&&foundation.activeProductCount>0?'good':'neutral'}`;}
@@ -4635,6 +4647,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyCapacity(vm,displayAggregate);
     renderStrategyResult(vm,displayAggregate);
     renderStrategyProduct(vm,displayAggregate);
+    renderStrategySquadComparison(vm,displayAggregate);
     if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
     if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
     if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';

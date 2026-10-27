@@ -12,14 +12,14 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('V2.58.8 publica a Fundação da Eficiência isolada do operacional',()=>{
-  assert.equal(pkg.version,'2.61.4');
+  assert.equal(pkg.version,'2.61.5');
   assert.match(index,/data-strategy-section="efficiency"/);
   assert.match(index,/data-strategy-panel="efficiency"/);
   assert.match(index,/strategyEfficiencyBaseCost/);
   assert.match(index,/strategyEfficiencyReadinessRows/);
-  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.61\.4/);
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.61.4-r1')<index.indexOf('js/strategy.js?v=2.61.4-r1'));
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.61.4-r1')<index.indexOf('js/app.js?v=2.61.4-r1'));
+  assert.match(index,/js\/strategy-efficiency\.js\?v=2\.61\.5/);
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.61.5-r1')<index.indexOf('js/strategy.js?v=2.61.5-r1'));
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.61.5-r1')<index.indexOf('js/app.js?v=2.61.5-r1'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
 });
 

@@ -1,0 +1,14 @@
+V2.61.5 — Arquivos alterados
+
+Este pacote contém somente os arquivos novos/modificados da V2.61.5, mantendo os caminhos relativos.
+
+COMO APLICAR
+1. Faça backup do seu projeto na V2.61.4.
+2. Extraia este ZIP na pasta raiz do projeto existente.
+3. Autorize a substituição dos arquivos de mesmo nome.
+4. Execute npm test e valide a tela de Gestão Estratégica > Produto/Squad.
+
+Migrations: nenhuma nova nesta entrega.
+Commit: feat(strategy): implementa comparativo entre Squads V2.61.5
+
+ATENÇÃO: o ZIP incremental não inclui os arquivos sem alteração; não é um projeto independente.

@@ -14,15 +14,15 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_CUSTO_V2.61.2.md');
 
 test('V2.61.2 ativa Custo por Produto e preserva roadmap posterior',()=>{
-  assert.equal(pkg.version,'2.61.4');
-  assert.equal(pkg.assetVersion,'2.61.4-r1');
+  assert.equal(pkg.version,'2.61.5');
+  assert.equal(pkg.assetVersion,'2.61.5-r1');
   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/V2\.61\.2 • CUSTO POR PRODUTO/);
-  assert.ok(index.includes('js/strategy-product.js?v=2.61.4-r1'));
+  assert.ok(index.includes('js/strategy-product.js?v=2.61.5-r1'));
 });
 
 test('motor calcula Cost to Serve e custos unitários sem inventar denominadores',()=>{

@@ -12,8 +12,8 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
  test('V2.59.2 publica fundacao de capacidade isolada',()=>{
-  assert.equal(pkg.version,'2.61.4');
-  assert.equal(pkg.assetVersion,'2.61.4-r1');
+  assert.equal(pkg.version,'2.61.5');
+  assert.equal(pkg.assetVersion,'2.61.5-r1');
   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
   assert.ok(strategy.VALID_SECTIONS.includes('capacity'));
   assert.equal(strategy.SECTION_META.capacity.label,'Capacidade');
@@ -21,8 +21,8 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
   assert.match(index,/data-strategy-panel="capacity"/);
   assert.match(index,/strategyCapacityNominalFte/);
   assert.match(index,/strategyCapacityReadinessRows/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.61.4-r1'));
-  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.61.4-r1')<index.indexOf('js/app.js?v=2.61.4-r1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.61.5-r1'));
+  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.61.5-r1')<index.indexOf('js/app.js?v=2.61.5-r1'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.0.sql')),false);
 });
 
