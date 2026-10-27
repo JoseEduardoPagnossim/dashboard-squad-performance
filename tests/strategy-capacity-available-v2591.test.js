@@ -12,15 +12,15 @@ const migrationPath=join(root,'supabase','migrations','MIGRACAO_V2.59.1.sql');
 const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.59.1 publica capacidade disponivel com migration propria',()=>{
-  assert.equal(pkg.version,'2.62.0');
-  assert.equal(pkg.assetVersion,'2.62.0-r1');
+  assert.equal(pkg.version,'2.62.1');
+  assert.equal(pkg.assetVersion,'2.62.1-r1');
   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.59\.1/);
   assert.match(index,/strategyCapacitySquadRows/);
   assert.match(index,/strategyCapacityTechnicianRows/);
   assert.match(index,/Disponib\. %/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.62.0-r1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.62.1-r1'));
 });
 
 test('FTE disponivel respeita FTE nominal e disponibilidade explicita',()=>{

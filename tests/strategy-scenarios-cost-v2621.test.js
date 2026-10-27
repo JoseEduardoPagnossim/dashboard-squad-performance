@@ -1,0 +1,10 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const eng=require('../js/strategy-scenarios');
+const input={competence:'2026-10',squadCode:'A',revision:3,salary:1000,employerCharges:300,benefits:200,variablePay:100,overtime:50,otherCosts:50,operationalCost:300,totalCost:2000};
+test('categorias conciliam e a simulação não altera o total oficial',()=>{const b=eng.createCostBaseline(input),r=eng.simulateCosts(b,{salary:10,benefits:-50},70);assert.equal(b.reconciled,true);assert.equal(r.baselineTotal,2000);assert.equal(r.projectedTotal,2000);assert.equal(r.allocatedOperational,210);assert.equal(r.unallocatedOperational,90);assert.equal(input.salary,1000);assert.equal(r.official,false);assert.ok(Object.isFrozen(r));});
+test('simula acréscimo de despesas e encargos',()=>{const r=eng.simulateCosts(eng.createCostBaseline(input),{operationalCost:20,employerCharges:10});assert.equal(r.projectedTotal,2090);assert.equal(r.delta,90);});
+test('bloqueia projeção de totais não reconciliados',()=>{const b=eng.createCostBaseline({...input,totalCost:2200});assert.equal(eng.simulateCosts(b).status,'insufficient_data');});
+test('bloqueia fontes financeiras incompletas',()=>{const b=eng.createCostBaseline({...input,benefits:undefined});assert.equal(eng.simulateCosts(b).projectedTotal,null);});
+test('limita premissas e rateio',()=>{const b=eng.createCostBaseline(input);assert.throws(()=>eng.simulateCosts(b,{salary:400}));assert.throws(()=>eng.simulateCosts(b,{},120));});
+test('rateio redistribui custo sem alterar custo operacional total',()=>{const b=eng.createCostBaseline(input);const a=eng.simulateCosts(b,{},0),z=eng.simulateCosts(b,{},100);assert.equal(a.projectedTotal,z.projectedTotal);assert.equal(a.allocatedOperational,0);assert.equal(z.allocatedOperational,300);});

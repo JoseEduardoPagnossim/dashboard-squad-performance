@@ -1,3 +1,8 @@
+## V2.62.1 — Simulação de custos
+- Premissas por categoria e rateio operacional informativo, sem persistência.
+- Conciliação com os totais financeiros oficiais e proteção contra fonte incompleta.
+- Motor isolado, testes e interface da Fase 7.
+
 ## V2.62.0 — Fundação de Cenários
 
 - Nova aba Cenários na Gestão Estratégica, respeitando competência e Squad.

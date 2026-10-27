@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.62.0';
+  const APP_VERSION = '2.62.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4576,7 +4576,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(strategyProductHistoryLoading)return;strategyProductHistoryLoading=true;
     try{const {data,error}=await state.supabase.from('strategy_product_squad_snapshots').select('competence_id,revision,financial_snapshot_revision,snapshot,rule_version,created_at').eq('organization_id',state.user.organizationId).order('created_at',{ascending:true}).limit(500);
       if(error)throw error;strategyProductHistoryRows=data||[];strategyProductHistoryLoaded=true;
-    }catch(err){strategyProductHistoryLoaded=false;console.warn('V2.62.0: snapshots indisponíveis',err);}finally{strategyProductHistoryLoading=false;}
+    }catch(err){strategyProductHistoryLoaded=false;console.warn('V2.62.1: snapshots indisponíveis',err);}finally{strategyProductHistoryLoading=false;}
     if(state.currentView==='strategy')renderStrategy({skipLoad:true});
   }
   async function freezeStrategyProductHistory(){const vm=strategyController.viewModel();if(!state.supabase||!strategyCloseAccess()||vm.competenceRecord?.status!=='closed')return toast('Feche a competência e verifique a permissão de fechamento.');
@@ -4723,6 +4723,26 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       $('#strategyScenarioContext').textContent=`${vm.state.competence||'Sem competência'} • ${vm.state.squadCode==='all'?'Todos os Squads':vm.state.squadCode} • Revisão ${baseline.revision??'não fechada'} • Fonte somente leitura`;
       $('#strategyScenarioWarning').textContent=result.status==='insufficient_data'?'Fonte indisponível ou incompleta: nenhuma projeção foi inventada.':'Simulação em memória; não altera custos, competência, FTE, dados operacionais ou snapshots. Mudanças nesta versão são projeções isoladas de um indicador, não efeitos em cadeia.';
     }catch(err){$('#strategyScenarioProjection').textContent='—';$('#strategyScenarioDelta').textContent='—';$('#strategyScenarioWarning').textContent=String(err.message||err);}
+    const costPanel=$('#strategyScenarioCostSection');if(costPanel){
+      costPanel.classList.toggle('hidden',type!=='cost');
+      if(type==='cost'){
+        const summary=vm.summary||{};
+        // These amounts are sourced from the already consolidated financial summary.
+        const source={competence:vm.state.competence,squadCode:vm.state.squadCode,revision:baseline.revision,totalCost:allowed?summary.totalCost:null};
+        for(const key of engine.COST_FIELDS)source[key]=allowed?summary[key]:null;
+        const rates={};$$('[data-scenario-cost]').forEach(input=>{rates[input.dataset.scenarioCost]=input.value;});
+        try{
+          const costBase=engine.createCostBaseline(source);
+          const result=engine.simulateCosts(costBase,rates,$('#strategyScenarioOperationalShare')?.value??100);
+          $('#strategyScenarioCostBase').textContent=result.baselineTotal==null?'—':strategyMoney(result.baselineTotal);
+          $('#strategyScenarioCostProjection').textContent=result.projectedTotal==null?'—':strategyMoney(result.projectedTotal);
+          $('#strategyScenarioCostDelta').textContent=result.delta==null?'—':strategyMoney(result.delta);
+          $('#strategyScenarioAllocated').textContent=result.allocatedOperational==null?'—':strategyMoney(result.allocatedOperational);
+          $('#strategyScenarioCostWarning').textContent=result.status==='simulated'?'Somente projeção local. Rateio é informativo e mantém integralmente as despesas operacionais.':'Componentes ausentes ou total não reconciliado com o financeiro. Não foi criada uma projeção artificial.';
+        }catch(err){for(const id of ['strategyScenarioCostProjection','strategyScenarioCostDelta','strategyScenarioAllocated'])$('#'+id).textContent='—';$('#strategyScenarioCostWarning').textContent=String(err.message||err);}
+      }
+    }
+
   }
   function renderStrategy({skipLoad=false}={}){
     if(!canViewStrategy())return;
@@ -4823,7 +4843,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(typeof window!=='undefined'&&typeof window.confirm==='function'&&!window.confirm(`Fechar ${strategyDataEngine.competenceLabel(vm.state.competence)}? Custos, rateios, produção, qualidade e resultado econômico serão congelados em snapshots oficiais.`))return;
     try{
       const {data,error}=await state.supabase.rpc('close_strategy_competence',{p_competence:strategyDataEngine.competenceDate(vm.state.competence)});if(error)throw error;
-      try{const {error:psError}=await state.supabase.rpc('freeze_strategy_product_squad_snapshot',{p_competence:strategyDataEngine.competenceDate(vm.state.competence)});if(psError)console.warn('Snapshot Produto/Squad pendente (V2.62.0)',psError);else await loadStrategyProductHistory();}catch(psErr){console.warn('Snapshot Produto/Squad pendente',psErr);}
+      try{const {error:psError}=await state.supabase.rpc('freeze_strategy_product_squad_snapshot',{p_competence:strategyDataEngine.competenceDate(vm.state.competence)});if(psError)console.warn('Snapshot Produto/Squad pendente (V2.62.1)',psError);else await loadStrategyProductHistory();}catch(psErr){console.warn('Snapshot Produto/Squad pendente',psErr);}
       await logAuditEvent('strategy.competence_close',{entityType:'strategy_competence',entityId:vm.competenceRecord.id,description:`Competência estratégica ${vm.state.competence} fechada.`,metadata:{competence:vm.state.competence,revision:data?.revision||null,snapshotVersion:data?.snapshot_version||null,fingerprint:data?.fingerprint||null}});
       strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Competência ${strategyDataEngine.competenceLabel(vm.state.competence)} fechada no snapshot #${data?.revision||1}.`);
     }catch(err){console.error(err);const msg=String(err?.message||err);toast(/strategy result close blocked|full economic attribution/i.test(msg)?'Não foi possível fechar: existem resultados confirmados sem atribuição econômica completa. Regularize o rateio por técnico/Squad e tente novamente.':/unallocated|allocation mismatch/i.test(msg)?'Não foi possível fechar: existem custos operacionais sem rateio válido.':/close competence access|42501|permission/i.test(msg)?'Seu usuário não possui permissão para fechar competências. Ative “Fechar competências” no Controle de Usuários.':msg);}
@@ -5011,7 +5031,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
   }
 
-  $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
+  $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation, #view-strategy [data-scenario-cost], #view-strategy #strategyScenarioOperationalShare').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
   async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
 
