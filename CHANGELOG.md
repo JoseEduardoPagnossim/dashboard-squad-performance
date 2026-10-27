@@ -1,3 +1,9 @@
+## V2.62.7 — Insights e recomendações estratégicas (Fase 7)
+- Diagnósticos determinísticos dos quatro cenários, com evidências, ações sugeridas e filtros por tipo e alternativa.
+- Sinais de sobrecarga, ociosidade, resultado negativo/queda, oportunidades, divergências entre retorno e capacidade e premissas de custos de equipe.
+- Proteção contra dados insuficientes, sem atribuir causalidade, retorno financeiro automático ou probabilidades; simulações em memória e sem migration.
+- Integração read-only ao comparativo V2.62.6, testes de regressão e versão de assets.
+
 ## V2.62.6 - Comparativo entre cenários (Fase 7)
 - Quatro alternativas simultâneas por mesma competência, Squad e revisão: Atual, Otimista, Conservador e Personalizado.
 - Motor read-only combina a V2.62.5 de ROI direto, a V2.62.2 de FTE e a V2.62.4 de capacidade em colunas independentes.

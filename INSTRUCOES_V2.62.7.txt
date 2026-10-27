@@ -1,0 +1,15 @@
+V2.62.7 - INSIGHTS E RECOMENDACOES ESTRATEGICAS
+
+BASE OBRIGATORIA: V2.62.6.
+1. Faça backup da V2.62.6.
+2. Extraia o ZIP na raiz do repositorio mantendo a hierarquia de pastas e substituindo arquivos.
+3. Execute npm run check (node >= 20).
+4. Publique, valide acesso a Gestao Estrategica > Cenarios > Comparativo entre cenarios.
+5. Inspecione os cartoes e filtros em diferentes competencias e Squads.
+
+Sao apenas arquivos novos ou modificados. Nao ha migration.
+Simulacoes somente leitura/sem persistencia. O comparativo V2.62.6 e seus resultados oficiais permanecem intactos.
+Nao interpretar sinais como previsoes ou ordens automaticas. Valide contexto e fontes.
+
+COMMIT:
+feat(strategy): implementa insights estrategicos de cenarios V2.62.7

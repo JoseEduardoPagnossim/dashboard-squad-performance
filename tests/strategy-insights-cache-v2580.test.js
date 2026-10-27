@@ -10,10 +10,10 @@ const index=readFileSync(join(root,'index.html'),'utf8');
 const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('release atual preserva o hardening de cache introduzido na R5',()=>{
-  assert.equal(pkg.version,'2.62.6');
-  assert.equal(pkg.assetVersion,'2.62.6-r1');
-  assert.match(index,/js\/app\.js\?v=2\.62\.6/);
-  assert.match(index,/V2\.62\.6 • Fase 7 — Cenários/);
+  assert.equal(pkg.version,'2.62.7');
+  assert.equal(pkg.assetVersion,'2.62.7-r1');
+  assert.match(index,/js\/app\.js\?v=2\.62\.7/);
+  assert.match(index,/V2\.62\.7 • Fase 7 — Cenários/);
   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);
 });
 

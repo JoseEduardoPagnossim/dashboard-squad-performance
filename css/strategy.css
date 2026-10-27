@@ -350,3 +350,23 @@
 .strategy-scenario-comparison-table{min-width:970px}
 .strategy-scenario-comparison-table td{vertical-align:top;white-space:nowrap}
 .strategy-comparison-delta{display:block;margin-top:4px;font-size:.72rem;color:var(--text-muted,#718096);white-space:nowrap;font-weight:400}
+
+/* V2.62.7 - insights de cenários: sinais interpretativos, sem efeito em dados oficiais */
+.strategy-scenario-insights{margin-top:22px;padding:18px;border:1px solid var(--border);border-radius:15px;background:var(--panel2)}
+.strategy-scenario-insights .strategy-section-heading{flex-wrap:wrap}
+.strategy-scenario-insights-counts{color:var(--muted);font-weight:700;font-size:.82rem;margin:14px 0}
+.strategy-scenario-insights-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px;margin:12px 0}
+.strategy-scenario-insight-card{border:1px solid var(--border);border-left:4px solid var(--border);border-radius:12px;background:var(--panel);padding:16px;min-width:0}
+.strategy-scenario-insight-card.is-critical{border-left-color:var(--danger,#b91c1c)}
+.strategy-scenario-insight-card.is-attention,.strategy-scenario-insight-card.is-tradeoff{border-left-color:var(--warn,#ca8a04)}
+.strategy-scenario-insight-card.is-opportunity{border-left-color:var(--success,#16a34a)}
+.strategy-scenario-insight-card.is-information{border-left-color:var(--accent,#2563eb)}
+.strategy-scenario-insight-card header{display:flex;flex-direction:column;gap:5px}
+.strategy-scenario-insight-card header strong{font-size:.96rem}
+.strategy-scenario-insight-card header span{color:var(--muted);font-size:.75rem;font-weight:700}
+.strategy-scenario-insight-card p{margin:10px 0 0;line-height:1.5;font-size:.84rem;color:var(--muted)}
+.strategy-scenario-insight-evidence{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.strategy-scenario-insight-evidence div{flex:1 1 105px;background:var(--panel2);padding:9px 10px;border-radius:8px;min-width:0}
+.strategy-scenario-insight-evidence dt{font-size:.7rem;color:var(--muted)}
+.strategy-scenario-insight-evidence dd{font-weight:800;margin:4px 0 0;overflow-wrap:anywhere;font-size:.86rem}
+.strategy-scenario-insight-card .strategy-scenario-insight-action{color:var(--text);font-size:.82rem}

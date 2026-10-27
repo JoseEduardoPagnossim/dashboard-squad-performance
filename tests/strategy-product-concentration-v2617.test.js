@@ -21,9 +21,9 @@ test('fonte de demanda incompleta exclui squad e sinaliza dados parciais',()=>{
 test('sem fonte não produz percentuais zero artificiais',()=>{
  const a=engine.analyze({summaries:[]});assert.equal(a.total,0);assert.equal(a.productStats.top1,null);assert.equal(a.unclassifiedShare,null);
 });
-test('interface e motor V2.62.6 presentes com proteção de acesso',()=>{
+test('interface e motor V2.62.7 presentes com proteção de acesso',()=>{
  const root=path.join(__dirname,'..'),index=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
- assert.ok(index.includes('js/strategy-product-concentration.js?v=2.62.6-r1'));
+ assert.ok(index.includes('js/strategy-product-concentration.js?v=2.62.7-r1'));
  assert.ok(index.includes('strategyConcentrationProductRows'));
  assert.ok(app.includes('renderStrategyProductConcentration(vm,displayAggregate)'));
  assert.ok(app.includes('if(!displayAggregate){body.innerHTML'));
