@@ -1,0 +1,22 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const e=require('../js/strategy-scenarios');
+const source={competence:'2026-10',squadCode:'A',revision:2,sourceAvailable:true,allocationComplete:true,
+  totalCost:2000,resultCost:2000,peopleCost:1500,operationalCost:500,
+  directRevenue:3000,influencedRevenue:4000,protectedRevenue:5000};
+const base=()=>e.createEconomicBaseline(source);
+test('concilia custo de pessoal, operacional e ROI oficial',()=>{const b=base();assert.equal(b.reconciled,true);assert.ok(Object.isFrozen(b));assert.ok(Object.isFrozen(b.amounts));});
+test('sem alterações, ROI direto e líquido iguais ao oficial',()=>{const r=e.simulateEconomic(base());assert.equal(r.projected.totalCost,2000);assert.equal(r.projected.directNet,1000);assert.equal(r.projected.directRoiPct,50);assert.equal(r.ratios.directCoverage,1.5);});
+test('simula três receitas independentemente e não infla ROI',()=>{const r=e.simulateEconomic(base(),{directRevenue:10,influencedRevenue:100,protectedRevenue:-50});assert.equal(r.projected.directRevenue,3300);assert.equal(r.projected.influencedRevenue,8000);assert.equal(r.projected.protectedRevenue,2500);assert.equal(r.projected.directNet,1300);assert.ok(Math.abs(r.projected.directRoiPct-65)<1e-8);});
+test('mudança apenas de influenciada ou protegida não altera retorno nem ROI',()=>{const r=e.simulateEconomic(base(),{influencedRevenue:250,protectedRevenue:300});assert.equal(r.projected.directNet,1000);assert.equal(r.projected.directRoiPct,50);assert.equal(r.ratios.influencedPerCost,7);});
+test('custos pessoais e operacionais alteram retorno e ROI',()=>{const r=e.simulateEconomic(base(),{peopleCost:20,operationalCost:-10});assert.equal(r.projected.peopleCost,1800);assert.equal(r.projected.operationalCost,450);assert.equal(r.projected.totalCost,2250);assert.equal(r.delta.peopleCost,300);assert.equal(r.delta.operationalCost,-50);assert.equal(r.projected.directNet,750);assert.ok(Math.abs(r.projected.directRoiPct-100/3)<1e-8);});
+test('custo zero não produz ROI nem divisão infinita',()=>{const r=e.simulateEconomic(base(),{peopleCost:-100,operationalCost:-100});assert.equal(r.projected.totalCost,0);assert.equal(r.projected.directRoiPct,null);assert.equal(r.ratios.directCoverage,null);});
+test('sem fonte Fase 5 não inventa projeção',()=>{const r=e.simulateEconomic(e.createEconomicBaseline({...source,sourceAvailable:false}));assert.equal(r.status,'insufficient_data');assert.equal(r.projected.directRevenue,null);});
+test('divergência de custo financeiro/ROI bloqueia',()=>{const r=e.simulateEconomic(e.createEconomicBaseline({...source,resultCost:1800}));assert.equal(r.status,'insufficient_data');});
+test('divergência pessoal+operacional bloqueia',()=>{const r=e.simulateEconomic(e.createEconomicBaseline({...source,operationalCost:490}));assert.equal(r.status,'insufficient_data');});
+test('escopo da receita deve corresponder ao financeiro',()=>{const r=e.simulateEconomic(e.createEconomicBaseline({...source,resultCompetence:'2026-09'}));assert.equal(r.status,'insufficient_data');});
+test('valores ausentes e negativos não produzem resultado',()=>{for(const x of [null,-1,NaN]){const r=e.simulateEconomic(e.createEconomicBaseline({...source,directRevenue:x}));assert.equal(r.status,'insufficient_data');}});
+test('variações inválidas são rejeitadas',()=>{for(const x of [-101,301,Infinity,'abc'])assert.throws(()=>e.simulateEconomic(base(),{directRevenue:x}));});
+test('base e resultado não são mutados e a simulação não persiste',()=>{const b=base(),r=e.simulateEconomic(b,{directRevenue:12});assert.equal(b.amounts.directRevenue,3000);assert.equal(source.directRevenue,3000);assert.equal(r.official,false);assert.equal(r.persisted,false);assert.ok(Object.isFrozen(r));assert.ok(Object.isFrozen(r.projected));});
+
+test('a UI econômica está conectada ao tipo, fonte e listeners da estratégia',()=>{const fs=require('node:fs'),path=require('node:path');const root=path.join(__dirname,'..');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');assert.match(index,/option value="economic"/);assert.match(index,/id="strategyScenarioEconomicSection"/);assert.match(index,/data-scenario-economic="directRevenue"/);assert.match(index,/data-scenario-economic="protectedRevenue"/);assert.match(app,/createEconomicBaseline/);assert.match(app,/buildOperationalReturn/);assert.match(app,/simulateEconomic/);assert.match(app,/strategyScenarioEconomicSection input/);});

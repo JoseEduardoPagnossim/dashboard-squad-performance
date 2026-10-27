@@ -141,5 +141,63 @@
       projectedAttendance,projectedFte,baselineAttendance:attendance,baselineAvailableFte:available,
       referenceAttendancePerFte:reference,requiredFte,utilizationPct,idleFte:Math.max(0,gapFte),overloadFte:Math.max(0,-gapFte),gapFte});
   }
-  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand,simulateCapacity});
+  // V2.62.5: financial simulation has no database writes and no implied causal link
+  // between demand/FTE changes and additional revenue. Only direct revenue funds ROI.
+  const ECONOMIC_FIELDS=Object.freeze(['directRevenue','influencedRevenue','protectedRevenue','peopleCost','operationalCost']);
+  function createEconomicBaseline(input={}){
+    const competence=String(input.competence||'');
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(competence))throw new Error('Competência econômica inválida.');
+    const amounts={};
+    let complete=input.sourceAvailable===true;
+    for(const key of [...ECONOMIC_FIELDS,'totalCost','resultCost']){
+      const value=num(input[key]);
+      amounts[key]=value!==null&&value>=0?money(value):null;
+      if(amounts[key]===null)complete=false;
+    }
+    // The financial summary, its personnel+operations split, and the Phase 5 ROI
+    // summary must describe the same competence/squad/cost before any projection.
+    const splitOk=complete&&Math.abs(money(amounts.peopleCost+amounts.operationalCost)-amounts.totalCost)<=0.07;
+    const resultOk=complete&&Math.abs(amounts.resultCost-amounts.totalCost)<=0.07;
+    const matchesScope=(!input.resultCompetence||String(input.resultCompetence)===competence)
+      &&(!input.resultSquadCode||String(input.resultSquadCode).toUpperCase()===String(input.squadCode||'all').toUpperCase());
+    const reconciled=Boolean(complete&&splitOk&&resultOk&&matchesScope);
+    return Object.freeze({competence,squadCode:String(input.squadCode||'all'),revision:input.revision??null,
+      sourceAvailable:input.sourceAvailable===true,reconciled,allocationComplete:input.allocationComplete===true,
+      amounts:Object.freeze(amounts)});
+  }
+  function simulateEconomic(base,changes={}){
+    if(!base||!base.amounts)throw new Error('Base econômica inválida.');
+    const rates={};
+    for(const key of ECONOMIC_FIELDS)rates[key]=parsePercent(changes[key]??0);
+    const ready=base.reconciled===true;
+    const raw=base.amounts;
+    const projected={};
+    for(const key of ECONOMIC_FIELDS)projected[key]=ready?money(raw[key]*(1+rates[key]/100)):null;
+    const totalCost=ready?money(projected.peopleCost+projected.operationalCost):null;
+    const net=ready?money(projected.directRevenue-totalCost):null;
+    // Zero cost is a valid projection but not a valid ROI denominator.
+    const roi=ready&&totalCost>0?((projected.directRevenue-totalCost)/totalCost)*100:null;
+    const baseRoi=ready&&raw.totalCost>0?((raw.directRevenue-raw.totalCost)/raw.totalCost)*100:null;
+    const ratios=ready&&totalCost>0?Object.freeze({directCoverage:projected.directRevenue/totalCost,
+      influencedPerCost:projected.influencedRevenue/totalCost,
+      protectedPerCost:projected.protectedRevenue/totalCost}):Object.freeze({directCoverage:null,influencedPerCost:null,protectedPerCost:null});
+    const baseNet=ready?money(raw.directRevenue-raw.totalCost):null;
+    return Object.freeze({ruleVersion:'SC-ECONOMIC-1.0.0',status:ready?'simulated':'insufficient_data',
+      official:false,persisted:false,competence:base.competence,squadCode:base.squadCode,revision:base.revision,
+      allocationComplete:base.allocationComplete,baseline:Object.freeze({directRevenue:ready?raw.directRevenue:null,
+        influencedRevenue:ready?raw.influencedRevenue:null,protectedRevenue:ready?raw.protectedRevenue:null,
+        peopleCost:ready?raw.peopleCost:null,operationalCost:ready?raw.operationalCost:null,
+        totalCost:ready?raw.totalCost:null,directNet:baseNet,directRoiPct:baseRoi}),
+      projected:Object.freeze({...projected,totalCost,directNet:net,directRoiPct:roi}),
+      delta:Object.freeze({directRevenue:ready?money(projected.directRevenue-raw.directRevenue):null,
+        influencedRevenue:ready?money(projected.influencedRevenue-raw.influencedRevenue):null,
+        protectedRevenue:ready?money(projected.protectedRevenue-raw.protectedRevenue):null,
+        peopleCost:ready?money(projected.peopleCost-raw.peopleCost):null,
+        operationalCost:ready?money(projected.operationalCost-raw.operationalCost):null,
+        totalCost:ready?money(totalCost-raw.totalCost):null,directNet:ready?money(net-baseNet):null,
+        directRoiPp:ready&&roi!==null&&baseRoi!==null?roi-baseRoi:null}),
+      ratios,assumptions:Object.freeze(rates),
+      note:'Receita direta é a única receita considerada no retorno líquido e ROI. Receitas influenciada e protegida são impactos independentes, não caixa adicional.'});
+  }
+  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce,createDemandBaseline,simulateDemand,simulateCapacity,ECONOMIC_FIELDS,createEconomicBaseline,simulateEconomic});
 });

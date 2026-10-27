@@ -1,3 +1,9 @@
+## V2.62.5 — Simulação de resultados econômicos
+- Projeção isolada de Receita Direta, Influenciada, Protegida, custo pessoal e despesa operacional.
+- ROI e retorno líquido simulados somente com Receita Direta; impacto das demais receitas exposto separadamente.
+- Bloqueio de projeções com custo não reconciliado e fontes incompletas; ROI fica indisponível para custo zero.
+- Nenhuma gravação ou migration; motor e interface conectados às fontes estratégicas existentes da Fase 5.
+
 ## V2.62.4 — Simulação de produtividade e capacidade
 - Cruzamento isolado de demanda projetada, FTE projetado e referência histórica para utilização, ociosidade, sobrecarga e FTE necessário.
 - Sem alterações na base de dados oficial e sem migration.
