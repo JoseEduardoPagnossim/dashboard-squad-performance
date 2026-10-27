@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.62.1-r1" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.62.1-r1" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.62.1-r1" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.62.1-r1" />
+  <link rel="stylesheet" href="css/styles.css?v=2.62.2-r1" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.62.2-r1" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.62.2-r1" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.62.2-r1" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -75,7 +75,7 @@
           </form>
           <div class="login-access-foot"><span>Seu acesso respeita as permissões definidas para sua função.</span></div>
         </div>
-        <small class="login-version">V2.62.1 • Fase 7 — Cenários</small>
+        <small class="login-version">V2.62.2 • Fase 7 — Cenários</small>
       </section>
     </div>
   </section>
@@ -170,7 +170,7 @@
         <input id="soundVolume" class="sound-volume" type="range" min="0" max="100" step="1" value="18" aria-label="Volume da trilha">
       </div>
       <audio id="themeAudio" loop preload="none"></audio>
-      <div class="sidebar-footer">V2.62.1 • Squads A, B, D e E</div>
+      <div class="sidebar-footer">V2.62.2 • Squads A, B, D e E</div>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu lateral"></button>
 
@@ -1225,7 +1225,7 @@
       </section>
       <section id="view-help" class="view">
         <div class="how-header how-header-current">
-          <div><span class="eyebrow">GUIA COMPLETO • V2.62.1</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
+          <div><span class="eyebrow">GUIA COMPLETO • V2.62.2</span><h2>Como usar o Performance Hub</h2><p>Guia atualizado do painel atual: visões salvas, filtros persistentes, favoritos, busca global Ctrl+K, breadcrumbs, URLs persistentes, Home modular, widgets, navegação retrátil, avatar, Design System, dados, metas, indicadores, gestão preditiva, Central de Alertas, notificações internas, bonificação, feedbacks, configurações, permissões, TV/Comunicação, auditoria, performance, exportação de gráficos e fechamento mensal.</p></div>
           <div class="how-profile"><span>SEU PERFIL</span><strong id="helpRoleName">Técnico</strong><small id="helpRoleScope">Squad D</small><em id="helpRoleAccess">Acesso conforme perfil e permissões</em></div>
         </div>
 
@@ -2257,12 +2257,13 @@
 
           <div class="strategy-panel hidden" data-strategy-panel="scenarios">
             <article class="strategy-placeholder-card strategy-wide-card">
-              <div class="strategy-section-heading"><div><span class="eyebrow">FASE 7 • V2.62.1</span><h3>Cenários e simulação de custos</h3><p>Simulações isoladas dos indicadores oficiais, sem gravação ou alteração dos snapshots.</p></div><span class="strategy-efficiency-status neutral">SIMULAÇÃO LOCAL</span></div>
+              <div class="strategy-section-heading"><div><span class="eyebrow">FASE 7 • V2.62.2</span><h3>Cenários e simulação de custos</h3><p>Simulações isoladas dos indicadores oficiais, sem gravação ou alteração dos snapshots.</p></div><span class="strategy-efficiency-status neutral">SIMULAÇÃO LOCAL</span></div>
               <div class="strategy-product-form-grid">
                 <label><span>Tipo de cenário</span><select id="strategyScenarioType"><option value="cost">Custos</option><option value="fte">Equipe e FTE</option><option value="demand">Demanda</option></select></label>
                 <label><span>Variação (%)</span><input id="strategyScenarioVariation" type="number" min="-100" max="300" step="1" value="10" /></label>
               </div>
-              <section id="strategyScenarioCostSection" aria-label="Premissas de custos" class="strategy-wide-card"><h4>V2.62.1 • Premissas de custos</h4><p class="strategy-product-demand-note">Ajuste cada categoria de custo em percentual. O rateio apenas demonstra a distribuição das despesas, sem alterar o custo total.</p><div class="strategy-product-form-grid"><label><span>Salários (%)</span><input data-scenario-cost="salary" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Encargos (%)</span><input data-scenario-cost="employerCharges" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Benefícios (%)</span><input data-scenario-cost="benefits" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Remuneração variável (%)</span><input data-scenario-cost="variablePay" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Horas extras (%)</span><input data-scenario-cost="overtime" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Outros custos pessoais (%)</span><input data-scenario-cost="otherCosts" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Despesas operacionais (%)</span><input data-scenario-cost="operationalCost" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Participação do custo operacional rateada (%)</span><input id="strategyScenarioOperationalShare" type="number" min="0" max="100" step="1" value="100" /></label></div><div class="strategy-metric-grid"><div class="strategy-metric"><span>Custo oficial reconciliado</span><strong id="strategyScenarioCostBase">—</strong></div><div class="strategy-metric"><span>Custo simulado</span><strong id="strategyScenarioCostProjection">—</strong></div><div class="strategy-metric"><span>Diferença de custos</span><strong id="strategyScenarioCostDelta">—</strong></div><div class="strategy-metric"><span>Despesa rateada simulada</span><strong id="strategyScenarioAllocated">—</strong></div></div><p class="strategy-product-demand-note" id="strategyScenarioCostWarning"></p></section>
+              <section id="strategyScenarioCostSection" aria-label="Premissas de custos" class="strategy-wide-card"><h4>V2.62.2 • Premissas de custos</h4><p class="strategy-product-demand-note">Ajuste cada categoria de custo em percentual. O rateio apenas demonstra a distribuição das despesas, sem alterar o custo total.</p><div class="strategy-product-form-grid"><label><span>Salários (%)</span><input data-scenario-cost="salary" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Encargos (%)</span><input data-scenario-cost="employerCharges" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Benefícios (%)</span><input data-scenario-cost="benefits" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Remuneração variável (%)</span><input data-scenario-cost="variablePay" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Horas extras (%)</span><input data-scenario-cost="overtime" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Outros custos pessoais (%)</span><input data-scenario-cost="otherCosts" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Despesas operacionais (%)</span><input data-scenario-cost="operationalCost" type="number" min="-100" max="300" step="0.5" value="0" /></label><label><span>Participação do custo operacional rateada (%)</span><input id="strategyScenarioOperationalShare" type="number" min="0" max="100" step="1" value="100" /></label></div><div class="strategy-metric-grid"><div class="strategy-metric"><span>Custo oficial reconciliado</span><strong id="strategyScenarioCostBase">—</strong></div><div class="strategy-metric"><span>Custo simulado</span><strong id="strategyScenarioCostProjection">—</strong></div><div class="strategy-metric"><span>Diferença de custos</span><strong id="strategyScenarioCostDelta">—</strong></div><div class="strategy-metric"><span>Despesa rateada simulada</span><strong id="strategyScenarioAllocated">—</strong></div></div><p class="strategy-product-demand-note" id="strategyScenarioCostWarning"></p></section>
+              <section id="strategyScenarioWorkforceSection" class="strategy-wide-card hidden" aria-label="Premissas de equipe e FTE"><h4>V2.62.2 • Simulação de equipe e FTE</h4><p class="strategy-product-demand-note">Contratações e desligamentos alteram o FTE; transferências redistribuem entre Squads. Alteração de jornada muda o equivalente de capacidade, sem alterar cadastros ou escalas.</p><div class="strategy-product-form-grid"><label><span>Contratações (pessoas)</span><input id="scenarioHires" type="number" min="0" max="1000" step="1" value="0" /></label><label><span>Desligamentos (pessoas)</span><input id="scenarioExits" type="number" min="0" max="1000" step="1" value="0" /></label><label><span>Transferências de entrada (pessoas)</span><input id="scenarioTransfersIn" type="number" min="0" max="1000" step="1" value="0" /></label><label><span>Transferências de saída (pessoas)</span><input id="scenarioTransfersOut" type="number" min="0" max="1000" step="1" value="0" /></label><label><span>Jornada atual (h/semana)</span><input id="scenarioHoursCurrent" type="number" min="1" max="60" step="0.1" value="44" /></label><label><span>Jornada projetada (h/semana)</span><input id="scenarioHoursNew" type="number" min="1" max="60" step="0.1" value="44" /></label></div><div class="strategy-metric-grid"><div class="strategy-metric"><span>FTE de referência</span><strong id="scenarioFteBase">—</strong></div><div class="strategy-metric"><span>FTE projetado</span><strong id="scenarioFteProjected">—</strong></div><div class="strategy-metric"><span>Variação de FTE</span><strong id="scenarioFteDifference">—</strong></div></div><p id="scenarioFteWarning" class="strategy-product-demand-note"></p></section>
               <p class="strategy-product-demand-note" id="strategyScenarioContext">A competência e o Squad seguem os filtros estratégicos desta página.</p>
               <div class="strategy-metric-grid"><div class="strategy-metric"><span>Base oficial</span><strong id="strategyScenarioBase">—</strong></div><div class="strategy-metric"><span>Projeção simulada</span><strong id="strategyScenarioProjection">—</strong></div><div class="strategy-metric"><span>Diferença</span><strong id="strategyScenarioDelta">—</strong></div></div>
               <div class="strategy-product-demand-note" id="strategyScenarioWarning">Premissas ilustrativas não alteram dados reais e não representam previsão garantida. Sem fonte válida, o resultado fica indisponível.</div>
@@ -2747,43 +2748,43 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.62.1-r1"></script>
-  <script src="js/finance-rules.js?v=2.62.1-r1"></script>
-  <script src="js/finance-advanced.js?v=2.62.1-r1"></script>
-  <script src="js/tv-engine.js?v=2.62.1-r1"></script>
-  <script src="js/presentation.js?v=2.62.1-r1"></script>
-  <script src="js/chart-engine.js?v=2.62.1-r1"></script>
-  <script src="js/chart-export.js?v=2.62.1-r1"></script>
-  <script src="js/import-engine.js?v=2.62.1-r1"></script>
-  <script src="js/predictive-engine.js?v=2.62.1-r1"></script>
-  <script src="js/alert-engine.js?v=2.62.1-r1"></script>
-  <script src="js/settings-engine.js?v=2.62.1-r1"></script>
-  <script src="js/performance-engine.js?v=2.62.1-r1"></script>
-  <script src="js/navigation-engine.js?v=2.62.1-r1"></script>
-  <script src="js/workspace-engine.js?v=2.62.1-r1"></script>
-  <script src="js/filter-system.js?v=2.62.1-r1"></script>
-  <script src="js/comparison-engine.js?v=2.62.1-r1"></script>
-  <script src="js/finance-report-engine.js?v=2.62.1-r1"></script>
-  <script src="js/design-system.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-access.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-data.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-cost-engine.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-efficiency.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-capacity.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-result.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-product.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-product-concentration.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-product-history.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-insights.js?v=2.62.1-r1"></script>
-  <script src="js/strategy.js?v=2.62.1-r1"></script>
-  <script src="js/strategy-scenarios.js?v=2.62.1-r1"></script>
+  <script src="js/business-calendar.js?v=2.62.2-r1"></script>
+  <script src="js/finance-rules.js?v=2.62.2-r1"></script>
+  <script src="js/finance-advanced.js?v=2.62.2-r1"></script>
+  <script src="js/tv-engine.js?v=2.62.2-r1"></script>
+  <script src="js/presentation.js?v=2.62.2-r1"></script>
+  <script src="js/chart-engine.js?v=2.62.2-r1"></script>
+  <script src="js/chart-export.js?v=2.62.2-r1"></script>
+  <script src="js/import-engine.js?v=2.62.2-r1"></script>
+  <script src="js/predictive-engine.js?v=2.62.2-r1"></script>
+  <script src="js/alert-engine.js?v=2.62.2-r1"></script>
+  <script src="js/settings-engine.js?v=2.62.2-r1"></script>
+  <script src="js/performance-engine.js?v=2.62.2-r1"></script>
+  <script src="js/navigation-engine.js?v=2.62.2-r1"></script>
+  <script src="js/workspace-engine.js?v=2.62.2-r1"></script>
+  <script src="js/filter-system.js?v=2.62.2-r1"></script>
+  <script src="js/comparison-engine.js?v=2.62.2-r1"></script>
+  <script src="js/finance-report-engine.js?v=2.62.2-r1"></script>
+  <script src="js/design-system.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-access.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-data.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-cost-engine.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-efficiency.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-capacity.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-result.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-product.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-product-concentration.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-product-history.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-insights.js?v=2.62.2-r1"></script>
+  <script src="js/strategy.js?v=2.62.2-r1"></script>
+  <script src="js/strategy-scenarios.js?v=2.62.2-r1"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/app.js?v=2.62.1-r1"></script>
+  <script src="js/app.js?v=2.62.2-r1"></script>
 </body>
 </html>

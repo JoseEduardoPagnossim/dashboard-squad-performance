@@ -1,3 +1,8 @@
+## V2.62.2 — Simulação de equipe e FTE
+- Contratações, desligamentos, transferências e jornadas em simulação isolada.
+- Transferências não geram FTE agregado; sem persistência ou alterações operacionais.
+- Testes de integridade e cenários insuficientes.
+
 ## V2.62.1 — Simulação de custos
 - Premissas por categoria e rateio operacional informativo, sem persistência.
 - Conciliação com os totais financeiros oficiais e proteção contra fonte incompleta.

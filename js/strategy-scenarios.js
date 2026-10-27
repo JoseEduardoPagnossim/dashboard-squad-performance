@@ -59,5 +59,41 @@
       allocatedOperational:allocated,unallocatedOperational:unallocated,operationalSharePct:share,
       components:Object.freeze(components),variations:Object.freeze(rates)});
   }
-  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts});
+  // V2.62.2: isolated workforce/FTE assumptions; transfers redistribute, never create FTE.
+  function parseHeadcount(value,label){const n=Number(value);if(!Number.isInteger(n)||n<0||n>1000)throw new RangeError(label+' deve ser um inteiro entre 0 e 1000.');return n}
+  function parseHours(value,label){const n=Number(value);if(!Number.isFinite(n)||n<=0||n>60)throw new RangeError(label+' deve ficar entre 0 e 60 horas por semana.');return n}
+  function createWorkforceBaseline(input={}){
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(input.competence||'')))throw new Error('Competência inválida.');
+    const fte=num(input.fte);
+    const valid=fte!==null&&fte>=0;
+    return Object.freeze({competence:String(input.competence),squadCode:String(input.squadCode||'all'),revision:input.revision??null,fte:valid?fte:null});
+  }
+  function simulateWorkforce(base,options={}){
+    if(!base||!base.competence)throw new Error('Base de equipe inválida.');
+    const hires=parseHeadcount(options.hires??0,'Contratações');
+    const exits=parseHeadcount(options.exits??0,'Desligamentos');
+    const transfersIn=parseHeadcount(options.transfersIn??0,'Transferências de entrada');
+    const transfersOut=parseHeadcount(options.transfersOut??0,'Transferências de saída');
+    const currentHours=parseHours(options.currentHours??44,'Jornada atual');
+    const newHours=parseHours(options.newHours??currentHours,'Nova jornada');
+    if(hires+exits+transfersIn+transfersOut>1000)throw new RangeError('Quantidade de movimentações excessiva.');
+    // FTE baseline is an equivalent workforce: it is not necessarily employee headcount.
+    // New people enter at the planned weekly schedule; exits and outgoing transfers are
+    // assumed to carry an equivalent fraction based on the current weekly schedule.
+    const referenceHours=parseHours(options.referenceHours??44,'Jornada FTE de referência');
+    const status=base.fte===null?'insufficient_data':'simulated';
+    const unitCurrent=currentHours/referenceHours,unitNew=newHours/referenceHours;
+    const movementFte=(hires+transfersIn)*unitNew-(exits+transfersOut)*unitCurrent;
+    // Existing workforce schedule change is applied first; movement is applied after.
+    const projected=status==='simulated'?Math.max(0,base.fte*newHours/currentHours+movementFte):null;
+    // If transfers exist the 'all' scope cannot be used to falsely create/lose company FTE.
+    const projectedGlobal=status==='simulated'?Math.max(0,base.fte*newHours/currentHours+hires*unitNew-exits*unitCurrent):null;
+    if(status==='simulated' && (exits+transfersOut)*unitCurrent>base.fte*newHours/currentHours+1e-8)throw new RangeError('Saídas excedem o FTE de origem disponível.');
+    return Object.freeze({ruleVersion:'SC-WORKFORCE-1.0.0',status,official:false,persisted:false,competence:base.competence,squadCode:base.squadCode,revision:base.revision,
+      baselineFte:base.fte,projectedFte:base.squadCode==='all'?projectedGlobal:projected,deltaFte:status==='simulated'?(base.squadCode==='all'?projectedGlobal:projected)-base.fte:null,
+      hires,exits,transfersIn,transfersOut,currentHours,newHours,referenceHours,
+      transferNetFte:(transfersIn*unitNew-transfersOut*unitCurrent),movementFte,
+      note:'Simulação agregada de FTE; não modifica pessoas, escalas, custos nem histórico.'});
+  }
+  return Object.freeze({RULE_VERSION,TYPES,COST_FIELDS,COST_LABELS,createBaseline,simulate,parsePercent,createCostBaseline,simulateCosts,createWorkforceBaseline,simulateWorkforce});
 });

@@ -1,0 +1,10 @@
+const test=require('node:test');const assert=require('node:assert/strict');const e=require('../js/strategy-scenarios');
+const base=(fte=10,squadCode='A')=>e.createWorkforceBaseline({competence:'2026-10',squadCode,fte});
+test('contratação aumenta FTE proporcional à jornada',()=>{const x=e.simulateWorkforce(base(),{hires:2,currentHours:44,newHours:44});assert.equal(x.projectedFte,12);});
+test('desligamento reduz FTE sem tocar base',()=>{const b=base();const x=e.simulateWorkforce(b,{exits:1});assert.equal(x.projectedFte,9);assert.equal(b.fte,10);});
+test('transferências internas não alteram total agregado',()=>{const x=e.simulateWorkforce(base(29,'all'),{transfersIn:3,transfersOut:1});assert.equal(x.projectedFte,29);});
+test('transferências afetam somente Squad selecionado',()=>{const x=e.simulateWorkforce(base(),{transfersIn:2,transfersOut:1});assert.equal(x.projectedFte,11);});
+test('alteração de jornada ajusta FTE e não quantidade de pessoas',()=>{const x=e.simulateWorkforce(base(),{currentHours:44,newHours:40});assert.ok(Math.abs(x.projectedFte-9.090909)<0.00001);});
+test('FTE ausente não produz resultado inventado',()=>{const x=e.simulateWorkforce(base(null),{});assert.equal(x.status,'insufficient_data');assert.equal(x.projectedFte,null);});
+test('validação impede saídas acima da capacidade',()=>assert.throws(()=>e.simulateWorkforce(base(1),{exits:3}),/excedem/));
+test('validação impede quantidade fracionária',()=>assert.throws(()=>e.simulateWorkforce(base(),{hires:1.5}),/inteiro/));

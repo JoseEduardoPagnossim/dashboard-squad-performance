@@ -1,0 +1,4 @@
+V2.62.2 - Simulacao de equipe e FTE
+Aplicar sobre V2.62.1: extrair na raiz preservando as pastas.
+Rodar npm run check.
+Sem migrations. Simulacoes locais, sem alteracoes reais.
