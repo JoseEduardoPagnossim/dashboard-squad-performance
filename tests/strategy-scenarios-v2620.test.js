@@ -1,0 +1,5 @@
+const test=require('node:test');const assert=require('node:assert/strict');const sc=require('../js/strategy-scenarios.js');
+test('simulação isolada não muda origem',()=>{const base=sc.createBaseline({competence:'2026-10',squadCode:'A',cost:1000,fte:2,attendance:50});const r=sc.simulate(base,'cost',10);assert.equal(r.projectedValue,1100);assert.equal(base.cost,1000);assert.equal(r.official,false);assert.equal(r.persisted,false);assert.ok(Object.isFrozen(r));});
+test('cenários cobrem equipe e demanda',()=>{const b=sc.createBaseline({competence:'2026-10',fte:5,attendance:200});assert.equal(sc.simulate(b,'fte',20).projectedValue,6);assert.equal(sc.simulate(b,'demand',-50).projectedValue,100);});
+test('fonte ausente não é convertida em zero',()=>{const b=sc.createBaseline({competence:'2026-10'});assert.equal(sc.simulate(b,'cost',10).projectedValue,null);});
+test('limites e tipos inválidos são rejeitados',()=>{const b=sc.createBaseline({competence:'2026-10',cost:100});assert.throws(()=>sc.simulate(b,'cost',400));assert.throws(()=>sc.simulate(b,'unknown',10));assert.throws(()=>sc.createBaseline({competence:'invalid'}));});

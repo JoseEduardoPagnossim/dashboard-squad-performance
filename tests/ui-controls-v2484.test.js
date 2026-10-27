@@ -84,5 +84,5 @@ test('V2.48.8 mantém o hotfix de controles e as migrations posteriores',()=>{
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.7.sql')),true);
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.8.sql')),true);
   assert.ok(index.includes('V2.60.7'));
-  assert.ok(app.includes("APP_VERSION = '2.61.9'"));
+  assert.ok(app.includes("APP_VERSION = '2.62.0'"));
 });

@@ -1,3 +1,10 @@
+## V2.62.0 — Fundação de Cenários
+
+- Nova aba Cenários na Gestão Estratégica, respeitando competência e Squad.
+- Motor SC-1.0.0 puro, sem persistência e sem mutação de dados oficiais.
+- Tipos iniciais: custos, FTE e demanda; validações de entrada, ausência de dados e revisão-base.
+- Sem migrations nesta entrega; salvamento de cenários previsto para V2.62.8.
+
 ## V2.61.9 — Snapshots, histórico e hardening da Fase 6
 - Registro imutável, por revisão, de Unit Economics Produto/Squad no fechamento.
 - Histórico de competências e revisões; atualização manual e diagnóstico de integridade.

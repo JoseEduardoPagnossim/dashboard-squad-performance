@@ -11,13 +11,14 @@
   'use strict';
   if(!accessEngine||!dataEngine||!costEngine||!insightEngine)throw new Error('Dependências da Gestão Estratégica não carregadas.');
 
-  const VALID_SECTIONS=Object.freeze(['executive','efficiency','capacity','result','product','costs','assumptions']);
+  const VALID_SECTIONS=Object.freeze(['executive','efficiency','capacity','result','product','scenarios','costs','assumptions']);
   const SECTION_META=Object.freeze({
     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
     efficiency:Object.freeze({label:'Eficiência',eyebrow:'EFICIÊNCIA RELATIVA'}),
     capacity:Object.freeze({label:'Capacidade',eyebrow:'CAPACIDADE OPERACIONAL'}),
     result:Object.freeze({label:'Resultado',eyebrow:'RESULTADO ECONÔMICO'}),
     product:Object.freeze({label:'Produto/Squad',eyebrow:'UNIT ECONOMICS • PRODUTO/SQUAD'}),
+    scenarios:Object.freeze({label:'Cenários',eyebrow:'SIMULAÇÕES • FASE 7'}),
     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });
