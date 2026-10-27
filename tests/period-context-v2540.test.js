@@ -10,7 +10,7 @@ const workspace=readFileSync(join(root,'js','workspace-engine.js'),'utf8');
 const pkg=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
 
 test('V2.57.7 adiciona competencias inicial e final no intervalo livre',()=>{
-  assert.equal(pkg.version,'2.61.5');
+  assert.equal(pkg.version,'2.61.6');
   assert.match(index,/id="periodFreeStartSelect"/);
   assert.match(index,/id="periodFreeEndSelect"/);
   assert.match(app,/function setFreeCompetenceBoundary\(which,id\)/);
@@ -42,7 +42,7 @@ test('V2.57.7 preserva Squad e periodo como contexto global',()=>{
 });
 
 test('V2.57.7 atualiza os assets principais sem migration nova',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.61.5-r1'));
-  assert.ok(index.includes('js/workspace-engine.js?v=2.61.5-r1'));
-  assert.ok(index.includes('js/app.js?v=2.61.5-r1'));
+  assert.ok(index.includes('css/styles.css?v=2.61.6-r1'));
+  assert.ok(index.includes('js/workspace-engine.js?v=2.61.6-r1'));
+  assert.ok(index.includes('js/app.js?v=2.61.6-r1'));
 });

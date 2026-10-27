@@ -62,7 +62,7 @@ test('V2.48.14 mantém layout responsivo sem mexer no shell global',()=>{
 
 test('V2.48.14 é frontend-only e preserva regra financeira',()=>{
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.48.14.sql')),false);
-  assert.match(app,/APP_VERSION = '2\.61\.5'/);
+  assert.match(app,/APP_VERSION = '2\.61\.6'/);
   assert.match(index,/V2\.60\.7/);
   assert.match(finance,/FINANCE_RULE_VERSION = 'FR-2\.48\.8-1'/);
 });

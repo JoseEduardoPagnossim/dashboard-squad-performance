@@ -1,3 +1,8 @@
+## V2.61.6 — Matriz Produto × Squad
+- Matriz comparativa por produto, Squad e indicador, usando Unit Economics da V2.61.4.
+- Destaques relativos com tratamento de empates, ausência de fontes e denominadores inválidos.
+- Sem nova migration.
+
 ## V2.61.4 R1 — Hotfix do status oficial nos Indicadores
 
 - Card **Técnicos acima da referência** agora usa os status oficiais da competência, iguais aos da matriz de técnicos.

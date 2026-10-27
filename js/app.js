@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.61.5';
+  const APP_VERSION = '2.61.6';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3685,7 +3685,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const {data:competenceRows,error:competenceError}=await state.supabase.from('strategy_competences').select('id,competence,status,notes,closed_at,closed_by,reopened_at,reopened_by,snapshot_revision,snapshot_version,rule_version,created_at,updated_at').eq('organization_id',org).order('competence',{ascending:true});if(competenceError)throw competenceError;
       if(seq!==strategyFinanceLoadSeq)return;
       strategyController.setFinancialData({competences:competenceRows||[],people:[],costs:[],operationalCosts:[],allocations:[],resolutionMetrics:[],summary:{},squadSummary:[],history:[],efficiencyHistory:[],capacityHistory:[],resultFoundation:{},resultDirectRevenue:{},resultInfluencedRevenue:{},resultProtectedRevenue:{},resultTechnician:{},resultSquad:{},resultRoi:{},resultTechnicianRoi:{},resultHistory:{},productFoundation:{},productDemand:{},productCost:{},productResult:{},productUnitEconomics:{}});
-      strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];
+      strategyDirectRevenueEntries=[];strategyInfluencedRevenueEntries=[];strategyProtectedRevenueEntries=[];strategyProductSquadMatrixSummaries=[];
       const st=strategyController.getState(),competenceDate=strategyDataEngine.competenceDate(st.competence);let summary={},squadSummary=[],history=[],efficiencyHistory=[],capacityHistory=[],resultFoundation={},resultDirectRevenue={},resultInfluencedRevenue={},resultProtectedRevenue={},resultTechnician={},resultSquad={},resultRoi={},resultTechnicianRoi={},resultHistory={},productFoundation={},productDemand={},productCost={},productResult={},productUnitEconomics={};
       if(strategyPeopleAccess()&&st.competence){const operationalCodes=Object.keys(state.squads||{}).filter(Boolean);if(operationalCodes.length)await ensureMonthsLoaded(operationalCodes,[st.competence],{silent:true,strict:false}).catch(err=>console.warn('Produção individual indisponível para eficiência estratégica.',err));}
       if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
@@ -3774,6 +3774,21 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         strategyInfluencedRevenueEntries=influencedEvents.map(row=>({...strategyResultEngine.normalizeEvent(row),attributions:attrByEvent.get(row.id)||[]}));
         strategyProtectedRevenueEntries=protectedEvents.map(row=>({...strategyResultEngine.normalizeEvent(row),attributions:attrByEvent.get(row.id)||[]}));
       }
+      // V2.61.6: reutiliza a RPC oficial da V2.61.4 para cada Squad, sem agregacao artificial do produto.
+      const matrixCodes=[...new Set(squadSummary.map(r=>String(r.squad_code||r.squadCode||'').toUpperCase()).filter(Boolean))].filter(code=>st.squadCode==='all'||code===st.squadCode);
+      const matrixSummaries=[];
+      if(strategyAccessEngine.canViewAggregates(st.access)&&competenceDate){
+        for(let i=0;i<matrixCodes.length;i+=5){
+          const batch=await Promise.all(matrixCodes.slice(i,i+5).map(async code=>{
+            const {data,error}=await state.supabase.rpc('get_strategy_product_unit_economics_summary',{p_competence:competenceDate,p_squad_code:code});
+            return{code,data,error};
+          }));
+          if(seq!==strategyFinanceLoadSeq)return;
+          for(const item of batch){if(item.error){console.warn('Matriz Produto × Squad: fonte indisponível',item.code,item.error);matrixSummaries.push({squadCode:item.code,aggregate:{sourceAvailable:false}});}else matrixSummaries.push({squadCode:item.code,aggregate:{...(item.data||{}),sourceAvailable:true},view:strategyProductEngine.buildUnitEconomics({scope:{competence:st.competence,squadCode:item.code},aggregate:{...(item.data||{}),sourceAvailable:true}})});}
+        }
+      }
+      if(seq!==strategyFinanceLoadSeq)return;
+      strategyProductSquadMatrixSummaries=matrixSummaries;
       if(seq!==strategyFinanceLoadSeq)return;
       strategyController.setFinancialData({competences:competenceRows||[],people,costs,operationalCosts,allocations,resolutionMetrics,summary,squadSummary,history,efficiencyHistory,capacityHistory,resultFoundation,resultDirectRevenue,resultInfluencedRevenue,resultProtectedRevenue,resultTechnician,resultSquad,resultRoi,resultTechnicianRoi,resultHistory,productFoundation,productDemand,productCost,productResult,productUnitEconomics});strategyFinanceLoadedKey=strategyFinanceKey();strategyFinanceLoadingKey='';
     }catch(err){console.error('Falha ao carregar Gestão Estratégica V2.61.4',err);strategyFinanceLoadingKey='';strategyController.setFinancialError(err?.message||String(err));}
@@ -4503,6 +4518,25 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(note)note.textContent=`${comparison.rows.length} Squad(s) • Competência ${vm.state.competence} • Capac. utilizada em volume oficial (não percentual). FTE ausente aparece como —; ROI considera exclusivamente receita direta.`;
   }
 
+  let strategyProductSquadMatrixSummaries=[];
+  function renderStrategyProductSquadMatrix(vm,displayAggregate){
+    const body=$('#strategyProductSquadMatrixRows'),head=$('#strategyProductSquadMatrixHead'),status=$('#strategyProductSquadMatrixStatus'),note=$('#strategyProductSquadMatrixNote'),metricEl=$('#strategyProductSquadMatrixMetric'),productEl=$('#strategyProductSquadMatrixProduct');
+    if(!body||!head)return;
+    if(!displayAggregate){body.innerHTML='<tr><td class="muted">Sem permissão para visualizar resultados financeiros.</td></tr>';if(status)status.textContent='SEM PERMISSÃO';return;}
+    const names=Object.fromEntries((vm.context.squads||[]).map(r=>[r.code,r.name||r.code]));
+    for(const el of [metricEl,productEl])if(el&&!el.dataset.matrixBound){el.addEventListener('change',()=>renderStrategy({skipLoad:true}));el.dataset.matrixBound='1';}
+    const metric=metricEl?.value||'costPerAttendance';
+    const entire=window.SoftenStrategyProductSquadMatrix.build({summaries:strategyProductSquadMatrixSummaries,squadNames:names,metric});
+    if(productEl){const previous=productEl.value;const options=entire.rows.map(r=>`<option value="${escapeHtml(r.code)}">${escapeHtml(r.name)}</option>`).join('');const signature=entire.rows.map(r=>r.code).join('|');if(productEl.dataset.signature!==signature){productEl.innerHTML='<option value="all">Todos os produtos</option>'+options;productEl.dataset.signature=signature;productEl.value=[...productEl.options].some(o=>o.value===previous)?previous:'all';}}
+    const view=window.SoftenStrategyProductSquadMatrix.build({summaries:strategyProductSquadMatrixSummaries,squadNames:names,metric,selectedProduct:productEl?.value||'all'});
+    head.innerHTML='<tr><th>Produto</th>'+view.squads.map(code=>`<th>${escapeHtml(names[code]||code)}</th>`).join('')+'</tr>';
+    const money=v=>v==null?'—':strategyMoney(v),num=v=>v==null?'—':strategyNumber(v,1),percent=v=>v==null?'—':strategyProductCoverageText(v*100);
+    const val=c=>c.value==null?'—':metric==='directRoi'?percent(c.value):['costPerAttendance','costPerResolution','directNet'].includes(metric)?money(c.value):num(c.value);
+    body.innerHTML=view.rows.length?view.rows.map(row=>`<tr><td><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.code)}</small></td>${row.cells.map(c=>`<td class="${c?.rank==='best'?'strategy-matrix-best':c?.rank==='worst'?'strategy-matrix-worst':''}" title="${c?'Atendimentos: '+(c.attendance??'sem fonte')+' | FTE: '+(c.availableFte??'sem fonte')+' | Custo: '+c.totalCost:'Sem dados para este Squad'}">${c?val(c):'—'}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${view.squads.length+1}" class="muted">Sem dados por Produto e Squad para a competência selecionada.</td></tr>`;
+    if(status){status.textContent=view.rows.length?'MATRIZ ATIVA':'SEM DADOS';status.className=`strategy-efficiency-status ${view.rows.length?'good':'neutral'}`;}
+    if(note)note.textContent=`${view.rows.length} produto(s) × ${view.squads.length} Squad(s) • ${vm.state.competence} • Melhor/pior apenas entre dois ou mais valores válidos, sem atribuir desempenho a dados ausentes. Receita influenciada e protegida não entram no ROI direto.${view.warnings.length?' Fontes incompletas: '+view.warnings.join('; '):''}`;
+  }
+
   function renderStrategyProduct(vm,displayAggregate){
     const foundation=strategyProductEngine.buildFoundation({scope:{competence:vm.state.competence,squadCode:vm.state.squadCode,comparison:vm.state.comparison},aggregate:vm.financial.productFoundation||{}}),ready=displayAggregate&&foundation.sourceAvailable,canEdit=strategyEditAccess(),set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
     const status=$('#strategyProductFoundationStatus');if(status){status.textContent=!strategyAccessEngine.canViewAggregates(vm.state.access)?'SEM PERMISSÃO':!ready?(vm.state.financialLoading?'CARREGANDO':'MIGRAÇÃO PENDENTE'):foundation.activeProductCount>0?'FUNDAÇÃO ATIVA':'CATÁLOGO VAZIO';status.className=`strategy-efficiency-status ${ready&&foundation.activeProductCount>0?'good':'neutral'}`;}
@@ -4648,6 +4682,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     renderStrategyResult(vm,displayAggregate);
     renderStrategyProduct(vm,displayAggregate);
     renderStrategySquadComparison(vm,displayAggregate);
+    renderStrategyProductSquadMatrix(vm,displayAggregate);
     if($('#strategySalaryTotal'))$('#strategySalaryTotal').textContent=displayAggregate?strategyMoney(vm.summary.salary):'—';
     if($('#strategyChargesTotal'))$('#strategyChargesTotal').textContent=displayAggregate?strategyMoney(vm.summary.employerCharges):'—';
     if($('#strategyBenefitsTotal'))$('#strategyBenefitsTotal').textContent=displayAggregate?strategyMoney(vm.summary.benefits):'—';

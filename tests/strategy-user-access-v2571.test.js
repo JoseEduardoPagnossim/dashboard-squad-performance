@@ -12,7 +12,7 @@ const migration = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2
 const migration2574 = readFileSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.57.4.sql'), 'utf8');
 
 test('V2.57.1 adiciona checkbox de Gestão Estratégica no Controle de Usuários', () => {
-  assert.equal(pkg.version, '2.61.5');
+  assert.equal(pkg.version, '2.61.6');
   assert.match(index, /<th>Gestão Estratégica<\/th>/);
   assert.match(app, /data-strategy-user-access/);
   assert.match(app, /setDirectoryStrategyAccess/);

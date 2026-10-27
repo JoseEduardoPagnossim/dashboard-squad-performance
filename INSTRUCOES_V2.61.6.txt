@@ -1,0 +1,5 @@
+V2.61.6 Matriz Produto x Squad
+Aplicar os arquivos preservando as pastas originais sobre V2.61.5.
+Nenhuma migration nova. Necessario ter RPC V2.61.4 implantada.
+Validacao: npm run check (750 testes aprovados).
+Commit: feat(strategy): implementa matriz Produto x Squad V2.61.6

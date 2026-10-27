@@ -338,3 +338,10 @@
 .strategy-product-cost-table{min-width:1260px}.strategy-product-cost-table tr.strategy-product-unclassified td{background:color-mix(in srgb,var(--warn) 6%,transparent)}
 @media(max-width:1180px){.strategy-product-cost-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.strategy-product-cost-kpis{grid-template-columns:1fr}}
+
+/* V2.61.6 — Matriz Produto × Squad */
+.strategy-product-squad-matrix-section{margin-top:24px}
+.strategy-product-squad-matrix-section .strategy-product-form-grid{margin:12px 0 16px}
+.strategy-product-squad-matrix-section td.strategy-matrix-best{background:color-mix(in srgb,var(--success) 13%,transparent);font-weight:800}
+.strategy-product-squad-matrix-section td.strategy-matrix-worst{background:color-mix(in srgb,var(--danger, #dc5555) 10%,transparent)}
+.strategy-product-squad-matrix-section table{min-width:620px}

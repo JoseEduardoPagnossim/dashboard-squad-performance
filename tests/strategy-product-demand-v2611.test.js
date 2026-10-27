@@ -14,15 +14,15 @@ const migration=readFileSync(migrationPath,'utf8');
 const docPath=join(root,'docs','PRODUTO_SQUAD_DEMANDA_V2.61.1.md');
 
 test('V2.61.1 mantém Demanda por Produto ativa na Fase 6',()=>{
-  assert.equal(pkg.version,'2.61.5');
-  assert.equal(pkg.assetVersion,'2.61.5-r1');
+  assert.equal(pkg.version,'2.61.6');
+  assert.equal(pkg.assetVersion,'2.61.6-r1');
   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
   assert.equal(product.CATALOG.find(x=>x.id==='product-squad-foundation').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='demand-by-product').state,'ready');
   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
-  assert.match(index,/V2\.61\.5 • Fase 6 — Comparativo entre Squads/);
+  assert.match(index,/V2\.61\.6 • Fase 6 — Matriz Produto × Squad/);
 });
 
 test('motor mantém Atendimentos como denominador exclusivo da participação na demanda',()=>{
