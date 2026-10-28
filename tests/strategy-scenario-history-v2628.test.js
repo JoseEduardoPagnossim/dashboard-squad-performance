@@ -14,7 +14,7 @@ function projected(custom={}){
 function saved(revision=1,custom={}){
  const p=history.buildPayload(projected(custom));
  return {id:'id'+revision,scenario_id:'group',revision,competence:'2026-10-01',squad_code:'A',baseline_revision:2,
-   assumptions:p.assumptions,projection:p.projection,name:'Plano',notes:'Decisao teste',created_at:'2026-10-'+String(revision).padStart(2,'0')+'T10:00:00Z'};
+   assumptions:JSON.parse(JSON.stringify(p.assumptions)),projection:JSON.parse(JSON.stringify(p.projection)),name:'Plano',notes:'Decisao teste',created_at:'2026-10-'+String(revision).padStart(2,'0')+'T10:00:00Z'};
 }
 test('payload salva todas as premissas e resultados sem mudar comparativo vivo',()=>{
  const compare=projected({directRevenue:20,demandPct:30});const before=JSON.stringify(compare);
@@ -43,9 +43,9 @@ test('apenas as projeções, e não receitas influenciadas/protegidas, determina
  assert.equal(comparison.metrics.find(x=>x.key==='directRoiPct').delta,0);
  assert.ok(comparison.metrics.find(x=>x.key==='influencedRevenue').delta>0);
 });
-test('null não vira zero na comparação histórica',()=>{
+test('histórico rejeita ROI omitido de projeção financeiramente disponível',()=>{
  const a=saved(1),b=saved(2);a.projection.scenarios.custom.metrics.directRoiPct=null;
- assert.equal(history.compare(a,b).metrics.find(m=>m.key==='directRoiPct').delta,null);
+ assert.throws(()=>history.compare(a,b),/ROI direto|Diferença/);
 });
 test('recusa projeção de outro escopo ou alternativa inválida',()=>{
  const a=saved(1),b=saved(2);b.squad_code='B';b.projection.squadCode='B';assert.throws(()=>history.compare(a,b),/diferentes/);
@@ -85,7 +85,7 @@ test('interface fornece salvamento, revisão, comparação e recuperação expl�
  const index=fs.readFileSync(path.join(root,'index.html'),'utf8');const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
  assert.match(index,/id="scenarioHistorySaveBtn"/);assert.match(index,/id="scenarioHistoryGroup"/);
  assert.match(index,/id="scenarioHistoryLeft"/);assert.match(index,/id="scenarioHistoryRight"/);
- assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.62\.8-r1/);
+ assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.62\.9-r1/);
  assert.match(app,/save_strategy_scenario_revision/);assert.match(app,/loadStrategyScenarioHistory/);assert.match(app,/restoreStrategyScenarioHistory/);
  assert.match(app,/escapeHtml\(row\.name\)/);assert.match(app,/scenarioHistoryState\.lastProjection=compared/);
  assert.match(app,/strategyEditAccess\(\)/);

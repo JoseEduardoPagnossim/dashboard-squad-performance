@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.62.8';
+  const APP_VERSION = '2.62.9';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4707,7 +4707,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
 
   // V2.62.8: archived scenario versions are append-only and separate from official snapshots.
-  const scenarioHistoryState={key:'',rows:[],loading:false,error:'',lastProjection:null,run:0};
+  const scenarioHistoryState={key:'',rows:[],loading:false,saving:false,error:'',lastProjection:null,run:0};
   function scenarioHistoryKey(vm){return [state.user?.organizationId||'',vm.state.competence||'',String(vm.state.squadCode||'all').toUpperCase()].join(':')}
   function scenarioHistoryDisplay(row){return `${row.name} • r${row.revision} • ${row.created_at?new Date(row.created_at).toLocaleString('pt-BR'):''}`}
   function scenarioHistoryOptions(select,items,defaultValue){
@@ -4722,7 +4722,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const engine=window.SoftenStrategyScenarioHistory,body=$('#scenarioHistoryRows'),status=$('#scenarioHistoryStatus');
     if(!engine||!body)return;
     const canRead=allowed&&!!state.supabase,canSave=canRead&&strategyEditAccess();
-    const saveBtn=$('#scenarioHistorySaveBtn');if(saveBtn)saveBtn.disabled=!canSave||scenarioHistoryState.loading||!scenarioHistoryState.lastProjection;
+    const saveBtn=$('#scenarioHistorySaveBtn');if(saveBtn)saveBtn.disabled=!canSave||scenarioHistoryState.loading||scenarioHistoryState.saving||!scenarioHistoryState.lastProjection;
     if(status)status.textContent=!canRead?'INDISPONÍVEL':scenarioHistoryState.loading?'CARREGANDO':scenarioHistoryState.error?'ERRO':`${scenarioHistoryState.rows.length} REVISÕES`;
     const notice=$('#scenarioHistoryNotice');if(notice)notice.textContent=!canRead?'Requer acesso agregado e Supabase.':scenarioHistoryState.error?scenarioHistoryState.error:!canSave?'Consulta permitida; salvar requer permissão de edição estratégica.':'Cada salvamento cria uma revisão imutável de premissas e projeções. Dados ausentes permanecem indisponíveis; são simulações, não indicadores oficiais.';
     const rows=scenarioHistoryState.rows;
@@ -4750,7 +4750,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   async function loadStrategyScenarioHistory(force=false){
     const vm=strategyController.viewModel(),key=scenarioHistoryKey(vm),allowed=strategyAccessEngine.canViewAggregates(vm.state.access);
-    if(!allowed||!state.supabase){scenarioHistoryState.rows=[];scenarioHistoryState.key=key;scenarioHistoryState.error='';scenarioHistoryState.loading=false;renderStrategyScenarioHistory(false,vm);return}
+    if(!allowed||!state.supabase){++scenarioHistoryState.run;scenarioHistoryState.rows=[];scenarioHistoryState.lastProjection=null;scenarioHistoryState.key=key;scenarioHistoryState.error='';scenarioHistoryState.loading=false;renderStrategyScenarioHistory(false,vm);return}
     if(!force&&scenarioHistoryState.key===key)return;
     scenarioHistoryState.key=key;scenarioHistoryState.rows=[];scenarioHistoryState.error='';scenarioHistoryState.loading=true;
     const request=++scenarioHistoryState.run;
@@ -4764,11 +4764,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       if(error)throw error;
       if(request!==scenarioHistoryState.run)return;
       scenarioHistoryState.rows=window.SoftenStrategyScenarioHistory.normalizeHistory(data||[],vm.state.competence,vm.state.squadCode);
-    }catch(err){if(request===scenarioHistoryState.run)scenarioHistoryState.error=/strategy_scenario_revisions|schema cache|404/i.test(String(err.message||err))?'Execute a migration V2.62.8 no Supabase para habilitar o histórico.':String(err.message||err)}
+    }catch(err){if(request===scenarioHistoryState.run)scenarioHistoryState.error=/strategy_scenario_revisions|schema cache|404/i.test(String(err.message||err))?'Execute as migrations V2.62.8 e V2.62.9 no Supabase para habilitar o histórico.':String(err.message||err)}
     finally{if(request===scenarioHistoryState.run){scenarioHistoryState.loading=false;renderStrategyScenarioHistory(true,strategyController.viewModel())}}
   }
   async function saveStrategyScenarioHistory(){
-    if(!state.supabase||!strategyEditAccess())return toast('Permissão de edição estratégica e Supabase são necessários.');
+    if(scenarioHistoryState.saving)return;
+    if(!state.supabase||!strategyEditAccess()||!strategyAccessEngine.canViewAggregates(strategyAccess()))return toast('Permissão de leitura, edição estratégica e Supabase são necessários.');
     const vm=strategyController.viewModel(),engine=window.SoftenStrategyScenarioHistory;
     if(!engine||!scenarioHistoryState.lastProjection||scenarioHistoryKey(vm)!==scenarioHistoryState.key)return toast('Atualize o comparativo antes de salvar.');
     const name=$('#scenarioHistoryName')?.value?.trim()||'',notes=$('#scenarioHistoryNotes')?.value||'';
@@ -4779,7 +4780,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     let payload;
     try{payload=engine.buildPayload(scenarioHistoryState.lastProjection);if(payload.competence!==vm.state.competence||payload.squadCode!==String(vm.state.squadCode).toUpperCase())throw new Error('O recorte da simulação mudou.');}
     catch(err){return toast(String(err.message||err))}
-    const btn=$('#scenarioHistorySaveBtn');if(btn)btn.disabled=true;
+    const btn=$('#scenarioHistorySaveBtn');scenarioHistoryState.saving=true;if(btn)btn.disabled=true;
     try{
       const {data,error}=await state.supabase.rpc('save_strategy_scenario_revision',{
         p_scenario_id:group,p_name:name,p_notes:notes,p_competence:strategyDataEngine.competenceDate(payload.competence),
@@ -4790,8 +4791,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       await loadStrategyScenarioHistory(true);
       if($('#scenarioHistoryGroup')&&data?.scenario_id)$('#scenarioHistoryGroup').value=data.scenario_id;
       renderStrategyScenarioHistory(true);toast(`Cenário salvo • revisão ${data?.revision||'?'}.`);
-    }catch(err){console.error('Falha ao salvar cenário',err);toast(/save_strategy_scenario_revision|schema cache/i.test(String(err.message||err))?'Execute a migration V2.62.8.':String(err.message||err))}
-    finally{if(btn)btn.disabled=false}
+    }catch(err){console.error('Falha ao salvar cenário',err);toast(/save_strategy_scenario_revision|schema cache/i.test(String(err.message||err))?'Execute as migrations V2.62.8 e V2.62.9.':String(err.message||err))}
+    finally{scenarioHistoryState.saving=false;renderStrategyScenarioHistory(strategyAccessEngine.canViewAggregates(strategyAccess()),strategyController.viewModel());}
   }
   function restoreStrategyScenarioHistory(id){
     const saved=scenarioHistoryState.rows.find(row=>row.id===id),engine=window.SoftenStrategyScenarioHistory;

@@ -1,0 +1,13 @@
+V2.62.9 - Hardening e fechamento tecnico da Fase 7
+
+Pacote incremental - aplicar apenas sobre a V2.62.8.
+
+1. Faça backup dos arquivos e do banco de dados.
+2. Confirme que a migration V2.62.8 foi executada.
+3. Execute supabase/migrations/MIGRACAO_V2.62.9.sql no SQL Editor (homologacao antes de producao).
+4. Aplique os arquivos do ZIP sobre a raiz do projeto, substituindo arquivos existentes.
+5. Rode npm run check e confira cenarios, revisoes, acesso e persistencia com usuarios reais.
+6. Os testes automatizados nao substituem homologacao RLS/RPC no Supabase nem verificacao visual em navegador.
+
+Documentacao: docs/CENARIOS_HARDENING_FECHAMENTO_V2.62.9.md
+Commit: fix(strategy): hardening e fechamento da Fase 7 V2.62.9

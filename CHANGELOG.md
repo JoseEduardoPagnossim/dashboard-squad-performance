@@ -1,3 +1,9 @@
+## V2.62.9 — Hardening e fechamento da Fase 7
+- Validação de premissas, métricas, delta e fórmulas financeiras/operacionais antes da gravação.
+- Proteção contra gravações concorrentes, respostas obsoletas e alterações involuntárias do snapshot local.
+- Migration complementar com trigger de integridade, escopo e imutabilidade das revisões.
+- Regressões determinísticas e relatório de homologação pendente; fechamento técnico local da Fase 7.
+
 ## V2.62.8 — Cenários salvos, projeções e histórico (Fase 7)
 
 - Persistência no Supabase em `strategy_scenario_revisions`, isolada dos indicadores oficiais, com RLS por organização e permissão agregada.
