@@ -332,11 +332,11 @@ test('V2.43.2 migration converte Admin de Squad legado e restringe administraç�
   assert.match(migration, /p\.role = 'super_admin'/);
 });
 
-test('V2.43.2 Edge Functions criam e editam apenas Administrador ou Técnico', () => {
+test('V2.63.0 Edge Functions criam e editam somente perfis permitidos', () => {
   const createUser = readFileSync(join(root, 'supabase', 'functions', 'create-user', 'index.ts'), 'utf8');
   const manageUser = readFileSync(join(root, 'supabase', 'functions', 'manage-user', 'index.ts'), 'utf8');
-  assert.match(createUser, /\['super_admin','technician'\]\.includes\(role\)/);
-  assert.match(manageUser, /\['super_admin','technician'\]\.includes\(role\)/);
+  assert.match(createUser, /\['super_admin','technician','pre_attendance'\]\.includes\(role\)/);
+  assert.match(manageUser, /\['super_admin','technician','pre_attendance'\]\.includes\(role\)/);
   assert.equal(createUser.includes("['super_admin','squad_admin','technician']"), false);
   assert.equal(manageUser.includes("['super_admin','squad_admin','technician']"), false);
 });

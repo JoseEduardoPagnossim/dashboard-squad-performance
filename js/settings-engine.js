@@ -68,6 +68,7 @@
   function normalizeRole(role){
     const value=String(role||'').trim();
     if(value==='super_admin'||value==='squad_admin')return 'super_admin';
+    if(value==='pre_attendance')return 'pre_attendance';
     return 'technician';
   }
   function permissionDefinition(key){return PERMISSIONS.find(p=>p.key===key)||null}

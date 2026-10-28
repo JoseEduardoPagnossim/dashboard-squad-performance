@@ -4,9 +4,9 @@
   root.SoftenNavigationEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   const ROUTE_PARAMS=['page','section','module','indicator','squad','month','tech','from','to'];
-  const VALID_PAGES=new Set(['home','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','strategy','settings','profile','my-feedbacks','help']);
+  const VALID_PAGES=new Set(['home','pre-attendance','alerts','individual','team','indicators','presentation','feedbacks','users','audit','admin','strategy','settings','profile','my-feedbacks','help']);
   const VALID_ADMIN_SECTIONS=new Set(['operation','finance','costs','appearance']);
-  const VALID_STRATEGY_SECTIONS=new Set(['executive','efficiency','capacity','result','costs','assumptions']);
+  const VALID_STRATEGY_SECTIONS=new Set(['executive','efficiency','capacity','result','costs','assumptions','product','scenarios','automation']);
   const VALID_SETTINGS_MODULES=new Set(['all','personalization','operation','finance','appearance','presentation','access','system']);
   const VALID_INDICATOR_SECTIONS=new Set(['performance','quality','financial-impact','business-days','detail']);
   function text(value){return String(value??'').trim()}

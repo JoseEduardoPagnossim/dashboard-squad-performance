@@ -85,7 +85,7 @@ test('interface fornece salvamento, revisão, comparação e recuperação expl�
  const index=fs.readFileSync(path.join(root,'index.html'),'utf8');const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
  assert.match(index,/id="scenarioHistorySaveBtn"/);assert.match(index,/id="scenarioHistoryGroup"/);
  assert.match(index,/id="scenarioHistoryLeft"/);assert.match(index,/id="scenarioHistoryRight"/);
- assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.62\.9-r1/);
+ assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.0-r1/);
  assert.match(app,/save_strategy_scenario_revision/);assert.match(app,/loadStrategyScenarioHistory/);assert.match(app,/restoreStrategyScenarioHistory/);
  assert.match(app,/escapeHtml\(row\.name\)/);assert.match(app,/scenarioHistoryState\.lastProjection=compared/);
  assert.match(app,/strategyEditAccess\(\)/);

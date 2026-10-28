@@ -215,3 +215,8 @@ Execute `MIGRACAO_V2.61.2.sql` depois da V2.61.1. A migration adiciona `sync_str
 ### V2.61.4 — Unit Economics por Produto
 Execute `MIGRACAO_V2.61.4.sql` depois da V2.61.3. A migration adiciona `sync_strategy_product_unit_economics_sources(date,text)` e `get_strategy_product_unit_economics_summary(date,text)`. A sincronização atualiza Demanda/Custo/Resultado, cria FTE nominal/disponível por Squad e replica o driver de Atendimentos para Produto. ROI continua exclusivo da Receita Direta. Não é necessário republicar Edge Functions.
 
+
+
+## V2.63.0 — Automação + Pré-atendimento
+
+Depois de todas as migrations V2.62.9, execute `MIGRACAO_V2.63.0.sql`. Ela adiciona `profiles.role=pre_attendance`, vinculação estratégica ao Squad C e fontes/lotes de automação. É obrigatório republicar as Edge Functions `create-user` e `manage-user`. Consulte `docs/AUTOMACAO_PRE_ATENDIMENTO_V2.63.0.md` e `docs/FASE8_REGRAS_OBRIGATORIAS_V2.63.0.md`.

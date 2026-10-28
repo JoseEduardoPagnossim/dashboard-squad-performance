@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.62.9';
+  const APP_VERSION = '2.63.0';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -264,6 +264,7 @@
   const STRATEGY_SECTION_META=strategyEngine.SECTION_META;
   const INDICATOR_SECTION_META={performance:{label:'Indicadores gerais',icon:'◔'},quality:{label:'Qualidade',icon:'★'},'financial-impact':{label:'Impacto financeiro',icon:'R$'},'business-days':{label:'Dias úteis',icon:'▤'},detail:{label:'Detalhamento de qualidade',icon:'≡'}};
   const GLOBAL_NAV_COMMANDS=[
+    {id:'pre-attendance',label:'Meu Pré-atendimento',description:'Identidade e acesso ao Pré-atendimento',group:'Navegação',icon:'◈',view:'pre-attendance',keywords:'pre atendimento minhas vendas comissoes'},
     {id:'home',label:'Início',description:'Resumo e atalhos do Performance Hub',group:'Navegação',icon:'⌂',view:'home',keywords:'home começo resumo dashboard'},
     {id:'alerts',label:'Central de Alertas',description:'Alertas automáticos e notificações internas',group:'Navegação',icon:'♢',view:'alerts',permission:'notifications.view',keywords:'alertas notificações avisos sino'},
     {id:'individual',label:'Meu desempenho',description:'Indicadores individuais do técnico selecionado',group:'Desempenho',icon:'◈',view:'individual',keywords:'tecnico individual produtividade avaliação pontos'},
@@ -298,6 +299,8 @@
     {id:'help',label:'Como usar',description:'Ajuda e guia do Performance Hub',group:'Conta',icon:'?',view:'help',keywords:'ajuda guia manual como usar'}
   ];
   function commandAllowed(command){
+    if(isPreAttendance()&&!['pre-attendance','settings','profile','help'].includes(command.view))return false;
+    if(!isPreAttendance()&&command.view==='pre-attendance')return false;
     if(command.adminOnly&&!isAdmin())return false;if(command.techOnly&&!isTechnician())return false;if(command.permission&&!hasPermission(command.permission))return false;if(command.strategyAccess&&!canViewStrategy())return false;
     if(command.view==='admin'){
       if(!isAdmin())return false;
@@ -323,6 +326,7 @@
   }
   function routeAccessible(route){
     const page=route?.page||'home',target={view:page,adminSection:page==='admin'?(route?.section||null):null,strategySection:page==='strategy'?(route?.section||null):null,settingsModule:route?.module||null,indicatorSection:route?.indicator||null};
+    if(isPreAttendance()&&!['pre-attendance','settings','profile','help'].includes(target.view))return false;
     if(target.view==='home')return true;
     const candidates=GLOBAL_NAV_COMMANDS.filter(c=>c.view===target.view).filter(c=>!target.adminSection||c.adminSection===target.adminSection).filter(c=>!target.strategySection||c.strategySection===target.strategySection).filter(c=>!target.settingsModule||c.settingsModule===target.settingsModule).filter(c=>!target.indicatorSection||c.indicatorSection===target.indicatorSection);
     if(candidates.length)return candidates.some(commandAllowed);
@@ -352,7 +356,7 @@
   async function restorePersistentRoute(route=readNavigationRoute(window.location),{canonicalize=true}={}){
     if(PRESENTATION_ROUTE.enabled||!state.user)return;state.routeApplying=true;
     try{
-      const rawTarget=routeAccessible(route)?route:{page:'home'},target=rememberedRoute(rawTarget,{preferLive:false});
+      const rawTarget=routeAccessible(route)?route:{page:isPreAttendance()?'pre-attendance':'home'},target=rememberedRoute(rawTarget,{preferLive:false});
       if(isSuperAdmin()&&target.squad){const code=target.squad==='all'?'all':String(target.squad).toUpperCase();if((code==='all'||state.squads?.[code])&&code!==state.squadCode)await selectSquad(code,{history:'none'});}
       if(target.month&&competenceIdsForSquad().includes(target.month)){state.currentId=target.month;if(state.squadCode!=='all'&&state.supabase&&!isPerformanceFullMonth(currentMonths()[target.month]))ensureMonthLoaded(state.squadCode,target.month,{silent:true}).catch(()=>{});if(state.squadCode!=='all')chooseDefaultTech();}
       if(target.from||target.to){const range=clampAnalysisRange(target.from||state.analysisStartDate,target.to||state.analysisEndDate);if(range.start&&range.end){state.analysisStartDate=range.start;state.analysisEndDate=range.end;state.analysisPreset='custom';syncAnalysisModeFromRange();if(routeUsesAnalysisPeriod(target))syncCurrentMonthToAnalysisEnd();}}
@@ -366,6 +370,7 @@
   }
   function breadcrumbRoute(label,target=null,icon=''){return{label,target,icon}}
   function currentBreadcrumbItems(){
+    if(state.currentView==='pre-attendance')return[breadcrumbRoute('Meu Pré-atendimento',null,'◈')];
     if(state.currentView==='home')return[breadcrumbRoute('Início',null,'⌂')];
     const items=[breadcrumbRoute('Início',{view:'home'},'⌂')],page=state.currentView;
     if(['alerts','individual','team','indicators','presentation'].includes(page))items.push(breadcrumbRoute('Desempenho'));
@@ -549,7 +554,7 @@
     if(page==='strategy')return r.section&&STRATEGY_SECTION_META[r.section]?`Estratégia · ${STRATEGY_SECTION_META[r.section].label}`:'Gestão Estratégica';
     if(page==='settings')return r.module&&SETTINGS_MODULES[r.module]?`Configurações · ${SETTINGS_MODULES[r.module].label}`:'Configurações';
     if(page==='indicators')return r.indicator&&INDICATOR_SECTION_META[r.indicator]?`Indicadores · ${INDICATOR_SECTION_META[r.indicator].label.replace(/^Indicadores\s*/i,'')}`:'Indicadores';
-    const labels={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const labels={home:'Início','pre-attendance':'Meu Pré-atendimento',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     return labels[page]||'Performance Hub';
   }
   function workspaceRouteContext(route={}){
@@ -1252,6 +1257,7 @@
 
   async function enterApp(user){
     const canonicalRole=normalizeAccessRole(user?.role);state.user={...user,role:canonicalRole,squadCode:canonicalRole==='super_admin'?null:(user?.squadCode||null),permissions:canonicalRole==='super_admin'?{}:(user?.permissions||{})};loadUserUiPreferences(state.user);
+    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],request:strategyAutomationState.request+1});
     state.dataPromises={};state.squadSelectionSeq=0;state.squadSelectionLoadError=false;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.internalNotifications=[];state.notificationReadIds=[];state.notificationsLoaded=false;state.notificationsLoading=false;state.notificationsRemoteAvailable=true;state.notificationsError='';state.notificationPopoverOpen=false;state.notificationFilters={status:'all',source:'all',severity:'all',category:'all',search:''};state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
     state.businessCalendarRows=[];state.businessCalendarLoaded=false;state.businessCalendarLoading=null;state.businessCalendarRemoteAvailable=true;state.businessCalendarYear=new Date().getFullYear();state.businessCalendarDraft=null;
@@ -1263,8 +1269,8 @@
       state.squadCode=requestedPresentationSquad==='ALL'?'all':(state.squads[requestedPresentationSquad]?requestedPresentationSquad:(user.squadCode||'D'));
       state.currentView='presentation';
     }else{
-      state.squadCode=user.role==='super_admin'?'D':(user.squadCode||'D');
-      state.currentView='home';
+      state.squadCode=user.role==='pre_attendance'?'all':(user.role==='super_admin'?'D':(user.squadCode||'D'));
+      state.currentView=user.role==='pre_attendance'?'pre-attendance':'home';
     }
     if(state.squadCode==='all'){
       state.currentId=null;state.techName='';state.theme=loadCachedTheme()||state.theme||BOOT_FALLBACK_THEME;applyTheme(state.theme);
@@ -1292,6 +1298,8 @@
     $$('.admin-only').forEach(el=>el.classList.toggle('hidden',!admin));
     $$('.super-only').forEach(el=>el.classList.toggle('hidden',!superAdmin));
     $$('.tech-only').forEach(el=>el.classList.toggle('hidden',!isTechnician()));
+    $$('.pre-attendance-only').forEach(el=>el.classList.toggle('hidden',!isPreAttendance()));
+    if(isPreAttendance()){$$('[data-nav-group="performance"] .nav-btn:not(.pre-attendance-only)').forEach(el=>el.classList.add('hidden'));}else{$$('[data-nav-group="performance"] .nav-btn:not(.pre-attendance-only)').forEach(el=>el.classList.remove('hidden'));}
     $$('.admin-help').forEach(el=>el.classList.toggle('hidden',!admin));
     $$('.super-help').forEach(el=>el.classList.toggle('hidden',!superAdmin));
     $$('[data-strategy-access]').forEach(el=>el.classList.toggle('hidden',!canViewStrategy()));
@@ -1316,9 +1324,10 @@
     refreshNotificationBadges();
   }
   function isTechnician(){return state.user?.role==='technician'}
+  function isPreAttendance(){return state.user?.role==='pre_attendance'}
   function isAdmin(){return normalizeAccessRole(state.user?.role)==='super_admin'}
   function isSuperAdmin(){return isAdmin()}
-  function roleLabel(r){return normalizeAccessRole(r)==='super_admin'?'Administrador':'Técnico'}
+  function roleLabel(r){const role=normalizeAccessRole(r);return role==='super_admin'?'Administrador':role==='pre_attendance'?'Pré-atendimento':'Técnico'}
 
   const DEMO_AUDIT_KEY='softenPerformanceAuditV1';
   function auditSquadId(code=state.squadCode){return code&&code!=='all'?(state.squads?.[code]?.dbId||null):null}
@@ -1843,6 +1852,8 @@
 
   function showView(name,adminSection=null,{history='push'}={}){
     if((name==='admin'||name==='users'||name==='feedbacks'||name==='audit')&&!isAdmin())return;
+    if(isPreAttendance()&&!['pre-attendance','profile','settings','help'].includes(name))return toast('Este perfil possui acesso somente ao módulo de Pré-atendimento.');
+    if(name==='pre-attendance'&&!isPreAttendance())return;
     if(name==='my-feedbacks'&&!isTechnician())return;
     if(name==='alerts'&&!hasPermission('notifications.view'))return toast('Você não possui permissão para visualizar a Central de Alertas.');
     if(name==='indicators'&&!hasPermission('indicators.view'))return toast('Você não possui permissão para visualizar Indicadores.');
@@ -1863,7 +1874,7 @@
     $$('.view').forEach(v=>v.classList.remove('active')); const view=$('#view-'+name);if(view)view.classList.add('active');
     $$('.nav-btn').forEach(b=>{const sameView=b.dataset.view===name;const sameSection=name!=='admin'||!b.dataset.adminSection||b.dataset.adminSection===state.adminSection;const sameSettings=name!=='settings'||(b.dataset.settingsModule?b.dataset.settingsModule===state.settingsModule:!b.dataset.settingsModule);b.classList.toggle('active',sameView&&sameSection&&sameSettings)});
     const adminTitles={operation:'Operação',finance:'Bonificação',costs:'Custos',appearance:'Aparência'};
-    const titles={home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',strategy:STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Gestão Estratégica',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
+    const titles={'pre-attendance':'Meu Pré-atendimento',home:'Início',alerts:'Central de Alertas',individual:'Meu desempenho',team:'Visão do Squad',indicators:'Indicadores',presentation:'Apresentação',feedbacks:'Feedbacks',users:'Usuários',audit:'Auditoria',admin:adminTitles[state.adminSection]||'Gestão',strategy:STRATEGY_SECTION_META[strategyController.getState().section]?.label||'Gestão Estratégica',settings:'Configurações',profile:'Meu perfil','my-feedbacks':'Meus feedbacks',help:'Como usar'};
     $('#pageTitle').textContent=titles[name]||'Performance Hub';document.title=`${titles[name]||'Performance Hub'} • Soften Performance Hub`;
     if($('#squadEyebrow'))$('#squadEyebrow').textContent=name==='home'?(isSuperAdmin()?'PERFORMANCE HUB':`SQUAD ${state.user?.squadCode||state.squadCode||'—'}`):(name==='strategy'?'GESTÃO ESTRATÉGICA':(state.squadCode==='all'?'TODOS OS SQUADS':`SQUAD ${state.squadCode}`));
     syncTopFiltersForView(name,state.adminSection);
@@ -1900,6 +1911,7 @@
 
   function render(){
     applyPermissions();scheduleChartExportControls();
+    if(state.currentView==='pre-attendance'){renderPreAttendanceSelf();return;}
     if(state.currentView==='home'){renderHome();return;}
     if(state.currentView==='alerts'){renderAlertCenter();return;}
     if(state.currentView==='feedbacks'){renderFeedbacks();return;}
@@ -3572,6 +3584,54 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
   }
+  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],request:0};
+  async function loadStrategyAutomation({force=false}={}){
+    if(!state.supabase||!canViewStrategy()||!strategyEditAccess()||!strategyPeopleAccess())return;
+    if(strategyAutomationState.loading||strategyAutomationState.loaded&&!force)return;
+    const request=++strategyAutomationState.request,org=state.user?.organizationId;
+    strategyAutomationState.loading=true;strategyAutomationState.error='';
+    try{
+      const [sources,profiles,people]=await Promise.all([
+        state.supabase.from('strategy_import_sources').select('id,source_key,label,origin,generates_mrr,active').eq('organization_id',org).order('source_key'),
+        state.supabase.from('profiles').select('user_id,full_name,role,active').eq('organization_id',org).eq('role','pre_attendance').eq('active',true).order('full_name'),
+        state.supabase.from('strategy_people').select('id,user_id,name,active,functional_team,default_squad_code').eq('organization_id',org).order('name')
+      ]);
+      if(sources.error)throw sources.error;if(profiles.error)throw profiles.error;if(people.error)throw people.error;
+      if(request!==strategyAutomationState.request||org!==state.user?.organizationId)return;
+      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[]});
+    }catch(err){strategyAutomationState.error=String(err.message||err);strategyAutomationState.loaded=false;}
+    finally{strategyAutomationState.loading=false;if(state.currentView==='strategy'&&strategyController.getState().section==='automation')renderStrategyAutomation();}
+  }
+  function renderStrategyAutomation(){
+    const canManage=!!state.supabase&&strategyEditAccess()&&strategyPeopleAccess();
+    const status=$('#strategyAutomationNotice');if(status)status.textContent=!state.supabase?'Disponivel apos configurar o Supabase e aplicar a migration V2.63.0.':!canManage?'Acesso restrito a edicao estrategica com custos de pessoas.':strategyAutomationState.error?`Falha: ${strategyAutomationState.error}`:'CSV e manual prontos para configuracao; reconhecimento de vendas ainda nao habilitado.';
+    for(const id of ['strategyAutomationInitSources','strategyAutomationRefresh','strategyAutomationPreUser','strategyAutomationPrePerson','strategyAutomationBindUser'])if($('#'+id))$('#'+id).disabled=!canManage;
+    if($('#strategyAutomationSourceRows'))$('#strategyAutomationSourceRows').innerHTML=(strategyAutomationState.sources||[]).map(s=>`<tr><td>${escapeHtml(s.label)}</td><td>${s.origin==='csv'?'CSV':'Manual'}</td><td>${s.generates_mrr?'Sim':'Não'}</td><td>${s.active?'Ativa':'Inativa'}</td></tr>`).join('')||'<tr><td colspan="4">Nenhuma fonte cadastrada; clique em Preparar fontes.</td></tr>';
+    const linked=new Set(strategyAutomationState.people.filter(p=>p.user_id).map(p=>String(p.user_id)));
+    if($('#strategyAutomationPreRows'))$('#strategyAutomationPreRows').textContent=`${strategyAutomationState.users.length} conta(s) ativa(s) • ${strategyAutomationState.users.filter(u=>linked.has(String(u.user_id))).length} vinculada(s) a pessoas estrategicas.`;
+    if($('#strategyAutomationPreUser'))$('#strategyAutomationPreUser').innerHTML='<option value="">Selecione a conta</option>'+strategyAutomationState.users.map(u=>`<option value="${escapeHtml(u.user_id)}">${escapeHtml(u.full_name)}</option>`).join('');
+    if($('#strategyAutomationPrePerson'))$('#strategyAutomationPrePerson').innerHTML='<option value="">Selecione a pessoa</option>'+strategyAutomationState.people.filter(p=>p.active!==false&&!p.user_id).map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+  }
+  async function initStrategyAutomationSources(){
+    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissao para configurar fontes.');
+    const payload=window.SoftenStrategyAutomation.createSourcePayload(state.user.organizationId,state.user.userId);
+    try{const {error}=await state.supabase.from('strategy_import_sources').upsert(payload,{onConflict:'organization_id,source_key',ignoreDuplicates:true});if(error)throw error;strategyAutomationState.loaded=false;await loadStrategyAutomation({force:true});toast('Fontes preparadas sem duplicidades.');}catch(err){console.error(err);toast(`Não foi possível preparar as fontes: ${err.message||err}`);}
+  }
+  async function bindStrategyPreAttendanceUser(){
+    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissao para vincular pessoas.');
+    const userId=$('#strategyAutomationPreUser')?.value,personId=$('#strategyAutomationPrePerson')?.value;
+    if(!userId||!personId)return toast('Selecione a conta e a pessoa estrategica.');
+    try{const {data,error}=await state.supabase.rpc('link_strategy_pre_attendance_person',{p_person_id:personId,p_user_id:userId});if(error)throw error;if(String(data)!==String(personId))throw new Error('O servidor nao confirmou o vinculo.');strategyAutomationState.loaded=false;strategyInvalidateFinance();await loadStrategyAutomation({force:true});await loadStrategyFinanceData({force:true});toast('Conta vinculada a pessoa estrategica no Squad C.');}catch(err){console.error(err);toast(String(err.message||err));}
+  }
+  async function renderPreAttendanceSelf(){
+    if(!isPreAttendance()||!$('#preAttendanceSelfStatus'))return;
+    if(!state.supabase){$('#preAttendanceSelfStatus').textContent='Conta de Pré-atendimento · demonstração sem vínculo remoto.';return;}
+    const user=state.user?.userId,org=state.user?.organizationId;
+    $('#preAttendanceSelfStatus').textContent='Verificando o vínculo estratégico...';
+    const {data,error}=await state.supabase.from('strategy_people').select('id,name,default_squad_code,active').eq('organization_id',org).eq('user_id',user).eq('functional_team','pre_attendance').maybeSingle();
+    if(!isPreAttendance()||user!==state.user?.userId||state.currentView!=='pre-attendance')return;
+    $('#preAttendanceSelfStatus').textContent=error?'Vínculo indisponível. Solicite conferência ao administrador.':data?`Usuário ativo vinculado a ${data.name} · Squad C.`:'Conta ativa sem vínculo estratégico. Solicite conciliação ao administrador.';
+  }
   function strategyMoney(value){return Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
   function strategySignedPercent(value){return value==null||!Number.isFinite(Number(value))?'—':`${Number(value).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%`}
   function strategyRatio(value){return value==null||!Number.isFinite(Number(value))?'—':`${Number(value).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}x`}
@@ -3588,7 +3648,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const financial=new Set(vm.context.financialCompetences||[]);
     return vm.context.competences.slice().reverse().map(id=>`<option value="${escapeHtml(id)}" ${id===vm.state.competence?'selected':''}>${escapeHtml(strategyDataEngine.competenceLabel(id))}${financial.has(id)?' • Financeira':''}</option>`).join('');
   }
-  function strategyGroupLabel(row){return row?.code==='PRE'?'Pré-atendimento':(row?.name&&row.name!==`Squad ${row.code}`?`Squad ${row.code} · ${row.name}`:`Squad ${row?.code||''}`)}
+  function strategyGroupLabel(row){return row?.code==='C'?'Pré-atendimento · Squad C':row?.code==='PRE'?'Pré-atendimento (legado)':(row?.name&&row.name!==`Squad ${row.code}`?`Squad ${row.code} · ${row.name}`:`Squad ${row?.code||''}`)}
   function strategySquadOptions(vm){return[`<option value="all" ${vm.state.squadCode==='all'?'selected':''}>Todos os grupos/Squads</option>`,...vm.context.squads.map(s=>`<option value="${escapeHtml(s.code)}" ${vm.state.squadCode===s.code?'selected':''}>${escapeHtml(strategyGroupLabel(s))}</option>`)].join('')}
   function strategyPersonSquadOptions(vm,selected='',allowEmpty=true){return[allowEmpty?`<option value="" ${!selected?'selected':''}>Sem grupo / compartilhado</option>`:'',...vm.context.squads.map(s=>`<option value="${escapeHtml(s.code)}" ${String(selected||'').toUpperCase()===s.code?'selected':''}>${escapeHtml(strategyGroupLabel(s))}</option>`)].join('')}
   function strategyParseNumber(value){const n=Number(String(value??'').replace(',','.'));return Number.isFinite(n)?Math.max(0,n):0}
@@ -4764,7 +4824,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       if(error)throw error;
       if(request!==scenarioHistoryState.run)return;
       scenarioHistoryState.rows=window.SoftenStrategyScenarioHistory.normalizeHistory(data||[],vm.state.competence,vm.state.squadCode);
-    }catch(err){if(request===scenarioHistoryState.run)scenarioHistoryState.error=/strategy_scenario_revisions|schema cache|404/i.test(String(err.message||err))?'Execute as migrations V2.62.8 e V2.62.9 no Supabase para habilitar o histórico.':String(err.message||err)}
+    }catch(err){if(request===scenarioHistoryState.run)scenarioHistoryState.error=/strategy_scenario_revisions|schema cache|404/i.test(String(err.message||err))?'Execute as migrations V2.62.8 e V2.63.0 no Supabase para habilitar o histórico.':String(err.message||err)}
     finally{if(request===scenarioHistoryState.run){scenarioHistoryState.loading=false;renderStrategyScenarioHistory(true,strategyController.viewModel())}}
   }
   async function saveStrategyScenarioHistory(){
@@ -4791,7 +4851,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       await loadStrategyScenarioHistory(true);
       if($('#scenarioHistoryGroup')&&data?.scenario_id)$('#scenarioHistoryGroup').value=data.scenario_id;
       renderStrategyScenarioHistory(true);toast(`Cenário salvo • revisão ${data?.revision||'?'}.`);
-    }catch(err){console.error('Falha ao salvar cenário',err);toast(/save_strategy_scenario_revision|schema cache/i.test(String(err.message||err))?'Execute as migrations V2.62.8 e V2.62.9.':String(err.message||err))}
+    }catch(err){console.error('Falha ao salvar cenário',err);toast(/save_strategy_scenario_revision|schema cache/i.test(String(err.message||err))?'Execute as migrations V2.62.8 e V2.63.0.':String(err.message||err))}
     finally{scenarioHistoryState.saving=false;renderStrategyScenarioHistory(strategyAccessEngine.canViewAggregates(strategyAccess()),strategyController.viewModel());}
   }
   function restoreStrategyScenarioHistory(id){
@@ -5055,6 +5115,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyCompetenceBadge'))$('#strategyCompetenceBadge').textContent=locked&&vm.competenceRecord?.snapshotRevision?`${compStatus} • #${vm.competenceRecord.snapshotRevision}`:compStatus;
     if($('#strategyCompetenceList')){const rows=(vm.financial.competences||[]).slice().sort((a,b)=>b.competence.localeCompare(a.competence));$('#strategyCompetenceList').innerHTML=rows.length?rows.map(row=>`<button type="button" class="strategy-competence-chip ${row.competence===vm.state.competence?'is-active':''}" data-strategy-competence-chip="${escapeHtml(row.competence)}"><strong>${escapeHtml(strategyDataEngine.competenceLabel(row.competence))}</strong><span>${escapeHtml(strategyCompetenceStatusLabel(row.status))}</span></button>`).join(''):'<em>Nenhuma competência financeira criada.</em>';}
     if($('#strategyOperationalPeopleSyncStatus')){const activePeople=(vm.financial.people||[]).filter(p=>p.active!==false),linked=activePeople.filter(p=>p.userId).length,manual=activePeople.filter(p=>!p.userId).length,excluded=(vm.financial.people||[]).filter(p=>p.active===false).length;$('#strategyOperationalPeopleSyncStatus').textContent=`${linked} técnico${linked===1?'':'s'} vinculado${linked===1?'':'s'} ao operacional • ${manual} pessoa${manual===1?'':'s'} somente estratégica${manual===1?'':'s'}${excluded?` • ${excluded} excluído${excluded===1?'':'s'} dos custos`:''}.`; }
+    if(section==='automation'){renderStrategyAutomation();if(!strategyAutomationState.loaded&&!strategyAutomationState.loading)loadStrategyAutomation().catch(err=>console.error(err));}
     if($('#strategySyncOperationalPeopleBtn'))$('#strategySyncOperationalPeopleBtn').disabled=!effectiveEdit||!state.supabase;
     if($('#strategyCompetenceStatusSelect')){$('#strategyCompetenceStatusSelect').value=vm.competenceRecord?.status||'draft';$('#strategyCompetenceStatusSelect').disabled=!effectiveEdit||!vm.competenceRecord;}
     if($('#strategyCompetenceNotes')){$('#strategyCompetenceNotes').value=vm.competenceRecord?.notes||'';$('#strategyCompetenceNotes').disabled=!effectiveEdit||!vm.competenceRecord;}
@@ -5299,7 +5360,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(e.target.closest('#scenarioHistoryReloadBtn'))return loadStrategyScenarioHistory(true);
     if(e.target.closest('#scenarioHistoryNewBtn')){if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value='';if($('#scenarioHistoryName'))$('#scenarioHistoryName').value='Planejamento estratégico';if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value='';return}
     const restore=e.target.closest('[data-scenario-history-restore]');if(restore)return restoreStrategyScenarioHistory(restore.dataset.scenarioHistoryRestore);
-    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
+    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){
     if(e.target.id==='scenarioHistoryGroup'){const row=scenarioHistoryState.rows.find(item=>item.scenario_id===e.target.value);if(row){if($('#scenarioHistoryName'))$('#scenarioHistoryName').value=row.name;if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value=row.notes||'';}return}
     if(['scenarioHistoryLeft','scenarioHistoryRight','scenarioHistoryAlternative'].includes(e.target.id)){renderStrategyScenarioHistory(true);return}
@@ -5363,7 +5424,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
           for(const row of strategyRows||[])strategyAccessByUser.set(row.user_id,strategyAccessEngine.normalizeAccess(row,{source:'supabase',remoteAvailable:true}));
         }catch(err){console.warn('Acessos estratégicos da listagem indisponíveis. Execute a migração V2.57.1.',err)}
       }
-      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:normalizeAccessRole(p.role),squadCode:normalizeAccessRole(p.role)==='super_admin'?null:(p.squads?.code||null),techName:p.technician_name||'',aliases:normalizedAliasValues(aliasesByUser.get(p.user_id)||[]),active:p.active!==false,permissions:p.permissions||{},strategyAccess:strategyAccessByUser.get(p.user_id)||strategyAccessEngine.normalizeAccess({},{source:'supabase',remoteAvailable:true})}));
+      state.userDirectory=rows.map(p=>({userId:p.user_id,email:p.email||'',fullName:p.full_name,role:normalizeAccessRole(p.role),squadCode:normalizeAccessRole(p.role)==='super_admin'?null:(normalizeAccessRole(p.role)==='pre_attendance'?'C':(p.squads?.code||null)),techName:p.technician_name||'',aliases:normalizedAliasValues(aliasesByUser.get(p.user_id)||[]),active:p.active!==false,permissions:p.permissions||{},strategyAccess:strategyAccessByUser.get(p.user_id)||strategyAccessEngine.normalizeAccess({},{source:'supabase',remoteAvailable:true})}));
     }else{
       state.technicianAliasesAvailable=true;state.userDirectory=allDemoUsers().map((u,i)=>({userId:u.userId||`demo-${i}`,email:u.email,fullName:u.fullName,role:normalizeAccessRole(u.role),squadCode:normalizeAccessRole(u.role)==='super_admin'?null:(u.squadCode||null),techName:u.techName||'',aliases:normalizedAliasValues(u.aliases||[]),active:u.active!==false,permissions:u.permissions||{},strategyAccess:strategyAccessEngine.demoAccessForRole(u.role,u.strategyAccess===true)}));
     }
@@ -5381,8 +5442,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(role!=='all')list=list.filter(u=>u.role===role);
     if(search)list=list.filter(u=>[u.fullName,u.email,u.techName,u.squadCode].some(v=>String(v||'').toLowerCase().includes(search)));
     $('#usersCountLabel').textContent=`${list.length} ${list.length===1?'usuário':'usuários'}`;
-    const all=scopedUserDirectory(),counts={super_admin:0,technician:0};all.forEach(u=>{const role=normalizeAccessRole(u.role);if(counts[role]!=null)counts[role]++});
-    $('#userStats').innerHTML=`<div class="card user-stat"><span>Total no escopo</span><strong>${all.length}</strong></div><div class="card user-stat"><span>Administradores</span><strong>${counts.super_admin}</strong></div><div class="card user-stat"><span>Técnicos</span><strong>${counts.technician}</strong></div>`;
+    const all=scopedUserDirectory(),counts={super_admin:0,technician:0,pre_attendance:0};all.forEach(u=>{const role=normalizeAccessRole(u.role);if(counts[role]!=null)counts[role]++});
+    $('#userStats').innerHTML=`<div class="card user-stat"><span>Total no escopo</span><strong>${all.length}</strong></div><div class="card user-stat"><span>Administradores</span><strong>${counts.super_admin}</strong></div><div class="card user-stat"><span>Técnicos</span><strong>${counts.technician}</strong></div><div class="card user-stat"><span>Pré-atendimento</span><strong>${counts.pre_attendance}</strong></div>`;
     if(!list.length){$('#userRows').innerHTML='<tr><td colspan="7"><div class="users-empty">Nenhum usuário encontrado neste filtro.</div></td></tr>';return}
     $('#userRows').innerHTML=list.sort((a,b)=>String(a.fullName).localeCompare(String(b.fullName),'pt-BR')).map(u=>{const manageable=canManageDirectoryUser(u),deletable=canDeleteDirectoryUser(u),canToggle=manageable&&u.role!=='super_admin',strategyEnabled=strategyAccessEngine.canView(u.strategyAccess),closeEnabled=strategyAccessEngine.canCloseCompetence(u.strategyAccess);return `<tr><td><div class="user-cell"><span class="user-avatar table-avatar">${escapeHtml((u.fullName||'U').charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(u.fullName||'Sem nome')}</strong><small>${escapeHtml(u.email||'E-mail não informado')}</small></div></div></td><td><span class="role-pill ${u.role}">${escapeHtml(roleLabel(u.role))}</span></td><td>${u.squadCode?`Squad ${escapeHtml(u.squadCode)}`:'Todos'}</td><td>${escapeHtml(u.techName||'—')}</td><td><span class="status-dot ${u.active?'on':'off'}"></span>${u.active?'Ativo':'Inativo'}</td><td><div class="strategy-user-access-stack"><label class="strategy-user-access-toggle" title="Somente Super Admin pode liberar ou revogar a Gestão Estratégica"><input type="checkbox" data-strategy-user-access="${escapeHtml(u.userId)}" ${strategyEnabled?'checked':''} ${isSuperAdmin()?'':'disabled'}><span>${strategyEnabled?'Liberado':'Bloqueado'}</span></label><label class="strategy-user-access-toggle compact" title="Permite fechar e reabrir competências estratégicas"><input type="checkbox" data-strategy-close-access="${escapeHtml(u.userId)}" ${closeEnabled?'checked':''} ${isSuperAdmin()&&strategyEnabled?'':'disabled'}><span>Fechar competências</span></label></div></td><td><div class="user-actions"><button class="table-action" data-edit-user="${escapeHtml(u.userId)}" ${manageable?'':'disabled'}>Editar</button><button class="table-action ${u.active?'warning':'success'}" data-toggle-user="${escapeHtml(u.userId)}" ${canToggle?'':'disabled'}>${u.active?'Inativar':'Reativar'}</button><button class="table-action danger" data-delete-user="${escapeHtml(u.userId)}" ${deletable?'':'disabled'}>Excluir</button></div></td></tr>`}).join('');
     $$('[data-strategy-user-access]').forEach(input=>input.addEventListener('change',()=>setDirectoryStrategyAccess(input.dataset.strategyUserAccess,input.checked,input)));
@@ -5442,7 +5503,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const u=directoryUserById(userId);if(!canManageDirectoryUser(u))return;
     $('#editUserError').textContent='';$('#editUserId').value=u.userId;$('#editUserName').value=u.fullName||'';$('#editUserEmail').value=u.email||'';
     const roleSel=$('#editUserRole'),squadSel=$('#editUserSquad');
-    roleSel.innerHTML='<option value="technician">Técnico</option><option value="super_admin">Administrador</option>';
+    roleSel.innerHTML='<option value="technician">Técnico</option><option value="pre_attendance">Pré-atendimento</option><option value="super_admin">Administrador</option>';
     roleSel.value=u.role;
     const allowed=Object.values(state.squads);
     squadSel.innerHTML='<option value="">Sem Squad</option>'+allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
@@ -5452,7 +5513,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function syncEditUserFields(){
     const role=$('#editUserRole').value,isSuper=role==='super_admin';
-    $('#editUserSquad').disabled=isSuper||!isSuperAdmin();if(isSuper)$('#editUserSquad').value='';
+    $('#editUserSquad').disabled=role!=='technician'||!isSuperAdmin();if(role!=='technician')$('#editUserSquad').value='';
     $('#editTechnicianNameField').classList.toggle('hidden',role!=='technician');$('#editTechnicianAliasesField')?.classList.toggle('hidden',role!=='technician');$('#editUserTechName').required=role==='technician';
     $('#editUserRole').disabled=false;
     const moved=isSuperAdmin()&&role==='technician'&&$('#editUserSquad').value&&$('#editUserSquad').value!==($('#editUserSquad').dataset.originalSquad||'');
@@ -5462,11 +5523,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     e.preventDefault();const u=directoryUserById($('#editUserId').value);if(!canManageDirectoryUser(u))return;
     const btn=$('#editUserSubmit');btn.disabled=true;btn.textContent='Salvando...';$('#editUserError').textContent='';
     try{
-      const role=$('#editUserRole').value,squadCode=role==='super_admin'?null:$('#editUserSquad').value,techName=role==='technician'?normalizeName($('#editUserTechName').value):null;
+      const role=$('#editUserRole').value,squadCode=role==='technician'?$('#editUserSquad').value:null,techName=role==='technician'?normalizeName($('#editUserTechName').value):null;
       const period=$('#editUserEffectiveMonth').value||'',parts=period.split('-').map(Number);
+      if((u.role==='pre_attendance')!==(role==='pre_attendance'))throw new Error('Para preservar historicos, nao altere usuarios existentes de/para Pre-atendimento. Crie uma conta dedicada.');
       const permissions=role==='technician'&&hasPermission('permissions.manage')?collectPermissionOverrides():{};
       const manualAliases=role==='technician'?parseTechnicianAliasesInput($('#editUserAliases')?.value||''):[],payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null,permissions};
-      if(!payload.fullName)throw new Error('Informe o nome completo.');if(role!=='super_admin'&&!state.squads[squadCode])throw new Error('Selecione um Squad válido.');if(role==='technician'&&!techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
+      if(!payload.fullName)throw new Error('Informe o nome completo.');if(role==='technician'&&!state.squads[squadCode])throw new Error('Selecione um Squad válido.');if(role==='technician'&&!techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
       const csvNameChanged=role==='technician'&&u.role==='technician'&&!samePersonName(u.techName,techName);if(state.supabase&&csvNameChanged&&state.technicianAliasesAvailable===false)throw new Error('Antes de alterar o nome do técnico no CSV, execute a migração V2.51.0. Ela preserva o nome anterior como alias e evita duplicidade no histórico.');
       if(state.supabase){
         // Preserva o nome anterior antes de alterar o perfil. Se a estrutura de aliases estiver
@@ -5513,17 +5575,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function syncCreateUserFields(){
     const role=$('#newUserRole').value,isSuper=role==='super_admin';
-    $('#newUserSquad').disabled=isSuper||!isSuperAdmin();
+    $('#newUserSquad').disabled=role!=='technician'||!isSuperAdmin();
     $('#technicianNameField').classList.toggle('hidden',role!=='technician');
     $('#newUserTechName').required=role==='technician';
-    if(isSuper)$('#newUserSquad').value='';
+    if(role!=='technician')$('#newUserSquad').value='';
   }
   async function handleCreateUser(e){
     e.preventDefault();if(!isAdmin())return;
     const submit=$('#createUserSubmit');submit.disabled=true;submit.textContent='Criando...';$('#createUserError').textContent='';
     try{
       const role=$('#newUserRole').value;
-      const payload={fullName:$('#newUserName').value.trim(),email:$('#newUserEmail').value.trim().toLowerCase(),password:$('#newUserPassword').value,role,squadCode:role==='super_admin'?null:$('#newUserSquad').value,techName:role==='technician'?normalizeName($('#newUserTechName').value):null};
+      const payload={fullName:$('#newUserName').value.trim(),email:$('#newUserEmail').value.trim().toLowerCase(),password:$('#newUserPassword').value,role,squadCode:role==='technician'?$('#newUserSquad').value:null,techName:role==='technician'?normalizeName($('#newUserTechName').value):null};
       validateNewUserPayload(payload);
       if(state.supabase){const created=await createSupabaseUser(payload);if(role==='technician'&&created?.user?.id&&state.technicianAliasesAvailable!==false){try{await persistTechnicianAliasesForUser({userId:created.user.id,newTechName:payload.techName,newFullName:payload.fullName});}catch(aliasErr){console.warn(aliasErr)}}}else createDemoUser(payload);
       state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('userModal');toast(`Usuário ${payload.fullName} criado com sucesso.`);
@@ -5531,7 +5593,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   function validateNewUserPayload(p){
     if(!p.fullName)throw new Error('Informe o nome completo.');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))throw new Error('Informe um e-mail válido.');if(String(p.password||'').length<8)throw new Error('A senha temporária deve ter pelo menos 8 caracteres.');
-    if(!['technician','super_admin'].includes(p.role))throw new Error('Perfil inválido.');if(p.role!=='super_admin'&&!state.squads[p.squadCode])throw new Error('Selecione um Squad válido.');if(p.role==='technician'&&!p.techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
+    if(!['technician','pre_attendance','super_admin'].includes(p.role))throw new Error('Perfil inválido.');if(p.role==='technician'&&!state.squads[p.squadCode])throw new Error('Selecione um Squad válido.');if(p.role==='technician'&&!p.techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
   }
   function createDemoUser(p){
     if(allDemoUsers().some(u=>String(u.email).toLowerCase()===p.email))throw new Error('Já existe um usuário com este e-mail.');

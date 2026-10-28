@@ -32,7 +32,7 @@ test('Home existe, aparece primeiro na navegacao e e a rota inicial apos login',
   assert.ok(navHome >= 0 && navHome < navIndividual, 'Inicio deve aparecer antes de Meu desempenho');
   assert.match(app, /currentView:'home'/);
   const enterApp = blockBetween(app, 'async function enterApp(user)', 'function applyPermissions()');
-  assert.match(enterApp, /state\.currentView='home'/);
+  assert.match(enterApp, /state\.currentView=user\.role==='pre_attendance'\?'pre-attendance':'home'/);
 });
 
 test('Home possui renderizacao especifica por perfil', () => {

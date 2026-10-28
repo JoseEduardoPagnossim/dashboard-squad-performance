@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     if (!fullName) return fail('Informe o nome completo.', 400, 'invalid_name')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Informe um e-mail válido.', 400, 'invalid_email')
     if (password.length < 8) return fail('A senha temporária deve ter pelo menos 8 caracteres.', 400, 'weak_password')
-    if (!['super_admin','technician'].includes(role)) return fail('Perfil inválido. Use Administrador ou Técnico.', 400, 'invalid_role')
+    if (!['super_admin','technician','pre_attendance'].includes(role)) return fail('Perfil inválido.', 400, 'invalid_role')
     if (role === 'technician' && !technicianName) return fail('Informe o nome do técnico como aparece no CSV.', 400, 'missing_technician_name')
 
     // Antes do Auth, procura um perfil já existente e devolve o Squad real para facilitar correção pela interface.
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       return fail(code==='email_exists'?'Este e-mail já existe no Authentication, mas não há perfil visível na organização. Verifique Authentication > Users antes de recriar o acesso.':msg, 400, code)
     }
 
-    const profile = {user_id:created.user.id,organization_id:requester.organization_id,squad_id:role==='super_admin'?null:targetSquad!.id,full_name:fullName,email,role,technician_name:technicianName,permissions:{},active:true,updated_at:new Date().toISOString()}
+    const profile = {user_id:created.user.id,organization_id:requester.organization_id,squad_id:role==='technician'?targetSquad!.id:null,full_name:fullName,email,role,technician_name:technicianName,permissions:{},active:true,updated_at:new Date().toISOString()}
     const { error: profileError } = await admin.from('profiles').insert(profile)
     if (profileError) {
       const { error: rollbackError } = await admin.auth.admin.deleteUser(created.user.id)
@@ -70,6 +70,13 @@ Deno.serve(async (req) => {
       return fail(profileError.message || 'Não foi possível criar o perfil.', 400, 'profile_create_failed')
     }
 
+    if(role==='pre_attendance'){
+      const {error:personError}=await admin.from('strategy_people').insert({organization_id:requester.organization_id,user_id:created.user.id,name:fullName,role_label:'Pré-atendimento',functional_team:'pre_attendance',default_squad_code:'C',default_fte:1,active:true,source:'manual',created_by:requester.user_id,updated_by:requester.user_id})
+      if(personError){
+        await admin.auth.admin.deleteUser(created.user.id)
+        return fail('Não foi possível vincular o Pré-atendimento à Gestão Estratégica: '+personError.message,400,'pre_attendance_link_failed')
+      }
+    }
     if(targetSquad){
       const now=new Date()
       const {error:historyError}=await admin.from('profile_squad_history').insert({organization_id:requester.organization_id,user_id:created.user.id,squad_id:targetSquad.id,technician_name:technicianName,valid_from_year:now.getUTCFullYear(),valid_from_month:now.getUTCMonth()+1,created_by:requester.user_id,note:'Vínculo inicial criado pelo Performance Hub.'})

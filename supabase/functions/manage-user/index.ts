@@ -79,8 +79,9 @@ Deno.serve(async (req) => {
     let role=canonicalRole(target.role), squadId=target.squad_id, technicianName=target.technician_name, permissions=normalizePermissions(target.permissions)
     let targetSquadCode:string|null=null
     role=String(body.role||canonicalRole(target.role))
-    if(!['super_admin','technician'].includes(role))return json({error:'Perfil inválido. Use Administrador ou Técnico.'},400)
-    if(role==='super_admin'){
+    if(!['super_admin','technician','pre_attendance'].includes(role))return json({error:'Perfil inválido.'},400)
+    if((role==='pre_attendance')!==(target.role==='pre_attendance'))return json({error:'Não altere perfis entre Pré-atendimento e Suporte; crie uma conta separada para preservar o histórico.'},409)
+    if(role==='super_admin'||role==='pre_attendance'){
       squadId=null;technicianName=null;permissions={}
     }else{
       const squadCode=String(body.squad_code||'').trim().toUpperCase()

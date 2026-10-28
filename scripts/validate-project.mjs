@@ -521,8 +521,8 @@ if (/roles:\[[^\]]*['"]squad_admin['"]/.test(settingsText)) errors.push('setting
 const createUserText = readFileSync(join(root, 'supabase', 'functions', 'create-user', 'index.ts'), 'utf8');
 const manageUserText = readFileSync(join(root, 'supabase', 'functions', 'manage-user', 'index.ts'), 'utf8');
 if (createUserText.includes("['super_admin','squad_admin','technician']") || manageUserText.includes("['super_admin','squad_admin','technician']")) errors.push('Edge Functions ainda aceitam squad_admin como perfil de destino.');
-if (!createUserText.includes("['super_admin','technician'].includes(role)")) errors.push('create-user não restringe os perfis ativos a Administrador/Técnico.');
-if (!manageUserText.includes("['super_admin','technician'].includes(role)")) errors.push('manage-user não restringe os perfis ativos a Administrador/Técnico.');
+if (!createUserText.includes("['super_admin','technician','pre_attendance'].includes(role)")) errors.push('create-user não restringe os perfis ativos a Administrador/Técnico/Pré-atendimento.');
+if (!manageUserText.includes("['super_admin','technician','pre_attendance'].includes(role)")) errors.push('manage-user não restringe os perfis ativos a Administrador/Técnico/Pré-atendimento.');
 
 if (errors.length) {
   console.error('Falha na validação do projeto:\n- ' + errors.join('\n- '));

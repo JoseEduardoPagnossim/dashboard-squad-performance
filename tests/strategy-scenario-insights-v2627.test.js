@@ -91,9 +91,9 @@ test('identificadores e prioridades são determinísticos sem cartões duplicado
 test('contrato UI integra motor, segurança por escape, listeners e versões',()=>{
   const root=path.join(__dirname,'..');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');const css=fs.readFileSync(path.join(root,'css/strategy.css'),'utf8');
-  const pkg=require('../package.json');assert.equal(pkg.version,'2.62.9');assert.equal(pkg.assetVersion,'2.62.9-r1');
+  const pkg=require('../package.json');assert.equal(pkg.version,'2.63.0');assert.equal(pkg.assetVersion,'2.63.0-r1');
   assert.match(index,/id="strategyScenarioInsightsSection"/);assert.match(index,/id="scenarioInsightsScenario"/);
-  assert.match(index,/id="scenarioInsightsKind"/);assert.match(index,/js\/strategy-scenario-insights\.js\?v=2\.62\.9-r1/);
+  assert.match(index,/id="scenarioInsightsKind"/);assert.match(index,/js\/strategy-scenario-insights\.js\?v=2\.63\.0-r1/);
   assert.match(app,/insightEngine\.analyze\(compared/);assert.match(app,/escapeHtml\(item\.title\)/);
   assert.match(app,/scenarioInsightsScenario, #view-strategy #scenarioInsightsKind/);
   assert.match(css,/strategy-scenario-insight-card/);

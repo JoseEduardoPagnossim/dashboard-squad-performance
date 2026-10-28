@@ -11,7 +11,7 @@
   'use strict';
   if(!accessEngine||!dataEngine||!costEngine||!insightEngine)throw new Error('Dependências da Gestão Estratégica não carregadas.');
 
-  const VALID_SECTIONS=Object.freeze(['executive','efficiency','capacity','result','product','scenarios','costs','assumptions']);
+  const VALID_SECTIONS=Object.freeze(['executive','efficiency','capacity','result','product','scenarios','automation','costs','assumptions']);
   const SECTION_META=Object.freeze({
     executive:Object.freeze({label:'Resultado Executivo',eyebrow:'VISÃO EXECUTIVA'}),
     efficiency:Object.freeze({label:'Eficiência',eyebrow:'EFICIÊNCIA RELATIVA'}),
@@ -19,11 +19,12 @@
     result:Object.freeze({label:'Resultado',eyebrow:'RESULTADO ECONÔMICO'}),
     product:Object.freeze({label:'Produto/Squad',eyebrow:'UNIT ECONOMICS • PRODUTO/SQUAD'}),
     scenarios:Object.freeze({label:'Cenários',eyebrow:'SIMULAÇÕES • FASE 7'}),
+    automation:Object.freeze({label:'Automação',eyebrow:'FUNDAÇÃO • FASE 8'}),
     costs:Object.freeze({label:'Custos & Eficiência',eyebrow:'CUSTOS E EFICIÊNCIA'}),
     assumptions:Object.freeze({label:'Premissas',eyebrow:'PREMISSAS E DADOS'})
   });
   const COMPARISONS=Object.freeze(['previous','3m','6m','12m']);
-  const STRATEGIC_GROUPS=Object.freeze([Object.freeze({code:'PRE',name:'Pré-atendimento',competences:Object.freeze([]),strategicOnly:true})]);
+  const STRATEGIC_GROUPS=Object.freeze([Object.freeze({code:'C',name:'Pré-atendimento',competences:Object.freeze([]),strategicOnly:true}),Object.freeze({code:'PRE',name:'Pré-atendimento (legado)',competences:Object.freeze([]),strategicOnly:true})]);
 
   function normalizeSection(value){const section=String(value||'').trim();return VALID_SECTIONS.includes(section)?section:'executive'}
   function availableSquads(context){const rows=[...(context.squads||[]),...STRATEGIC_GROUPS],seen=new Set();return rows.filter(row=>{const code=String(row?.code||'').toUpperCase();if(!code||seen.has(code))return false;seen.add(code);return true;});}

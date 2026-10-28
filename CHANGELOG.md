@@ -1,3 +1,12 @@
+## V2.63.0 — Fundação de Automação + Pré-atendimento
+
+- Fontes de vendas por CSV (MRR/avulsa) e lançamentos manuais, com preparação idempotente no painel Estratégico.
+- Estrutura segura de lotes, bloqueada para importação até a V2.63.1.
+- Novo perfil autenticado Pré-atendimento, vinculado à pessoa estratégica e ao Squad C; acesso separado do Suporte.
+- Conciliação explícita de cadastro manual com conta ativa, regras RLS multiempresa, login restrito e isolamento de competências.
+- Documento obrigatório de regras da Fase 8 em `AGENTS.md` e `docs/FASE8_REGRAS_OBRIGATORIAS_V2.63.0.md`.
+- Migration SQL obrigatória + republicação de `create-user` e `manage-user`.
+
 ## V2.62.9 — Hardening e fechamento da Fase 7
 - Validação de premissas, métricas, delta e fórmulas financeiras/operacionais antes da gravação.
 - Proteção contra gravações concorrentes, respostas obsoletas e alterações involuntárias do snapshot local.

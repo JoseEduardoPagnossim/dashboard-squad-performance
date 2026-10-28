@@ -28,7 +28,7 @@ create table if not exists public.profiles (
   squad_id uuid references public.squads(id) on delete set null,
   full_name text not null,
   email text,
-  role text not null check (role in ('super_admin','squad_admin','technician')),
+  role text not null check (role in ('super_admin','squad_admin','technician','pre_attendance')),
   technician_name text,
   active boolean not null default true,
   created_at timestamptz not null default now(),
