@@ -1,0 +1,15 @@
+V2.63.0 R3 - HOTFIX CACHE-BUSTER / GITHUB ACTIONS
+
+BASE REQUERIDA: V2.63.0 R2 (cadastro de Pre-atendimento)
+APLICACAO: Extrair este ZIP na raiz do projeto ja com R2. Substituir os arquivos existentes.
+
+Corrige inconsistencia do R2 (assets ?v=2.63.0-r1 no HTML quando package.json.assetVersion estava 2.63.0-r2).
+Padroniza referencias JS/CSS e testes em 2.63.0-r3, preservando o codigo do cadastro R2.
+Nao precisa executar nova migration SQL nem atualizar Edge Functions por causa deste R3.
+
+VALIDACAO:
+ npm run validate
+ npm run check
+Em seguida publicar a alteracao e executar Ctrl+Shift+R no navegador.
+Conferir Usuarios > Criar usuario > Pre-atendimento (Squad C Estrategico).
+Documentacao: docs/HOTFIX_CACHE_BUSTER_V2.63.0_R3.md

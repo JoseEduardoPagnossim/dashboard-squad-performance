@@ -27,7 +27,7 @@ test('V2.57.7 publica a fundação isolada da Gestão Estratégica', () => {
   assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.63\.0/);
   assert.match(index, /js\/strategy-insights\.js\?v=2\.63\.0/);
   assert.match(index, /js\/strategy\.js\?v=2\.63\.0/);
-  assert.ok(index.indexOf('js/strategy.js?v=2.63.0-r1') < index.indexOf('js/app.js?v=2.63.0-r1'));
+  assert.ok(index.indexOf('js/strategy.js?v=2.63.0-r3') < index.indexOf('js/app.js?v=2.63.0-r3'));
   assert.match(app, /APP_VERSION = '2\.63\.0'/);
 });
 

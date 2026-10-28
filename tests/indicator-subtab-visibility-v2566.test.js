@@ -24,7 +24,7 @@ test('V2.57.7 continua alternando Desempenho e Qualidade pela classe hidden',()=
 
 test('V2.57.7 publica cache-bust coerente sem migration',()=>{
   for(const asset of ['css/styles.css','js/app.js','js/design-system.js','js/filter-system.js']){
-    assert.ok(index.includes(`${asset}?v=2.63.0-r1`),asset);
+    assert.ok(index.includes(`${asset}?v=2.63.0-r3`),asset);
   }
   assert.ok(index.includes('V2.60.7'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));

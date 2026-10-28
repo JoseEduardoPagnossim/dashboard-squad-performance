@@ -1,3 +1,9 @@
+## V2.63.0 R3 — Hotfix de CI: cache-buster consistente
+
+- Corrige falha do `npm run validate` introduzida no R2, padronizando **todos** os JS/CSS referenciados pelo `index.html` para `2.63.0-r3` e sincronizando `package.json`.
+- Atualiza as asserções de versão dos testes e cria regressão para detectar qualquer divergência futura.
+- Preserva o cadastro de Pré-atendimento do R2, o vínculo ao Squad C, banco e Edge Functions; **não exige nova migration**.
+
 ## V2.63.0 R2 — Correção do cadastro de Pré-atendimento
 
 - Corrige o dropdown de perfil no modal existente `Usuários > Criar usuário`, que era reconstruído pelo JavaScript sem a opção `Pré-atendimento` ao abrir.

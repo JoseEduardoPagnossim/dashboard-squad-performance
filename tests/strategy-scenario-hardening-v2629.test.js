@@ -152,7 +152,7 @@ test('frontend bloqueia salvamento duplicado e respostas obsoletas por alteraç�
 });
 test('versões e cache bust estão coerentes e sem nova migração de dados oficiais',()=>{
  const pkg=require('../package.json');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.equal(pkg.version,'2.63.0');assert.equal(pkg.assetVersion,'2.63.0-r1');
- assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.0-r1/);
+ assert.equal(pkg.version,'2.63.0');assert.equal(pkg.assetVersion,'2.63.0-r3');
+ assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.0-r3/);
  assert.doesNotMatch(sql,/update\s+public\.strategy_competences|delete\s+from\s+public\.strategy_employee_costs/i);
 });

@@ -42,7 +42,7 @@ test('V2.57.7 preserva Squad e periodo como contexto global',()=>{
 });
 
 test('V2.57.7 atualiza os assets principais sem migration nova',()=>{
-  assert.ok(index.includes('css/styles.css?v=2.63.0-r1'));
-  assert.ok(index.includes('js/workspace-engine.js?v=2.63.0-r1'));
-  assert.ok(index.includes('js/app.js?v=2.63.0-r1'));
+  assert.ok(index.includes('css/styles.css?v=2.63.0-r3'));
+  assert.ok(index.includes('js/workspace-engine.js?v=2.63.0-r3'));
+  assert.ok(index.includes('js/app.js?v=2.63.0-r3'));
 });

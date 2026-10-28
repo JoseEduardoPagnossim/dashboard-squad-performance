@@ -43,8 +43,8 @@ test('V2.57.7 permite rolar o menu do select sem fecha-lo',()=>{
 
 test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
   assert.ok(index.includes('V2.60.7'));
-  assert.ok(index.includes('css/styles.css?v=2.63.0-r1'));
-  assert.ok(index.includes('js/design-system.js?v=2.63.0-r1'));
-  assert.ok(index.includes('js/app.js?v=2.63.0-r1'));
+  assert.ok(index.includes('css/styles.css?v=2.63.0-r3'));
+  assert.ok(index.includes('js/design-system.js?v=2.63.0-r3'));
+  assert.ok(index.includes('js/app.js?v=2.63.0-r3'));
   assert.match(app,/APP_VERSION = '2\.63\.0'/);
 });

@@ -11,7 +11,7 @@ const doc=join(root,'docs','EFICIENCIA_PRODUTIVIDADE_SQUAD_V2.58.4.md');
 
 test('V2.58.4 permanece preservada dentro da V2.58.9',()=>{
   assert.equal(pkg.version,'2.63.0');
-  assert.equal(pkg.assetVersion,'2.63.0-r1');
+  assert.equal(pkg.assetVersion,'2.63.0-r3');
   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
   assert.equal(existsSync(doc),true);
   assert.match(index,/INDICADOR V2\.58\.4/);

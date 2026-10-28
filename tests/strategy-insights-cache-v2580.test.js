@@ -11,7 +11,7 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 
 test('release atual preserva o hardening de cache introduzido na R5',()=>{
   assert.equal(pkg.version,'2.63.0');
-  assert.equal(pkg.assetVersion,'2.63.0-r1');
+  assert.equal(pkg.assetVersion,'2.63.0-r3');
   assert.match(index,/js\/app\.js\?v=2\.63\.0/);
   assert.match(index,/V2\.63\.0 • Fase 7 — Cenários/);
   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);

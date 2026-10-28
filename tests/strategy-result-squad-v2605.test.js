@@ -16,13 +16,13 @@ function access(){return{canViewStrategy:true,canViewAggregates:true,canViewPeop
 
 test('V2.60.5 publica Resultado por Squad e atualiza motor',()=>{
   assert.equal(pkg.version,'2.63.0');
-  assert.equal(pkg.assetVersion,'2.63.0-r1');
+  assert.equal(pkg.assetVersion,'2.63.0-r3');
   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.CATALOG.find(item=>item.id==='result-by-squad')?.state,'ready');
   assert.ok(existsSync(join(root,'docs','RESULTADO_SQUAD_V2.60.5.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.5.sql')));
   assert.ok(index.includes('V2.60.5 • RESULTADO POR SQUAD'));
-  assert.ok(index.includes('js/strategy-result.js?v=2.63.0-r1'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.63.0-r3'));
 });
 
 test('motor normaliza e ordena Resultado por Squad sem total composto',()=>{
