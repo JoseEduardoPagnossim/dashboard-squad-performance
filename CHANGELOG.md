@@ -1,3 +1,12 @@
+## V2.62.8 — Cenários salvos, projeções e histórico (Fase 7)
+
+- Persistência no Supabase em `strategy_scenario_revisions`, isolada dos indicadores oficiais, com RLS por organização e permissão agregada.
+- RPC de gravação com permissão estratégica de edição, validação de escopo, competência e premissas e serialização concorrente de revisões.
+- Revisões append-only: salvar novamente nunca sobrescreve uma revisão anterior.
+- Tela de históricos com nome, justificativa, revisão de origem, recuperação de premissas e comparação entre dois resultados salvos.
+- Ausência de dados permanece como indisponível; ROI direto não incorpora receita influenciada/protegida.
+- Migration obrigatória `supabase/migrations/MIGRACAO_V2.62.8.sql`.
+
 ## V2.62.7 — Insights e recomendações estratégicas (Fase 7)
 - Diagnósticos determinísticos dos quatro cenários, com evidências, ações sugeridas e filtros por tipo e alternativa.
 - Sinais de sobrecarga, ociosidade, resultado negativo/queda, oportunidades, divergências entre retorno e capacidade e premissas de custos de equipe.

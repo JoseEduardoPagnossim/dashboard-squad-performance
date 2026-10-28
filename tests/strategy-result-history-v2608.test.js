@@ -18,15 +18,15 @@ function frozen(competence,{revision=1,source='close',cost=100,direct=120,influe
 }
 
 test('V2.60.8 publica snapshots e histórico de Resultado',()=>{
-  assert.equal(pkg.version,'2.62.7');
-  assert.equal(pkg.assetVersion,'2.62.7-r1');
+  assert.equal(pkg.version,'2.62.8');
+  assert.equal(pkg.assetVersion,'2.62.8-r1');
   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.CATALOG.find(item=>item.id==='result-history')?.state,'ready');
   assert.ok(existsSync(join(root,'docs','RESULTADO_HISTORICO_V2.60.8.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.8.sql')));
   assert.match(index,/V2\.60\.8 • SNAPSHOTS, HISTÓRICO E EVOLUÇÃO/);
   assert.match(index,/strategyResultHistoryRows/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.62.7-r1'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.62.8-r1'));
 });
 
 test('histórico ordena competências e calcula evolução entre snapshots fechados',()=>{

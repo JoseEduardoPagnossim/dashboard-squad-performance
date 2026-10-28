@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.62.7';
+  const APP_VERSION = '2.62.8';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -4706,6 +4706,109 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{const {data,error}=await state.supabase.from('strategy_products').update({active:active===true,updated_by:state.user.userId,updated_at:new Date().toISOString()}).eq('id',id).eq('organization_id',state.user.organizationId).select('id,code,name,active').maybeSingle();if(error)throw error;if(!data?.id)throw new Error('Produto não encontrado ou alteração não permitida.');await logAuditEvent('strategy.product_status',{entityType:'strategy_product',entityId:data.id,description:`Produto estratégico ${data.code} ${data.active?'ativado':'desativado'}.`,metadata:{code:data.code,active:data.active}});strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast(`Produto ${data.name} ${data.active?'ativado':'desativado'}.`);}catch(err){console.error(err);toast(String(err?.message||err));}
   }
 
+  // V2.62.8: archived scenario versions are append-only and separate from official snapshots.
+  const scenarioHistoryState={key:'',rows:[],loading:false,error:'',lastProjection:null,run:0};
+  function scenarioHistoryKey(vm){return [state.user?.organizationId||'',vm.state.competence||'',String(vm.state.squadCode||'all').toUpperCase()].join(':')}
+  function scenarioHistoryDisplay(row){return `${row.name} • r${row.revision} • ${row.created_at?new Date(row.created_at).toLocaleString('pt-BR'):''}`}
+  function scenarioHistoryOptions(select,items,defaultValue){
+    if(!select)return;
+    const key=items.map(item=>item.value+'|'+item.label).join('||');
+    if(select.dataset.scenarioOptions===key)return;
+    const old=select.value;select.innerHTML=items.map(item=>`<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('');
+    select.value=items.some(item=>item.value===old)?old:defaultValue||items[0]?.value||'';
+    select.dataset.scenarioOptions=key;
+  }
+  function renderStrategyScenarioHistory(allowed,vm=strategyController.viewModel()){
+    const engine=window.SoftenStrategyScenarioHistory,body=$('#scenarioHistoryRows'),status=$('#scenarioHistoryStatus');
+    if(!engine||!body)return;
+    const canRead=allowed&&!!state.supabase,canSave=canRead&&strategyEditAccess();
+    const saveBtn=$('#scenarioHistorySaveBtn');if(saveBtn)saveBtn.disabled=!canSave||scenarioHistoryState.loading||!scenarioHistoryState.lastProjection;
+    if(status)status.textContent=!canRead?'INDISPONÍVEL':scenarioHistoryState.loading?'CARREGANDO':scenarioHistoryState.error?'ERRO':`${scenarioHistoryState.rows.length} REVISÕES`;
+    const notice=$('#scenarioHistoryNotice');if(notice)notice.textContent=!canRead?'Requer acesso agregado e Supabase.':scenarioHistoryState.error?scenarioHistoryState.error:!canSave?'Consulta permitida; salvar requer permissão de edição estratégica.':'Cada salvamento cria uma revisão imutável de premissas e projeções. Dados ausentes permanecem indisponíveis; são simulações, não indicadores oficiais.';
+    const rows=scenarioHistoryState.rows;
+    const groups=[...new Map(rows.map(row=>[row.scenario_id,row])).values()];
+    scenarioHistoryOptions($('#scenarioHistoryGroup'),[{value:'',label:'Novo cenário'},...groups.map(row=>({value:row.scenario_id,label:row.name+' • '+row.scenario_id.slice(0,8)}))],'');
+    scenarioHistoryOptions($('#scenarioHistoryLeft'),[{value:'',label:'Selecione'},...rows.map(row=>({value:row.id,label:scenarioHistoryDisplay(row)}))],'');
+    scenarioHistoryOptions($('#scenarioHistoryRight'),[{value:'',label:'Selecione'},...rows.map(row=>({value:row.id,label:scenarioHistoryDisplay(row)}))],'');
+    if(!$('#scenarioHistoryLeft')?.value&&rows.length>1)$('#scenarioHistoryLeft').value=rows[1].id;
+    if(!$('#scenarioHistoryRight')?.value&&rows.length>0)$('#scenarioHistoryRight').value=rows[0].id;
+    body.innerHTML=!canRead?'<tr><td colspan="5" class="muted">Histórico disponível somente para usuários autorizados.</td></tr>':rows.length?rows.map(row=>`<tr><td><strong>${escapeHtml(row.name)}</strong><small class="strategy-comparison-delta">${escapeHtml(row.scenario_id.slice(0,8))}</small></td><td>${row.revision}</td><td>${row.baseline_revision==null?'Aberta / sem snapshot':'#'+row.baseline_revision}</td><td>${row.created_at?escapeHtml(new Date(row.created_at).toLocaleString('pt-BR')):'—'}</td><td><button type="button" class="btn secondary" data-scenario-history-restore="${escapeHtml(row.id)}">Carregar premissas</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">Nenhuma simulação salva neste recorte.</td></tr>';
+    const left=rows.find(row=>row.id===$('#scenarioHistoryLeft')?.value),right=rows.find(row=>row.id===$('#scenarioHistoryRight')?.value);
+    const savedMeta=$('#scenarioHistorySavedMeta'),savedPremises=$('#scenarioHistorySavedAssumptions');
+    if(savedMeta)savedMeta.textContent=right?`Salvo por ${right.created_by||'usuário autorizado'} • Revisão ${right.revision} • Base oficial ${right.baseline_revision??'sem snapshot'} • Notas: ${right.notes||'Não informadas'}`:'Selecione uma revisão.';
+    if(savedPremises)savedPremises.textContent=right?JSON.stringify(right.assumptions,null,2):'—';
+    const compareBody=$('#scenarioHistoryCompareRows');const note=$('#scenarioHistoryCompareNote');
+    if(!compareBody)return;
+    if(!left||!right){compareBody.innerHTML='<tr><td colspan="4" class="muted">Escolha duas revisões para comparar.</td></tr>';return}
+    try{
+      const result=engine.compare(left,right,$('#scenarioHistoryAlternative')?.value||'custom');
+      const units=Object.fromEntries(window.SoftenStrategyScenarios.COMPARISON_METRICS.map(m=>[m.key,m]));
+      const fmt=(v,unit)=>v==null?'—':unit==='money'?strategyMoney(v):unit==='pct'?strategyNumber(v,1)+'%':strategyNumber(v,unit==='integer'?0:2);
+      compareBody.innerHTML=result.metrics.map(m=>{const unit=units[m.key]?.unit||'',label=units[m.key]?.label||m.key;return `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(fmt(m.prior,unit))}</td><td>${escapeHtml(fmt(m.current,unit))}</td><td>${m.delta===null?'—':escapeHtml((m.delta>0?'+':'')+fmt(m.delta,unit))}</td></tr>`}).join('');
+      if(note)note.textContent=`${left.name} r${left.revision} (#${left.baseline_revision??'—'}) → ${right.name} r${right.revision} (#${right.baseline_revision??'—'}). As projeções são históricas e não recalculadas. ${result.note}`;
+    }catch(err){compareBody.innerHTML='<tr><td colspan="4" class="muted">'+escapeHtml(String(err.message||err))+'</td></tr>'}
+  }
+  async function loadStrategyScenarioHistory(force=false){
+    const vm=strategyController.viewModel(),key=scenarioHistoryKey(vm),allowed=strategyAccessEngine.canViewAggregates(vm.state.access);
+    if(!allowed||!state.supabase){scenarioHistoryState.rows=[];scenarioHistoryState.key=key;scenarioHistoryState.error='';scenarioHistoryState.loading=false;renderStrategyScenarioHistory(false,vm);return}
+    if(!force&&scenarioHistoryState.key===key)return;
+    scenarioHistoryState.key=key;scenarioHistoryState.rows=[];scenarioHistoryState.error='';scenarioHistoryState.loading=true;
+    const request=++scenarioHistoryState.run;
+    renderStrategyScenarioHistory(true,vm);
+    try{
+      const date=strategyDataEngine.competenceDate(vm.state.competence);if(!date)throw new Error('Selecione uma competência válida.');
+      const {data,error}=await state.supabase.from('strategy_scenario_revisions')
+        .select('id,scenario_id,revision,competence,squad_code,baseline_revision,name,notes,assumptions,projection,created_at,created_by')
+        .eq('organization_id',state.user.organizationId).eq('competence',date).eq('squad_code',String(vm.state.squadCode||'all').toUpperCase())
+        .order('created_at',{ascending:false}).limit(150);
+      if(error)throw error;
+      if(request!==scenarioHistoryState.run)return;
+      scenarioHistoryState.rows=window.SoftenStrategyScenarioHistory.normalizeHistory(data||[],vm.state.competence,vm.state.squadCode);
+    }catch(err){if(request===scenarioHistoryState.run)scenarioHistoryState.error=/strategy_scenario_revisions|schema cache|404/i.test(String(err.message||err))?'Execute a migration V2.62.8 no Supabase para habilitar o histórico.':String(err.message||err)}
+    finally{if(request===scenarioHistoryState.run){scenarioHistoryState.loading=false;renderStrategyScenarioHistory(true,strategyController.viewModel())}}
+  }
+  async function saveStrategyScenarioHistory(){
+    if(!state.supabase||!strategyEditAccess())return toast('Permissão de edição estratégica e Supabase são necessários.');
+    const vm=strategyController.viewModel(),engine=window.SoftenStrategyScenarioHistory;
+    if(!engine||!scenarioHistoryState.lastProjection||scenarioHistoryKey(vm)!==scenarioHistoryState.key)return toast('Atualize o comparativo antes de salvar.');
+    const name=$('#scenarioHistoryName')?.value?.trim()||'',notes=$('#scenarioHistoryNotes')?.value||'';
+    if(!name||name.length>120||notes.length>2000)return toast('Informe nome (até 120 caracteres) e justificativa (até 2000).');
+    const group=$('#scenarioHistoryGroup')?.value||null;
+    const existing=group?scenarioHistoryState.rows.find(row=>row.scenario_id===group):null;
+    if(group&&!existing)return toast('Atualize o histórico antes de criar outra revisão.');
+    let payload;
+    try{payload=engine.buildPayload(scenarioHistoryState.lastProjection);if(payload.competence!==vm.state.competence||payload.squadCode!==String(vm.state.squadCode).toUpperCase())throw new Error('O recorte da simulação mudou.');}
+    catch(err){return toast(String(err.message||err))}
+    const btn=$('#scenarioHistorySaveBtn');if(btn)btn.disabled=true;
+    try{
+      const {data,error}=await state.supabase.rpc('save_strategy_scenario_revision',{
+        p_scenario_id:group,p_name:name,p_notes:notes,p_competence:strategyDataEngine.competenceDate(payload.competence),
+        p_squad_code:payload.squadCode,p_baseline_revision:payload.baselineRevision,
+        p_assumptions:payload.assumptions,p_projection:payload.projection
+      });if(error)throw error;
+      try{await logAuditEvent('strategy.scenario_saved',{entityType:'strategy_scenario',entityId:String(data?.scenario_id||group||''),description:`Cenário ${name} salvo na revisão ${data?.revision||'?'}.`,metadata:{competence:payload.competence,squadCode:payload.squadCode,baselineRevision:payload.baselineRevision}});}catch(auditError){console.warn('Registro de auditoria indisponível; revisão persistida.',auditError)}
+      await loadStrategyScenarioHistory(true);
+      if($('#scenarioHistoryGroup')&&data?.scenario_id)$('#scenarioHistoryGroup').value=data.scenario_id;
+      renderStrategyScenarioHistory(true);toast(`Cenário salvo • revisão ${data?.revision||'?'}.`);
+    }catch(err){console.error('Falha ao salvar cenário',err);toast(/save_strategy_scenario_revision|schema cache/i.test(String(err.message||err))?'Execute a migration V2.62.8.':String(err.message||err))}
+    finally{if(btn)btn.disabled=false}
+  }
+  function restoreStrategyScenarioHistory(id){
+    const saved=scenarioHistoryState.rows.find(row=>row.id===id),engine=window.SoftenStrategyScenarioHistory;
+    if(!saved||!engine)return toast('Revisão não disponível no recorte atual.');
+    try{
+      engine.validateRevision(saved);
+      const vm=strategyController.viewModel();if(String(saved.competence).slice(0,7)!==vm.state.competence||String(saved.squad_code).toUpperCase()!==String(vm.state.squadCode).toUpperCase())throw new Error('Não é possível restaurar premissas de outro escopo.');
+      const assumptions=window.SoftenStrategyScenarios.normalizeComparisonAssumptions(saved.assumptions.custom);
+      $$('[data-scenario-comparison]').forEach(input=>{input.value=String(assumptions[input.dataset.scenarioComparison])});
+      if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value=saved.scenario_id;
+      if($('#scenarioHistoryName'))$('#scenarioHistoryName').value=saved.name;
+      if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value=saved.notes||'';
+      if($('#scenarioHistoryRight'))$('#scenarioHistoryRight').value=saved.id;
+      renderStrategyScenario(vm,strategyAccessEngine.canViewAggregates(vm.state.access));
+      toast(`Premissas da revisão ${saved.revision} carregadas. Salvar criará uma NOVA revisão, sem alterar o histórico.`);
+    }catch(err){toast(String(err.message||err))}
+  }
   function renderStrategyScenario(vm,allowed){
     const engine=window.SoftenStrategyScenarios;
     if(!engine||!$('#strategyScenarioBase'))return;
@@ -4843,6 +4946,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
             attendanceSourceAvailable:hasDemand,
             referenceAttendancePerFte:allowed&&historical.ready?historical.referenceAttendancePerFte:null,
             capacityReferenceAvailable:allowed&&historical.ready},custom);
+          scenarioHistoryState.lastProjection=compared;
+          const historyKey=scenarioHistoryKey(vm);
+          if(scenarioHistoryState.key!==historyKey){void loadStrategyScenarioHistory(true)}
+          else renderStrategyScenarioHistory(allowed,vm);
           const fmt=(value,unit)=>value===null||!Number.isFinite(value)?'—':unit==='money'?strategyMoney(value):unit==='pct'?strategyNumber(value,1)+'%':strategyNumber(value,unit==='integer'?0:2);
           const deltaLabel=(change,unit)=>change===null||!Number.isFinite(change)?'':`<small class="strategy-comparison-delta">${change>0?'+':''}${unit==='pct'?strategyNumber(change,1)+' p.p.':fmt(change,unit)} vs. atual</small>`;
           body.innerHTML=engine.COMPARISON_METRICS.map(metric=>{
@@ -4874,7 +4981,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
             if(insightNotice)insightNotice.textContent=insightOutput.note+(economic.reconciled&&!economic.allocationComplete?' Atenção: alocação de receita incompleta.':'');
           }
           $('#strategyScenarioWarning').textContent='Comparação entre quatro cenários calculados sobre a mesma competência, Squad e revisão. Premissas ilustrativas; projeções não são previsões garantidas.';
-        }catch(err){blank(String(err.message||err));$('#scenarioComparisonWarning').textContent='Não foi possível comparar: '+String(err.message||err);if($('#scenarioInsightsCards'))$('#scenarioInsightsCards').innerHTML='<p class="strategy-product-demand-note">Não foi possível diagnosticar: dados inválidos ou fontes indisponíveis.</p>';if($('#scenarioInsightsCounts'))$('#scenarioInsightsCounts').textContent='Diagnósticos indisponíveis';}
+        }catch(err){scenarioHistoryState.lastProjection=null;renderStrategyScenarioHistory(allowed,vm);blank(String(err.message||err));$('#scenarioComparisonWarning').textContent='Não foi possível comparar: '+String(err.message||err);if($('#scenarioInsightsCards'))$('#scenarioInsightsCards').innerHTML='<p class="strategy-product-demand-note">Não foi possível diagnosticar: dados inválidos ou fontes indisponíveis.</p>';if($('#scenarioInsightsCounts'))$('#scenarioInsightsCounts').textContent='Diagnósticos indisponíveis';}
       }
     }
     const costPanel=$('#strategyScenarioCostSection');if(costPanel){
@@ -5186,8 +5293,16 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
 
   $$('#view-strategy #strategyScenarioType, #view-strategy #strategyScenarioVariation, #view-strategy [data-scenario-cost], #view-strategy #strategyScenarioOperationalShare, #view-strategy #strategyScenarioWorkforceSection input, #view-strategy #scenarioDemandProduct, #view-strategy #scenarioDemandVariation, #view-strategy #scenarioDemandResolutionRate, #view-strategy #strategyScenarioCapacitySection input, #view-strategy #strategyScenarioEconomicSection input, #view-strategy #strategyScenarioComparisonSection input, #view-strategy #scenarioInsightsScenario, #view-strategy #scenarioInsightsKind').forEach(control=>control.addEventListener('input',()=>{if(canViewStrategy())renderStrategyScenario(strategyController.viewModel(),strategyAccessEngine.canViewAggregates(strategyController.getState().access)&&!strategyController.getState().financialLoading&&!strategyController.getState().financialError)}));
-  async function handleStrategyClick(e){const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
-  async function handleStrategyChange(e){if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
+  async function handleStrategyClick(e){
+    if(e.target.closest('#scenarioHistorySaveBtn'))return saveStrategyScenarioHistory();
+    if(e.target.closest('#scenarioHistoryReloadBtn'))return loadStrategyScenarioHistory(true);
+    if(e.target.closest('#scenarioHistoryNewBtn')){if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value='';if($('#scenarioHistoryName'))$('#scenarioHistoryName').value='Planejamento estratégico';if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value='';return}
+    const restore=e.target.closest('[data-scenario-history-restore]');if(restore)return restoreStrategyScenarioHistory(restore.dataset.scenarioHistoryRestore);
+    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
+  async function handleStrategyChange(e){
+    if(e.target.id==='scenarioHistoryGroup'){const row=scenarioHistoryState.rows.find(item=>item.scenario_id===e.target.value);if(row){if($('#scenarioHistoryName'))$('#scenarioHistoryName').value=row.name;if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value=row.notes||'';}return}
+    if(['scenarioHistoryLeft','scenarioHistoryRight','scenarioHistoryAlternative'].includes(e.target.id)){renderStrategyScenarioHistory(true);return}
+    if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}
 
   function renderHelp(){
     if(!state.user)return;

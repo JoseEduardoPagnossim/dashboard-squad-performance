@@ -370,3 +370,17 @@
 .strategy-scenario-insight-evidence dt{font-size:.7rem;color:var(--muted)}
 .strategy-scenario-insight-evidence dd{font-weight:800;margin:4px 0 0;overflow-wrap:anywhere;font-size:.86rem}
 .strategy-scenario-insight-card .strategy-scenario-insight-action{color:var(--text);font-size:.82rem}
+
+/* V2.62.8: histórico de cenários em leiaute responsivo */
+.strategy-scenario-history{margin-top:22px;padding:18px;border:1px solid var(--border);border-radius:15px;background:var(--panel2)}
+.strategy-scenario-history .strategy-product-form-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0}
+.strategy-scenario-history .strategy-history-notes{grid-column:1/-1}
+.strategy-scenario-history textarea,.strategy-scenario-history input,.strategy-scenario-history select{width:100%;max-width:100%;min-width:0}
+.strategy-scenario-history textarea{padding:10px;min-height:72px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text);resize:vertical;font:inherit}
+.strategy-scenario-history-actions{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.strategy-scenario-history .table-wrap{margin:12px 0 16px}
+@media(max-width:780px){.strategy-scenario-history .strategy-product-form-grid{grid-template-columns:1fr}.strategy-scenario-history .strategy-history-notes{grid-column:auto}.strategy-scenario-history-actions button{width:100%}}
+
+.strategy-scenario-history-details{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
+.strategy-scenario-history-details summary{cursor:pointer;font-size:.88rem;font-weight:700}
+.strategy-scenario-history-details pre{overflow:auto;max-height:320px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:.76rem;line-height:1.5}

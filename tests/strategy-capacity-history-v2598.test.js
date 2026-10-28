@@ -16,13 +16,13 @@ function snapshot(competence,{source='close',availableFte=4,resolutions=1000,res
 }
 
 test('V2.59.8 publica snapshots e evolucao de capacidade',()=>{
-  assert.equal(pkg.version,'2.62.7');
-  assert.equal(pkg.assetVersion,'2.62.7-r1');
+  assert.equal(pkg.version,'2.62.8');
+  assert.equal(pkg.assetVersion,'2.62.8-r1');
   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
   assert.ok(existsSync(migrationPath));
   assert.ok(existsSync(join(root,'docs','CAPACIDADE_SNAPSHOTS_HISTORICO_V2.59.8.md')));
   for(const id of ['strategyCapacitySnapshotCount','strategyCapacitySnapshotOfficial','strategyCapacitySnapshotBackfill','strategyCapacitySnapshotLatestStatus','strategyCapacityEvolutionFteChart','strategyCapacityEvolutionUtilizationChart','strategyCapacityHistoryRows']) assert.ok(index.includes(`id="${id}"`),id);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.62.7-r1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.62.8-r1'));
   assert.match(app,/get_strategy_capacity_snapshot_history/);
   assert.match(app,/renderStrategyCapacityHistory/);
 });

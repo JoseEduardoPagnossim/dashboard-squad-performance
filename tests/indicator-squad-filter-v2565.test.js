@@ -14,7 +14,7 @@ function blockBetween(start,end){
 }
 
 test('V2.57.7 força recarga mensal apenas na troca direta dentro de Qualidade',()=>{
-  assert.equal(pkg.version,'2.62.7');
+  assert.equal(pkg.version,'2.62.8');
   const select=blockBetween('async function selectSquad','function requireSpecificSquad');
   assert.match(select,/forceQualityScope=state\.currentView==='indicators'&&state\.indicatorSection==='quality'/);
   assert.match(select,/await ensureViewData\(state\.currentView,state\.adminSection,\{strict:true,forceMonths:forceQualityScope\}\)/);
@@ -43,7 +43,7 @@ test('V2.57.7 Qualidade recalcula escopo no instante da renderização',()=>{
 
 test('V2.57.7 inclui teste legado do GitHub e cache-bust coerente',()=>{
   assert.ok(fs.existsSync(path.join(root,'tests','indicator-squad-filter-v2563.test.js')));
-  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.62.7-r1`),asset);
+  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.62.8-r1`),asset);
   assert.ok(index.includes('V2.60.7'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
 });
