@@ -1,0 +1,9 @@
+V2.63.0 R2 - HOTFIX CADASTRO PRE-ATENDIMENTO
+
+Base obrigatoria: V2.63.0.
+Extraia este ZIP na raiz do dashboard ja atualizado para V2.63.0.
+O hotfix substitui js/app.js, index.html, package.json e CHANGELOG.md; inclui documentacao e teste de regressao.
+NOVA MIGRATION: NAO. Para cadastrar contas ainda deve existir a migration original MIGRACAO_V2.63.0.sql e as Edge Functions V2.63.0 publicadas.
+No navegador: acesse Usuarios > Criar usuario. Perfil devera conter Tecnico, Pre-atendimento, Administrador. Pre-atendimento exibe Squad C (Estrategico) sem campo de Tecnico CSV.
+Se a pagina nao mudar, verifique que o index.html e js/app.js foram publicados e faca Ctrl+Shift+R; o novo script usa js/app.js?v=2.63.0-r2.
+Teste local: node --check js/app.js; node --test tests/pre-attendance-create-modal-v2630-r2.test.js; npm run check (repositorio completo).

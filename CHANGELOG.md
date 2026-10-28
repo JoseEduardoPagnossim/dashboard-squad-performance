@@ -1,3 +1,10 @@
+## V2.63.0 R2 — Correção do cadastro de Pré-atendimento
+
+- Corrige o dropdown de perfil no modal existente `Usuários > Criar usuário`, que era reconstruído pelo JavaScript sem a opção `Pré-atendimento` ao abrir.
+- Exibe `Squad C (Estratégico)` somente como informação para o perfil Pré-atendimento, sem exigência de vínculo operacional, e mantém Técnico/Administrador funcionando.
+- Atualiza `js/app.js` para `?v=2.63.0-r2` para invalidar o cache anterior.
+- Adiciona teste de regressão do comportamento do modal. Não altera banco ou Edge Functions; a migration original V2.63.0 continua necessária para cadastrar a conta.
+
 ## V2.63.0 — Fundação de Automação + Pré-atendimento
 
 - Fontes de vendas por CSV (MRR/avulsa) e lançamentos manuais, com preparação idempotente no painel Estratégico.

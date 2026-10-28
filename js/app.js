@@ -5563,22 +5563,32 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function openCreateUser(){
     if(!isAdmin()||!hasPermission('users.manage'))return;
     $('#createUserForm').reset();$('#createUserError').textContent='';
-    const roleSel=$('#newUserRole');
-    roleSel.innerHTML='<option value="technician">Técnico</option><option value="super_admin">Administrador</option>';
-    const squadSel=$('#newUserSquad');
-    const allowed=Object.values(state.squads);
-    squadSel.innerHTML=allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
-    const preferred=state.squadCode!=='all'&&allowed.some(s=>s.code===state.squadCode)?state.squadCode:(state.user.squadCode||allowed[0]?.code);
-    if(preferred)squadSel.value=preferred;
-    $('#userModalHint').textContent='Crie Administradores com acesso completo ou Técnicos vinculados a um Squad.';
+    // O HTML inclui o perfil, mas este select e refeito ao abrir o modal.
+    // Manter as tres opcoes evita esconder Pre-atendimento por um reset legado.
+    $('#newUserRole').innerHTML='<option value="technician">Técnico</option><option value="pre_attendance">Pré-atendimento</option><option value="super_admin">Administrador</option>';
     syncCreateUserFields();openModal('userModal');
   }
   function syncCreateUserFields(){
-    const role=$('#newUserRole').value,isSuper=role==='super_admin';
-    $('#newUserSquad').disabled=role!=='technician'||!isSuperAdmin();
+    const role=$('#newUserRole').value,squadSel=$('#newUserSquad');
+    if(role==='pre_attendance'){
+      // Squad C e vinculo estrategico, nao um Squad operacional do suporte.
+      squadSel.innerHTML='<option value="C">Squad C (Estratégico)</option>';
+      squadSel.value='C';
+      $('#userModalHint').textContent='O Pré-atendimento terá acesso próprio e vínculo estratégico com o Squad C.';
+    }else if(role==='super_admin'){
+      squadSel.innerHTML='<option value="">Sem Squad operacional</option>';
+      squadSel.value='';
+      $('#userModalHint').textContent='Administrador com acesso completo conforme as permissões da organização.';
+    }else{
+      const previous=squadSel.value,allowed=Object.values(state.squads);
+      squadSel.innerHTML=allowed.sort((a,b)=>a.code.localeCompare(b.code)).map(s=>`<option value="${escapeHtml(s.code)}">Squad ${escapeHtml(s.code)}</option>`).join('');
+      const preferred=allowed.some(s=>s.code===previous)?previous:(state.squadCode!=='all'&&allowed.some(s=>s.code===state.squadCode)?state.squadCode:(state.user.squadCode||allowed[0]?.code));
+      if(preferred)squadSel.value=preferred;
+      $('#userModalHint').textContent='Técnico vinculado a um Squad operacional e ao nome usado no CSV.';
+    }
+    squadSel.disabled=role!=='technician'||!isSuperAdmin();
     $('#technicianNameField').classList.toggle('hidden',role!=='technician');
     $('#newUserTechName').required=role==='technician';
-    if(role!=='technician')$('#newUserSquad').value='';
   }
   async function handleCreateUser(e){
     e.preventDefault();if(!isAdmin())return;
