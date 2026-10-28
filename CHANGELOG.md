@@ -1,3 +1,11 @@
+## V2.63.1 — Importador CSV configurável (Fase 8)
+
+- Lê CSVs comerciais no navegador, detecta cabeçalhos e delimitadores, sugere e valida os campos mapeados e exibe prévia de até 12 linhas.
+- Identifica produtos únicos por origem/MRR, ignora linhas sem grupo válido e preserva a identidade do Squad C para Pré-atendimento.
+- Permite salvar e reaplicar modelos de mapeamento por organização e origem; `MIGRACAO_V2.63.1.sql` cria a tabela com RLS e preserva o histórico.
+- Não cria lançamentos de receita, MRR financeiro, comissões ou produtos persistidos.
+- Atualiza JS/CSS e testes para `2.63.1-r1`; documentação `docs/IMPORTADOR_CSV_CONFIGURAVEL_V2.63.1.md`.
+
 ## V2.63.0 R3 — Hotfix de CI: cache-buster consistente
 
 - Corrige falha do `npm run validate` introduzida no R2, padronizando **todos** os JS/CSS referenciados pelo `index.html` para `2.63.0-r3` e sincronizando `package.json`.

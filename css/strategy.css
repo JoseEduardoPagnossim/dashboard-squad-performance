@@ -384,3 +384,16 @@
 .strategy-scenario-history-details{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
 .strategy-scenario-history-details summary{cursor:pointer;font-size:.88rem;font-weight:700}
 .strategy-scenario-history-details pre{overflow:auto;max-height:320px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:.76rem;line-height:1.5}
+
+/* V2.63.1 - Importador CSV de pre-visualizacao */
+.strategy-csv-controls,.strategy-csv-templates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end;margin:16px 0}
+.strategy-csv-templates{grid-template-columns:minmax(180px,1fr) auto minmax(180px,1fr) auto}
+.strategy-csv-field-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 24px}
+.strategy-csv-importer label{display:flex;flex-direction:column;gap:7px;color:var(--muted);font-size:.79rem;font-weight:800}
+.strategy-csv-importer input,.strategy-csv-importer select{width:100%;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;color:var(--text);background:var(--panel2);font:inherit}
+.strategy-csv-importer input[type=file]{font-size:.8rem}.strategy-csv-field{min-width:0}.strategy-csv-required{color:var(--warn)}
+.strategy-csv-importer h4{margin:18px 0 0}.strategy-csv-table{min-width:850px}.strategy-csv-table td{max-width:290px;overflow-wrap:anywhere}
+@media(max-width:1100px){.strategy-csv-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-csv-templates{grid-template-columns:1fr auto}}
+@media(max-width:670px){.strategy-csv-field-grid,.strategy-csv-controls,.strategy-csv-templates{grid-template-columns:1fr}.strategy-csv-templates .btn{width:100%}}
+
+.strategy-csv-file-label{cursor:pointer}.strategy-csv-file-action{display:inline-flex;align-items:center;padding:11px 13px;border:1px dashed var(--border);border-radius:10px;background:var(--panel2);color:var(--text)}

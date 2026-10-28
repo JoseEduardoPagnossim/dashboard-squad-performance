@@ -1,0 +1,18 @@
+V2.63.1 - IMPORTADOR CSV CONFIGURAVEL
+
+Base obrigatoria: V2.63.0 R3 (incluindo suas Edge Functions e MIGRACAO_V2.63.0.sql).
+
+1. Backup do repositorio e banco.
+2. Executar supabase/migrations/MIGRACAO_V2.63.1.sql no Supabase SQL Editor.
+3. Copiar este ZIP na raiz do projeto, substituindo os arquivos.
+4. Executar npm run check (esperados 919 testes, zero falhas).
+5. Publicar, atualizar navegador com Ctrl+Shift+R.
+6. Abrir Gestao Estrategica > Automacao, escolher origem, CSV e colunas.
+7. Salvar mapeamento e testar reaplicacao usando o mesmo tipo de CSV.
+
+SEM gravacao de receita, comissoes ou cadastro financeiro de produtos nesta versao.
+O arquivo CSV fica somente no navegador; somente o mapeamento e salvo no Supabase.
+Nao ha Edge Functions novas nesta versao.
+
+Commit:
+feat(strategy): implementa importador CSV configuravel V2.63.1

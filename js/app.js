@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.63.0';
+  const APP_VERSION = '2.63.1';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -1257,7 +1257,8 @@
 
   async function enterApp(user){
     const canonicalRole=normalizeAccessRole(user?.role);state.user={...user,role:canonicalRole,squadCode:canonicalRole==='super_admin'?null:(user?.squadCode||null),permissions:canonicalRole==='super_admin'?{}:(user?.permissions||{})};loadUserUiPreferences(state.user);
-    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],request:strategyAutomationState.request+1});
+    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],mappings:[],mappingError:'',request:strategyAutomationState.request+1});
+    Object.assign(strategyCsvState,{sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:strategyCsvState.request+1});
     state.dataPromises={};state.squadSelectionSeq=0;state.squadSelectionLoadError=false;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.internalNotifications=[];state.notificationReadIds=[];state.notificationsLoaded=false;state.notificationsLoading=false;state.notificationsRemoteAvailable=true;state.notificationsError='';state.notificationPopoverOpen=false;state.notificationFilters={status:'all',source:'all',severity:'all',category:'all',search:''};state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
     state.businessCalendarRows=[];state.businessCalendarLoaded=false;state.businessCalendarLoading=null;state.businessCalendarRemoteAvailable=true;state.businessCalendarYear=new Date().getFullYear();state.businessCalendarDraft=null;
@@ -3584,21 +3585,23 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
   }
-  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],request:0};
+  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],mappings:[],mappingError:'',request:0};
+  const strategyCsvState={sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:0};
   async function loadStrategyAutomation({force=false}={}){
     if(!state.supabase||!canViewStrategy()||!strategyEditAccess()||!strategyPeopleAccess())return;
     if(strategyAutomationState.loading||strategyAutomationState.loaded&&!force)return;
     const request=++strategyAutomationState.request,org=state.user?.organizationId;
     strategyAutomationState.loading=true;strategyAutomationState.error='';
     try{
-      const [sources,profiles,people]=await Promise.all([
+      const [sources,profiles,people,mappings]=await Promise.all([
         state.supabase.from('strategy_import_sources').select('id,source_key,label,origin,generates_mrr,active').eq('organization_id',org).order('source_key'),
         state.supabase.from('profiles').select('user_id,full_name,role,active').eq('organization_id',org).eq('role','pre_attendance').eq('active',true).order('full_name'),
-        state.supabase.from('strategy_people').select('id,user_id,name,active,functional_team,default_squad_code').eq('organization_id',org).order('name')
+        state.supabase.from('strategy_people').select('id,user_id,name,active,functional_team,default_squad_code').eq('organization_id',org).order('name'),
+        state.supabase.from('strategy_import_mappings').select('id,source_key,name,columns,headers,created_by,updated_at').eq('organization_id',org).order('name')
       ]);
       if(sources.error)throw sources.error;if(profiles.error)throw profiles.error;if(people.error)throw people.error;
       if(request!==strategyAutomationState.request||org!==state.user?.organizationId)return;
-      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[]});
+      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':''});
     }catch(err){strategyAutomationState.error=String(err.message||err);strategyAutomationState.loaded=false;}
     finally{strategyAutomationState.loading=false;if(state.currentView==='strategy'&&strategyController.getState().section==='automation')renderStrategyAutomation();}
   }
@@ -3611,6 +3614,83 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyAutomationPreRows'))$('#strategyAutomationPreRows').textContent=`${strategyAutomationState.users.length} conta(s) ativa(s) • ${strategyAutomationState.users.filter(u=>linked.has(String(u.user_id))).length} vinculada(s) a pessoas estrategicas.`;
     if($('#strategyAutomationPreUser'))$('#strategyAutomationPreUser').innerHTML='<option value="">Selecione a conta</option>'+strategyAutomationState.users.map(u=>`<option value="${escapeHtml(u.user_id)}">${escapeHtml(u.full_name)}</option>`).join('');
     if($('#strategyAutomationPrePerson'))$('#strategyAutomationPrePerson').innerHTML='<option value="">Selecione a pessoa</option>'+strategyAutomationState.people.filter(p=>p.active!==false&&!p.user_id).map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+    renderStrategyCsvImporter();
+  }
+
+  function renderStrategyCsvImporter(){
+    const engine=window.SoftenStrategyCsvImporter,cs=strategyCsvState,parsed=cs.parsed,def=engine.definition(cs.sourceKey),canManage=!!state.supabase&&strategyEditAccess()&&strategyPeopleAccess();
+    const status=$('#strategyCsvStatus');if(!status)return;
+    if($('#strategyCsvSource')&&$('#strategyCsvSource').value!==cs.sourceKey)$('#strategyCsvSource').value=cs.sourceKey;
+    const validMapping=parsed?(()=>{try{return engine.validateMapping(cs.sourceKey,parsed.headers,cs.mapping)}catch(_){return null}})():null;
+    status.textContent=cs.error?`Falha: ${cs.error}`:cs.busy?'Lendo arquivo...':!parsed?'Selecione a origem e um arquivo CSV. O arquivo será analisado apenas no navegador.':`${cs.fileName} • ${parsed.rowCount.toLocaleString('pt-BR')} linhas • ${parsed.headers.length} colunas • separador ${parsed.delimiter==='\t'?'TAB':parsed.delimiter} • ${def.generatesMrr?'Gera MRR':'Não gera MRR'}. Nenhuma receita foi lançada.`;
+    if($('#strategyCsvTemplateMessage'))$('#strategyCsvTemplateMessage').textContent=strategyAutomationState.mappingError||'O modelo salva somente nomes de colunas e escolhas, nunca os dados do arquivo.';
+    const templates=strategyAutomationState.mappings.filter(x=>x.source_key===cs.sourceKey);
+    const selector=$('#strategyCsvTemplate');if(selector){const current=selector.value;selector.innerHTML='<option value="">Selecione um modelo salvo</option>'+templates.map(x=>`<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)}</option>`).join('');if(templates.some(x=>String(x.id)===current))selector.value=current;}
+    for(const id of ['strategyCsvFile','strategyCsvSource'])if($('#'+id))$('#'+id).disabled=!canManage||cs.busy;
+    if($('#strategyCsvSave'))$('#strategyCsvSave').disabled=!canManage||!validMapping||!!strategyAutomationState.mappingError||cs.busy;
+    if($('#strategyCsvApplyTemplate'))$('#strategyCsvApplyTemplate').disabled=!canManage||!parsed||!templates.length;
+    if(!parsed){if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Após selecionar um CSV, os campos e as sugestões de mapeamento serão exibidos aqui.</p>';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
+    if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML=def.fields.map(f=>{
+      const chosen=cs.mapping[f.key]||'';
+      const options=parsed.headers.map(h=>`<option value="${escapeHtml(h)}" ${chosen===h?'selected':''}>${escapeHtml(h)}</option>`).join('');
+      return `<label class="strategy-csv-field"><span>${escapeHtml(f.label)}${f.required?' <strong class="strategy-csv-required">• Obrigatório</strong>':' • Opcional'}</span><select data-strategy-csv-field="${escapeHtml(f.key)}"><option value="">${f.required?'Selecione a coluna':'Não importar'}</option>${options}</select></label>`;
+    }).join('');
+    if(!validMapping){if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
+    const fields=def.fields.filter(f=>validMapping[f.key]);const rows=engine.preview(cs.sourceKey,parsed,validMapping,12);
+    if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table strategy-csv-table"><thead><tr>${fields.map(f=>`<th>${escapeHtml(f.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${fields.map(f=>`<td>${escapeHtml(row[f.key]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="muted">Prévia limitada a 12 linhas; ${parsed.rowCount.toLocaleString('pt-BR')} linhas analisadas localmente. As datas e valores não foram contabilizados.</p>`;
+    const products=engine.identifyProducts(cs.sourceKey,parsed,validMapping);
+    if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent=`${products.totalUnique} produto(s) distinto(s) • ${products.ignoredNoGroup} linha(s) sem grupo válido ignorada(s) • ${products.emptyProductRows} linha(s) sem produto • ${def.generatesMrr?'MRR: Sim':'MRR: Não'} • somente identificação, sem cadastro financeiro.`;
+    if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Produto identificado</th><th>Ocorrências</th></tr></thead><tbody>${products.products.slice(0,70).map(x=>`<tr><td>${escapeHtml(x.name)}</td><td>${x.count.toLocaleString('pt-BR')}</td></tr>`).join('')}</tbody></table></div>${products.products.length>70?`<p class="muted">Mostrando 70 de ${products.totalUnique} produtos. A lista completa será utilizada na V2.63.3.</p>`:''}`;
+  }
+  async function loadStrategyCsvFile(file){
+    const engine=window.SoftenStrategyCsvImporter,cs=strategyCsvState;
+    const request=++cs.request,org=state.user?.organizationId,source=cs.sourceKey;
+    Object.assign(cs,{parsed:null,mapping:{},fileName:'',error:'',busy:false});
+    if(!file){renderStrategyCsvImporter();return;}
+    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess()){cs.error='Sem permissão estratégica.';renderStrategyCsvImporter();return;}
+    if(!/\.csv$/i.test(file.name)){cs.error='Selecione um arquivo .csv.';renderStrategyCsvImporter();return;}
+    if(file.size>engine.MAX_BYTES){cs.error='Arquivo acima de 10 MB.';renderStrategyCsvImporter();return;}
+    cs.busy=true;renderStrategyCsvImporter();
+    try{
+      const buffer=await file.arrayBuffer();let text;
+      try{text=new TextDecoder('utf-8',{fatal:true}).decode(buffer)}catch(_){text=new TextDecoder('windows-1252').decode(buffer)}
+      const parsed=engine.parse(text);
+      if(request!==cs.request||org!==state.user?.organizationId||source!==cs.sourceKey)return;
+      Object.assign(cs,{parsed,mapping:engine.suggest(source,parsed.headers),fileName:file.name});
+      try{engine.validateMapping(source,parsed.headers,cs.mapping)}catch(err){cs.error=err.message+' Ajuste o mapeamento manualmente.';}
+    }catch(err){if(request===cs.request){cs.error=String(err.message||err);cs.parsed=null;}}
+    finally{if(request===cs.request){cs.busy=false;renderStrategyCsvImporter();}}
+  }
+  async function saveStrategyCsvTemplate(){
+    const cs=strategyCsvState,engine=window.SoftenStrategyCsvImporter;
+    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissão para salvar modelos.');
+    if(!cs.parsed)return toast('Selecione um arquivo CSV.');
+    try{
+      const payload=engine.createTemplatePayload({organizationId:state.user.organizationId,userId:state.user.userId,sourceKey:cs.sourceKey,name:$('#strategyCsvTemplateName')?.value,headers:cs.parsed.headers,mapping:cs.mapping});
+      const {error}=await state.supabase.from('strategy_import_mappings').upsert(payload,{onConflict:'organization_id,source_key,name'});if(error)throw error;
+      strategyAutomationState.loaded=false;await loadStrategyAutomation({force:true});toast('Modelo de colunas salvo na organização.');
+    }catch(err){toast(`Falha ao salvar modelo: ${String(err.message||err)}`);}
+  }
+  function applyStrategyCsvTemplate(){
+    const id=$('#strategyCsvTemplate')?.value,cs=strategyCsvState;
+    const saved=strategyAutomationState.mappings.find(m=>String(m.id)===id&&m.source_key===cs.sourceKey);
+    if(!saved||!cs.parsed)return toast('Selecione um modelo salvo e um arquivo CSV.');
+    try{
+      const mapped=window.SoftenStrategyCsvImporter.validateMapping(cs.sourceKey,cs.parsed.headers,saved.columns);
+      cs.mapping={...mapped};cs.error='';
+      if($('#strategyCsvTemplateName'))$('#strategyCsvTemplateName').value=saved.name;
+      renderStrategyCsvImporter();toast('Mapeamento recuperado e validado com as colunas atuais.');
+    }catch(err){toast(`O modelo não corresponde a este CSV: ${err.message||err}`);}
+  }
+  async function handleStrategyCsvChange(e){
+    if(e.target.id==='strategyCsvSource'){
+      Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
+      if($('#strategyCsvFile'))$('#strategyCsvFile').value='';renderStrategyCsvImporter();return true;
+    }
+    if(e.target.id==='strategyCsvFile'){await loadStrategyCsvFile(e.target.files?.[0]);return true;}
+    const key=e.target.dataset.strategyCsvField;
+    if(key){if(e.target.value)strategyCsvState.mapping[key]=e.target.value;else delete strategyCsvState.mapping[key];strategyCsvState.error='';renderStrategyCsvImporter();return true;}
+    return false;
   }
   async function initStrategyAutomationSources(){
     if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissao para configurar fontes.');
@@ -5360,8 +5440,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(e.target.closest('#scenarioHistoryReloadBtn'))return loadStrategyScenarioHistory(true);
     if(e.target.closest('#scenarioHistoryNewBtn')){if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value='';if($('#scenarioHistoryName'))$('#scenarioHistoryName').value='Planejamento estratégico';if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value='';return}
     const restore=e.target.closest('[data-scenario-history-restore]');if(restore)return restoreStrategyScenarioHistory(restore.dataset.scenarioHistoryRestore);
-    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
+    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){
+    if(await handleStrategyCsvChange(e))return;
     if(e.target.id==='scenarioHistoryGroup'){const row=scenarioHistoryState.rows.find(item=>item.scenario_id===e.target.value);if(row){if($('#scenarioHistoryName'))$('#scenarioHistoryName').value=row.name;if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value=row.notes||'';}return}
     if(['scenarioHistoryLeft','scenarioHistoryRight','scenarioHistoryAlternative'].includes(e.target.id)){renderStrategyScenarioHistory(true);return}
     if(e.target.matches('[data-strategy-cost-field]')){updateStrategyRowTotal(e.target);return}if(e.target.id==='strategySquadSelect'){strategyController.setSquadCode(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyCompetenceSelect'){strategyController.setCompetence(e.target.value);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.id==='strategyComparisonSelect'){strategyController.setComparison(e.target.value);renderStrategy();}}

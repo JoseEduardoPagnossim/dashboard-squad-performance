@@ -42,6 +42,11 @@ A Fase 6 começa com uma dimensão oficial de Produto e um contrato único de fo
 
 Detalhes: `docs/PRODUTO_SQUAD_FUNDACAO_V2.61.0.md`.
 
+
+## V2.63.1 — Importação CSV e mapeamentos
+
+Gestão Estratégica → Automação reconhece os CSVs comerciais, permite selecionar colunas, visualizar registros, conferir produtos identificados e salvar modelos de mapeamento. Execute `supabase/migrations/MIGRACAO_V2.63.1.sql` antes de usar o salvamento de modelos. **Sem lançamentos financeiros** nesta versão. Detalhes: `docs/IMPORTADOR_CSV_CONFIGURAVEL_V2.63.1.md`.
+
 ## V2.60.9 — Hardening e fechamento da Fase 5
 
 A V2.60.9 encerra a Fase 5 de Resultado. O ROI consolidado passa a reconciliar toda Receita Direta confirmada da operação mesmo antes do rateio individual; o fechamento exige 100% de atribuição econômica efetiva; snapshots tornam-se imutáveis, sem leitura direta e com validação de contrato/fingerprint; competências reabertas saem da série congelada; e o histórico funciona em modo fail-closed. A versão também corrige a propagação de `resultHistory` pelo controller estratégico. Execute `MIGRACAO_V2.60.9.sql` após a V2.60.8.

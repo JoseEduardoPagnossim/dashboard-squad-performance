@@ -60,9 +60,9 @@ test('trocar Pre para Tecnico e Administrador restaura respectivamente squad e a
 });
 
 test('HTML requisita novo app cache-bust sem alterar identidade da versao 2.63.0',()=>{
- assert.match(html,/src="js\/app\.js\?v=2\.63\.0-r3"/);
+ assert.match(html,/src="js\/app\.js\?v=2\.63\.1-r1"/);
  assert.match(html,/id="newUserRole"[^>]*>.*value="pre_attendance"/);
  const pkg=JSON.parse(read('package.json'));
- assert.equal(pkg.version,'2.63.0');
- assert.equal(pkg.assetVersion,'2.63.0-r3');
+ assert.equal(pkg.version,'2.63.1');
+ assert.equal(pkg.assetVersion,'2.63.1-r1');
 });

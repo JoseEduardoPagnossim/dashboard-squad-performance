@@ -128,7 +128,7 @@ test('fontes ainda nao importam arquivos e sao preparadas sem duplicar',()=>{
  assert.match(index,/id="strategyAutomationInitSources"/);
  assert.match(index,/id="strategyAutomationBindUser"/);
  assert.match(index,/id="strategyAutomationSourceRows"/);
- assert.match(index,/a leitura dos arquivos e o reconhecimento de receitas serão liberados nas próximas versões/);
+ assert.match(index,/O reconhecimento de receitas e comissões será implementado nas próximas versões/);
 });
 test('login RPC nao retorna squad, competencias nem bonus de suporte ao perfil pre',()=>{
  const a=sql.indexOf("if v_profile.role = 'pre_attendance' then");
@@ -149,9 +149,9 @@ test('regras obrigatorias ficam no repositorio para futuras entregas',()=>{
  assert.match(agents,/docs\/FASE8_REGRAS_OBRIGATORIAS_V2\.63\.0\.md/);
 });
 test('Versao consistente',()=>{
- assert.equal(JSON.parse(r('package.json')).version,'2.63.0');
- assert.match(app,/const APP_VERSION = '2\.63\.0'/);
- assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.0-r3/);
+ assert.equal(JSON.parse(r('package.json')).version,'2.63.1');
+ assert.match(app,/const APP_VERSION = '2\.63\.1'/);
+ assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.1-r1/);
  assert.ok(r('supabase/migrations/README.md').includes('V2.63.0'));
 });
 
