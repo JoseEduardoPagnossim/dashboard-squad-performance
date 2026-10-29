@@ -309,3 +309,5 @@ A Fase 5 agora consolida Receita Direta, Influenciada e Protegida por Squad usan
 ### V2.63.3 — Catálogo de produtos e comissões
 
 Gestão Estratégica > Automação permite pré-cadastrar produtos dos CSVs (MRR ou avulsos), sem duplicidade, e configurar quatro regras de comissão. Aplicar `supabase/migrations/MIGRACAO_V2.63.3.sql` antes de usar. Veja `docs/CATALOGO_COMERCIAL_COMISSOES_V2.63.3.md`.
+
+**V2.63.5 — Venda de Mercadorias:** Gestão Estratégica → Automação permite prévia e confirmação do CSV avulso, com `vlTotalItem` como valor final, sem MRR/ARR, por técnico e Pré-atendimento. Instalar migration `supabase/migrations/MIGRACAO_V2.63.5.sql` sobre V2.63.4. Detalhes em `docs/IMPORTACAO_VENDAS_AVULSAS_V2.63.5.md`.

@@ -11,3 +11,5 @@ Release incremental: preservar dados e migrations anteriores; não alterar snaps
 **Fase 8, V2.63.3:** consultar `docs/CATALOGO_COMERCIAL_COMISSOES_V2.63.3.md` antes de modificar catálogo/comissões. A origem define MRR; não juntar produtos de fontes diferentes, nem pagar comissões nesta etapa. Toda alteração de regra cria revisão imutável, sem alterar snapshots anteriores.
 
 **Fase 8, V2.63.4:** consultar `docs/IMPORTACAO_RECEITA_RECORRENTE_V2.63.4.md`. Novo MRR somente por vendas únicas do CSV Anotação de Venda, nunca por `Vl Anterior`, nunca recalcular comissão. Reimportações são idempotentes pela identidade e confirmadas no Supabase; fechamento e histórico permanecem protegidos.
+
+**Fase 8, V2.63.5:** consultar `docs/IMPORTACAO_VENDAS_AVULSAS_V2.63.5.md`. CSV Venda de Mercadorias: `vlTotalItem` é valor total de cada linha (nunca multiplicar quantidade); `id` pode se repetir por item e não é chave única; receita direta avulsa sem MRR/ARR, comissões e Bonificação só na V2.63.6. Reimportações idempotentes, identidades auditadas, contas e Squads validados e competências fechadas protegidas.

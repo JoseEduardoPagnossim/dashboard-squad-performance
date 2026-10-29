@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.63.4';
+  const APP_VERSION = '2.63.5';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3589,6 +3589,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
   const strategyCatalogState={sourceKey:'contracted_modules_csv',busy:false,drafts:{},request:0,notice:''};
   const strategyRecurringState={busy:false,notice:'',last:null};
+  const strategyMerchandiseState={busy:false,notice:'',last:null};
   const strategyCsvState={sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:0};
   async function loadStrategyAutomation({force=false}={}){
     if(!state.supabase||!canViewStrategy()||!strategyEditAccess()||!strategyPeopleAccess())return;
@@ -3607,13 +3608,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       ]);
       if(sources.error)throw sources.error;if(profiles.error)throw profiles.error;if(people.error)throw people.error;
       if(request!==strategyAutomationState.request||org!==state.user?.organizationId)return;
-      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':'',sellerProfiles:sellerProfiles.error?[]:(sellerProfiles.data||[]),peopleError:sellerProfiles.error?'Contas de vendedores indisponíveis: '+String(sellerProfiles.error.message||sellerProfiles.error):'',aliases:aliases.error?[]:(aliases.data||[]),aliasError:aliases.error?'Execute a migration V2.63.2 no Supabase para gerenciar aliases.':'',products:products.error?[]:(products.data||[]),catalogError:products.error?'Execute a migration V2.63.4 no Supabase para configurar produtos e comissões.':''});
+      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':'',sellerProfiles:sellerProfiles.error?[]:(sellerProfiles.data||[]),peopleError:sellerProfiles.error?'Contas de vendedores indisponíveis: '+String(sellerProfiles.error.message||sellerProfiles.error):'',aliases:aliases.error?[]:(aliases.data||[]),aliasError:aliases.error?'Execute a migration V2.63.2 no Supabase para gerenciar aliases.':'',products:products.error?[]:(products.data||[]),catalogError:products.error?'Execute a migration V2.63.3 no Supabase para configurar produtos e comissões.':''});
     }catch(err){strategyAutomationState.error=String(err.message||err);strategyAutomationState.loaded=false;}
     finally{strategyAutomationState.loading=false;if(state.currentView==='strategy'&&strategyController.getState().section==='automation')renderStrategyAutomation();}
   }
   function renderStrategyAutomation(){
     const canManage=!!state.supabase&&strategyEditAccess()&&strategyPeopleAccess();
-    const status=$('#strategyAutomationNotice');if(status)status.textContent=!state.supabase?'Disponivel apos configurar o Supabase e aplicar a migration V2.63.0.':!canManage?'Acesso restrito a edicao estrategica com custos de pessoas.':strategyAutomationState.error?`Falha: ${strategyAutomationState.error}`:'CSV e lançamentos manuais disponíveis. A importação financeira de módulos recorrentes está habilitada; mercadorias entram na V2.63.5.';
+    const status=$('#strategyAutomationNotice');if(status)status.textContent=!state.supabase?'Disponivel apos configurar o Supabase e aplicar a migration V2.63.0.':!canManage?'Acesso restrito a edicao estrategica com custos de pessoas.':strategyAutomationState.error?`Falha: ${strategyAutomationState.error}`:'CSV e lançamentos manuais disponíveis. Importações de contratações recorrentes e vendas avulsas habilitadas.';
     for(const id of ['strategyAutomationInitSources','strategyAutomationRefresh','strategyAutomationPreUser','strategyAutomationPrePerson','strategyAutomationBindUser'])if($('#'+id))$('#'+id).disabled=!canManage;
     if($('#strategyAutomationSourceRows'))$('#strategyAutomationSourceRows').innerHTML=(strategyAutomationState.sources||[]).map(s=>`<tr><td>${escapeHtml(s.label)}</td><td>${s.origin==='csv'?'CSV':'Manual'}</td><td>${s.generates_mrr?'Sim':'Não'}</td><td>${s.active?'Ativa':'Inativa'}</td></tr>`).join('')||'<tr><td colspan="4">Nenhuma fonte cadastrada; clique em Preparar fontes.</td></tr>';
     const linked=new Set(strategyAutomationState.people.filter(p=>p.user_id).map(p=>String(p.user_id)));
@@ -3636,19 +3637,19 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyCsvSave'))$('#strategyCsvSave').disabled=!canManage||!validMapping||!!strategyAutomationState.mappingError||cs.busy;
     if($('#strategyCsvApplyTemplate'))$('#strategyCsvApplyTemplate').disabled=!canManage||!parsed||!templates.length;
     renderStrategyCommercialCatalog();
-    if(!parsed){renderStrategyRecurringImport();renderStrategySellerReconciliation();if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Após selecionar um CSV, os campos e as sugestões de mapeamento serão exibidos aqui.</p>';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
+    if(!parsed){renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategySellerReconciliation();if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Após selecionar um CSV, os campos e as sugestões de mapeamento serão exibidos aqui.</p>';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
     if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML=def.fields.map(f=>{
       const chosen=cs.mapping[f.key]||'';
       const options=parsed.headers.map(h=>`<option value="${escapeHtml(h)}" ${chosen===h?'selected':''}>${escapeHtml(h)}</option>`).join('');
       return `<label class="strategy-csv-field"><span>${escapeHtml(f.label)}${f.required?' <strong class="strategy-csv-required">• Obrigatório</strong>':' • Opcional'}</span><select data-strategy-csv-field="${escapeHtml(f.key)}"><option value="">${f.required?'Selecione a coluna':'Não importar'}</option>${options}</select></label>`;
     }).join('');
-    if(!validMapping){renderStrategyRecurringImport();renderStrategySellerReconciliation();if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
+    if(!validMapping){renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategySellerReconciliation();if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
     const fields=def.fields.filter(f=>validMapping[f.key]);const rows=engine.preview(cs.sourceKey,parsed,validMapping,12);
     if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table strategy-csv-table"><thead><tr>${fields.map(f=>`<th>${escapeHtml(f.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${fields.map(f=>`<td>${escapeHtml(row[f.key]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="muted">Prévia limitada a 12 linhas; ${parsed.rowCount.toLocaleString('pt-BR')} linhas analisadas localmente. As datas e valores não foram contabilizados.</p>`;
     const products=engine.identifyProducts(cs.sourceKey,parsed,validMapping);
     if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent=`${products.totalUnique} produto(s) distinto(s) • ${products.ignoredNoGroup} linha(s) sem grupo válido ignorada(s) • ${products.emptyProductRows} linha(s) sem produto • ${def.generatesMrr?'MRR: Sim':'MRR: Não'} • catálogo pode ser pré-cadastrado, sem lançar receitas ou comissões.`;
     if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Produto identificado</th><th>Ocorrências</th></tr></thead><tbody>${products.products.slice(0,70).map(x=>`<tr><td>${escapeHtml(x.name)}</td><td>${x.count.toLocaleString('pt-BR')}</td></tr>`).join('')}</tbody></table></div>${products.products.length>70?`<p class="muted">Mostrando 70 de ${products.totalUnique} produtos. A lista completa pode ser pré-cadastrada pelo botão do Catálogo.</p>`:''}`;
-    renderStrategySellerReconciliation();renderStrategyRecurringImport();
+    renderStrategySellerReconciliation();renderStrategyRecurringImport();renderStrategyMerchandiseImport();
   }
   function renderStrategyCommercialCatalog(){
     const engine=window.SoftenStrategyProductCatalog,cs=strategyCatalogState,selected=cs.sourceKey;
@@ -3765,6 +3766,63 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){rs.notice=`Falha: ${String(err.message||err)}.${batchId?' Lote '+batchId+' pode estar parcialmente gravado; reimportar o CSV não duplicará vendas já confirmadas.':' Nenhum lote foi criado.'}`;toast(rs.notice);}
     finally{rs.busy=false;renderStrategyRecurringImport();}
   }
+  function prepareStrategyMerchandise(){
+    const cs=strategyCsvState,engine=window.SoftenStrategyMerchandiseImport;
+    if(!engine||!cs.parsed||cs.sourceKey!==engine.SOURCE)return null;
+    return engine.build({parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
+      profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
+  }
+  function renderStrategyMerchandiseImport(){
+    const status=$('#strategyMerchandiseStatus'),summary=$('#strategyMerchandiseSummary'),review=$('#strategyMerchandiseReview'),btn=$('#strategyMerchandiseConfirm'),result=$('#strategyMerchandiseResult');
+    if(!status)return;
+    const cs=strategyCsvState,ms=strategyMerchandiseState;
+    if(btn)btn.disabled=true;
+    if(result)result.textContent=ms.notice||'Nenhum lote avulso confirmado nesta sessão.';
+    if(!cs.parsed||cs.sourceKey!=='merchandise_sales_csv'){
+      status.textContent='Selecione o CSV Venda de Mercadorias para preparar receitas avulsas (sem MRR).';
+      if(summary)summary.textContent='';if(review)review.innerHTML='';return;
+    }
+    if(strategyAutomationState.catalogError||strategyAutomationState.peopleError||strategyAutomationState.aliasError){
+      status.textContent='Atualize as migrations de conciliação e catálogo (V2.63.2 e V2.63.3).';
+      if(summary)summary.textContent='';if(review)review.innerHTML='';return;
+    }
+    let prepared;try{prepared=prepareStrategyMerchandise();}catch(err){status.textContent='Revise os campos e a conciliação: '+String(err.message||err);if(summary)summary.textContent='';if(review)review.innerHTML='';return;}
+    const t=prepared.summary;
+    status.textContent=ms.busy?'Importação avulsa em andamento. Não feche esta página até confirmar o lote.':'Prévia de elegibilidade. A verificação de duplicidade e competência fechada será feita no Supabase. Não gera MRR, ARR ou comissão.';
+    if(summary)summary.textContent=`${t.total} linhas • ${t.ready} aptas • ${t.ignoredNoGroup} sem Squad • ${t.pendingSeller} vendedor pendente • ${t.pendingProduct} produto sem cadastro • ${t.pendingDate} data inválida • ${t.pendingAmount} valor inválido • ${t.pendingId} ID ausente • ${t.pendingQuantity} quantidade inválida • ${t.repeatedRows} linhas repetidas (vendas distintas) • Receita avulsa elegível: ${(t.readyAmountCents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}.`;
+    const reasons={pendingSeller:'Vendedor não conciliado',pendingProduct:'Produto não cadastrado',pendingDate:'Data inválida',pendingAmount:'Valor inválido',pendingId:'ID ausente/inválido',pendingQuantity:'Quantidade inválida'};
+    const examples=prepared.records.filter(x=>x.status!=='ready').slice(0,12);
+    if(review)review.innerHTML=examples.length?`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Linha</th><th>ID</th><th>Vendedor</th><th>Produto</th><th>Motivo</th></tr></thead><tbody>${examples.map(x=>`<tr><td>${x.line}</td><td>${escapeHtml(x.saleId)}</td><td>${escapeHtml(x.seller)}</td><td>${escapeHtml(x.product)}</td><td>${escapeHtml(reasons[x.status]||x.status)}</td></tr>`).join('')}</tbody></table></div><p class="muted">Até 12 pendências exibidas. Corrija o cadastro ou use lançamento manual na V2.63.7.</p>`:'<p class="muted">Nenhuma pendência encontrada nas linhas com Squad válido.</p>';
+    if(btn)btn.disabled=ms.busy||!t.ready||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess()||!!strategyAutomationState.error;
+  }
+  async function confirmStrategyMerchandiseImport(){
+    if(strategyMerchandiseState.busy||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissão para importar vendas avulsas.');
+    const cs=strategyCsvState,engine=window.SoftenStrategyMerchandiseImport;
+    let prepared;try{prepared=prepareStrategyMerchandise();}catch(err){return toast('Revise os dados: '+String(err.message||err));}
+    if(!prepared||!prepared.ready.length)return toast('Não existem vendas avulsas aptas neste arquivo.');
+    if(!window.confirm(`Confirma a importação de ${prepared.ready.length} itens de venda avulsa? O Supabase rejeitará duplicidades e competências fechadas. O valor de vlTotalItem NÃO será multiplicado pela quantidade. Não gera MRR nem comissões.`))return;
+    const org=state.user.organizationId,request=cs.request,source=cs.sourceKey,ms=strategyMerchandiseState;
+    ms.busy=true;ms.notice='Criando lote de vendas avulsas...';renderStrategyMerchandiseImport();
+    let batchId=null;
+    try{
+      const started=await state.supabase.rpc('start_strategy_merchandise_batch_v2635',{p_file_name:cs.fileName,p_total_rows:prepared.ready.length,p_mapping:cs.mapping});
+      if(started.error)throw started.error;batchId=started.data;
+      let imported=0,duplicates=0,closed=0,index=0;
+      for(const chunk of engine.chunks(prepared,100)){
+        if(org!==state.user?.organizationId||request!==cs.request||source!==cs.sourceKey)throw new Error('Arquivo ou organização mudou; confira o lote antes de tentar novamente.');
+        const response=await state.supabase.rpc('import_strategy_merchandise_sales_v2635',{p_batch_id:batchId,p_sales:chunk});
+        if(response.error)throw response.error;
+        imported+=Number(response.data?.imported||0);duplicates+=Number(response.data?.duplicates||0);closed+=Number(response.data?.closed||0);
+        index+=chunk.length;ms.notice=`Processadas ${index} de ${prepared.ready.length}: novas ${imported}, duplicadas ${duplicates}, fechadas ${closed}.`;
+        if(index%500===0)renderStrategyMerchandiseImport();
+      }
+      const finished=await state.supabase.rpc('finish_strategy_merchandise_batch_v2635',{p_batch_id:batchId});
+      if(finished.error)throw finished.error;
+      ms.last={batchId,imported,duplicates,closed};ms.notice=`Lote confirmado: ${imported} venda(s) nova(s), ${duplicates} duplicada(s), ${closed} em competência fechada. Lote ${batchId}. Sem MRR ou comissão.`;
+      strategyInvalidateFinance();await loadStrategyFinanceData({force:true});toast('Vendas avulsas importadas. Confira os resultados.');
+    }catch(err){ms.notice=`Falha: ${String(err.message||err)}.${batchId?' Lote '+batchId+' pode estar parcialmente gravado; reimporte o mesmo CSV para não duplicar.':' Nenhum lote criado.'}`;toast(ms.notice);}
+    finally{ms.busy=false;renderStrategyMerchandiseImport();}
+  }
   function renderStrategySellerReconciliation(){
     const summary=$('#strategySellerSummary'),body=$('#strategySellerRows'),sellerSelect=$('#strategySellerAliasKey'),personSelect=$('#strategySellerAliasPerson'),notice=$('#strategySellerAliasNotice');
     if(!summary||!body)return;
@@ -3856,7 +3914,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   async function handleStrategyCsvChange(e){
     if(e.target.id==='strategyCsvSource'){
-      strategyRecurringState.notice='';strategySellerSelection.key='';Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
+      strategyRecurringState.notice='';strategyMerchandiseState.notice='';strategySellerSelection.key='';Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
       strategyCatalogState.sourceKey=e.target.value;strategyCatalogState.notice='';
       if($('#strategyCsvFile'))$('#strategyCsvFile').value='';renderStrategyCsvImporter();return true;
     }
@@ -3864,7 +3922,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(e.target.dataset.strategyCatalogType){const id=e.target.dataset.strategyCatalogType;strategyCatalogState.drafts[id]={type:e.target.value,value:''};renderStrategyCommercialCatalog();return true;}
     if(e.target.dataset.strategyCatalogValue){const id=e.target.dataset.strategyCatalogValue;const draft=strategyCatalogState.drafts[id]||{type:strategyAutomationState.products.find(p=>p.id===id)?.commission_type||'unconfigured'};draft.value=e.target.value;strategyCatalogState.drafts[id]=draft;return true;}
     if(e.target.id==='strategySellerAliasKey'){strategySellerSelection.key=e.target.value;renderStrategySellerReconciliation();return true;}
-    if(e.target.id==='strategyCsvFile'){strategyRecurringState.notice='';strategySellerSelection.key='';await loadStrategyCsvFile(e.target.files?.[0]);return true;}
+    if(e.target.id==='strategyCsvFile'){strategyRecurringState.notice='';strategyMerchandiseState.notice='';strategySellerSelection.key='';await loadStrategyCsvFile(e.target.files?.[0]);return true;}
     const key=e.target.dataset.strategyCsvField;
     if(key){if(e.target.value)strategyCsvState.mapping[key]=e.target.value;else delete strategyCsvState.mapping[key];strategyCsvState.error='';renderStrategyCsvImporter();return true;}
     return false;
@@ -5617,7 +5675,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(e.target.closest('#scenarioHistoryReloadBtn'))return loadStrategyScenarioHistory(true);
     if(e.target.closest('#scenarioHistoryNewBtn')){if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value='';if($('#scenarioHistoryName'))$('#scenarioHistoryName').value='Planejamento estratégico';if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value='';return}
     const restore=e.target.closest('[data-scenario-history-restore]');if(restore)return restoreStrategyScenarioHistory(restore.dataset.scenarioHistoryRestore);
-    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategySellerAliasSave'))return saveStrategySellerAlias();if(e.target.closest('#strategyRecurringConfirm'))return confirmStrategyRecurringImport();if(e.target.closest('#strategyCatalogImport'))return registerStrategyCommercialProducts();const catalogSave=e.target.closest('[data-strategy-catalog-save]');if(catalogSave)return saveStrategyCommercialRule(catalogSave.dataset.strategyCatalogSave);if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
+    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategySellerAliasSave'))return saveStrategySellerAlias();if(e.target.closest('#strategyRecurringConfirm'))return confirmStrategyRecurringImport();if(e.target.closest('#strategyMerchandiseConfirm'))return confirmStrategyMerchandiseImport();if(e.target.closest('#strategyCatalogImport'))return registerStrategyCommercialProducts();const catalogSave=e.target.closest('[data-strategy-catalog-save]');if(catalogSave)return saveStrategyCommercialRule(catalogSave.dataset.strategyCatalogSave);if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){
     if(await handleStrategyCsvChange(e))return;
     if(e.target.id==='scenarioHistoryGroup'){const row=scenarioHistoryState.rows.find(item=>item.scenario_id===e.target.value);if(row){if($('#scenarioHistoryName'))$('#scenarioHistoryName').value=row.name;if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value=row.notes||'';}return}

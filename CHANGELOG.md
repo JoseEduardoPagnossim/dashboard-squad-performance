@@ -1634,3 +1634,9 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 - Criado layout direto para TV sem sidebar/topbar.
 - Adicionados atalhos de URL, nova tela e fullscreen.
 - Separação inicial em `js/presentation.js` e `css/presentation.css` para suportar a evolução do carrossel na Etapa 2.
+
+### V2.63.5 — Importação de vendas avulsas
+- Importador do CSV Venda de Mercadorias com prévia, pendências, conciliação de pessoa/Squad, histórico de lote e controle de duplicidade por item (não por ID isolado).
+- Receita Direta de mercadorias e serviços avulsos: `vlTotalItem` como total único, com MRR/ARR zero; data civil sem hora; Squad C Pré-atendimento suportado.
+- Ledger comercial imutável, snapshots de regras de comissão para a V2.63.6, tentativas auditadas, RPCs e RLS por organização, proteção a competências fechadas.
+- Não gera comissão, não preenche Bonificação nem modifica dados de vendas recorrentes.

@@ -12,14 +12,14 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.6.sql'),'utf8');
 
 test('V2.60.6 publica ROI e retorno operacional',()=>{
-  assert.equal(pkg.version,'2.63.4');
-  assert.equal(pkg.assetVersion,'2.63.4-r1');
+  assert.equal(pkg.version,'2.63.5');
+  assert.equal(pkg.assetVersion,'2.63.5-r1');
   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.CATALOG.find(item=>item.id==='result-roi')?.state,'ready');
   assert.ok(existsSync(join(root,'docs','RESULTADO_ROI_RETORNO_V2.60.6.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.6.sql')));
   assert.match(index,/V2\.60\.6 • ROI E RETORNO OPERACIONAL/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.63.4-r1'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.63.5-r1'));
 });
 
 test('motor calcula ROI direto, retorno líquido e cobertura sem misturar naturezas',()=>{

@@ -10,7 +10,7 @@ const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const pkg=require('../package.json');
 
 test('V2.57.7 mantém subaba oculta mesmo com layout pessoal ativo',()=>{
-  assert.equal(pkg.version,'2.63.4');
+  assert.equal(pkg.version,'2.63.5');
   assert.match(css,/\.hidden\{display:none!important\}/);
   assert.match(css,/\.personal-layout-root:not\(\.home-widget-grid\):not\(\.hidden\)\{display:flex!important/);
   assert.doesNotMatch(css,/\.personal-layout-root:not\(\.home-widget-grid\)\{display:flex!important/);
@@ -24,7 +24,7 @@ test('V2.57.7 continua alternando Desempenho e Qualidade pela classe hidden',()=
 
 test('V2.57.7 publica cache-bust coerente sem migration',()=>{
   for(const asset of ['css/styles.css','js/app.js','js/design-system.js','js/filter-system.js']){
-    assert.ok(index.includes(`${asset}?v=2.63.4-r1`),asset);
+    assert.ok(index.includes(`${asset}?v=2.63.5-r1`),asset);
   }
   assert.ok(index.includes('V2.60.7'));
   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));

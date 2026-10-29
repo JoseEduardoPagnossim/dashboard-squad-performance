@@ -1,0 +1,8 @@
+V2.63.5 - IMPORTACAO DE VENDAS AVULSAS (VENDA DE MERCADORIAS)
+
+Base: V2.63.4. Extrair na raiz e substituir os arquivos.
+Executar supabase/migrations/MIGRACAO_V2.63.5.sql depois de V2.63.4, preferencialmente primeiro em homologacao.
+Nao ha Edge Functions novas. npm run check deve passar.
+Gestao Estrategica > Automacao > Venda de Mercadorias > Conferir mapeamento/vendedores/produtos > Receita avulsa > Confirmar importacao.
+vlTotalItem = total da linha; nao multiplicar quantidade. Nao gera MRR/ARR, nem comissao nesta versao.
+Consultar docs/IMPORTACAO_VENDAS_AVULSAS_V2.63.5.md.
