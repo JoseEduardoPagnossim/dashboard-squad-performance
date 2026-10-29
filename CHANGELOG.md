@@ -1640,3 +1640,6 @@ Histórico resumido do Soften Performance Hub. As notas completas de cada versã
 - Receita Direta de mercadorias e serviços avulsos: `vlTotalItem` como total único, com MRR/ARR zero; data civil sem hora; Squad C Pré-atendimento suportado.
 - Ledger comercial imutável, snapshots de regras de comissão para a V2.63.6, tentativas auditadas, RPCs e RLS por organização, proteção a competências fechadas.
 - Não gera comissão, não preenche Bonificação nem modifica dados de vendas recorrentes.
+
+## V2.63.6
+- Comissões congeladas por venda e competência, apuração única, resumo por vendedor/Squad, sincronização conservadora de comissão para técnicos e ledger separado de Pré-atendimento.
