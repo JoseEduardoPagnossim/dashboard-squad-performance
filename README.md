@@ -43,7 +43,7 @@ A Fase 6 começa com uma dimensão oficial de Produto e um contrato único de fo
 Detalhes: `docs/PRODUTO_SQUAD_FUNDACAO_V2.61.0.md`.
 
 
-## V2.63.1 — Importação CSV e mapeamentos
+## V2.63.2 — Importação CSV e mapeamentos
 
 Gestão Estratégica → Automação reconhece os CSVs comerciais, permite selecionar colunas, visualizar registros, conferir produtos identificados e salvar modelos de mapeamento. Execute `supabase/migrations/MIGRACAO_V2.63.1.sql` antes de usar o salvamento de modelos. **Sem lançamentos financeiros** nesta versão. Detalhes: `docs/IMPORTADOR_CSV_CONFIGURAVEL_V2.63.1.md`.
 

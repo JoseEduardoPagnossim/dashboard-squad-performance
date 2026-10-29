@@ -1,3 +1,11 @@
+## V2.63.2 — Conciliação de pessoas e Squads (Fase 8)
+
+- Conciliação local dos vendedores dos dois CSVs a pessoas estratégicas vinculadas a contas ativas, com correspondência exata por nome/Squad e bloqueio de atribuições ambíguas.
+- Squad C restrito ao perfil funcional Pré-atendimento; A, B, D e E exigem Técnico, sem misturar indicadores operacionais.
+- Alias explícito por organização, origem e Squad com RPC protegida, RLS e trilha de auditoria; nenhuma receita, comissão ou competência oficial é alterada.
+- Prévia detalhada de linhas conciliadas/pendentes/ambíguas/ignoradas e testes de regressão, versão `2.63.2-r1` em todos os recursos.
+- Migration `supabase/migrations/MIGRACAO_V2.63.2.sql`, documentação `docs/CONCILIACAO_PESSOAS_SQUADS_V2.63.2.md`.
+
 ## V2.63.1 — Importador CSV configurável (Fase 8)
 
 - Lê CSVs comerciais no navegador, detecta cabeçalhos e delimitadores, sugere e valida os campos mapeados e exibe prévia de até 12 linhas.

@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.63.1';
+  const APP_VERSION = '2.63.2';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -1257,7 +1257,7 @@
 
   async function enterApp(user){
     const canonicalRole=normalizeAccessRole(user?.role);state.user={...user,role:canonicalRole,squadCode:canonicalRole==='super_admin'?null:(user?.squadCode||null),permissions:canonicalRole==='super_admin'?{}:(user?.permissions||{})};loadUserUiPreferences(state.user);
-    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],mappings:[],mappingError:'',request:strategyAutomationState.request+1});
+    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:strategyAutomationState.request+1});
     Object.assign(strategyCsvState,{sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:strategyCsvState.request+1});
     state.dataPromises={};state.squadSelectionSeq=0;state.squadSelectionLoadError=false;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
     state.userDirectoryLoaded=false;state.userDirectory=[];state.auditLogs=[];state.auditLoaded=false;state.auditLoading=false;state.auditError=null;state.internalNotifications=[];state.notificationReadIds=[];state.notificationsLoaded=false;state.notificationsLoading=false;state.notificationsRemoteAvailable=true;state.notificationsError='';state.notificationPopoverOpen=false;state.notificationFilters={status:'all',source:'all',severity:'all',category:'all',search:''};state.gameRankingCache={};state.gameRankingLoading={};state.feedbackCache={};state.feedbackLoading={};state.feedbackEditor=null;state.myFeedbacks=null;state.myFeedbackLoading=false;state.supportCostMonthId=null;state.supportCostCache={};state.supportCostLoading={};state.financialImpactMonthId=null;state.financialImpactCache={};state.financialImpactLoaded=false;state.financialImpactLoading=null;state.presentationPlaylists=[];state.presentationDevices=[];state.presentationOpsLoaded=false;state.presentationOpsLoading=null;state.presentationOpsRemote=true;state.presentationPlaylistSelectedId=null;state.presentationRouteDevice=null;state.presentationRoutePlaylist=null;state.presentationRouteConfigSignature='';
@@ -3585,7 +3585,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
   }
-  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],mappings:[],mappingError:'',request:0};
+  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
   const strategyCsvState={sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:0};
   async function loadStrategyAutomation({force=false}={}){
     if(!state.supabase||!canViewStrategy()||!strategyEditAccess()||!strategyPeopleAccess())return;
@@ -3593,15 +3593,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const request=++strategyAutomationState.request,org=state.user?.organizationId;
     strategyAutomationState.loading=true;strategyAutomationState.error='';
     try{
-      const [sources,profiles,people,mappings]=await Promise.all([
+      const [sources,profiles,people,mappings,sellerProfiles,aliases]=await Promise.all([
         state.supabase.from('strategy_import_sources').select('id,source_key,label,origin,generates_mrr,active').eq('organization_id',org).order('source_key'),
         state.supabase.from('profiles').select('user_id,full_name,role,active').eq('organization_id',org).eq('role','pre_attendance').eq('active',true).order('full_name'),
         state.supabase.from('strategy_people').select('id,user_id,name,active,functional_team,default_squad_code').eq('organization_id',org).order('name'),
-        state.supabase.from('strategy_import_mappings').select('id,source_key,name,columns,headers,created_by,updated_at').eq('organization_id',org).order('name')
+        state.supabase.from('strategy_import_mappings').select('id,source_key,name,columns,headers,created_by,updated_at').eq('organization_id',org).order('name'),
+        state.supabase.from('profiles').select('user_id,full_name,role,active,organization_id').eq('organization_id',org).in('role',['technician','pre_attendance']).eq('active',true).order('full_name'),
+        state.supabase.from('strategy_seller_aliases').select('id,source_key,squad_code,alias_name,alias_normalized,person_id').eq('organization_id',org).order('alias_name')
       ]);
       if(sources.error)throw sources.error;if(profiles.error)throw profiles.error;if(people.error)throw people.error;
       if(request!==strategyAutomationState.request||org!==state.user?.organizationId)return;
-      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':''});
+      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':'',sellerProfiles:sellerProfiles.error?[]:(sellerProfiles.data||[]),peopleError:sellerProfiles.error?'Contas de vendedores indisponíveis: '+String(sellerProfiles.error.message||sellerProfiles.error):'',aliases:aliases.error?[]:(aliases.data||[]),aliasError:aliases.error?'Execute a migration V2.63.2 no Supabase para gerenciar aliases.':''});
     }catch(err){strategyAutomationState.error=String(err.message||err);strategyAutomationState.loaded=false;}
     finally{strategyAutomationState.loading=false;if(state.currentView==='strategy'&&strategyController.getState().section==='automation')renderStrategyAutomation();}
   }
@@ -3629,18 +3631,62 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     for(const id of ['strategyCsvFile','strategyCsvSource'])if($('#'+id))$('#'+id).disabled=!canManage||cs.busy;
     if($('#strategyCsvSave'))$('#strategyCsvSave').disabled=!canManage||!validMapping||!!strategyAutomationState.mappingError||cs.busy;
     if($('#strategyCsvApplyTemplate'))$('#strategyCsvApplyTemplate').disabled=!canManage||!parsed||!templates.length;
-    if(!parsed){if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Após selecionar um CSV, os campos e as sugestões de mapeamento serão exibidos aqui.</p>';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
+    if(!parsed){renderStrategySellerReconciliation();if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Após selecionar um CSV, os campos e as sugestões de mapeamento serão exibidos aqui.</p>';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
     if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML=def.fields.map(f=>{
       const chosen=cs.mapping[f.key]||'';
       const options=parsed.headers.map(h=>`<option value="${escapeHtml(h)}" ${chosen===h?'selected':''}>${escapeHtml(h)}</option>`).join('');
       return `<label class="strategy-csv-field"><span>${escapeHtml(f.label)}${f.required?' <strong class="strategy-csv-required">• Obrigatório</strong>':' • Opcional'}</span><select data-strategy-csv-field="${escapeHtml(f.key)}"><option value="">${f.required?'Selecione a coluna':'Não importar'}</option>${options}</select></label>`;
     }).join('');
-    if(!validMapping){if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
+    if(!validMapping){renderStrategySellerReconciliation();if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
     const fields=def.fields.filter(f=>validMapping[f.key]);const rows=engine.preview(cs.sourceKey,parsed,validMapping,12);
     if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table strategy-csv-table"><thead><tr>${fields.map(f=>`<th>${escapeHtml(f.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${fields.map(f=>`<td>${escapeHtml(row[f.key]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="muted">Prévia limitada a 12 linhas; ${parsed.rowCount.toLocaleString('pt-BR')} linhas analisadas localmente. As datas e valores não foram contabilizados.</p>`;
     const products=engine.identifyProducts(cs.sourceKey,parsed,validMapping);
     if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent=`${products.totalUnique} produto(s) distinto(s) • ${products.ignoredNoGroup} linha(s) sem grupo válido ignorada(s) • ${products.emptyProductRows} linha(s) sem produto • ${def.generatesMrr?'MRR: Sim':'MRR: Não'} • somente identificação, sem cadastro financeiro.`;
     if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Produto identificado</th><th>Ocorrências</th></tr></thead><tbody>${products.products.slice(0,70).map(x=>`<tr><td>${escapeHtml(x.name)}</td><td>${x.count.toLocaleString('pt-BR')}</td></tr>`).join('')}</tbody></table></div>${products.products.length>70?`<p class="muted">Mostrando 70 de ${products.totalUnique} produtos. A lista completa será utilizada na V2.63.3.</p>`:''}`;
+    renderStrategySellerReconciliation();
+  }
+  function renderStrategySellerReconciliation(){
+    const summary=$('#strategySellerSummary'),body=$('#strategySellerRows'),sellerSelect=$('#strategySellerAliasKey'),personSelect=$('#strategySellerAliasPerson'),notice=$('#strategySellerAliasNotice');
+    if(!summary||!body)return;
+    const cs=strategyCsvState,engine=window.SoftenStrategySellerReconciliation;
+    if(sellerSelect)sellerSelect.innerHTML='<option value="">Selecione um nome pendente</option>';
+    if(personSelect)personSelect.innerHTML='<option value="">Selecione uma pessoa</option>';
+    if($('#strategySellerAliasSave'))$('#strategySellerAliasSave').disabled=true;
+    if(!engine||!cs.parsed){summary.textContent='Selecione um CSV para conciliar os vendedores.';body.innerHTML='';return;}
+    let checked;
+    try{checked=engine.reconcile({sourceKey:cs.sourceKey,parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases});}
+    catch(err){summary.textContent='Conclua o mapeamento das colunas obrigatórias para ver a conciliação.';body.innerHTML='';return;}
+    const {summary:tot,groups,identities}=checked;
+    summary.textContent=`${tot.eligible.toLocaleString('pt-BR')} linha(s) com grupo válido • ${tot.matched.toLocaleString('pt-BR')} conciliada(s) • ${tot.pending.toLocaleString('pt-BR')} pendente(s) • ${tot.ambiguous.toLocaleString('pt-BR')} ambígua(s) • ${tot.ignoredNoGroup.toLocaleString('pt-BR')} sem grupo ignorada(s) • ${tot.ignoredNoSeller.toLocaleString('pt-BR')} sem vendedor. Sem lançamento financeiro.`;
+    body.innerHTML='<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Vendedor CSV</th><th>Squad</th><th>Linhas</th><th>Situação</th><th>Pessoa / vínculo</th></tr></thead><tbody>'+
+      groups.slice(0,120).map(g=>`<tr><td>${escapeHtml(g.name)}</td><td>${g.squad}${g.squad==='C'?' · Pré-atendimento':''}</td><td>${g.count}</td><td>${g.status==='matched'?'Conciliado ('+escapeHtml(g.method)+')':g.status==='ambiguous'?'Ambíguo':'Pendente'}</td><td>${g.personName?escapeHtml(g.personName):'—'}</td></tr>`).join('')+'</tbody></table></div>'+(groups.length>120?`<p class="muted">Mostrando 120 de ${groups.length} vendedores distintos.</p>`:'');
+    const pending=groups.filter(g=>g.status!=='matched');
+    if(sellerSelect)sellerSelect.innerHTML='<option value="">Selecione um nome pendente</option>'+pending.map(g=>`<option value="${escapeHtml(g.key)}">${escapeHtml(g.name)} · Squad ${g.squad} · ${g.count} linha(s)</option>`).join('');
+    const selected= pending.find(g=>g.key===strategySellerSelection.key);
+    if(selected&&sellerSelect)sellerSelect.value=selected.key;
+    const available=selected?identities.filter(i=>i.squad===selected.squad):[];
+    if(personSelect)personSelect.innerHTML='<option value="">Selecione a pessoa do mesmo Squad</option>'+available.map(i=>`<option value="${escapeHtml(i.personId)}">${escapeHtml(i.name)} · ${escapeHtml(i.role==='pre_attendance'?'Pré-atendimento':'Técnico')} · Squad ${i.squad}</option>`).join('');
+    if(notice)notice.textContent=strategyAutomationState.aliasError||strategyAutomationState.peopleError||'Somente associações confirmadas serão gravadas. Os dados do CSV permanecem locais.';
+    if($('#strategySellerAliasSave'))$('#strategySellerAliasSave').disabled=!!strategyAutomationState.aliasError||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess()||!selected||!available.length;
+  }
+  const strategySellerSelection={key:''};
+  async function saveStrategySellerAlias(){
+    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissão para conciliar vendedores.');
+    if(strategyAutomationState.aliasError||strategyAutomationState.peopleError)return toast('Verifique a migration V2.63.2 e as permissões.');
+    const engine=window.SoftenStrategySellerReconciliation,cs=strategyCsvState;
+    if(!cs.parsed)return toast('Selecione o CSV primeiro.');
+    let checked;try{checked=engine.reconcile({sourceKey:cs.sourceKey,parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases});}catch(err){return toast(err.message||String(err));}
+    const key=$('#strategySellerAliasKey')?.value,group=checked.groups.find(g=>g.key===key&&g.status!=='matched'),personId=$('#strategySellerAliasPerson')?.value;
+    if(!group||!personId)return toast('Selecione um vendedor pendente e a pessoa do mesmo Squad.');
+    if(!checked.identities.some(i=>i.personId===personId&&i.squad===group.squad))return toast('Pessoa incompatível com o Squad da venda.');
+    const payload=engine.aliasPayload({organizationId:state.user.organizationId,sourceKey:cs.sourceKey,group:group.squad,personId,alias:group.name});
+    const origin=cs.sourceKey,org=state.user.organizationId,request=cs.request;
+    const btn=$('#strategySellerAliasSave');if(btn)btn.disabled=true;
+    try{const {error}=await state.supabase.rpc('upsert_strategy_seller_alias_v2632',payload);if(error)throw error;
+      if(org!==state.user?.organizationId||origin!==cs.sourceKey||request!==cs.request)return;
+      strategySellerSelection.key='';strategyAutomationState.loaded=false;await loadStrategyAutomation({force:true});toast('Alias salvo e vendedor conciliado. Nenhuma venda foi registrada.');
+    }catch(err){toast('Falha ao salvar alias: '+String(err.message||err));}
+    finally{renderStrategySellerReconciliation();}
   }
   async function loadStrategyCsvFile(file){
     const engine=window.SoftenStrategyCsvImporter,cs=strategyCsvState;
@@ -3684,10 +3730,11 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   async function handleStrategyCsvChange(e){
     if(e.target.id==='strategyCsvSource'){
-      Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
+      strategySellerSelection.key='';Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
       if($('#strategyCsvFile'))$('#strategyCsvFile').value='';renderStrategyCsvImporter();return true;
     }
-    if(e.target.id==='strategyCsvFile'){await loadStrategyCsvFile(e.target.files?.[0]);return true;}
+    if(e.target.id==='strategySellerAliasKey'){strategySellerSelection.key=e.target.value;renderStrategySellerReconciliation();return true;}
+    if(e.target.id==='strategyCsvFile'){strategySellerSelection.key='';await loadStrategyCsvFile(e.target.files?.[0]);return true;}
     const key=e.target.dataset.strategyCsvField;
     if(key){if(e.target.value)strategyCsvState.mapping[key]=e.target.value;else delete strategyCsvState.mapping[key];strategyCsvState.error='';renderStrategyCsvImporter();return true;}
     return false;
@@ -5440,7 +5487,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(e.target.closest('#scenarioHistoryReloadBtn'))return loadStrategyScenarioHistory(true);
     if(e.target.closest('#scenarioHistoryNewBtn')){if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value='';if($('#scenarioHistoryName'))$('#scenarioHistoryName').value='Planejamento estratégico';if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value='';return}
     const restore=e.target.closest('[data-scenario-history-restore]');if(restore)return restoreStrategyScenarioHistory(restore.dataset.scenarioHistoryRestore);
-    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
+    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategySellerAliasSave'))return saveStrategySellerAlias();if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
   async function handleStrategyChange(e){
     if(await handleStrategyCsvChange(e))return;
     if(e.target.id==='scenarioHistoryGroup'){const row=scenarioHistoryState.rows.find(item=>item.scenario_id===e.target.value);if(row){if($('#scenarioHistoryName'))$('#scenarioHistoryName').value=row.name;if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value=row.notes||'';}return}

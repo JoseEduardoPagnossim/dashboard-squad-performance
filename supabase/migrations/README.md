@@ -222,3 +222,7 @@ Execute `MIGRACAO_V2.61.4.sql` depois da V2.61.3. A migration adiciona `sync_str
 Depois de todas as migrations V2.62.9, execute `MIGRACAO_V2.63.0.sql`. Ela adiciona `profiles.role=pre_attendance`, vinculação estratégica ao Squad C e fontes/lotes de automação. É obrigatório republicar as Edge Functions `create-user` e `manage-user`. Consulte `docs/AUTOMACAO_PRE_ATENDIMENTO_V2.63.0.md` e `docs/FASE8_REGRAS_OBRIGATORIAS_V2.63.0.md`.
 
 - `MIGRACAO_V2.63.1.sql`: modelos reutilizáveis para mapeamento comercial CSV, escopados por organização com RLS, **sem importação financeira**. Executar após V2.63.0.
+
+## V2.63.2 — Conciliação comercial por alias
+
+`MIGRACAO_V2.63.2.sql` cria `strategy_seller_aliases` e a RPC protegida `upsert_strategy_seller_alias_v2632`. Executar depois das migrations V2.63.0 e V2.63.1. Não há importação financeira nem alteração de snapshots; confirmar RLS com usuários reais.

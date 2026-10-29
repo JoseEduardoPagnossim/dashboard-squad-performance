@@ -1,0 +1,9 @@
+V2.63.2 - CONCILIACAO DE PESSOAS E SQUADS
+
+Base obrigatoria: V2.63.1.
+O ZIP contem apenas arquivos novos/alterados. Extrair na raiz do repositorio, substituindo.
+Banco: aplicar supabase/migrations/MIGRACAO_V2.63.2.sql no Supabase (em homologacao primeiro).
+Nao e necessario republicar Edge Functions.
+Executar npm run check e homologar com usuarios de teste (RLS/RPC) e dois CSVs.
+Nao cria receitas ou comissoes. Dados dos CSVs nao sao enviados ao servidor; apenas aliases aprovados.
+Commit: feat(strategy): implementa conciliacao de vendedores e squads V2.63.2
