@@ -303,3 +303,7 @@ A Fase 5 agora cruza Resultado com a base de custos. O ROI principal considera s
 
 ## V2.60.5 — Resultado por Squad
 A Fase 5 agora consolida Receita Direta, Influenciada e Protegida por Squad usando o mesmo rateio auditável da visão por técnico. As três naturezas continuam separadas; custo e ROI entram na V2.60.6.
+
+### V2.63.3 — Catálogo de produtos e comissões
+
+Gestão Estratégica > Automação permite pré-cadastrar produtos dos CSVs (MRR ou avulsos), sem duplicidade, e configurar quatro regras de comissão. Aplicar `supabase/migrations/MIGRACAO_V2.63.3.sql` antes de usar. Veja `docs/CATALOGO_COMERCIAL_COMISSOES_V2.63.3.md`.

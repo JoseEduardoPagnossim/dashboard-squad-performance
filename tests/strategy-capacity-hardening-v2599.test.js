@@ -17,14 +17,14 @@ function frozen(competence,{revision=1,source='close',availableFte=4,nominalFte=
 }
 
 test('V2.59.9 fecha a Fase 4 com hardening versionado',()=>{
-  assert.equal(pkg.version,'2.63.2');
-  assert.equal(pkg.assetVersion,'2.63.2-r1');
+  assert.equal(pkg.version,'2.63.3');
+  assert.equal(pkg.assetVersion,'2.63.3-r1');
   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
   assert.equal(existsSync(migrationPath),true);
   assert.equal(existsSync(docPath),true);
   assert.match(index,/V2\.60\.7/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.2-r1'));
-  assert.ok(index.includes('js/app.js?v=2.63.2-r1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.3-r1'));
+  assert.ok(index.includes('js/app.js?v=2.63.3-r1'));
 });
 
 test('historico escolhe maior revisao independentemente da ordem',()=>{

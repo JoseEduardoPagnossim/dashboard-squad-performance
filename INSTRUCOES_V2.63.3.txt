@@ -1,0 +1,8 @@
+V2.63.3 - CATALOGO COMERCIAL E REGRAS DE COMISSAO
+
+Base: V2.63.2. Extrair o ZIP na raiz do projeto, substituindo arquivos.
+Migracao obrigatoria: supabase/migrations/MIGRACAO_V2.63.3.sql, depois da V2.63.2.
+Nenhuma Edge Function nova. Executar npm run check e homologar no Supabase.
+Ao abrir Gestao Estrategica > Automacao, selecionar o CSV; produtos elegiveis sao pre-cadastrados por origem.
+Configurar comissoes por produto e conferir as revisoes. Nenhuma venda ou comissao e contabilizada nesta fase.
+Leia docs/CATALOGO_COMERCIAL_COMISSOES_V2.63.3.md.

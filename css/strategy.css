@@ -397,3 +397,10 @@
 @media(max-width:670px){.strategy-csv-field-grid,.strategy-csv-controls,.strategy-csv-templates{grid-template-columns:1fr}.strategy-csv-templates .btn{width:100%}}
 
 .strategy-csv-file-label{cursor:pointer}.strategy-csv-file-action{display:inline-flex;align-items:center;padding:11px 13px;border:1px dashed var(--border);border-radius:10px;background:var(--panel2);color:var(--text)}
+
+/* V2.63.3 — catálogo comercial e comissões */
+.strategy-catalog-panel{margin-top:1.25rem;border-top:1px solid var(--border-color,rgba(140,140,140,.24));padding-top:1.25rem}
+.strategy-catalog-table{min-width:760px}
+.strategy-catalog-table select,.strategy-catalog-table input{min-width:150px;max-width:220px;width:100%;font:inherit}
+.strategy-catalog-value{display:flex;flex-direction:column;gap:.25rem;font-size:.8rem}
+.strategy-catalog-panel .strategy-csv-controls{align-items:end;flex-wrap:wrap}

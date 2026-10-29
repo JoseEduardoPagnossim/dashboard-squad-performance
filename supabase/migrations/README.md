@@ -226,3 +226,7 @@ Depois de todas as migrations V2.62.9, execute `MIGRACAO_V2.63.0.sql`. Ela adici
 ## V2.63.2 — Conciliação comercial por alias
 
 `MIGRACAO_V2.63.2.sql` cria `strategy_seller_aliases` e a RPC protegida `upsert_strategy_seller_alias_v2632`. Executar depois das migrations V2.63.0 e V2.63.1. Não há importação financeira nem alteração de snapshots; confirmar RLS com usuários reais.
+
+## V2.63.3 — Catálogo comercial e comissões por produto
+
+Execute `MIGRACAO_V2.63.3.sql` após V2.63.2: cria produtos por organização/origem e revisões imutáveis de comissão, com RLS e RPCs controladas. Não altera receitas, bonificações ou snapshots. Não republicar Edge Functions. Homologar RLS/RPC com usuário real antes de produção.

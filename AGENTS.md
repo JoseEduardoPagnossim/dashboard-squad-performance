@@ -7,3 +7,5 @@ Release incremental: preservar dados e migrations anteriores; não alterar snaps
 **Fase 8, V2.63.1:** ler também `docs/IMPORTADOR_CSV_CONFIGURAVEL_V2.63.1.md` antes de alterar parser, modelos e importações de receitas. O reconhecimento de produtos nesta versão é somente prévia; nenhuma venda/comissão pode ser lançada prematuramente.
 
 **Fase 8, V2.63.2:** consultar `docs/CONCILIACAO_PESSOAS_SQUADS_V2.63.2.md` antes de alterar identidades/aliases. Nunca associar vendedor sem Squad válido, conta ativa e `strategy_people.user_id` da mesma organização. Pré-atendimento somente Squad C, sem dados operacionais.
+
+**Fase 8, V2.63.3:** consultar `docs/CATALOGO_COMERCIAL_COMISSOES_V2.63.3.md` antes de modificar catálogo/comissões. A origem define MRR; não juntar produtos de fontes diferentes, nem pagar comissões nesta etapa. Toda alteração de regra cria revisão imutável, sem alterar snapshots anteriores.

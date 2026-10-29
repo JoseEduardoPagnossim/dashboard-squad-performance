@@ -1,5 +1,14 @@
 ## V2.63.2 — Conciliação de pessoas e Squads (Fase 8)
 
+## V2.63.3 — Catálogo comercial e regras de comissão
+
+- Pré-cadastro idempotente de produtos dos dois CSVs, por organização e origem/MRR, excluindo linhas sem Squad.
+- Catálogo persistente com comissão integral, percentual, diferença após terceiros ou valor fixo; novas entradas pendentes até aprovação.
+- Revisões imutáveis de regras comerciais, RPCs validadas no servidor e RLS para leitura por organização.
+- Interface da Gestão Estratégica para seleção de fonte, pré-cadastro automático/reprocessamento e edição das regras.
+- Sem lançamento de vendas, pagamento de bonificações ou alteração de competências e snapshots.
+
+
 - Conciliação local dos vendedores dos dois CSVs a pessoas estratégicas vinculadas a contas ativas, com correspondência exata por nome/Squad e bloqueio de atribuições ambíguas.
 - Squad C restrito ao perfil funcional Pré-atendimento; A, B, D e E exigem Técnico, sem misturar indicadores operacionais.
 - Alias explícito por organização, origem e Squad com RPC protegida, RLS e trilha de auditoria; nenhuma receita, comissão ou competência oficial é alterada.
