@@ -12,14 +12,14 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.4.sql'),'utf8');
 
 test('V2.60.4 publica Resultado por técnico e atualiza motor',()=>{
-  assert.equal(pkg.version,'2.63.3');
-  assert.equal(pkg.assetVersion,'2.63.3-r1');
+  assert.equal(pkg.version,'2.63.4');
+  assert.equal(pkg.assetVersion,'2.63.4-r1');
   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
   assert.equal(result.buildFoundation({aggregate:{sourceAvailable:true}}).catalog.find(x=>x.id==='result-by-technician').status,'ready');
   assert.ok(existsSync(join(root,'docs','RESULTADO_TECNICO_V2.60.4.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.4.sql')));
   assert.match(index,/V2\.60\.4 • RESULTADO POR TÉCNICO/);
-  assert.ok(index.includes('js/strategy-result.js?v=2.63.3-r1'));
+  assert.ok(index.includes('js/strategy-result.js?v=2.63.4-r1'));
 });
 
 test('motor mantém as três naturezas separadas por técnico',()=>{

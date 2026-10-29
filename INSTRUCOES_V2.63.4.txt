@@ -1,0 +1,8 @@
+V2.63.4 - IMPORTACAO DE RECEITA RECORRENTE / NOVO MRR
+
+Base: V2.63.3. Extrair na raiz do projeto e substituir arquivos.
+Executar supabase/migrations/MIGRACAO_V2.63.4.sql depois da V2.63.3, preferencialmente primeiro em homologacao.
+Nao ha novas Edge Functions. npm run check deve passar.
+Gestao Estrategica > Automacao > Selecionar CSV de Anotacao de Venda > Conferir campos/vendedores/produtos > Receita recorrente > Confirmar importacao.
+Nao ha calculo/pagamento de comissao nesta versao. Reimportacao integral nao duplica vendas ja registradas.
+Consultar docs/IMPORTACAO_RECEITA_RECORRENTE_V2.63.4.md.

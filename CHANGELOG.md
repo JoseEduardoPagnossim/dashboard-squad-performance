@@ -1,3 +1,9 @@
+## V2.63.4 - Importação de receita recorrente (Fase 8)
+- Conciliação obrigatória de vendedores/produtos e identificação de Novo MRR por contratação.
+- Lotes auditáveis com importação transacional, bloqueios por competência fechada, idempotência e atribuição a Squad/Pessoa.
+- Contratações idênticas no arquivo permanecem pendentes; comissão não é gerada nesta versão.
+- Migrations e testes de regressão para segurança e integridade.
+
 ## V2.63.2 — Conciliação de pessoas e Squads (Fase 8)
 
 ## V2.63.3 — Catálogo comercial e regras de comissão

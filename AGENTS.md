@@ -9,3 +9,5 @@ Release incremental: preservar dados e migrations anteriores; não alterar snaps
 **Fase 8, V2.63.2:** consultar `docs/CONCILIACAO_PESSOAS_SQUADS_V2.63.2.md` antes de alterar identidades/aliases. Nunca associar vendedor sem Squad válido, conta ativa e `strategy_people.user_id` da mesma organização. Pré-atendimento somente Squad C, sem dados operacionais.
 
 **Fase 8, V2.63.3:** consultar `docs/CATALOGO_COMERCIAL_COMISSOES_V2.63.3.md` antes de modificar catálogo/comissões. A origem define MRR; não juntar produtos de fontes diferentes, nem pagar comissões nesta etapa. Toda alteração de regra cria revisão imutável, sem alterar snapshots anteriores.
+
+**Fase 8, V2.63.4:** consultar `docs/IMPORTACAO_RECEITA_RECORRENTE_V2.63.4.md`. Novo MRR somente por vendas únicas do CSV Anotação de Venda, nunca por `Vl Anterior`, nunca recalcular comissão. Reimportações são idempotentes pela identidade e confirmadas no Supabase; fechamento e histórico permanecem protegidos.

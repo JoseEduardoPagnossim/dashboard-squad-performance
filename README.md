@@ -1,3 +1,5 @@
+> **V2.63.4:** Importação de Receita Recorrente via CSV Anotação de Venda. Confira `docs/IMPORTACAO_RECEITA_RECORRENTE_V2.63.4.md` e execute a migration V2.63.4 antes do uso.
+
 ## V2.61.4 R1 — Hotfix do status oficial nos Indicadores
 
 - corrige o card **Técnicos acima da referência** para usar a mesma classificação oficial da matriz por competência;
