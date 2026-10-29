@@ -15,3 +15,5 @@ Release incremental: preservar dados e migrations anteriores; não alterar snaps
 **Fase 8, V2.63.5:** consultar `docs/IMPORTACAO_VENDAS_AVULSAS_V2.63.5.md`. CSV Venda de Mercadorias: `vlTotalItem` é valor total de cada linha (nunca multiplicar quantidade); `id` pode se repetir por item e não é chave única; receita direta avulsa sem MRR/ARR, comissões e Bonificação só na V2.63.6. Reimportações idempotentes, identidades auditadas, contas e Squads validados e competências fechadas protegidas.
 
 V2.63.6: revisar docs/COMISSOES_BONIFICACAO_V2.63.6.md antes de modificar bonificacao. Não contabilizar duas vezes e não inferir bonus de Pre-atendimento pela producao tecnica.
+
+**Fase 8, V2.63.7:** consultar `docs/LANCAMENTOS_MANUAIS_V2.63.7.md` antes de modificar lancamentos e correcoes. Nunca duplicar Resultado/custos, nao editar projecoes ou vendas CSV sem auditoria, nem criar comissao de venda manual sem regra aprovada. A transferencia do bonus oficial do Pre-atendimento aos custos e assunto da V2.63.8.

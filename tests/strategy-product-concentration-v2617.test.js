@@ -23,7 +23,7 @@ test('sem fonte não produz percentuais zero artificiais',()=>{
 });
 test('interface e motor V2.63.0 presentes com proteção de acesso',()=>{
  const root=path.join(__dirname,'..'),index=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
- assert.ok(index.includes('js/strategy-product-concentration.js?v=2.63.6-r1'));
+ assert.ok(index.includes('js/strategy-product-concentration.js?v=2.63.7-r1'));
  assert.ok(index.includes('strategyConcentrationProductRows'));
  assert.ok(app.includes('renderStrategyProductConcentration(vm,displayAggregate)'));
  assert.ok(app.includes('if(!displayAggregate){body.innerHTML'));

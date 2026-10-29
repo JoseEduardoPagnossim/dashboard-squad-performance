@@ -1,3 +1,10 @@
+## V2.63.7 - Lancamentos manuais com revisao auditavel (2026-10-29)
+- Formulario na Automacao para venda direta (MRR opcional), receita influenciada, receita protegida e custo de terceiros por Squad.
+- Registro transacional no Resultado/custos oficiais, sem copiar valores para indicadores paralelos.
+- Revisoes e cancelamentos com trilha de auditoria, protecao contra edicao direta, token de idempotencia e bloqueio de competencia fechada.
+- Squad C preserva perfil Pre-atendimento; nenhuma comissao/Bonificacao manual e paga automaticamente.
+- Testes de contratos, controles financeiros e integracao; cache-buster 2.63.7-r1.
+
 ## V2.63.4 - Importação de receita recorrente (Fase 8)
 - Conciliação obrigatória de vendedores/produtos e identificação de Novo MRR por contratação.
 - Lotes auditáveis com importação transacional, bloqueios por competência fechada, idempotência e atribuição a Squad/Pessoa.
