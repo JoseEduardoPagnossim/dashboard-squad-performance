@@ -230,3 +230,7 @@ Depois de todas as migrations V2.62.9, execute `MIGRACAO_V2.63.0.sql`. Ela adici
 ## V2.63.3 — Catálogo comercial e comissões por produto
 
 Execute `MIGRACAO_V2.63.3.sql` após V2.63.2: cria produtos por organização/origem e revisões imutáveis de comissão, com RLS e RPCs controladas. Não altera receitas, bonificações ou snapshots. Não republicar Edge Functions. Homologar RLS/RPC com usuário real antes de produção.
+
+
+### V2.63.8 — Fechamento financeiro
+Execute `MIGRACAO_V2.63.8.sql` somente após `MIGRACAO_V2.63.7.sql` (backup e homologação obrigatórios). A migration renomeia de forma idempotente a função original `close_strategy_competence(date)` como `close_strategy_competence_core_v2638(date)`, revoga acesso direto ao core e envolve o fechamento em uma reconciliação de bônus e cancelamentos. Detalhes: `docs/CONSOLIDACAO_FINANCEIRA_FECHAMENTO_V2.63.8.md`.

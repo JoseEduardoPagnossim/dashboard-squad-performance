@@ -1,3 +1,7 @@
+## V2.63.8 — Conciliação da Bonificação, cancelamentos e fechamento
+
+Gestão Estratégica → Automação agora oferece conferência de bônus oficiais da Bonificação, aprovação revisionada de Pré-atendimento no Squad C e sincronização sem duplicar custos variáveis. A rotina oficial de fechamento ganha pré-validação e snapshot complementar por revisão. Veja `docs/CONSOLIDACAO_FINANCEIRA_FECHAMENTO_V2.63.8.md` e execute `supabase/migrations/MIGRACAO_V2.63.8.sql` depois da V2.63.7. A sincronização requer homologação em Supabase antes do uso em produção.
+
 > **V2.63.4:** Importação de Receita Recorrente via CSV Anotação de Venda. Confira `docs/IMPORTACAO_RECEITA_RECORRENTE_V2.63.4.md` e execute a migration V2.63.4 antes do uso.
 
 ## V2.61.4 R1 — Hotfix do status oficial nos Indicadores

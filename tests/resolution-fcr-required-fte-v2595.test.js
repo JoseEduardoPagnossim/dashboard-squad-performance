@@ -11,15 +11,15 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
 const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.59.5.sql'),'utf8');
 
 test('V2.59.5 publica FCR automatico e FTE necessario',()=>{
-  assert.equal(pkg.version,'2.63.7');
-  assert.equal(pkg.assetVersion,'2.63.7-r1');
+  assert.equal(pkg.version,'2.63.8');
+  assert.equal(pkg.assetVersion,'2.63.8-r1');
   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
   assert.ok(existsSync(join(root,'docs','CAPACIDADE_FTE_NECESSARIO_FCR_V2.59.5.md')));
   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.5.sql')));
   assert.match(index,/strategyCapacityRequiredFteDetail/);
   assert.match(index,/indicatorFcrTechRows/);
   assert.match(index,/portfolioFcrTotal/);
-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.7-r1'));
+  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.8-r1'));
 });
 
 test('Resolve reconhece Sim, Nao, vazio e valor invalido',()=>{

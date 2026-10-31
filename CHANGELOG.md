@@ -1,3 +1,12 @@
+## V2.63.8 — Consolidação financeira e fechamento estratégico (Fase 8)
+
+- Conciliação da Bonificação dos técnicos com fonte operacional **fechada** e snapshot individual consistente.
+- Aprovações revisionadas das comissões do Pré-atendimento (Squad C) sem atendimentos fictícios.
+- Integração apenas na variável do custo estratégico, preservando outras parcelas, conflitos manuais e trilha de auditoria.
+- Visão de cancelamentos por Squad, com diferenciação entre mês aberto e oficial; sem presumir churn do Pré-atendimento.
+- Fechamento estratégico protegido contra pendências financeiras; snapshot complementar versionado ligado à revisão oficial, sem alterar snapshots anteriores.
+- Cache-buster 2.63.8-r1; novos testes e documentação. Migration exige homologação no Supabase.
+
 ## V2.63.7 - Lancamentos manuais com revisao auditavel (2026-10-29)
 - Formulario na Automacao para venda direta (MRR opcional), receita influenciada, receita protegida e custo de terceiros por Squad.
 - Registro transacional no Resultado/custos oficiais, sem copiar valores para indicadores paralelos.

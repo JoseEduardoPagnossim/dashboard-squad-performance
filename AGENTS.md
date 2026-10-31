@@ -17,3 +17,13 @@ Release incremental: preservar dados e migrations anteriores; não alterar snaps
 V2.63.6: revisar docs/COMISSOES_BONIFICACAO_V2.63.6.md antes de modificar bonificacao. Não contabilizar duas vezes e não inferir bonus de Pre-atendimento pela producao tecnica.
 
 **Fase 8, V2.63.7:** consultar `docs/LANCAMENTOS_MANUAIS_V2.63.7.md` antes de modificar lancamentos e correcoes. Nunca duplicar Resultado/custos, nao editar projecoes ou vendas CSV sem auditoria, nem criar comissao de venda manual sem regra aprovada. A transferencia do bonus oficial do Pre-atendimento aos custos e assunto da V2.63.8.
+
+
+## V2.63.8 — Regras imutáveis de Fechamento Financeiro
+
+- `technician_finance_monthly.calculated.final` somente é elegível após fechamento operacional, com comparação ao `squad_months.closed_snapshot` do próprio técnico; valor já contém comissão de vendas, não somá-la duas vezes.
+- Pré-atendimento = perfil `pre_attendance`, Squad C estratégico, sem produção técnica; aprovação comercial separada, revisionada por competência e pessoa, pendentes não viram zero.
+- Sincronização manual, com validação de conflitos, atualiza somente `strategy_employee_costs.variable_pay`, nunca salários/encargos/benefícios; FTE diferente de 1 exige revisão e bloqueia a sincronização automática.
+- Cancelamentos por Squad vêm de `squad_months.finance_month_data` / `closed_snapshot.financeMonthData`; não duplicar no Estratégico nem inventar cancelamentos para o Squad C.
+- Fechamento exige todas as reconciliações e dados operacionais oficiais resolvidos. Snapshot estratégico original permanece intacto; V2.63.8 grava fotografia complementar por revisão em ledger próprio.
+- Testes SQL locais são estáticos; sempre homologar migration, RLS, função de fechamento e custos reais em Supabase antes de produção.
