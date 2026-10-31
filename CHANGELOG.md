@@ -1,3 +1,12 @@
+## V2.63.9 — Hardening e Homologação Final da Fase 8
+- Revisão de snapshots oficiais: cancelamento de mês fechado **nunca** recorre a dados editáveis; snapshot ausente ou inconsistente bloqueia fechamento.
+- Aprovação comercial do Pré-atendimento exige valor igual ao total calculado (não somente fingerprint e quantidade).
+- Bloqueio explícito para tentativa de fechar competência sem qualquer fonte financeira operacional.
+- Guardas append-only nos históricos de vendas, tentativas de importação, comissões, aprovações, auditoria e snapshots da Fase 8.
+- Fechamento exige permissões compatíveis com a conferência da Bonificação, incluindo `edit_costs`.
+- CLI de auditoria estática integrada ao `npm run validate`, testes de regressão e checklist de homologação real.
+- Cache-buster `2.63.9-r1`; exige `MIGRACAO_V2.63.9.sql` após V2.63.8. Não publica Edge Functions novas.
+
 ## V2.63.8 — Consolidação financeira e fechamento estratégico (Fase 8)
 
 - Conciliação da Bonificação dos técnicos com fonte operacional **fechada** e snapshot individual consistente.

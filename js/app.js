@@ -76,7 +76,7 @@
   const COLOR_MODE_KEY = 'softenPerformanceColorModeV1';
   const LAST_THEME_KEY = 'softenPerformanceLastThemeV1';
   const LAST_SQUAD_KEY = 'softenPerformanceLastSquadV1';
-  const APP_VERSION = '2.63.8';
+  const APP_VERSION = '2.63.9';
   const AVATAR_BUCKET = 'user-avatars';
   const AVATAR_MAX_SOURCE_BYTES = 5*1024*1024;
   const AVATAR_TARGET_BYTES = 100*1024;
@@ -3606,7 +3606,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const current=st.month===strategyFinanceCloseCompetence()?st.data:null;
     if($('#strategyFinanceCloseSummary'))$('#strategyFinanceCloseSummary').textContent=current?`${current.people.length} colaborador(es) financeiros • ${current.issues} pendencia(s) • Bonificacao apurada ${fmtMoney(current.bonusTotal)} • ${current.ready?'Apto na conferência da Bonificacao':'Regularize antes de fechar'}.`:'Consulte a competência para conferir fontes oficiais e pendências.';
     if($('#strategyFinanceCloseRows'))$('#strategyFinanceCloseRows').innerHTML=current?.people?.map(r=>`<tr><td>${escapeHtml(r.person_name||'')}</td><td>${escapeHtml(r.squad_code||'')}</td><td>${r.profile==='pre_attendance'?'Pré-atendimento':'Bonificação técnica'}</td><td>${r.amount==null?'—':fmtMoney(r.amount)}</td><td>${r.variable_pay==null?'—':fmtMoney(r.variable_pay)}</td><td>${escapeHtml(helper.STATUS[r.status]||r.status)}</td><td>${current.strategyStatus!=='closed'&&helper.mayApprove(r)?`<button class="btn secondary" type="button" data-strategy-preapprove="${escapeHtml(r.person_id)}">Aprovar comissão</button>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7">Nenhum colaborador associado a custos ou comissões no mês.</td></tr>';
-    if($('#strategyFinanceCloseChurn'))$('#strategyFinanceCloseChurn').innerHTML=current?.churn?.map(r=>`<tr><td>${escapeHtml(r.squad_code||'')}</td><td>${r.customers_start==null?'—':fmtInt(r.customers_start)}</td><td>${r.cancellations==null?'—':fmtInt(r.cancellations)}</td><td>${helper.churnRate(r)==null?'—':(helper.churnRate(r)*100).toFixed(2).replace('.',',')+'%'}</td><td>${r.operational_closed?'Fechado':'Provisório'}</td></tr>`).join('')||'<tr><td colspan="5">Sem competência operacional correspondente. Não considerar cancelamentos como zero.</td></tr>';
+    if($('#strategyFinanceCloseChurn'))$('#strategyFinanceCloseChurn').innerHTML=current?.churn?.map(r=>`<tr><td>${escapeHtml(r.squad_code||'')}</td><td>${r.customers_start==null?'—':fmtInt(r.customers_start)}</td><td>${r.cancellations==null?'—':fmtInt(r.cancellations)}</td><td>${helper.churnRate(r)==null?'—':(helper.churnRate(r)*100).toFixed(2).replace('.',',')+'%'}</td><td>${helper.churnStatus(r)}</td></tr>`).join('')||'<tr><td colspan="5">Sem competência operacional correspondente. Não considerar cancelamentos como zero.</td></tr>';
   }
   async function strategyFinanceCloseAction(action,personId=null){
     const st=strategyFinanceCloseState,comp=strategyFinanceCloseCompetence();
@@ -3621,7 +3621,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       st.data=window.SoftenStrategyFinancialClose.normalize(preview.data);st.month=comp;
       st.notice=action==='sync'?'Sincronização concluída. Confira as pendências antes do fechamento.':action==='approve'?'Comissão do Pré-atendimento aprovada. Faça a sincronização dos custos.':'Conferência financeira atualizada.';
       if(action!=='preview'){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}
-    }catch(err){st.notice='Erro financeiro: '+String(err?.message||err)+'. Confira MIGRACAO_V2.63.8.sql.';toast(st.notice);}
+    }catch(err){st.notice='Erro financeiro: '+String(err?.message||err)+'. Confira MIGRACAO_V2.63.8.sql e MIGRACAO_V2.63.9.sql.';toast(st.notice);}
     finally{st.busy=false;renderStrategyFinancialClose();}
   }
 
@@ -5615,7 +5615,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{const comp=strategyDataEngine.competenceDate(vm.state.competence),{data,error}=await state.supabase.rpc('strategy_bonus_reconciliation_preview_v2638',{p_competence:comp});if(error)throw error;
       const check=window.SoftenStrategyFinancialClose.normalize(data);
       if(!check.ready){strategyFinanceCloseState.data=check;strategyFinanceCloseState.month=comp;strategyFinanceCloseState.notice='Fechamento bloqueado por '+check.issues+' pendência(s) de Bonificação. Consulte Gestão Estratégica → Automação.';renderStrategyFinancialClose();return toast(strategyFinanceCloseState.notice);}
-    }catch(err){console.error(err);return toast('Não foi possível validar o fechamento financeiro da V2.63.8: '+String(err?.message||err));}
+    }catch(err){console.error(err);return toast('Não foi possível validar o fechamento financeiro da V2.63.9: '+String(err?.message||err));}
     if(typeof window!=='undefined'&&typeof window.confirm==='function'&&!window.confirm(`Fechar ${strategyDataEngine.competenceLabel(vm.state.competence)}? Custos, rateios, produção, qualidade e resultado econômico serão congelados em snapshots oficiais.`))return;
     try{
       const {data,error}=await state.supabase.rpc('close_strategy_competence',{p_competence:strategyDataEngine.competenceDate(vm.state.competence)});if(error)throw error;

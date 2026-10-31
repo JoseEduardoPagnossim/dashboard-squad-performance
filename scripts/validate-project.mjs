@@ -524,6 +524,10 @@ if (createUserText.includes("['super_admin','squad_admin','technician']") || man
 if (!createUserText.includes("['super_admin','technician','pre_attendance'].includes(role)")) errors.push('create-user não restringe os perfis ativos a Administrador/Técnico/Pré-atendimento.');
 if (!manageUserText.includes("['super_admin','technician','pre_attendance'].includes(role)")) errors.push('manage-user não restringe os perfis ativos a Administrador/Técnico/Pré-atendimento.');
 
+const phase8Audit = spawnSync(process.execPath, [join(root, 'scripts', 'audit-phase8.mjs')], { encoding: 'utf8' });
+if (phase8Audit.status !== 0) errors.push(`Auditoria Fase 8: ${(phase8Audit.stderr || phase8Audit.stdout || 'erro desconhecido').trim()}`);
+else if (phase8Audit.stdout) process.stdout.write(phase8Audit.stdout);
+
 if (errors.length) {
   console.error('Falha na validação do projeto:\n- ' + errors.join('\n- '));
   process.exit(1);

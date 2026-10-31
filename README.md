@@ -320,3 +320,6 @@ Gestão Estratégica > Automação permite pré-cadastrar produtos dos CSVs (MRR
 ### V2.63.7 - Lancamentos manuais
 
 Gestao Estrategica > Automacao > Lancamentos manuais: registros economicos, correcao por revisao e cancelamento auditavel. Executar `supabase/migrations/MIGRACAO_V2.63.7.sql` depois da V2.63.6. Consulte `docs/LANCAMENTOS_MANUAIS_V2.63.7.md`. Sem alteracao automatica da Bonificacao.
+
+### V2.63.9 — Hardening final da Fase 8
+Execute `npm run check` (inclui `scripts/audit-phase8.mjs`) e leia `docs/HARDENING_FASE8_V2.63.9.md`. Execute a migration V2.63.9 apenas após V2.63.8 em homologação. A suíte automatizada não substitui testes reais de RLS, RPC, snapshots ou controle de concorrência no Supabase.

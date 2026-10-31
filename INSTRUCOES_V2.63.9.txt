@@ -1,0 +1,10 @@
+V2.63.9 - Hardening e Homologacao Final da Fase 8
+BASE: somente V2.63.8.
+1. Backup do codigo e do Supabase.
+2. Em homologacao execute supabase/migrations/MIGRACAO_V2.63.9.sql, apos V2.63.8.
+3. Extraia este ZIP sobre a raiz do projeto V2.63.8, mantendo demais arquivos.
+4. Execute npm run check, publique no GitHub, faca Ctrl+Shift+R.
+5. Teste a matriz em docs/HARDENING_FASE8_V2.63.9.md antes de producao.
+Rollback DDL opcional, somente se aprovado: supabase/migrations/ROLLBACK_V2.63.9.sql.
+Nao existem novas Edge Functions. Nao foi executada homologacao Supabase real.
+Commit: fix(strategy): hardening e homologacao da fase 8 V2.63.9

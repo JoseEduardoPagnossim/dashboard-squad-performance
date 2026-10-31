@@ -30,7 +30,7 @@ test('V2.61.4 R1 matriz continua baseada no status mensal oficial persistido',()
 });
 
 test('V2.61.4 R1 força recarga do app sem consumir V2.61.5',()=>{
-  assert.ok(index.includes('js/app.js?v=2.63.8-r1'));
-  assert.ok(index.includes('css/styles.css?v=2.63.8-r1'));
-  assert.match(app,/APP_VERSION = '2\.63\.8'/);
+  assert.ok(index.includes('js/app.js?v=2.63.9-r1'));
+  assert.ok(index.includes('css/styles.css?v=2.63.9-r1'));
+  assert.match(app,/APP_VERSION = '2\.63\.9'/);
 });

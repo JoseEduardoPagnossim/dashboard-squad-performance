@@ -27,3 +27,6 @@ V2.63.6: revisar docs/COMISSOES_BONIFICACAO_V2.63.6.md antes de modificar bonifi
 - Cancelamentos por Squad vêm de `squad_months.finance_month_data` / `closed_snapshot.financeMonthData`; não duplicar no Estratégico nem inventar cancelamentos para o Squad C.
 - Fechamento exige todas as reconciliações e dados operacionais oficiais resolvidos. Snapshot estratégico original permanece intacto; V2.63.8 grava fotografia complementar por revisão em ledger próprio.
 - Testes SQL locais são estáticos; sempre homologar migration, RLS, função de fechamento e custos reais em Supabase antes de produção.
+
+## Fase 8 concluída — V2.63.9
+A Fase 8 precisa preservar: `Vl Atual Ativo` = incremento de MRR, `vlTotalItem` = total da linha avulsa sem multiplicar quantidade, origem MRR distinta de mercadorias, cada linha comercial representando venda, ocorrências idênticas preservadas, comissão apurada uma vez, Pré-atendimento somente Squad C, nada sem grupo contabilizado, auditoria imutável e snapshots oficiais sem fallback para dados editáveis. Não tratar testes SQL estáticos como homologação Supabase real. Antes de fechamento, conferir pessoal/Bonificação, cancelamentos e snapshots, inclusive competência sem fontes.
