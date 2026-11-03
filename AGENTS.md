@@ -1,3 +1,10 @@
+## V2.63.9 R4 — Regras permanentes
+- Base oficial: V2.63.9 R2, NÃO incorporar o hotfix R3 de produtos desconsiderados.
+- Custos operacionais só podem ser excluídos em competências abertas por RPC auditada.
+- Na importação de custos pessoais, usar total de encargos e provisões individualizadas, nunca somar totais intermediários; preservar outros custos e o bônus existente por padrão.
+- Reimportações não podem duplicar provisões nem sobrescrever variável manual sem decisão explícita.
+- Usar a sincronização oficial de Bonificação V2.63.8 e preservar divergências para conferência antes do fechamento.
+
 # Regras permanentes do Dashboard Squad Performance
 
 **Obrigatório antes de implementar qualquer versão da Fase 8:** ler `docs/FASE8_REGRAS_OBRIGATORIAS_V2.63.0.md` integralmente. Essas são decisões de negócio aprovadas pelo usuário e prevalecem sobre suposições do desenvolvedor. Não alterar sem autorização.

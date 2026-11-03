@@ -1,3 +1,9 @@
+## V2.63.9 R4 — Custos operacionais, folha e Bonificação (hotfix)
+- Exclusão auditada de custos operacionais e rateios, com proteção de competências fechadas e lançamentos manuais.
+- Prévia/importação de planilha de folha por competência, com conciliação de pessoas e deduplicação das provisões.
+- Variável puxado da Bonificação oficial e passível de edição manual com reconciliação e auditoria.
+- Base V2.63.9 R2; hotfix R3 descartado. Migration: MIGRACAO_V2.63.9_R4.sql.
+
 ## V2.63.9 R2 — Hotfix de layout da Automação (31/10/2026)
 - Corrigido grid da tela Automação: um cartão por linha em largura total, eliminando grande espaço vazio e prévia comprimida na direita.
 - Adicionada rolagem horizontal interna às tabelas de importação sem ampliar a página.

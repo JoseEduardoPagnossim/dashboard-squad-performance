@@ -1,0 +1,18 @@
+/* V2.63.9 R4 - importacao de custos sem alterar o arquivo de origem. */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.SoftenStrategyPersonCostImport=api;})(typeof window!=='undefined'?window:globalThis,function(){
+ 'use strict';
+ const key=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+ const cents=v=>{if(v==null||v==='')return 0;if(typeof v==='number'){if(!Number.isFinite(v)||v<0)throw Error('Numero invalido ou negativo');return Math.round(v*100)/100;}
+  let s=String(v).trim().replace(/R\$|\s/g,'');if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');else if(s.includes(','))s=s.replace(',','.');const n=Number(s);if(!Number.isFinite(n)||n<0)throw Error('Valor invalido: '+String(v));return Math.round(n*100)/100;};
+ const fields={competence:['COMPETENCIA'],name:['COLABORADOR','NOME COMPLETO'],salary:['SALARIO BASE'],variableSheet:['PREMIO VARIAVEL','BONIFICACAO VARIAVEL'],benefits:['BENEFICIOS'],charges:['TOTAL DE ENCARGOS'],provisions:['PROVISOES MENSAIS DE 13 E 1 3 DE FERIAS','PROVISOES MENSAIS DE 13O E 1 3 DE FERIAS'],provisionCharges:['ENCARGOS SOBRE PROVISOES SEM PREMIO']};
+ function parseRows(matrix){if(!Array.isArray(matrix)||matrix.length<2)throw Error('Planilha vazia.');const idxs={};const headers=matrix[0].map(key);for(const [field,aliases] of Object.entries(fields)){idxs[field]=headers.findIndex(h=>aliases.includes(h));if(idxs[field]<0)throw Error('Coluna obrigatoria ausente: '+aliases[0]);}
+  if(matrix.length>1001)throw Error('Limite de 1000 colaboradores por planilha.');let competence=null;const seen=new Set();const rows=[];
+  for(let i=1;i<matrix.length;i++){const arr=matrix[i]||[];const name=String(arr[idxs.name]??'').trim();if(!name)continue;const comp=String(arr[idxs.competence]??'').slice(0,7);if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(comp))throw Error('Competencia invalida na linha '+(i+1));if(competence&&competence!==comp)throw Error('A planilha mistura competencias. Envie uma competencia por vez.');competence=comp;
+   const k=key(name);if(seen.has(k))throw Error('Colaborador repetido na planilha: '+name);seen.add(k);
+   let invalidReason='';const amounts={};for(const field of ['salary','charges','benefits','variableSheet','provisions','provisionCharges']){const raw=arr[idxs[field]];try{if(String(raw??'').trim()==='-'||raw==null||raw===''){if(field!=='variableSheet')invalidReason='Valores ausentes/incompletos na planilha';amounts[field]=0;}else amounts[field]=cents(raw);}catch(e){invalidReason=e.message;amounts[field]=0;}}
+   rows.push({line:i+1,competence:comp,name,normalizedName:k,salary:amounts.salary,employerCharges:amounts.charges,benefits:amounts.benefits,variableSheet:amounts.variableSheet,provisions:amounts.provisions,provisionCharges:amounts.provisionCharges,otherImport:Math.round((amounts.provisions+amounts.provisionCharges)*100)/100,invalidReason});}
+  if(!rows.length)throw Error('Nenhum colaborador encontrado.');return Object.freeze({competence,rows});}
+ function matches(row,people){const normalized=key(row.name);return (people||[]).filter(p=>p.active!==false&&key(p.name)===normalized);}
+ function buildPreview(rows,people){const list=(rows||[]).map(row=>{const found=matches(row,people);return {...row,matchedPersonId:found.length===1?found[0].id:'',status:row.invalidReason?'invalid':found.length===1?'matched':found.length>1?'ambiguous':'unmatched'};});return list;}
+ return Object.freeze({key,cents,parseRows,matches,buildPreview});
+});

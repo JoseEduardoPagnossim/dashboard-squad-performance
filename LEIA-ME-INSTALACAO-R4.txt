@@ -1,0 +1,13 @@
+HOTFIX V2.63.9 R4 - CUSTOS OPERACIONAIS, PLANILHA E BONIFICACAO
+BASE OBRIGATORIA: V2.63.9 R2. NAO aplicar o hotfix R3 descartado.
+
+1) Backup dos arquivos e do Supabase.
+2) Na homologacao, executar supabase/migrations/MIGRACAO_V2.63.9_R4.sql.
+3) Extrair este ZIP sobre a RAIZ do projeto na V2.63.9 R2.
+4) Executar: npm run check
+5) Publicar no GitHub e atualizar o navegador com Ctrl+Shift+R.
+6) Homologar exclusao de custo, importacao de planilha e sincronizacao de Bonificacao.
+
+Nao ha Edge Function nova.
+Documento: docs/HOTFIX_CUSTOS_BONIFICACAO_V2.63.9_R4.md
+Commit: feat(strategy): implementa exclusao de custos, importacao de folha e bonus V2.63.9 R4
