@@ -404,3 +404,30 @@
 .strategy-catalog-table select,.strategy-catalog-table input{min-width:150px;max-width:220px;width:100%;font:inherit}
 .strategy-catalog-value{display:flex;flex-direction:column;gap:.25rem;font-size:.8rem}
 .strategy-catalog-panel .strategy-csv-controls{align-items:end;flex-wrap:wrap}
+
+/* V2.63.9 R2 — Automacao: area unica, sem coluna vazia e tabelas com scroll interno.
+ * Outros paineis estrategicos preservam seu grid original de duas colunas. */
+.strategy-panel[data-strategy-panel="automation"]{
+  grid-template-columns:minmax(0,1fr);
+  align-items:start;
+}
+.strategy-panel[data-strategy-panel="automation"] > .strategy-placeholder-card{
+  min-width:0;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.strategy-panel[data-strategy-panel="automation"] .strategy-table-wrap{
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+}
+.strategy-panel[data-strategy-panel="automation"] :is(
+  #strategyCsvPreview,#strategyCsvProducts,#strategySellerRows,
+  #strategyRecurringReview,#strategyMerchandiseReview
+){min-width:0;max-width:100%}
+.strategy-panel[data-strategy-panel="automation"] .strategy-section-heading > div{min-width:0}

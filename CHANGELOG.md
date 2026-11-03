@@ -1,3 +1,8 @@
+## V2.63.9 R2 — Hotfix de layout da Automação (31/10/2026)
+- Corrigido grid da tela Automação: um cartão por linha em largura total, eliminando grande espaço vazio e prévia comprimida na direita.
+- Adicionada rolagem horizontal interna às tabelas de importação sem ampliar a página.
+- Cache-buster alinhado para `2.63.9-r2`, sem migrations nem alterações financeiras.
+
 ## V2.63.9 — Hardening e Homologação Final da Fase 8
 - Revisão de snapshots oficiais: cancelamento de mês fechado **nunca** recorre a dados editáveis; snapshot ausente ou inconsistente bloqueia fechamento.
 - Aprovação comercial do Pré-atendimento exige valor igual ao total calculado (não somente fingerprint e quantidade).

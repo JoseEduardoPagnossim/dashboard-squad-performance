@@ -11,8 +11,8 @@ export function auditPhase8(read = (name) => validFile(name)) {
   const requireText = (file, marker, reason) => { if (!take(file).includes(marker)) errors.push(`${file}: ${reason}`); };
   const pkg = (() => { try { return JSON.parse(take('package.json')); } catch { errors.push('package.json invalido'); return {}; } })();
   const html = take('index.html');
-  const version = `${pkg.version}-r1`;
-  if (pkg.version !== '2.63.9' || pkg.assetVersion !== version) errors.push('Versao do pacote/caches inconsistente.');
+  // Aceita hotfixes r2/r3 sem enfraquecer a exigencia de versao uniforme dos assets.
+  if (pkg.version !== '2.63.9' || !/^2\.63\.9-r[1-9]\d*$/.test(String(pkg.assetVersion||''))) errors.push('Versao do pacote/caches inconsistente.');
   const refs = [...html.matchAll(/(?:src|href)="((?:css|js)\/[^"?]+\.(?:js|css))\?v=([^"]+)"/g)];
   if (refs.length < 40) errors.push('Referencias locais insuficientes para auditar cache-busters.');
   for (const [, name, cache] of refs) if (cache !== pkg.assetVersion && !(name==='js/audit-utils.js' && cache==='2.29.9')) errors.push(`Cache-buster fora da versao: ${name}`);

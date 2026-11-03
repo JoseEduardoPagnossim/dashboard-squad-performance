@@ -45,6 +45,6 @@ test('V2.48.12 preserva calendário próprio, sidebar e regra financeira', () =>
 test('V2.48.12 atualiza somente versão de frontend', () => {
   assert.match(app,/APP_VERSION = '2\.63\.9'/);
   assert.ok(index.includes('V2.60.7'));
-  assert.ok(index.includes('css/styles.css?v=2.63.9-r1'));
-  assert.ok(index.includes('js/app.js?v=2.63.9-r1'));
+  assert.ok(index.includes('css/styles.css?v=2.63.9-r2'));
+  assert.ok(index.includes('js/app.js?v=2.63.9-r2'));
 });
