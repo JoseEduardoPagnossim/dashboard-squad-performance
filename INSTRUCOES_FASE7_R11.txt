@@ -1,0 +1,25 @@
+FASE 7 - AUDITORIA DE EXPORTACAO FINANCEIRA (R11)
+
+BASE: aplicar somente sobre projeto com Fase 6 R10 instalada.
+
+ALTERACOES:
+- Nova aba Conferencia no Excel: totais oficiais de tecnicos, lideres e geral; quantidades e pendencias.
+- Cabecalho PDF: total financeiro e numero de pendencias. Com alertas, inclui pagina de conferencia.
+- Conferencia de valores em centavos, perfis sem identificacao, valor oficial invalido e possivel duplicidade de lider no mesmo Squad.
+- Nenhuma exclusao automatica ou ajuste de comissoes; alertas sao informativos.
+- Lider permanece fora das metricas de produtividade/atendimentos, somente financeiro.
+- Cache bust R11 e testes especificos.
+
+INSTALACAO:
+1. Backup da R10.
+2. Extrair ZIP na raiz do projeto preservando os caminhos.
+3. Executar npm run check.
+4. Homologar Excel, PDF e comissoes com dados reais dos Squads A/B/D/E no Supabase antes de publicar.
+5. Conferir explicitamente avisos em casos de registros antigos ou duplicados.
+
+SEM MIGRATION SQL NESTA FASE.
+VALIDACAO: npm run check local: 1.100 testes aprovados, nenhuma falha.
+SEM HOMOLOGACAO REAL NO SUPABASE / SEM PUBLICACAO NO GITHUB.
+
+COMMIT:
+feat: adiciona conferencia financeira e alertas de auditoria nos relatorios

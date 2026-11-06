@@ -99,5 +99,43 @@
     return{count:leaders.length,total:cents/100};
   }
 
-  return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue,leaderFinancialSummary};
+  // Conciliação apenas de linhas do relatório, sem usar métricas ou alterar lançamentos.
+  function financialExportAudit(rows){
+    const items=Array.isArray(rows)?rows:[];
+    const totals={technicians:0,leaders:0,overall:0},counts={technicians:0,leaders:0,unidentified:0};
+    const warnings=[];
+    const seenLeaders=new Set();
+    for(let i=0;i<items.length;i++){
+      const row=items[i]||{};
+      const role=row['Perfil financeiro'];
+      if(role!=='TÉCNICO'&&role!=='LÍDER'){
+        counts.unidentified++;
+        warnings.push(`Linha ${i+1}: perfil financeiro não reconhecido`);
+        continue;
+      }
+      const raw=row['Valor oficial'];
+      const value=typeof raw==='number'?raw:Number(raw);
+      if(raw===null||raw===undefined||raw===''||!Number.isFinite(value)){
+        warnings.push(`Linha ${i+1}: valor oficial ausente ou inválido`);
+        continue;
+      }
+      const cents=Math.round(value*100);
+      if(role==='LÍDER'){
+        counts.leaders++;
+        totals.leaders+=cents;
+        const name=String(row['Técnico']||'').trim();
+        const key=`${String(row['Grupo']||'').trim().toUpperCase()}|${name.toLocaleLowerCase('pt-BR')}`;
+        if(!name)warnings.push(`Linha ${i+1}: líder sem identificação`);
+        else if(seenLeaders.has(key))warnings.push(`Linha ${i+1}: possível líder duplicado (${name})`);
+        else seenLeaders.add(key);
+      }else{
+        counts.technicians++;
+        totals.technicians+=cents;
+      }
+    }
+    totals.overall=totals.technicians+totals.leaders;
+    return{counts,totals:{technicians:totals.technicians/100,leaders:totals.leaders/100,overall:totals.overall/100},warnings};
+  }
+
+  return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue,leaderFinancialSummary,financialExportAudit};
 });
