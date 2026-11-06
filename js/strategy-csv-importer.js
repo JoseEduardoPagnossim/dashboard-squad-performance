@@ -124,18 +124,19 @@
     const clean=validateMapping(sourceKey,parsed.headers,mapping);
     const indices=Object.fromEntries(['squad','seller','product','date','amount','activeMonthly'].map(key=>[key,clean[key]===undefined?-1:parsed.headers.indexOf(clean[key])]));
     const bySquad=new Map(['A','B','C','D','E'].map(code=>[code,{squad:code,rows:0,needsReview:0}]));
-    const summary={total:parsed.rows.length,validSquad:0,missingSquad:0,missingSeller:0,missingProduct:0,missingDate:0,missingAmount:0,needsReview:0,possibleRepeats:0};
+    const summary={total:parsed.rows.length,validSquad:0,missingSquad:0,missingSeller:0,missingProduct:0,missingDate:0,missingAmount:0,missingMonthly:0,needsReview:0,possibleRepeats:0};
     const seen=new Map();
     for(const row of parsed.rows){
       const value=key=>indices[key]<0?'':String(row[indices[key]]??'').trim();
       const squad=normalizeSquad(value('squad'));
-      const missingSeller=!value('seller'),missingProduct=!value('product'),missingDate=!value('date'),missingAmount=!value('amount');
+      const missingSeller=!value('seller'),missingProduct=!value('product'),missingDate=!value('date'),missingAmount=!value('amount'),missingMonthly=sourceKey==='contracted_modules_csv'&&!value('activeMonthly');
       if(!squad)summary.missingSquad++;else{summary.validSquad++;bySquad.get(squad).rows++;}
       if(missingSeller)summary.missingSeller++;
       if(missingProduct)summary.missingProduct++;
       if(missingDate)summary.missingDate++;
       if(missingAmount)summary.missingAmount++;
-      if(!squad||missingSeller||missingProduct||missingDate||missingAmount){summary.needsReview++;if(squad)bySquad.get(squad).needsReview++;}
+      if(missingMonthly)summary.missingMonthly++;
+      if(!squad||missingSeller||missingProduct||missingDate||missingAmount||missingMonthly){summary.needsReview++;if(squad)bySquad.get(squad).needsReview++;}
       // Repeticao literal e apenas sinalizada. Vendas identicas podem ser operacoes distintas.
       const fingerprint=JSON.stringify(row);
       if(seen.has(fingerprint))summary.possibleRepeats++;

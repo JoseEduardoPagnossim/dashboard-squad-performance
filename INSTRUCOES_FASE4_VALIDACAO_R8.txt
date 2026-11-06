@@ -1,0 +1,14 @@
+FASE 4 - VALIDACAO INTEGRADA R8 (base Fase 3 R7)
+
+Entregue:
+- Corrigido ReferenceError na aplicacao de modelo CSV salvo (engine nao inicializado).
+- Auditoria preventiva de MRR identifica linhas sem valor Vl Atual Ativo como pendencias (sem excluir/alterar vendas).
+- Testes integrados sintéticos para lider financeiro, mapeamento CSV MRR/avulso, modelo salvo e pendencias de MRR.
+- Cache buster r8 e testes de versao atualizados.
+
+Instalacao: aplicar sobre o repositorio ja atualizado com Fases 1, 2 e 3; preservar os caminhos.
+Rodar npm run check. Sem migration nesta fase.
+Nao houve homologacao em Supabase real, nem teste E2E no navegador ou dados comerciais reais.
+Nenhum indicador tecnico ou regra de calculo financeiro foi modificado.
+
+COMMIT: fix: valida integracao de lideres e importacoes e corrige modelos CSV

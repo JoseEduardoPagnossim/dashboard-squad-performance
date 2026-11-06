@@ -3887,7 +3887,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!validMapping){renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategySellerReconciliation();if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
     const audit=engine.auditPreview(cs.sourceKey,parsed,validMapping),a=audit.summary;
     if($('#strategyCsvAuditSummary'))$('#strategyCsvAuditSummary').textContent=`${a.total.toLocaleString('pt-BR')} linha(s) • ${a.validSquad.toLocaleString('pt-BR')} com Squad válido • ${a.needsReview.toLocaleString('pt-BR')} exigem revisão cadastral • ${a.possibleRepeats.toLocaleString('pt-BR')} ocorrência(s) literalmente repetida(s), sem exclusão automática.`;
-    if($('#strategyCsvAuditSquads'))$('#strategyCsvAuditSquads').innerHTML=`<p class="muted">Sem Squad: ${a.missingSquad} • Sem vendedor: ${a.missingSeller} • Sem produto: ${a.missingProduct} • Sem data: ${a.missingDate} • Sem valor: ${a.missingAmount}. Categorias podem se sobrepor.</p><div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Squad</th><th>Linhas</th><th>Pendências cadastrais</th></tr></thead><tbody>${audit.bySquad.map(g=>`<tr><td>${g.squad}${g.squad==='C'?' · Pré-atendimento':''}</td><td>${g.rows}</td><td>${g.needsReview}</td></tr>`).join('')}</tbody></table></div>`;
+    if($('#strategyCsvAuditSquads'))$('#strategyCsvAuditSquads').innerHTML=`<p class="muted">Sem Squad: ${a.missingSquad} • Sem vendedor: ${a.missingSeller} • Sem produto: ${a.missingProduct} • Sem data: ${a.missingDate} • Sem valor: ${a.missingAmount}${cs.sourceKey==='contracted_modules_csv'?' • Sem MRR: '+a.missingMonthly:''}. Categorias podem se sobrepor.</p><div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Squad</th><th>Linhas</th><th>Pendências cadastrais</th></tr></thead><tbody>${audit.bySquad.map(g=>`<tr><td>${g.squad}${g.squad==='C'?' · Pré-atendimento':''}</td><td>${g.rows}</td><td>${g.needsReview}</td></tr>`).join('')}</tbody></table></div>`;
     const fields=def.fields.filter(f=>validMapping[f.key]);const rows=engine.preview(cs.sourceKey,parsed,validMapping,12);
     if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table strategy-csv-table"><thead><tr>${fields.map(f=>`<th>${escapeHtml(f.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${fields.map(f=>`<td>${escapeHtml(row[f.key]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="muted">Prévia limitada a 12 linhas; ${parsed.rowCount.toLocaleString('pt-BR')} linhas analisadas localmente. As datas e valores não foram contabilizados.</p>`;
     const products=engine.identifyProducts(cs.sourceKey,parsed,validMapping);
@@ -4146,11 +4146,11 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){toast(`Falha ao salvar modelo: ${String(err.message||err)}`);}
   }
   function applyStrategyCsvTemplate(){
-    const id=$('#strategyCsvTemplate')?.value,cs=strategyCsvState;
+    const id=$('#strategyCsvTemplate')?.value,cs=strategyCsvState,engine=window.SoftenStrategyCsvImporter;
     const saved=strategyAutomationState.mappings.find(m=>String(m.id)===id&&m.source_key===cs.sourceKey);
     if(!saved||!cs.parsed)return toast('Selecione um modelo salvo e um arquivo CSV.');
     try{
-      const mapped=window.SoftenStrategyCsvImporter.validateMapping(cs.sourceKey,cs.parsed.headers,saved.columns);
+      const mapped=engine.validateMapping(cs.sourceKey,cs.parsed.headers,saved.columns);
       cs.mapping={...mapped};cs.error='';
       if($('#strategyCsvOptionalDetails')&&engine.definition(cs.sourceKey).fields.some(f=>!f.required&&cs.mapping[f.key]))$('#strategyCsvOptionalDetails').open=true;
       if($('#strategyCsvTemplateName'))$('#strategyCsvTemplateName').value=saved.name;
