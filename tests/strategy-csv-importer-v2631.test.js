@@ -10,7 +10,7 @@ test('CSV separados por ponto e virgula, tabs e pipe',()=>{for(const d of [';','
 test('CSV permite quebras de linha e aspas duplas escapadas no nome',()=>{const x=engine.parse('a,b\n"um\ndois","Disse ""oi"""\n');assert.equal(x.rows[0][0],'um\ndois');assert.equal(x.rows[0][1],'Disse "oi"');});
 test('CSV preserva linhas de venda repetidas sem deduplicar por ID',()=>{const x=engine.parse(merch);const m=engine.suggest('merchandise_sales_csv',x.headers);assert.equal(x.rowCount,2);assert.equal(engine.preview('merchandise_sales_csv',x,m).length,2);assert.equal(m.saleId,'id');});
 test('colunas recorrentes sao identificadas automaticamente com MRR correto e sem valor anterior',()=>{const x=engine.parse(recurring);const m=engine.suggest('contracted_modules_csv',x.headers);assert.equal(m.amount,'Vl Anterior');assert.equal(m.seller,'UsuarioVenda');assert.equal(m.squad,'grupoAtendimento');assert.equal(m.activeMonthly,'Vl Atual Ativo');});
-test('colunas avulsas usam valor total da linha, sem multiplicar por quantidade',()=>{const x=engine.parse(merch);const m=engine.suggest('merchandise_sales_csv',x.headers);assert.equal(m.amount,'vlTotalItem');assert.equal(m.quantity,'quantidade');assert.equal(engine.preview('merchandise_sales_csv',x,m)[1].amount,'200.00');});
+test('colunas avulsas usam valor total da linha, sem multiplicar por quantidade',()=>{const x=engine.parse(merch);const m=engine.suggest('merchandise_sales_csv',x.headers);assert.equal(m.amount,'vlTotalItem');assert.equal(m.quantity,undefined);assert.equal(engine.preview('merchandise_sales_csv',x,m)[1].amount,'200.00');});
 test('normalizacao de nome e acento agrupa produto duplicado na mesma origem',()=>{const x=engine.parse(recurring);const m=engine.suggest('contracted_modules_csv',x.headers);const res=engine.identifyProducts('contracted_modules_csv',x,m);assert.equal(res.totalUnique,1);assert.equal(res.products[0].count,2);});
 test('linhas sem grupo sao excluidas da identificacao de produtos',()=>{const x=engine.parse(recurring);const m=engine.suggest('contracted_modules_csv',x.headers);const res=engine.identifyProducts('contracted_modules_csv',x,m);assert.equal(res.ignoredNoGroup,1);assert.equal(res.products[0].count,2);});
 test('grupo valido inclui Pré-atendimento C e não inclui grupos inventados',()=>{assert.equal(engine.normalizeSquad(' c '),'C');assert.equal(engine.normalizeSquad('A'),'A');assert.equal(engine.normalizeSquad(''),null);assert.equal(engine.normalizeSquad('Suporte'),null);});
@@ -25,4 +25,27 @@ test('template salvo contém apenas nomes de colunas e nunca as linhas do CSV',(
 test('mapeamento salvo é validado novamente quando as colunas mudam',()=>{const x=engine.parse(recurring),m=engine.suggest('contracted_modules_csv',x.headers);assert.throws(()=>engine.validateMapping('contracted_modules_csv',['Produto'],m),/indisponível/);});
 test('SQL cria apenas modelos comerciais com isolamento por organização e escrita restrita',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.1.sql');for(const v of ['strategy_import_mappings','enable row level security','strategy_import_mappings_read_v2631','strategy_import_mappings_insert_v2631','strategy_import_mappings_update_v2631','has_strategy_access(\'people_costs\')','has_strategy_access(\'edit_costs\')','created_by=(select auth.uid())'])assert.ok(sql.includes(v),v);assert.doesNotMatch(sql,/grant\s+(?:all|delete).*?strategy_import_mappings\s+to\s+authenticated/i);});
 test('UI de importacao somente le dados, gera previa, identifica produto, salva mapeamento',()=>{const html=read('index.html'),js=read('js/app.js');for(const id of ['strategyCsvFile','strategyCsvSource','strategyCsvFields','strategyCsvPreview','strategyCsvProducts','strategyCsvTemplate','strategyCsvSave','strategyCsvApplyTemplate'])assert.ok(html.includes(`id="${id}"`),id);assert.match(js,/createTemplatePayload/);assert.match(js,/engine\.parse\(text\)/);assert.match(js,/identifyProducts\(/);assert.match(js,/renderStrategyCsvImporter/);assert.doesNotMatch(js.slice(js.indexOf('function renderStrategyCsvImporter()'),js.indexOf('async function initStrategyAutomationSources')),/strategy_result_events|strategy_employee_costs|\.from\('strategy_import_batches'\)/);});
-test('todos scripts JS/CSS usam o cache-buster 2.63.9-r5',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r5');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r5/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r5");});
+test('todos scripts JS/CSS usam o cache-buster 2.63.9-r6',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r6');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r6/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r6");});
+
+test('V2.63.11: opcionais iniciam desligadas mesmo quando coluna existe',()=>{
+ for(const [key,raw] of [['contracted_modules_csv',recurring],['merchandise_sales_csv',merch]]){
+  const parsed=engine.parse(raw),mapping=engine.suggest(key,parsed.headers);
+  const def=engine.definition(key);
+  assert.ok(def.fields.filter(f=>!f.required).every(f=>!(f.key in mapping)));
+  assert.ok(def.fields.filter(f=>f.required).every(f=>mapping[f.key]));
+  assert.doesNotThrow(()=>engine.validateMapping(key,parsed.headers,mapping));
+ }
+});
+test('V2.63.11: opcional pode ser ativada e template preserva decisao explicita',()=>{
+ const parsed=engine.parse(recurring),mapping=engine.suggest('contracted_modules_csv',parsed.headers);
+ mapping.customer='Cliente';
+ const template=engine.createTemplatePayload({organizationId:'o',userId:'u',sourceKey:'contracted_modules_csv',name:'Com cliente',headers:parsed.headers,mapping});
+ assert.equal(template.columns.customer,'Cliente');
+ assert.equal(engine.preview('contracted_modules_csv',parsed,template.columns)[0].customer,'Cliente Alfa');
+});
+test('V2.63.11: interface separa campos obrigatorios e opcionais',()=>{
+ const html=read('index.html'),app=read('js/app.js');
+ for(const id of ['strategyCsvOptionalFields','strategyCsvOptionalDetails','strategyCsvTemplatesDetails','strategyCsvCatalogDetails','strategyCsvPreviewDetails'])assert.ok(html.includes(`id="${id}"`),id);
+ assert.match(app,/def\.fields\.filter\(f=>f\.required\)/);
+ assert.match(app,/def\.fields\.filter\(f=>!f\.required\)/);
+});

@@ -1,0 +1,1 @@
+npm run check: 1084 passed, 0 failed. Nenhuma nova migration SQL.

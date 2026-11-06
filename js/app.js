@@ -3872,12 +3872,16 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyCsvSave'))$('#strategyCsvSave').disabled=!canManage||!validMapping||!!strategyAutomationState.mappingError||cs.busy;
     if($('#strategyCsvApplyTemplate'))$('#strategyCsvApplyTemplate').disabled=!canManage||!parsed||!templates.length;
     renderStrategyCommercialCatalog();
-    if(!parsed){renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategySellerReconciliation();if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Após selecionar um CSV, os campos e as sugestões de mapeamento serão exibidos aqui.</p>';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
-    if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML=def.fields.map(f=>{
+    if(!parsed){renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategySellerReconciliation();if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML='<p class="muted">Selecione um CSV para reconhecer as colunas obrigatórias.</p>';if($('#strategyCsvOptionalFields'))$('#strategyCsvOptionalFields').innerHTML='';if($('#strategyCsvOptionalCount'))$('#strategyCsvOptionalCount').textContent='';if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Sem arquivo selecionado.';return;}
+    const renderField=f=>{
       const chosen=cs.mapping[f.key]||'';
       const options=parsed.headers.map(h=>`<option value="${escapeHtml(h)}" ${chosen===h?'selected':''}>${escapeHtml(h)}</option>`).join('');
       return `<label class="strategy-csv-field"><span>${escapeHtml(f.label)}${f.required?' <strong class="strategy-csv-required">• Obrigatório</strong>':' • Opcional'}</span><select data-strategy-csv-field="${escapeHtml(f.key)}"><option value="">${f.required?'Selecione a coluna':'Não importar'}</option>${options}</select></label>`;
-    }).join('');
+    };
+    if($('#strategyCsvFields'))$('#strategyCsvFields').innerHTML=def.fields.filter(f=>f.required).map(renderField).join('');
+    if($('#strategyCsvOptionalFields'))$('#strategyCsvOptionalFields').innerHTML=def.fields.filter(f=>!f.required).map(renderField).join('');
+    const selectedOptional=def.fields.filter(f=>!f.required&&cs.mapping[f.key]).length;
+    if($('#strategyCsvOptionalCount'))$('#strategyCsvOptionalCount').textContent=`(${selectedOptional} selecionada(s))`;
     if(!validMapping){renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategySellerReconciliation();if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML='<p class="muted">Associe todos os campos obrigatórios sem repetir colunas para visualizar os registros.</p>';if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML='';if($('#strategyCsvProductsInfo'))$('#strategyCsvProductsInfo').textContent='Complete o mapeamento para identificar produtos.';return;}
     const fields=def.fields.filter(f=>validMapping[f.key]);const rows=engine.preview(cs.sourceKey,parsed,validMapping,12);
     if($('#strategyCsvPreview'))$('#strategyCsvPreview').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table strategy-csv-table"><thead><tr>${fields.map(f=>`<th>${escapeHtml(f.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${fields.map(f=>`<td>${escapeHtml(row[f.key]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="muted">Prévia limitada a 12 linhas; ${parsed.rowCount.toLocaleString('pt-BR')} linhas analisadas localmente. As datas e valores não foram contabilizados.</p>`;
@@ -4143,6 +4147,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{
       const mapped=window.SoftenStrategyCsvImporter.validateMapping(cs.sourceKey,cs.parsed.headers,saved.columns);
       cs.mapping={...mapped};cs.error='';
+      if($('#strategyCsvOptionalDetails')&&engine.definition(cs.sourceKey).fields.some(f=>!f.required&&cs.mapping[f.key]))$('#strategyCsvOptionalDetails').open=true;
       if($('#strategyCsvTemplateName'))$('#strategyCsvTemplateName').value=saved.name;
       renderStrategyCsvImporter();toast('Mapeamento recuperado e validado com as colunas atuais.');
     }catch(err){toast(`O modelo não corresponde a este CSV: ${err.message||err}`);}

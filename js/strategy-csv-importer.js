@@ -81,6 +81,7 @@
     if(!Array.isArray(headers)||!headers.length)throw new Error('Cabeçalhos obrigatórios.');
     const used=new Set(),mapping={};
     for(const f of def.fields){
+      if(!f.required)continue; // Campos opcionais nunca sao vinculados automaticamente.
       const found=headers.find(h=>!used.has(h)&&f.aliases.some(a=>normalize(a)===normalize(h)));
       if(found){mapping[f.key]=found;used.add(found);}
     }

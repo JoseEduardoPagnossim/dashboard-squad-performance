@@ -1,1 +1,1 @@
-feat: vincula bonificacao de lideres aos Squads sem impacto nas metricas
+feat: simplifica importacao CSV e desativa opcionais por padrao

@@ -1,0 +1,18 @@
+FASE 2 - IMPORTACAO DE VENDAS SIMPLIFICADA (base Fase 1 / cache 2.63.9-r6)
+
+Entregue:
+- Colunas obrigatorias reconhecidas automaticamente, sem auto-vincular opcionais.
+- Vinculacao manual de qualquer campo opcional; modelos salvos preservam escolhas explicitas.
+- Interface simplificada em 3 momentos: selecionar, conferir obrigatorios, revisar pendencias/importar.
+- Opcoes avancadas, modelos, previa, produtos e catalogo em secoes expansíveis.
+- Texto do Vl Anterior corrigido conforme regra vigente (valor vendido). Vl Atual Ativo = MRR.
+- Importacoes confirmadas permanecem nos paineis especificos de receita (MRR/mercadorias).
+- Nenhuma migration SQL nova; rotinas financeiras, seguranca, snapshots e conciliacao preservados.
+
+ATENCAO: quantidade e opcional em mercadorias e inicia desligada. Vincule manualmente quando quiser que ela diferencie itens na identidade/auditoria das vendas.
+
+Instalacao: aplicar arquivos deste ZIP na raiz do repositorio, preservando caminhos e arquivos anteriores. Executar npm run check. Validar em homologacao com ambos os CSVs, incluindo modelos salvos, opcional de quantidade, duplicatas, vendedores pendentes e competencias fechadas.
+
+TESTES: 1.084 passaram, nenhuma falha. Nao houve validacao de Supabase em producao.
+
+COMMIT: feat: simplifica importacao CSV e desativa opcionais por padrao

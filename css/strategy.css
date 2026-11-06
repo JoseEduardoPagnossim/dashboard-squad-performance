@@ -445,3 +445,11 @@
 
 /* V2.63.9 R5: auditoria comercial dentro da Bonificacao. */
 .strategy-sales-audit-r5 .strategy-sales-audit-toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:12px 0}.strategy-sales-audit-r5 .strategy-sales-audit-toolbar label{display:flex;flex-direction:column;gap:5px;min-width:140px;flex:1}.strategy-sales-audit-r5 .strategy-sales-audit-kpis{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0}.strategy-sales-audit-r5 .strategy-sales-audit-kpis>div{border:1px solid var(--border-color,#dce1e7);border-radius:8px;padding:10px;min-width:150px;display:flex;flex-direction:column}.strategy-sales-audit-r5 .table-wrap{overflow-x:auto;max-width:100%}.strategy-sales-audit-r5 table{min-width:980px}.strategy-sales-audit-r5 .strategy-sales-audit-correction{margin-top:20px}.strategy-sales-audit-r5 .strategy-sales-audit-correction summary{cursor:pointer;font-weight:650}.strategy-sales-audit-r5 .audit-alert{color:var(--danger,#c83535);font-weight:650}
+
+/* V2.63.11: fluxo simples de importacao comercial */
+.strategy-csv-stage{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:20px 0 10px;padding:12px 15px;border-radius:12px;background:var(--panel2);border:1px solid var(--border)}
+.strategy-csv-stage strong{color:var(--text);font-size:.92rem}.strategy-csv-stage span{color:var(--muted);font-size:.82rem}
+.strategy-csv-advanced{margin:12px 0;border:1px solid var(--border);border-radius:12px;padding:0 14px;background:var(--panel2)}
+.strategy-csv-advanced>summary{cursor:pointer;padding:14px 3px;font-weight:750;color:var(--text)}
+.strategy-csv-advanced[open]>summary{border-bottom:1px solid var(--border);margin-bottom:12px}
+.strategy-csv-advanced>.strategy-csv-field-grid{margin:14px 0}.strategy-csv-advanced .strategy-catalog-panel{margin-top:6px}
