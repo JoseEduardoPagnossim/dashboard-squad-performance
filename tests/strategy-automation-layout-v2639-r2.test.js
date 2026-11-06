@@ -25,9 +25,9 @@ test('Tabelas da Automacao rolam dentro dos cartoes sem empurrar a largura da pa
 
 test('Hotfix R2 atualiza todos os assets e nao exige nova migration',()=>{
   assert.equal(pkg.version,'2.63.9');
-  assert.equal(pkg.assetVersion,'2.63.9-r9');
+  assert.equal(pkg.assetVersion,'2.63.9-r10');
   const refs=[...html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g)];
   assert.ok(refs.length>=40);
   for(const m of refs)if(m[1]!=='js/audit-utils.js')assert.equal(m[2],pkg.assetVersion,m[1]);
-  assert.doesNotMatch(html,/\?v=2\.63\.9-r1/);
+  assert.doesNotMatch(html,/\?v=2\.63\.9-r1(?=["\x27])/);
 });

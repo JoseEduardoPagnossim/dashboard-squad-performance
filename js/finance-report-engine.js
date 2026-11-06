@@ -89,5 +89,15 @@
   function columnById(id){return COLUMNS.find(c=>c.id===id)||null}
   function computedValue(row,column){if(column?.computed==='bonusTotal')return Number(row?.['Bônus manual']||0)+Number(row?.['Prêmio atendimento']||0)+Number(row?.['Prêmio Notas 5']||0);if(column?.computed==='hrPaymentTotal'){const official=row?.['Valor oficial'];if(official!==undefined&&official!==null&&official!=='')return Number(official)||0;return Number(row?.['Comissão base do técnico']||0)+Number(row?.['Comissão vendas']||0)+Number(computedValue(row,columnById('manualCommission'))||0)-Number(row?.['Desconto']||0)+Number(row?.['Redistribuição']||0);}return column?.key?row?.[column.key]:''}
 
-  return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue};
+  // Somente registros financeiros de líderes. Não altera os totais operacionais do Squad.
+  function leaderFinancialSummary(rows){
+    const leaders=(Array.isArray(rows)?rows:[]).filter(row=>row?.['Perfil financeiro']==='LÍDER');
+    const cents=leaders.reduce((total,row)=>{
+      const value=Number(row['Valor oficial']);
+      return total+(Number.isFinite(value)?Math.round(value*100):0);
+    },0);
+    return{count:leaders.length,total:cents/100};
+  }
+
+  return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue,leaderFinancialSummary};
 });

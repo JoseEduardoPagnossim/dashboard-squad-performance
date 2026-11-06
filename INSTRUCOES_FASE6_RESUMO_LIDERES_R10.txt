@@ -1,0 +1,25 @@
+FASE 6 - RESUMO FINANCEIRO DE LIDERES (R10)
+
+BASE: projeto atualizado ate Fase 5 (R9).
+PACOTE: somente arquivos alterados nesta fase, testes e patch.
+
+ALTERACOES:
+- Resumo Excel: quantidade de lideres financeiros e total de bonificacao separado.
+- PDF: cabecalho apresenta total e quantidade de lideres, sem somar na producao.
+- Motor de relatorio: agregacao apenas de linhas identificadas como LIDER.
+- Testes: protecao de Squad/competencia, separacao da folha tecnica, cache-buster R10.
+- Sem alterar calculos de produtividade, FCR, atendimento ou comissoes gravadas.
+
+INSTALACAO:
+1. Fazer backup da R9 antes da atualizacao.
+2. Extrair o ZIP na raiz do projeto preservando os caminhos.
+3. Executar npm run check.
+4. Recarregar o navegador e conferir os resumos de Excel e PDF.
+5. Homologar valores com registros reais no Supabase antes de producao.
+
+ATENCAO: A validacao foi local/automatizada. Nao houve acesso ao Supabase real,
+confirmacao em navegador ou publicacao no GitHub.
+MIGRATION: nao ha migration SQL nova.
+
+COMMIT:
+feat: destaca bonificacao de lideres nos resumos Excel e PDF
