@@ -14,7 +14,7 @@ const migration=readFileSync(migrationPath,'utf8');
 
 test('V2.58.2 permanece preservada com custo por resolução e migration própria',()=>{
   assert.equal(pkg.version,'2.63.9');
-  assert.equal(pkg.assetVersion,'2.63.9-r4');
+  assert.equal(pkg.assetVersion,'2.63.9-r5');
   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
   assert.equal(existsSync(migrationPath),true);
   assert.match(index,/INDICADOR V2\.58\.2[\s\S]*Custo por resolução/);

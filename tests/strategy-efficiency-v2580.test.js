@@ -18,8 +18,8 @@ test('V2.58.8 publica a Fundação da Eficiência isolada do operacional',()=>{
   assert.match(index,/strategyEfficiencyBaseCost/);
   assert.match(index,/strategyEfficiencyReadinessRows/);
   assert.match(index,/js\/strategy-efficiency\.js\?v=2\.63\.9/);
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r4')<index.indexOf('js/strategy.js?v=2.63.9-r4'));
-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r4')<index.indexOf('js/app.js?v=2.63.9-r4'));
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r5')<index.indexOf('js/strategy.js?v=2.63.9-r5'));
+  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r5')<index.indexOf('js/app.js?v=2.63.9-r5'));
   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
 });
 

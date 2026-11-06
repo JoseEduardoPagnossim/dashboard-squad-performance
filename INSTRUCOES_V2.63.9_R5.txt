@@ -1,0 +1,8 @@
+V2.63.9 R5 - Atualizacao incremental SOBRE R4 (nao usar R3).
+1. Backup banco e codigo.
+2. Aplicar supabase/migrations/MIGRACAO_V2.63.9_R5.sql em homologacao.
+3. Extrair ZIP na raiz da R4 e substituir arquivos.
+4. Testar novos imports e auditoria em homologacao antes de publicar.
+5. Auditoria em Bonificacao; nao reimportar CSV antigo para tentar corrigir historico.
+LIMITE: A R5 NAO ajusta automaticamente registros historicos e valores ja pagos; exporte divergencias para conciliacao supervisionada.
+AMBIENTE: Fontes historicas ausentes na reconstrucao impossibilitaram passar a suite completa. Ver docs/HOTFIX_AUDITORIA_COMERCIAL_V2.63.9_R5.md.

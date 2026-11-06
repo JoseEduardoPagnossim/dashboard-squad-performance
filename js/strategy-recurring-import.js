@@ -35,7 +35,7 @@
     const bySeller=new Map(sellerReview.groups.map(g=>[JSON.stringify([SOURCE,g.squad,g.normalized]),g]));
     const byProduct=new Map(products.filter(p=>p.source_key===SOURCE&&p.generates_mrr===true&&p.active===true).map(p=>[p.normalized_name||catalog.normalize(p.name),p]));
     const idx=k=>valid[k]?parsed.headers.indexOf(valid[k]):-1;
-    const positions=Object.fromEntries(['date','seller','squad','product','amount','customer','taxId','contractDate'].map(k=>[k,idx(k)]));
+    const positions=Object.fromEntries(['date','seller','squad','product','amount','activeMonthly','customer','taxId','contractDate'].map(k=>[k,idx(k)]));
     const get=(row,k)=>positions[k]<0?'':clean(row[positions[k]]);
     let summary={total:parsed.rows.length,ready:0,ignoredNoGroup:0,pendingSeller:0,pendingProduct:0,pendingDate:0,pendingAmount:0,repeatedRows:0,readyMrrCents:0};
     const records=[],occurrences=new Map();
@@ -44,25 +44,25 @@
       if(!group){summary.ignoredNoGroup++;continue;}
       const sellerName=get(row,'seller'),sKey=JSON.stringify([SOURCE,group,seller.normalizeName(sellerName)]),resolved=bySeller.get(sKey);
       const productName=get(row,'product'),product=byProduct.get(catalog.normalize(productName));
-      const day=date(get(row,'date')),amountCents=cents(get(row,'amount'));
+      const day=date(get(row,'date')),amountCents=cents(get(row,'amount')),activeMonthlyCents=cents(get(row,'activeMonthly'));
       const customer=get(row,'customer'),taxId=get(row,'taxId'),contractDate=get(row,'contractDate');
       let status='ready';
       if(!resolved||resolved.status!=='matched')status='pendingSeller';
       else if(!product)status='pendingProduct';
       else if(!day)status='pendingDate';
-      else if(amountCents===null)status='pendingAmount';
+      else if(amountCents===null||activeMonthlyCents===null)status='pendingAmount';
       const fingerprint=JSON.stringify([day||'',normalize(sellerName),group,catalog.normalize(productName),amountCents,normalize(taxId),normalize(customer),date(contractDate)||'']);
       const occurrence=status==='ready'?(occurrences.get(fingerprint)||0)+1:0;
-      const entry={line:index+2,status,occurrence,day,amountCents,personId:resolved?.personId||null,userId:resolved?.userId||null,productId:product?.id||null,
+      const entry={line:index+2,status,occurrence,day,amountCents,activeMonthlyCents,personId:resolved?.personId||null,userId:resolved?.userId||null,productId:product?.id||null,
         seller:sellerName,squad:group,product:productName,customer,taxId,contractDate:date(contractDate)||'',fingerprint};
       records.push(entry);
       if(status==='ready')occurrences.set(fingerprint,occurrence);
     }
     // Cada linha representa uma venda, inclusive linhas idênticas. O ordinal por identidade
     // preserva todas as ocorrências na reimportação integral do arquivo.
-    for(const entry of records){if(entry.status==='ready'&&occurrences.get(entry.fingerprint)>1)summary.repeatedRows++;summary[entry.status]++;if(entry.status==='ready')summary.readyMrrCents+=entry.amountCents;}
-    const ready=records.filter(r=>r.status==='ready').map(r=>Object.freeze({date:r.day,seller:r.seller,squad:r.squad,product:r.product,productId:r.productId,personId:r.personId,amountCents:r.amountCents,customer:r.customer.slice(0,160),taxId:r.taxId.slice(0,30),contractDate:r.contractDate,occurrence:r.occurrence}));
-    return Object.freeze({sourceKey:SOURCE,summary:Object.freeze(summary),records:Object.freeze(records),ready:Object.freeze(ready),note:'Cada linha apta é uma venda; ocorrências idênticas recebem ordinais. Reimportações integrais não duplicam receitas.'});
+    for(const entry of records){if(entry.status==='ready'&&occurrences.get(entry.fingerprint)>1)summary.repeatedRows++;summary[entry.status]++;if(entry.status==='ready')summary.readyMrrCents+=entry.activeMonthlyCents;}
+    const ready=records.filter(r=>r.status==='ready').map(r=>Object.freeze({date:r.day,seller:r.seller,squad:r.squad,product:r.product,productId:r.productId,personId:r.personId,amountCents:r.amountCents,activeMonthlyCents:r.activeMonthlyCents,customer:r.customer.slice(0,160),taxId:r.taxId.slice(0,30),contractDate:r.contractDate,occurrence:r.occurrence}));
+    return Object.freeze({sourceKey:SOURCE,summary:Object.freeze(summary),records:Object.freeze(records),ready:Object.freeze(ready),note:'Vl Anterior define venda e comissão; Vl Atual Ativo permanece referência de MRR. Vendas antigas com valor diferente serão reconhecidas como duplicadas e devem ser conciliadas em Bonificação.'});
   }
   function chunks(prepared,size=100){if(!prepared||!Array.isArray(prepared.ready)||size<1||size>100)throw new Error('Lote inválido.');const result=[];for(let i=0;i<prepared.ready.length;i+=size)result.push(prepared.ready.slice(i,i+size));return result;}
   return Object.freeze({SOURCE,date,cents,normalize,build,chunks});

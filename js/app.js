@@ -3721,6 +3721,107 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }catch(err){strategyCommissionState.notice='Erro: '+String(err?.message||err);console.error(err);}finally{strategyCommissionState.busy=false;renderStrategyCommissions();}
   }
 
+  // R5: leitura auditavel, sem alterar vendas ou comissoes registradas.
+  const strategySalesAuditState={rows:[],differences:[],busy:false,loadedMonth:''};
+  const strategyAuditNorm=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const strategyAuditMoney=value=>fmtMoney(Number(value)||0);
+  const strategyAuditCents=value=>window.SoftenStrategyRecurringImport?.cents(value);
+  const strategyAuditDate=value=>window.SoftenStrategyRecurringImport?.date(value)||'';
+  const strategyAuditText=value=>escapeHtml(String(value??''));
+  function strategyAuditKey(o){return [strategyAuditDate(o.date),strategyAuditNorm(o.seller),String(o.squad||'').toUpperCase(),strategyAuditNorm(o.product),strategyAuditNorm(o.customer),strategyAuditNorm(o.taxId)].join('|');}
+  function strategyAuditDownload(name,headers,records){
+    const all=[headers,...records],escape=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    const csv='\uFEFF'+all.map(r=>r.map(escape).join(';')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  }
+  function strategyAuditEstimate(row){
+    const amount=Number(row.amount||0),rule=row.rule||{};
+    switch(rule.type){case 'full':return amount;case 'percentage':return amount*(Number(rule.percentage)||0)/100;case 'net_after_third_party':return Math.max(0,amount-(Number(rule.third_party_cost)||0));case 'fixed':return Number(rule.fixed_amount)||0;default:return null;}
+  }
+  function strategyAuditFiltered(){
+    const person=$('#financeSalesAuditPerson')?.value||'',source=$('#financeSalesAuditSource')?.value||'';
+    return strategySalesAuditState.rows.filter(r=>(!person||r.personId===person)&&(!source||r.source===source));
+  }
+  function strategyAuditRender(){
+    const filtered=strategyAuditFiltered(),table=$('#financeSalesAuditRows');if(!table)return;
+    table.innerHTML=filtered.map(r=>{
+      const est=strategyAuditEstimate(r);
+      return `<tr><td>${strategyAuditText(r.date)}</td><td>${strategyAuditText(r.personName)} / ${strategyAuditText(r.squad)}</td><td>${strategyAuditText(r.product)}</td><td>${strategyAuditText(r.customer||'—')}</td><td>${r.source==='contracted_modules_csv'?'Contratação':'Mercadoria'}</td><td>${strategyAuditMoney(r.amount)}</td><td>${r.activeMonthly===null?'—':strategyAuditMoney(r.activeMonthly)}</td><td>${est===null?'Regra pendente':strategyAuditMoney(est)+' (estim.)'}</td><td>${strategyAuditText(r.activeMonthly===null&&r.source==='contracted_modules_csv'?'Importação antiga: conferir Vl Anterior':est===null?'Regra não configurada':'Sem divergência apurada no registro')}</td></tr>`;
+    }).join('')||'<tr><td colspan="9">Nenhuma venda encontrada nos filtros.</td></tr>';
+    const total=filtered.reduce((s,r)=>s+(Number(r.amount)||0),0),estimated=filtered.reduce((s,r)=>s+(strategyAuditEstimate(r)||0),0),pending=filtered.filter(r=>strategyAuditEstimate(r)===null).length;
+    $('#financeSalesAuditKpis').innerHTML=`<div><span>Vendas</span><strong>${filtered.length}</strong></div><div><span>Valor registrado</span><strong>${strategyAuditMoney(total)}</strong></div><div><span>Comissão estimada</span><strong>${strategyAuditMoney(estimated)}</strong></div><div><span>Sem regra</span><strong>${pending}</strong></div>`;
+  }
+  async function strategyAuditFetch(table,month,org){
+    let all=[];for(let start=0;start<50000;start+=1000){
+      const {data,error}=await state.supabase.from(table).select('*').eq('organization_id',org).eq('competence',month).range(start,start+999);
+      if(error)throw error;all.push(...(data||[]));if(!data||data.length<1000)break;
+    }return all;
+  }
+  async function strategySalesAuditRefresh(){
+    if(strategySalesAuditState.busy||!state.supabase||!isAdmin()||!hasPermission('finance.view'))return;
+    const monthValue=$('#financeSalesAuditMonth')?.value||'';
+    if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(monthValue))return toast('Selecione uma competência válida.');
+    const competence=monthValue+'-01',org=state.user?.organizationId;
+    if(!org)return;
+    strategySalesAuditState.busy=true;$('#financeSalesAuditStatus').textContent='Consultando vendas e catálogo no Supabase...';
+    try{
+      const [recurring,merchandise,people,products]=await Promise.all([
+        strategyAuditFetch('strategy_recurring_sales',competence,org),strategyAuditFetch('strategy_merchandise_sales',competence,org),
+        state.supabase.from('strategy_people').select('id,name').eq('organization_id',org),
+        state.supabase.from('strategy_commercial_products').select('id,name').eq('organization_id',org)
+      ]);
+      if(people.error)throw people.error;if(products.error)throw products.error;
+      const byPerson=new Map((people.data||[]).map(p=>[p.id,p.name])),byProduct=new Map((products.data||[]).map(p=>[p.id,p.name]));
+      const common=(r,source)=>({id:r.id,source,personId:r.person_id,personName:byPerson.get(r.person_id)||r.seller_name||'Sem vínculo',date:r.occurred_on,squad:r.squad_code,product:byProduct.get(r.product_id)||'Produto não encontrado',seller:r.seller_name,customer:r.customer_name||'',taxId:r.customer_tax_id||'',amount:Number(source==='contracted_modules_csv'?r.monthly_amount:r.gross_amount),activeMonthly:source==='contracted_modules_csv'?(r.active_monthly_amount===null||r.active_monthly_amount===undefined?null:Number(r.active_monthly_amount)):null,rule:r.commission_rule_at_import||{},occurrence:r.source_occurrence||1});
+      strategySalesAuditState.rows=[...recurring.map(x=>common(x,'contracted_modules_csv')),...merchandise.map(x=>common(x,'merchandise_sales_csv'))];
+      strategySalesAuditState.loadedMonth=monthValue;strategySalesAuditState.differences=[];
+      const select=$('#financeSalesAuditPerson');select.innerHTML='<option value="">Todos</option>'+[...new Set(strategySalesAuditState.rows.map(r=>r.personId))].sort((a,b)=>(byPerson.get(a)||'').localeCompare(byPerson.get(b)||'')).map(id=>`<option value="${strategyAuditText(id)}">${strategyAuditText(byPerson.get(id)||'Desconhecido')}</option>`).join('');
+      $('#financeSalesAuditStatus').textContent=`${strategySalesAuditState.rows.length} venda(s) carregada(s). Comissão exibida é estimativa pela regra da venda, NÃO o valor oficial creditado. Vendas anteriores à R5 exigem conferência com o CSV.`;
+      strategyAuditRender();
+    }catch(err){console.error(err);$('#financeSalesAuditStatus').textContent='Erro na auditoria: '+String(err?.message||err)+' — confira permissões e migrations.';}
+    finally{strategySalesAuditState.busy=false;}
+  }
+  async function strategySalesAuditCompare(){
+    const file=$('#financeSalesAuditFile')?.files?.[0];
+    if(!file)return toast('Selecione o CSV original.');
+    if(!strategySalesAuditState.loadedMonth)return toast('Consulte a competência primeiro.');
+    if(file.size>10*1024*1024)return toast('CSV acima de 10 MB.');
+    const status=$('#financeSalesAuditCompareStatus');status.textContent='Conferindo correspondências...';
+    try{
+      const csv=window.SoftenStrategyCsvImporter,parsed=csv.parse(await file.text()),headers=parsed.headers;
+      const pick=(...names)=>headers.findIndex(h=>names.map(strategyAuditNorm).includes(strategyAuditNorm(h)));
+      const positions={date:pick('Data Lançam.','Data Lancam','Data Lançamento','Data'),seller:pick('UsuarioVenda','Usuário Venda','Vendedor'),squad:pick('grupoAtendimento','grupo','Squad'),product:pick('Produto','Módulo'),customer:pick('Cliente'),taxId:pick('ClienteCNPJ','CNPJ'),amount:pick('Vl Anterior','Valor Anterior'),active:pick('Vl Atual Ativo','Valor Atual Ativo')};
+      if(['date','seller','squad','product','amount','active'].some(k=>positions[k]<0))throw new Error('CSV sem colunas obrigatórias de data, vendedor, Squad, produto, Vl Anterior e Vl Atual Ativo.');
+      const get=(row,key)=>positions[key]<0?'':row[positions[key]];
+      const bySale=new Map(),byCsv=new Map();
+      for(const r of strategySalesAuditState.rows.filter(r=>r.source==='contracted_modules_csv')){const key=strategyAuditKey(r);bySale.set(key,[...(bySale.get(key)||[]),r]);}
+      for(let i=0;i<parsed.rows.length;i++){
+        const row=parsed.rows[i],data={line:i+2,date:get(row,'date'),seller:get(row,'seller'),squad:csv.normalizeSquad(get(row,'squad'))||'',product:get(row,'product'),customer:get(row,'customer'),taxId:get(row,'taxId'),correctCents:strategyAuditCents(get(row,'amount')),activeCents:strategyAuditCents(get(row,'active'))};
+        if(!data.date.startsWith(strategySalesAuditState.loadedMonth)||!data.squad)continue;
+        const key=strategyAuditKey(data);byCsv.set(key,[...(byCsv.get(key)||[]),data]);
+      }
+      const result=[];
+      for(const [key,lines] of byCsv){const db=bySale.get(key)||[];
+        if(db.length!==1||lines.length!==1){for(const l of lines)result.push({line:l.line,product:l.product,old:null,correct:l.correctCents===null?null:l.correctCents/100,delta:null,status:db.length===0?'Não localizada no banco':'Ambígua: revisar manualmente'});continue;}
+        const row=db[0],l=lines[0],old=row.amount,correct=l.correctCents===null?null:l.correctCents/100;
+        result.push({line:l.line,product:l.product,person:row.personName,old,correct,delta:correct===null?null:Math.round((correct-old)*100)/100,status:correct===null?'Valor inválido':Math.abs(correct-old)<0.001?'Conferida':'Divergência — revisar'});
+      }
+      strategySalesAuditState.differences=result;
+      const mismatch=result.filter(x=>x.status==='Divergência — revisar').length,ambiguous=result.filter(x=>x.status.includes('Ambígua')||x.status.includes('localizada')).length;
+      status.textContent=`${result.length} linha(s) analisadas; ${mismatch} diferença(s), ${ambiguous} sem conciliação inequívoca. Nenhuma venda ou bonificação foi alterada.`;
+      $('#financeSalesAuditCompareRows').innerHTML=result.slice(0,1000).map(r=>`<tr><td>${r.line}</td><td>${strategyAuditText(r.product)}</td><td>${r.old===null?'—':strategyAuditMoney(r.old)}</td><td>${r.correct===null?'—':strategyAuditMoney(r.correct)}</td><td>${r.delta===null?'—':strategyAuditMoney(r.delta)}</td><td>${strategyAuditText(r.status)}</td></tr>`).join('')||'<tr><td colspan="6">Sem dados.</td></tr>';
+    }catch(err){console.error(err);status.textContent='Erro na comparação: '+String(err?.message||err);}
+  }
+  document.addEventListener('click',async e=>{
+    if(e.target.closest('#financeSalesAuditRefresh'))return strategySalesAuditRefresh();
+    if(e.target.closest('#financeSalesAuditChoose'))return $('#financeSalesAuditFile')?.click();
+    if(e.target.closest('#financeSalesAuditCompare'))return strategySalesAuditCompare();
+    if(e.target.closest('#financeSalesAuditExport')){const rows=strategyAuditFiltered();return strategyAuditDownload('auditoria-vendas-'+(strategySalesAuditState.loadedMonth||'mes')+'.csv',['Data','Técnico','Squad','Produto','Cliente','Origem','Valor importado','MRR ativo','Comissão estimada'],rows.map(r=>[r.date,r.personName,r.squad,r.product,r.customer,r.source,r.amount,r.activeMonthly??'',strategyAuditEstimate(r)??'']));}
+    if(e.target.closest('#financeSalesAuditExportDiff'))return strategyAuditDownload('auditoria-diferencas-'+(strategySalesAuditState.loadedMonth||'mes')+'.csv',['Linha','Técnico','Produto','Valor importado','Vl Anterior','Diferença','Status'],strategySalesAuditState.differences.map(r=>[r.line,r.person||'',r.product,r.old??'',r.correct??'',r.delta??'',r.status]));
+  });
+  document.addEventListener('change',e=>{if(e.target.closest('#financeSalesAuditPerson,#financeSalesAuditSource'))strategyAuditRender();if(e.target.closest('#financeSalesAuditFile'))$('#financeSalesAuditChosen').textContent=e.target.files?.[0]?.name||'';});
+
   const strategyCsvState={sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:0};
   async function loadStrategyAutomation({force=false}={}){
     if(!state.supabase||!canViewStrategy()||!strategyEditAccess()||!strategyPeopleAccess())return;
@@ -3886,7 +3987,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       let imported=0,duplicates=0,closed=0;let index=0;
       for(const chunk of engine.chunks(prepared,100)){
         if(org!==state.user?.organizationId||request!==cs.request||source!==cs.sourceKey)throw new Error('Arquivo ou organização mudou durante o processamento; confira o lote antes de tentar novamente.');
-        const response=await state.supabase.rpc('import_strategy_recurring_sales_v2634',{p_batch_id:batchId,p_sales:chunk});
+        const response=await state.supabase.rpc('import_strategy_recurring_sales_v2639_r5',{p_batch_id:batchId,p_sales:chunk});
         if(response.error)throw response.error;
         imported+=Number(response.data?.imported||0);duplicates+=Number(response.data?.duplicates||0);closed+=Number(response.data?.closed||0);
         index+=chunk.length;rs.notice=`Processadas ${index} de ${prepared.ready.length} linhas aptas. Novas: ${imported} • Duplicadas: ${duplicates} • Competência fechada: ${closed}.`;
