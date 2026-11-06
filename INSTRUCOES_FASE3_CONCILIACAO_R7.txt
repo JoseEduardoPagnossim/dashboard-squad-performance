@@ -1,0 +1,17 @@
+FASE 3 - CONFERENCIA E CONCILIACAO CSV (2.63.9-r7)
+
+Base obrigatoria: fase 1 + fase 2 (2.63.9-r6).
+
+Alteracoes:
+- Resumo preventivo de linhas, Squads, pendencias cadastrais e possiveis repeticoes.
+- Visao expandivel por Squad A/B/C/D/E (C = Pre-atendimento).
+- Filtro inicial somente vendedores pendentes, com opcao de mostrar todos.
+- Auditoria local nao exclui, altera, deduplica nem contabiliza vendas; reimportacao e fechamento seguem validados pelas rotinas Supabase existentes.
+- Cache-buster atualizado de r6 para r7, inclusive testes de versao.
+- Nao ha nova migration SQL.
+
+Instalacao: extrair este ZIP na raiz do repositorio com Fases 1 e 2 ja aplicadas, preservando caminhos.
+Rodar npm run check. Homologar os dois CSVs, vendedores com alias, competencia fechada e repeticoes legitimas antes de publicacao.
+Tests: 1086 passaram; nenhum falhou. Sem teste integrado no Supabase de producao.
+
+COMMIT: feat: adiciona auditoria preventiva e filtro de pendencias no importador CSV

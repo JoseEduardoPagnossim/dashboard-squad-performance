@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r6" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r6" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r6" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r6" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r7" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r7" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r7" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r7" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -2379,6 +2379,9 @@
               </details>
               <details class="strategy-csv-advanced" id="strategyCsvPreviewDetails"><summary>Conferir até 12 linhas do arquivo (prévia)</summary><p class="muted">Somente conferência local, sem lançamento financeiro.</p>
               <div id="strategyCsvPreview"></div></details>
+              <div class="strategy-csv-stage"><strong>Conferência preventiva do arquivo</strong><span>Visão por Squad e alertas de cadastro. Não altera nem exclui nenhuma venda.</span></div>
+              <div id="strategyCsvAuditSummary" class="strategy-product-demand-note" aria-live="polite">Carregue um CSV para conferir.</div>
+              <details class="strategy-csv-advanced" id="strategyCsvAuditDetails"><summary>Detalhes das pendências por Squad</summary><div id="strategyCsvAuditSquads"></div><p class="muted">Linhas idênticas são apenas sinalizadas: podem ser vendas legítimas. Duplicidade real de reimportação é validada no Supabase na confirmação.</p></details>
               <div class="strategy-csv-stage"><strong>3 · Conferir pendências e importar</strong><span>Revise vendedores e produtos; confirme os valores na seção de receita correspondente.</span></div>
               <details class="strategy-csv-advanced" id="strategyCsvProductsDetails"><summary>Produtos identificados no CSV</summary>
               <p class="muted" id="strategyCsvProductsInfo">Sem arquivo selecionado.</p>
@@ -2392,7 +2395,7 @@
                 <p class="muted">Produtos novos permanecem pendentes até a configuração. Alterações da regra geram revisões preservadas no Supabase; o cálculo de vendas e bonificações será integrado nas próximas versões.</p>
               </section></details>
               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.2</span><h4>Conciliação de vendedores e Squads</h4><p>Vínculo por conta ativa e pessoa estratégica. Correspondência automática somente por nome exato normalizado e Squad; nomes divergentes exigem alias aprovado.</p></div></div>
-              <p class="muted" id="strategySellerSummary">Selecione um CSV para conferir vendedores.</p>
+              <label class="strategy-seller-filter"><input id="strategySellerOnlyPending" type="checkbox" checked> Mostrar somente vendedores pendentes</label><p class="muted" id="strategySellerSummary">Selecione um CSV para conferir vendedores.</p>
               <div id="strategySellerRows"></div>
               <div class="strategy-csv-templates">
                 <label><span>Vendedor pendente no arquivo</span><select id="strategySellerAliasKey"><option value="">Selecione um nome pendente</option></select></label>
@@ -2962,55 +2965,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r6"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r6"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r6"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r6"></script>
-  <script src="js/presentation.js?v=2.63.9-r6"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r6"></script>
-  <script src="js/chart-export.js?v=2.63.9-r6"></script>
-  <script src="js/import-engine.js?v=2.63.9-r6"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r6"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r6"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r6"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r6"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r6"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r6"></script>
-  <script src="js/filter-system.js?v=2.63.9-r6"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r6"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r6"></script>
-  <script src="js/design-system.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r6"></script>
-  <script src="js/strategy.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r6"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r7"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r7"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r7"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r7"></script>
+  <script src="js/presentation.js?v=2.63.9-r7"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r7"></script>
+  <script src="js/chart-export.js?v=2.63.9-r7"></script>
+  <script src="js/import-engine.js?v=2.63.9-r7"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r7"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r7"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r7"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r7"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r7"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r7"></script>
+  <script src="js/filter-system.js?v=2.63.9-r7"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r7"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r7"></script>
+  <script src="js/design-system.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r7"></script>
+  <script src="js/strategy.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r7"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r6"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r6"></script>
-<script src="js/app.js?v=2.63.9-r6"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r7"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r7"></script>
+<script src="js/app.js?v=2.63.9-r7"></script>
 </body>
 </html>

@@ -25,7 +25,7 @@ test('template salvo contém apenas nomes de colunas e nunca as linhas do CSV',(
 test('mapeamento salvo é validado novamente quando as colunas mudam',()=>{const x=engine.parse(recurring),m=engine.suggest('contracted_modules_csv',x.headers);assert.throws(()=>engine.validateMapping('contracted_modules_csv',['Produto'],m),/indisponível/);});
 test('SQL cria apenas modelos comerciais com isolamento por organização e escrita restrita',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.1.sql');for(const v of ['strategy_import_mappings','enable row level security','strategy_import_mappings_read_v2631','strategy_import_mappings_insert_v2631','strategy_import_mappings_update_v2631','has_strategy_access(\'people_costs\')','has_strategy_access(\'edit_costs\')','created_by=(select auth.uid())'])assert.ok(sql.includes(v),v);assert.doesNotMatch(sql,/grant\s+(?:all|delete).*?strategy_import_mappings\s+to\s+authenticated/i);});
 test('UI de importacao somente le dados, gera previa, identifica produto, salva mapeamento',()=>{const html=read('index.html'),js=read('js/app.js');for(const id of ['strategyCsvFile','strategyCsvSource','strategyCsvFields','strategyCsvPreview','strategyCsvProducts','strategyCsvTemplate','strategyCsvSave','strategyCsvApplyTemplate'])assert.ok(html.includes(`id="${id}"`),id);assert.match(js,/createTemplatePayload/);assert.match(js,/engine\.parse\(text\)/);assert.match(js,/identifyProducts\(/);assert.match(js,/renderStrategyCsvImporter/);assert.doesNotMatch(js.slice(js.indexOf('function renderStrategyCsvImporter()'),js.indexOf('async function initStrategyAutomationSources')),/strategy_result_events|strategy_employee_costs|\.from\('strategy_import_batches'\)/);});
-test('todos scripts JS/CSS usam o cache-buster 2.63.9-r6',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r6');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r6/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r6");});
+test('todos scripts JS/CSS usam o cache-buster 2.63.9-r7',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r7');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r7/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r7");});
 
 test('V2.63.11: opcionais iniciam desligadas mesmo quando coluna existe',()=>{
  for(const [key,raw] of [['contracted_modules_csv',recurring],['merchandise_sales_csv',merch]]){
@@ -48,4 +48,24 @@ test('V2.63.11: interface separa campos obrigatorios e opcionais',()=>{
  for(const id of ['strategyCsvOptionalFields','strategyCsvOptionalDetails','strategyCsvTemplatesDetails','strategyCsvCatalogDetails','strategyCsvPreviewDetails'])assert.ok(html.includes(`id="${id}"`),id);
  assert.match(app,/def\.fields\.filter\(f=>f\.required\)/);
  assert.match(app,/def\.fields\.filter\(f=>!f\.required\)/);
+});
+
+test('Fase 3: auditoria local identifica pendencias e preserva vendas repetidas',()=>{
+ const csv='id,Data,Vendedor,grupo,Produto,vlTotalItem\n1,2026-11-04,Ana,A,Produto X,100\n1,2026-11-04,Ana,A,Produto X,100\n2,2026-11-05,,C,Produto Y,200\n3,2026-11-05,Beto,Z,,50\n';
+ const parsed=engine.parse(csv),mapping=engine.suggest('merchandise_sales_csv',parsed.headers);
+ const audit=engine.auditPreview('merchandise_sales_csv',parsed,mapping);
+ assert.equal(audit.summary.total,4);assert.equal(audit.summary.validSquad,3);
+ assert.equal(audit.summary.missingSquad,1);assert.equal(audit.summary.missingSeller,1);
+ assert.equal(audit.summary.missingProduct,1);assert.equal(audit.summary.needsReview,2);
+ assert.equal(audit.summary.possibleRepeats,1);
+ assert.equal(audit.bySquad.find(x=>x.squad==='A').rows,2);
+ assert.equal(parsed.rowCount,4); // Nenhuma venda foi removida.
+});
+test('Fase 3: auditoria de campos opcionais nao altera mapeamento e UI oferece filtro',()=>{
+ const parsed=engine.parse(recurring),mapping=engine.suggest('contracted_modules_csv',parsed.headers);
+ const before=JSON.stringify(mapping);const audit=engine.auditPreview('contracted_modules_csv',parsed,mapping);
+ assert.equal(JSON.stringify(mapping),before);assert.equal(audit.summary.missingSquad,1);
+ const html=read('index.html'),app=read('js/app.js');
+ for(const id of ['strategyCsvAuditSummary','strategyCsvAuditSquads','strategySellerOnlyPending'])assert.ok(html.includes(`id="${id}"`));
+ assert.match(app,/engine\.auditPreview\(/);assert.match(app,/renderStrategySellerReconciliation\(\)/);
 });

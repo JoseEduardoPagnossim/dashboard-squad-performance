@@ -119,6 +119,30 @@
     const clean=validateMapping(sourceKey,parsed.headers,mapping);const fields=definition(sourceKey).fields.filter(f=>clean[f.key]);
     return parsed.rows.slice(0,Math.max(0,Math.min(50,limit))).map(row=>Object.fromEntries(fields.map(f=>[f.key,['date','contractDate','customerCreated'].includes(f.key)?dateOnly(getColumn(row,parsed.headers,clean,f.key)):getColumn(row,parsed.headers,clean,f.key)])));
   }
+  // Diagnostico local e informativo: nao descarta ocorrencias, nao modifica receita.
+  function auditPreview(sourceKey,parsed,mapping){
+    const clean=validateMapping(sourceKey,parsed.headers,mapping);
+    const indices=Object.fromEntries(['squad','seller','product','date','amount','activeMonthly'].map(key=>[key,clean[key]===undefined?-1:parsed.headers.indexOf(clean[key])]));
+    const bySquad=new Map(['A','B','C','D','E'].map(code=>[code,{squad:code,rows:0,needsReview:0}]));
+    const summary={total:parsed.rows.length,validSquad:0,missingSquad:0,missingSeller:0,missingProduct:0,missingDate:0,missingAmount:0,needsReview:0,possibleRepeats:0};
+    const seen=new Map();
+    for(const row of parsed.rows){
+      const value=key=>indices[key]<0?'':String(row[indices[key]]??'').trim();
+      const squad=normalizeSquad(value('squad'));
+      const missingSeller=!value('seller'),missingProduct=!value('product'),missingDate=!value('date'),missingAmount=!value('amount');
+      if(!squad)summary.missingSquad++;else{summary.validSquad++;bySquad.get(squad).rows++;}
+      if(missingSeller)summary.missingSeller++;
+      if(missingProduct)summary.missingProduct++;
+      if(missingDate)summary.missingDate++;
+      if(missingAmount)summary.missingAmount++;
+      if(!squad||missingSeller||missingProduct||missingDate||missingAmount){summary.needsReview++;if(squad)bySquad.get(squad).needsReview++;}
+      // Repeticao literal e apenas sinalizada. Vendas identicas podem ser operacoes distintas.
+      const fingerprint=JSON.stringify(row);
+      if(seen.has(fingerprint))summary.possibleRepeats++;
+      else seen.set(fingerprint,true);
+    }
+    return Object.freeze({summary:Object.freeze(summary),bySquad:Object.freeze([...bySquad.values()].map(x=>Object.freeze(x)))});
+  }
   function createTemplatePayload({organizationId,userId,sourceKey,name,headers,mapping}){
     if(!organizationId||!userId)throw new Error('Organização e usuário obrigatórios.');
     if(!definition(sourceKey))throw new Error('Origem inválida.');
@@ -127,5 +151,5 @@
     const clean=validateMapping(sourceKey,headers,mapping);
     return Object.freeze({organization_id:organizationId,created_by:userId,source_key:sourceKey,name:templateName,columns:clean,headers:headers.slice()});
   }
-  return Object.freeze({DEFINITIONS,MAX_BYTES,MAX_ROWS,MAX_COLUMNS,definition,normalize,normalizeSquad,dateOnly,sniffDelimiter,parse,suggest,validateMapping,identifyProducts,preview,createTemplatePayload});
+  return Object.freeze({DEFINITIONS,MAX_BYTES,MAX_ROWS,MAX_COLUMNS,definition,normalize,normalizeSquad,dateOnly,sniffDelimiter,parse,suggest,validateMapping,identifyProducts,preview,auditPreview,createTemplatePayload});
 });
