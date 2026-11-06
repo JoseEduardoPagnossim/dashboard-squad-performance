@@ -1,0 +1,27 @@
+FASE 9 - HISTORICO E AUDITORIA COMERCIAL R13
+BASE OBRIGATORIA: Fase 8 R12.
+
+ALTERACOES:
+- Novo painel expansivel dentro da importacao, sem novas rotas ou telas.
+- Consulta dos 50 lotes comerciais mais recentes: origem, arquivo, data, status, linhas e tentativas (importadas, duplicadas e bloqueadas).
+- Consulta detalhada somente leitura das vendas efetivamente persistidas por lote, ate 5.000 linhas, com nome do vendedor, Squad, produto, cliente, valor, MRR ativo e comissao estimada por regra congelada.
+- Exportacao CSV do historico de lotes e de vendas consultadas; exportacao detalhada bloqueada quando a busca for parcial.
+- A comissao ESTIMADA nao substitui o valor oficial da Bonificacao. Tentativas duplicadas/fechadas nao se tornam vendas gravadas.
+- Sem exclusao automatica de vendas repetidas, sem alteracao de snapshots, sem mudanca em regras de comissao e sem alteracao dos lideres.
+- Estrutura e RLS existentes do Supabase. SEM NOVA MIGRATION SQL.
+
+INSTALACAO:
+1. Efetue backup da R12.
+2. Extraia este ZIP na raiz do projeto, mantendo as pastas e sobrescrevendo os arquivos atualizados.
+3. Execute npm run check. A suite local teve 1.107 testes aprovados, 0 falhas.
+4. Abra Gestao Estrategica > Automacao > Historico de importacoes comerciais e clique Atualizar historico.
+5. Homologue os lotes MRR e mercadorias com dados reais e confira as permissoes/RLS no Supabase antes de publicacao.
+
+LIMITACOES:
+- Nao foi realizada homologacao real no Supabase nem no navegador com dados de producao.
+- A consulta lista no maximo 50 lotes recentes; ate 5.000 tentativas e vendas por lote, com sinalizacao de parcialidade.
+- O painel demonstra o valor da venda e estimativa de comissao, nao reconcilia automaticamente com a comissao efetivamente creditada. Essa conciliacao depende do motor oficial de Bonificacao.
+- Publicacao no GitHub NAO foi executada.
+
+COMMIT:
+feat: adiciona historico auditavel de importacoes comerciais por lote
