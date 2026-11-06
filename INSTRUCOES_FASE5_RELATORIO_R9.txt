@@ -1,0 +1,24 @@
+FASE 5 - FECHAMENTO DE RELATORIOS DE BONIFICACAO (R9)
+
+BASE: projeto com Fases 1 a 4 aplicadas (R8).
+PACOTE: apenas arquivos alterados nesta fase e testes especificos.
+
+ALTERACOES
+- Coluna opcional Perfil financeiro para identificar TECNICO / LIDER.
+- Coluna opcional Observacoes de bonificacao no configurador e exportacoes PDF/Excel.
+- Total RH prioriza Valor oficial da bonificacao, evitando divergencia com descontos e redistribuicao.
+- Sem alteracao da quantidade de atendimentos, FCR, metas, rankings, capacidade e produtividade.
+- Sem recalculo, edicao ou importacao automatica de comissoes de lideres.
+
+INSTALACAO
+1. Fazer backup/commit da versao R8.
+2. Extrair este ZIP na raiz do projeto preservando caminhos.
+3. Executar npm run check.
+4. Atualizar a publicacao para carregar o cache-buster r9.
+5. Homologar com dados reais e conferir PDF/Excel por Squad e competencia.
+
+MIGRATION: nenhuma migration SQL nova nesta fase.
+GITHUB/SUPABASE: nao publicados automaticamente.
+
+COMMIT
+fix: reconcilia total RH e inclui perfil e observacoes nos relatorios financeiros

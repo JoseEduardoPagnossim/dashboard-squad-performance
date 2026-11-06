@@ -6,6 +6,7 @@
   const COLUMNS=Object.freeze([
     {id:'group',key:'Grupo',label:'Grupo',shortLabel:'Grupo',type:'text',group:'Identificação'},
     {id:'technician',key:'Técnico',label:'Técnico',shortLabel:'Técnico',type:'text',group:'Identificação',required:true},
+    {id:'financeRole',key:'Perfil financeiro',label:'Perfil financeiro',shortLabel:'Perfil',type:'text',group:'Identificação'},
     {id:'status',key:'Status financeiro',label:'Status financeiro',shortLabel:'Status',type:'text',group:'Identificação'},
     {id:'attendance',key:'Atendimentos',label:'Atendimentos',shortLabel:'Atend.',type:'integer',group:'Produção'},
     {id:'excludedAttendance',key:'Atend. sem avaliação',label:'Atend. sem avaliação',shortLabel:'Sem aval.',type:'integer',group:'Produção'},
@@ -38,6 +39,7 @@
     {id:'sales',key:'Comissão vendas',label:'Comissão Venda',shortLabel:'Comissão Venda',type:'money',group:'Ajustes'},
     {id:'discount',key:'Desconto',label:'Desconto',shortLabel:'Desc.',type:'money',group:'Ajustes'},
     {id:'redistribution',key:'Redistribuição',label:'Redistribuição',shortLabel:'Redistrib.',type:'money',group:'Ajustes'},
+    {id:'notes',key:'Observação',label:'Observações de bonificação',shortLabel:'Observações',type:'text',group:'Auditoria'},
     {id:'vacation',key:'Férias',label:'Férias',shortLabel:'Férias',type:'text',group:'Exceções'},
     {id:'waiveBelowDiscount',key:'Isenção manual desconto ABAIXO',label:'Isenção manual desconto ABAIXO',shortLabel:'Isenção desc.',type:'text',group:'Exceções'},
     {id:'discountEligible',key:'Elegível desconto ABAIXO',label:'Elegível desconto ABAIXO',shortLabel:'Eleg. desc.',type:'text',group:'Exceções'},
@@ -85,7 +87,7 @@
     const set=new Set(next.visible);if(visible||column.required)set.add(id);else set.delete(id);return normalizeConfig({...next,visible:[...set]});
   }
   function columnById(id){return COLUMNS.find(c=>c.id===id)||null}
-  function computedValue(row,column){if(column?.computed==='bonusTotal')return Number(row?.['Bônus manual']||0)+Number(row?.['Prêmio atendimento']||0)+Number(row?.['Prêmio Notas 5']||0);if(column?.computed==='hrPaymentTotal')return Number(row?.['Comissão base do técnico']||0)+Number(row?.['Comissão vendas']||0)+Number(computedValue(row,columnById('manualCommission'))||0);return column?.key?row?.[column.key]:''}
+  function computedValue(row,column){if(column?.computed==='bonusTotal')return Number(row?.['Bônus manual']||0)+Number(row?.['Prêmio atendimento']||0)+Number(row?.['Prêmio Notas 5']||0);if(column?.computed==='hrPaymentTotal'){const official=row?.['Valor oficial'];if(official!==undefined&&official!==null&&official!=='')return Number(official)||0;return Number(row?.['Comissão base do técnico']||0)+Number(row?.['Comissão vendas']||0)+Number(computedValue(row,columnById('manualCommission'))||0)-Number(row?.['Desconto']||0)+Number(row?.['Redistribuição']||0);}return column?.key?row?.[column.key]:''}
 
   return{COLUMNS,DEFAULT_VISIBLE,COMPACT_VISIBLE,HR_VISIBLE,FULL_VISIBLE,REQUIRED_IDS,normalizeConfig,defaultConfig,presetConfig,selectedColumns,moveColumn,stepColumn,setVisible,columnById,computedValue};
 });
