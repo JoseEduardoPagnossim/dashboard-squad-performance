@@ -1,0 +1,11 @@
+FASE 10 R14 - ATUALIZACAO INCREMENTAL SOBRE R13
+
+1. Aplique os arquivos deste ZIP sobre o projeto atualizado ate R13, preservando os caminhos.
+2. Nao ha migration nova nesta fase. Confirme as migrations antigas no ambiente real.
+3. Execute npm run check.
+4. Leia docs/FASE10_HOMOLOGACAO_R14.md para roteiro de testes no Supabase.
+5. Nao publicar sem homologacao visual/financeira dos 4 lideres e CSVs MRR/Nao MRR.
+
+COMMIT: fix: valida auditoria comercial e reforca conferencia integrada R14
+
+IMPORTANTE: Os testes locais nao equivalem a homologacao Supabase.
