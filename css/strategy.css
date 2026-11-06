@@ -453,3 +453,15 @@
 .strategy-csv-advanced>summary{cursor:pointer;padding:14px 3px;font-weight:750;color:var(--text)}
 .strategy-csv-advanced[open]>summary{border-bottom:1px solid var(--border);margin-bottom:12px}
 .strategy-csv-advanced>.strategy-csv-field-grid{margin:14px 0}.strategy-csv-advanced .strategy-catalog-panel{margin-top:6px}
+
+/* R12 — Assistente comercial em quatro etapas, sem alterar o fluxo financeiro */
+.strategy-csv-wizard-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px 0}
+.strategy-csv-wizard-progress button{padding:12px 7px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
+.strategy-csv-wizard-progress button[aria-current="step"]{background:var(--accent, #2563eb);color:white;border-color:transparent}
+.strategy-csv-wizard-progress button:disabled{opacity:.5;cursor:not-allowed}
+.strategy-csv-wizard-step[hidden]{display:none!important}
+.strategy-csv-wizard-footer{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap}
+.strategy-csv-wizard-footer .muted{flex:1;min-width:150px;text-align:center}
+.strategy-panel[data-strategy-panel="automation"] .strategy-recurring-import[hidden],
+.strategy-panel[data-strategy-panel="automation"] .strategy-merchandise-import[hidden]{display:none!important}
+@media(max-width:620px){.strategy-csv-wizard-progress{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-csv-wizard-footer{justify-content:flex-start}.strategy-csv-wizard-footer .muted{order:3;flex-basis:100%;text-align:left}}

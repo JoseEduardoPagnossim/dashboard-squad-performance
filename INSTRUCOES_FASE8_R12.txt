@@ -1,0 +1,28 @@
+FASE 8 - ASSISTENTE DE IMPORTACAO CSV EM QUATRO ETAPAS (R12)
+
+BASE: exige projeto ja atualizado ate Fase 7 R11.
+
+NOVO FLUXO:
+1. ARQUIVO: selecionar origem (Anotacao de Venda/MRR ou Venda de Mercadorias/Nao MRR) e CSV.
+2. COLUNAS: reconhecimento automatico somente das obrigatorias; opcionais desvinculadas ate selecao manual; modelos de mapeamento opcionais.
+3. PENDENCIAS: revisar resumo de inconsistencias, Squads, vendedores, produtos e aliases; exibicao compacta de configuracoes avancadas.
+4. CONFIRMAR: exibe exclusivamente o painel de importacao financeira da origem selecionada. A navegacao jamais grava vendas.
+
+SEGURANCA:
+- Navegacao sequencial, nao avanca sem CSV e mapeamento valido.
+- Mudanca do CSV/origem reinicia o assistente, preservando validacoes existentes.
+- Confirmacao definitiva continua pelos botoes originais que aplicam as verificacoes no Supabase.
+- Nao altera os lideres, metricas operacionais, migracoes, contratos de vendas nem regras de comissao.
+
+INSTALACAO:
+1. Fazer backup da versao R11.
+2. Extrair este ZIP na raiz do projeto e substituir os arquivos correspondentes.
+3. Executar npm run check.
+4. No navegador, limpar cache e testar um CSV de cada tipo, inclusive colunas ausentes e opcionais.
+5. Homologar importacoes com ambiente de teste Supabase antes de publicar.
+
+SEM NOVA MIGRATION SQL. SEM PUBLICACAO AUTOMATICA NO GITHUB.
+VALIDACAO LOCAL: 1.103 testes aprovados, nenhuma falha. Homologacao em navegador real/Supabase permanece pendente.
+
+COMMIT:
+feat: organiza importacao comercial em quatro etapas com confirmacao protegida

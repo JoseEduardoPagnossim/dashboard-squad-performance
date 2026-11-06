@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r11" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r11" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r11" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r11" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r12" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r12" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r12" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r12" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -2357,13 +2357,21 @@
               <div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Fonte</th><th>Origem</th><th>MRR</th><th>Estado</th></tr></thead><tbody id="strategyAutomationSourceRows"><tr><td colspan="4">Abra a seção para consultar as fontes.</td></tr></tbody></table></div>
             </article>
             <article class="strategy-placeholder-card strategy-csv-importer" id="strategyCsvImporter">
-              <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Importação de vendas em etapas</h3><p>1. Selecione o CSV. 2. Confira os campos obrigatórios. 3. Resolva pendências e confirme a receita no painel correspondente abaixo.</p></div><span class="strategy-mini-badge">Prévia · Sem lançamento</span></div>
+              <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Importação de vendas em etapas</h3><p>Siga as quatro etapas: arquivo, colunas, pendências e confirmação. A gravação financeira ocorre somente na etapa final.</p></div><span class="strategy-mini-badge">Prévia · Sem lançamento</span></div>
+              <nav class="strategy-csv-wizard-progress" aria-label="Etapas da importação" id="strategyCsvWizardProgress">
+                <button type="button" data-strategy-csv-step="1" aria-current="step">1 · Arquivo</button>
+                <button type="button" data-strategy-csv-step="2">2 · Colunas</button>
+                <button type="button" data-strategy-csv-step="3">3 · Pendências</button>
+                <button type="button" data-strategy-csv-step="4">4 · Confirmar</button>
+              </nav>
+              <div id="strategyCsvWizardStep1" class="strategy-csv-wizard-step">
               <div class="strategy-csv-stage"><strong>1 · Selecionar arquivo</strong><span>Escolha a origem e carregue o CSV.</span></div>
               <div class="strategy-csv-controls">
                 <label><span>Tipo de arquivo</span><select id="strategyCsvSource"><option value="contracted_modules_csv">Anotação de venda · Gera MRR</option><option value="merchandise_sales_csv">Venda de Mercadorias · Não gera MRR</option></select></label>
                 <label class="strategy-csv-file-label"><span>Escolher CSV (máx. 10 MB)</span><span class="strategy-csv-file-action">Selecionar arquivo .csv</span><input type="file" id="strategyCsvFile" accept=".csv,text/csv" hidden></label>
               </div>
               <p class="muted" id="strategyCsvStatus">Escolha uma origem e selecione um arquivo CSV.</p>
+              </div><div id="strategyCsvWizardStep2" class="strategy-csv-wizard-step" hidden>
               <div class="strategy-csv-stage"><strong>2 · Conferir campos obrigatórios</strong><span>Somente os campos necessários vêm vinculados automaticamente. Os opcionais iniciam desligados.</span></div>
               <div class="strategy-csv-field-grid" id="strategyCsvFields"><p class="muted">Selecione um CSV para mapear colunas.</p></div>
               <details class="strategy-csv-advanced" id="strategyCsvOptionalDetails"><summary>Colunas opcionais · ativar somente se necessário <span id="strategyCsvOptionalCount"></span></summary><div class="strategy-csv-field-grid" id="strategyCsvOptionalFields"></div></details>
@@ -2379,10 +2387,11 @@
               </details>
               <details class="strategy-csv-advanced" id="strategyCsvPreviewDetails"><summary>Conferir até 12 linhas do arquivo (prévia)</summary><p class="muted">Somente conferência local, sem lançamento financeiro.</p>
               <div id="strategyCsvPreview"></div></details>
-              <div class="strategy-csv-stage"><strong>Conferência preventiva do arquivo</strong><span>Visão por Squad e alertas de cadastro. Não altera nem exclui nenhuma venda.</span></div>
+              </div><div id="strategyCsvWizardStep3" class="strategy-csv-wizard-step" hidden>
+              <div class="strategy-csv-stage"><strong>3 · Conferir pendências</strong><span>Visão por Squad e alertas de cadastro. Não altera nem exclui nenhuma venda.</span></div>
               <div id="strategyCsvAuditSummary" class="strategy-product-demand-note" aria-live="polite">Carregue um CSV para conferir.</div>
               <details class="strategy-csv-advanced" id="strategyCsvAuditDetails"><summary>Detalhes das pendências por Squad</summary><div id="strategyCsvAuditSquads"></div><p class="muted">Linhas idênticas são apenas sinalizadas: podem ser vendas legítimas. Duplicidade real de reimportação é validada no Supabase na confirmação.</p></details>
-              <div class="strategy-csv-stage"><strong>3 · Conferir pendências e importar</strong><span>Revise vendedores e produtos; confirme os valores na seção de receita correspondente.</span></div>
+
               <details class="strategy-csv-advanced" id="strategyCsvProductsDetails"><summary>Produtos identificados no CSV</summary>
               <p class="muted" id="strategyCsvProductsInfo">Sem arquivo selecionado.</p>
               <div id="strategyCsvProducts"></div></details>
@@ -2403,6 +2412,15 @@
                 <button class="btn primary" type="button" id="strategySellerAliasSave">Salvar alias</button>
               </div>
               <p class="muted" id="strategySellerAliasNotice">Alias é por organização, origem e Squad; apenas pessoas vinculadas a contas ativas podem ser selecionadas. Não altera receitas.</p>
+              </div><div id="strategyCsvWizardStep4" class="strategy-csv-wizard-step" hidden>
+                <div class="strategy-csv-stage"><strong>4 · Confirmar a importação</strong><span>Confira o resumo financeiro do tipo selecionado. Os dados só serão gravados após confirmação explícita no painel abaixo.</span></div>
+                <p id="strategyCsvWizardConfirmation" class="strategy-product-demand-note" aria-live="polite">Revise o arquivo e as pendências para continuar.</p>
+              </div>
+              <div class="strategy-csv-wizard-footer">
+                <button type="button" class="btn secondary" id="strategyCsvWizardBack">← Voltar</button>
+                <span id="strategyCsvWizardHint" class="muted" aria-live="polite"></span>
+                <button type="button" class="btn primary" id="strategyCsvWizardNext">Próxima etapa →</button>
+              </div>
             </article>
             <article class="strategy-placeholder-card strategy-recurring-import" id="strategyRecurringImportSection">
               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Receita recorrente · Novo MRR</h3><p>Confira a conciliação e confirme a importação de contratações únicas. Nenhuma comissão é paga nesta etapa.</p></div><span class="strategy-mini-badge">MRR contratado</span></div>
@@ -2965,55 +2983,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r11"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r11"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r11"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r11"></script>
-  <script src="js/presentation.js?v=2.63.9-r11"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r11"></script>
-  <script src="js/chart-export.js?v=2.63.9-r11"></script>
-  <script src="js/import-engine.js?v=2.63.9-r11"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r11"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r11"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r11"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r11"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r11"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r11"></script>
-  <script src="js/filter-system.js?v=2.63.9-r11"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r11"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r11"></script>
-  <script src="js/design-system.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r11"></script>
-  <script src="js/strategy.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r11"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r12"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r12"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r12"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r12"></script>
+  <script src="js/presentation.js?v=2.63.9-r12"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r12"></script>
+  <script src="js/chart-export.js?v=2.63.9-r12"></script>
+  <script src="js/import-engine.js?v=2.63.9-r12"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r12"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r12"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r12"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r12"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r12"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r12"></script>
+  <script src="js/filter-system.js?v=2.63.9-r12"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r12"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r12"></script>
+  <script src="js/design-system.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r12"></script>
+  <script src="js/strategy.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r12"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r11"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r11"></script>
-<script src="js/app.js?v=2.63.9-r11"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r12"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r12"></script>
+<script src="js/app.js?v=2.63.9-r12"></script>
 </body>
 </html>
