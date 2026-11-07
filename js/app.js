@@ -3746,7 +3746,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const competence=$('#strategyCommissionMonth')?.value;if(!/^20\d\d-(0[1-9]|1[0-2])$/.test(competence||''))return toast('Selecione a competência.');
     if(!window.confirm('Sincronizar a parcela AUTOMÁTICA das comissões de líderes? A comissão manual será preservada.'))return;
     try{const {data,error}=await state.supabase.rpc('sync_strategy_leader_sales_v26311',{p_competence:competence+'-01'});if(error)throw error;
-      state.superAdminCommissionsLoaded=false;await loadSuperAdminCommissions(true);toast(`Comissões automáticas de ${Number(data?.leaders||0)} líder(es) atualizadas.`);
+      state.superAdminCommissionsLoaded=false;await ensureSuperAdminCommissions(true);toast(`Comissões automáticas de ${Number(data?.leaders||0)} líder(es) atualizadas.`);
     }catch(err){toast('Falha na sincronização: '+String(err.message||err));}
   }
   async function previewStrategyCommercialReversal(){
@@ -3763,9 +3763,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!preview||preview.blocked||!batch||preview.batchId!==batch.id)return toast('Confira o lote novamente.');
     const reason=String($('#strategyCommercialReverseReason')?.value||'').trim();if(reason.length<12)return toast('Informe uma justificativa com pelo menos 12 caracteres.');
     if(!window.confirm(`ATENÇÃO: desfazer ${preview.sales} venda(s) do lote ${batch.file_name}? Esta operação é auditada e não pode ser desfeita pela interface.`))return;
-    try{const {data,error}=await state.supabase.rpc('reverse_strategy_commercial_batch_v26311',{p_batch_id:batch.id,p_expected_sales:preview.sales,p_reason:reason});if(error)throw error;
-      strategyCommercialHistory.preview=null;strategyInvalidateFinance();await loadStrategyFinanceData({force:true});state.superAdminCommissionsLoaded=false;await loadSuperAdminCommissions(true);await refreshStrategyCommercialHistory();toast(`${data.removedSales} venda(s) estornada(s). Revise o financeiro antes de reimportar.`);
-    }catch(err){toast('Estorno recusado: '+String(err.message||err));}
+    let data;
+    try{const result=await state.supabase.rpc('reverse_strategy_commercial_batch_v26311',{p_batch_id:batch.id,p_expected_sales:preview.sales,p_reason:reason});if(result.error)throw result.error;data=result.data;
+    }catch(err){return toast('Estorno recusado pelo banco: '+String(err.message||err));}
+    strategyCommercialHistory.preview=null;strategyInvalidateFinance();
+    toast(`${Number(data?.removedSales??preview.sales)} venda(s) estornada(s). Atualizando informações...`);
+    try{await loadStrategyFinanceData({force:true});state.superAdminCommissionsLoaded=false;await ensureSuperAdminCommissions(true);await refreshStrategyCommercialHistory();
+    }catch(err){console.warn('Estorno confirmado, mas atualização da tela falhou.',err);toast('Estorno realizado no banco, mas não foi possível atualizar a tela. Recarregue a página.');}
   }
 
   // Fase 9: visualizacao somente leitura dos lotes comerciais existentes no Supabase.
