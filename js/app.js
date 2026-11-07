@@ -196,6 +196,7 @@
     myFeedbacks:null,
     myFeedbackLoading:false,
     superAdminCommissions:[],
+    superAdminProfiles:[],
     financeRankingCache:{},
     financeRankingLoading:{},
     financeMemoryCache:{},
@@ -1085,6 +1086,8 @@
     if($('#financeReportApplyExcel'))$('#financeReportApplyExcel').addEventListener('change',e=>{financeReportUi.draft=normalizeFinanceReportConfig({...financeReportUi.draft,applyToExcel:!!e.target.checked});renderFinanceReportConfigurator();});
     if($('#financeReportColumnList')){const list=$('#financeReportColumnList');list.addEventListener('change',e=>{const input=e.target.closest('[data-finance-report-visible]');if(input)setFinanceReportDraftVisible(input.dataset.financeReportVisible,!!input.checked);});list.addEventListener('click',e=>{const btn=e.target.closest('[data-finance-report-step]');if(btn)stepFinanceReportDraft(btn.dataset.columnId,btn.dataset.financeReportStep);});list.addEventListener('dragstart',e=>{const row=e.target.closest('[data-finance-report-column]');if(!row)return;financeReportUi.dragged=row.dataset.financeReportColumn;row.classList.add('finance-report-dragging');e.dataTransfer?.setData('text/plain',financeReportUi.dragged);if(e.dataTransfer)e.dataTransfer.effectAllowed='move';});list.addEventListener('dragover',e=>{const row=e.target.closest('[data-finance-report-column]');if(!financeReportUi.dragged||!row||row.dataset.financeReportColumn===financeReportUi.dragged)return;e.preventDefault();list.querySelectorAll('[data-finance-report-column]').forEach(x=>x.classList.toggle('finance-report-drag-over',x===row));});list.addEventListener('drop',e=>{const row=e.target.closest('[data-finance-report-column]');if(!financeReportUi.dragged||!row)return;e.preventDefault();moveFinanceReportDraft(financeReportUi.dragged,row.dataset.financeReportColumn);financeReportUi.dragged=null;});list.addEventListener('dragend',()=>{financeReportUi.dragged=null;list.querySelectorAll('[data-finance-report-column]').forEach(x=>x.classList.remove('finance-report-dragging','finance-report-drag-over'));});}
     if($('#saveSuperAdminCommissionBtn'))$('#saveSuperAdminCommissionBtn').addEventListener('click',saveSuperAdminCommission);
+    if($('#financeLeaderPeriod'))$('#financeLeaderPeriod').addEventListener('change',renderLeaderFinancialLinks);
+    if($('#financeLeaderLinks'))$('#financeLeaderLinks').addEventListener('click',e=>{const button=e.target.closest('[data-leader-save]');if(button)saveLeaderFinancialLink(button.dataset.leaderSave);});
     if($('#financeModelSquad'))$('#financeModelSquad').addEventListener('change',previewFinanceModelChange);
     if($('#financeModelIndividual'))$('#financeModelIndividual').addEventListener('change',previewFinanceModelChange);
     if($('#financeCompareToggle'))$('#financeCompareToggle').addEventListener('change',previewFinanceModelChange);
@@ -7117,7 +7120,51 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     $('#superAdminVacationInput').checked=!!found?.vacation;if($('#superAdminImportedSalesDisplay'))$('#superAdminImportedSalesDisplay').textContent='Comissão automática importada: '+fmtMoney(safe(found?.imported_sales_commission))+' • Comissão manual mantida separadamente.';
     $('#superAdminCommissionSquad').value=found?.squad_code||(['A','B','D','E'].includes(state.squadCode)?state.squadCode:'');
     $('#superAdminCommissionNotes').value=found?.notes||'';
+    if($('#financeLeaderPeriod')&&!$('#financeLeaderPeriod').value&&m?.year&&m?.month)$('#financeLeaderPeriod').value=`${m.year}-${String(m.month).padStart(2,'0')}`;
+    renderLeaderFinancialLinks();
     $('#superAdminCommissionPeriod').textContent=m?`${m.monthName} ${m.year} • ${m.isClosed?'competência fechada':'não participa de métricas de atendimento'}`:'Selecione um Squad e um mês para definir a competência.';
+  }
+  // Vinculo financeiro centralizado. Nunca altera comissoes ou producao operacional.
+  function financeLeaderPeriod(){
+    const raw=$('#financeLeaderPeriod')?.value||state.currentId||'';
+    const match=/^(20\d{2})-(0[1-9]|1[0-2])$/.exec(raw);
+    return match?{year:Number(match[1]),month:Number(match[2])}:null;
+  }
+  function renderLeaderFinancialLinks(){
+    const root=$('#financeLeaderLinks');if(!root||!isSuperAdmin())return;
+    const period=financeLeaderPeriod();const admins=(state.superAdminProfiles||[]).filter(p=>p.active===true);
+    if(!period){root.textContent='Selecione uma competencia valida.';return;}
+    if(!admins.length){root.textContent='Carregando administradores ativos da organizacao...';return;}
+    root.replaceChildren();
+    for(const admin of admins){
+      const linked=(state.superAdminCommissions||[]).find(c=>c.user_id===admin.user_id&&Number(c.year)===period.year&&Number(c.month)===period.month);
+      const row=document.createElement('div');row.className='admin-actions';row.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:9px 0;padding:9px 0;border-bottom:1px solid var(--border,#333)';
+      const name=document.createElement('span');name.style.cssText='flex:1;min-width:155px';name.textContent=(admin.full_name||admin.email||'Administrador')+(admin.user_id===state.user.userId?' (voce)':'');
+      const select=document.createElement('select');select.dataset.leaderSquad=admin.user_id;select.setAttribute('aria-label','Squad financeiro de '+(admin.full_name||'administrador'));
+      for(const [value,label] of [['','Sem vinculo'],['A','Squad A'],['B','Squad B'],['D','Squad D'],['E','Squad E']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option);}
+      select.value=linked?.squad_code||'';
+      const button=document.createElement('button');button.className='btn';button.type='button';button.dataset.leaderSave=admin.user_id;button.textContent='Salvar vinculo';
+      row.append(name,select,button);root.appendChild(row);
+    }
+  }
+  async function saveLeaderFinancialLink(userId){
+    if(!isSuperAdmin()||!state.supabase)return toast('Vinculacao disponivel para administradores autenticados.');
+    const period=financeLeaderPeriod();const admin=(state.superAdminProfiles||[]).find(p=>p.user_id===userId&&p.active===true);
+    const squadCode=[...document.querySelectorAll('[data-leader-squad]')].find(x=>x.dataset.leaderSquad===userId)?.value;
+    if(!period||!admin||!['A','B','D','E'].includes(squadCode))return toast('Selecione um lider ativo e um Squad financeiro valido.');
+    const before=(state.superAdminCommissions||[]).find(c=>c.user_id===userId&&Number(c.year)===period.year&&Number(c.month)===period.month)||null;
+    if(before?.squad_code===squadCode)return toast('Este vinculo ja esta salvo.');
+    if(before?.squad_code&&before.squad_code!==squadCode){
+      if(!await confirmDialog(`Trocar o Squad financeiro de ${admin.full_name} de ${before.squad_code} para ${squadCode} em ${period.month}/${period.year}? Confira previamente vendas importadas e bonificacoes.`,{title:'Alterar Squad financeiro',confirmText:'Confirmar alteracao',tone:'warning'}))return;
+    }
+    const button=$(`[data-leader-save="${userId}"]`);if(button)button.disabled=true;
+    try{
+      const {data,error}=await state.supabase.rpc('strategy_set_leader_financial_squad_r21',{p_leader_user_id:userId,p_year:period.year,p_month:period.month,p_squad_code:squadCode,p_expected_squad_code:before?.squad_code||null});
+      if(error)throw error;
+      await ensureSuperAdminCommissions(true);
+      await logAuditEvent('finance.leader_squad_link',{entityType:'super_admin_commission',entityId:String(data||userId),squadId:null,description:`Vinculo financeiro ${admin.full_name}: ${period.month}/${period.year} Squad ${squadCode}.`,beforeData:{squad_code:before?.squad_code||null},afterData:{squad_code:squadCode},metadata:{userId,year:period.year,month:period.month}});
+      renderSuperAdminCommission(currentMonth());toast('Squad financeiro do lider atualizado.');
+    }catch(err){console.error(err);toast('Nao foi possivel salvar o vinculo. Confira a migration R21 e as permissoes.');}finally{if(button)button.disabled=false;}
   }
   function demoAdminCommissionKey(){return'squadDashboardSuperAdminCommissionsV218'}
   async function saveSuperAdminCommission(){
@@ -8062,7 +8109,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   async function ensureSuperAdminCommissions(force=false){
     if(!state.supabase||!isSuperAdmin())return;if(state.superAdminCommissionsLoaded&&!force)return;if(state.superAdminCommissionsLoading)return state.superAdminCommissionsLoading;
-    state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,squad_code,amount,sales_commission,imported_sales_commission,manual_bonus,discount,redistribution,vacation,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin')]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Administrador']));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Administrador',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;}catch(err){console.warn('Comissoes de Administrador indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
+    state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,squad_code,amount,sales_commission,imported_sales_commission,manual_bonus,discount,redistribution,vacation,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email,active').eq('role','super_admin').eq('active',true).eq('organization_id',state.user.organizationId)]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Administrador']));state.superAdminProfiles=(admins||[]).filter(a=>a.user_id).map(a=>({...a,active:a.active===true}));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Administrador',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;renderLeaderFinancialLinks();}catch(err){console.warn('Comissoes de Administrador indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
   }
   function viewNeedsFullMonth(name,section){return['individual','team','indicators','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
   async function ensureViewData(name=state.currentView,section=state.adminSection,{strict=false,forceMonths=false}={}){
