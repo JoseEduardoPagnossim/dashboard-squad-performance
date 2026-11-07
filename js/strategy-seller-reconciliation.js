@@ -7,21 +7,23 @@
   function normalizeName(value){return String(value??'').normalize('NFKC').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
   function squadCode(value){const s=String(value??'').trim().toUpperCase();return /^[A-E]$/.test(s)?s:null;}
   function roleFor(squad){return squad==='C'?'pre_attendance':'technician';}
-  function identityList(people,profiles){
+  function identityList(people,profiles,leaderCommissions=[]){
     const pmap=new Map((profiles||[]).filter(p=>p?.user_id&&p.active===true).map(p=>[String(p.user_id),p]));
-    return (people||[]).filter(p=>p?.id&&p.user_id&&p.active!==false).map(p=>{
-      const profile=pmap.get(String(p.user_id)),squad=squadCode(p.default_squad_code);
-      if(!profile||!squad||String(profile.organization_id)!==String(p.organization_id)||profile.role!==roleFor(squad))return null;
-      if(squad==='C'&&p.functional_team!=='pre_attendance')return null;
-      if(squad!=='C'&&p.functional_team==='pre_attendance')return null;
-      return Object.freeze({personId:String(p.id),userId:String(p.user_id),name:String(p.name||profile.full_name||''),profileName:String(profile.full_name||''),squad,role:profile.role,organizationId:String(p.organization_id)});
-    }).filter(Boolean);
+    return (people||[]).filter(p=>p?.id&&p.user_id&&p.active!==false).flatMap(p=>{
+      const profile=pmap.get(String(p.user_id));if(!profile||String(profile.organization_id)!==String(p.organization_id))return [];
+      const roles=profile.role==='super_admin'
+        ? [...new Set(leaderCommissions.filter(c=>String(c.user_id)===String(p.user_id)&&['A','B','D','E'].includes(c.squad_code)).map(c=>c.squad_code))]
+        : [squadCode(p.default_squad_code)].filter(Boolean);
+      return roles.filter(squad=>profile.role==='super_admin'?(p.functional_team!=='pre_attendance'):
+        (profile.role===roleFor(squad)&& (squad==='C'?p.functional_team==='pre_attendance':p.functional_team!=='pre_attendance')))
+        .map(squad=>Object.freeze({personId:String(p.id),userId:String(p.user_id),name:String(p.name||profile.full_name||''),profileName:String(profile.full_name||''),squad,role:profile.role,organizationId:String(p.organization_id),periods:profile.role==='super_admin'?leaderCommissions.filter(c=>String(c.user_id)===String(p.user_id)&&c.squad_code===squad).map(c=>`${c.year}-${String(c.month).padStart(2,'0')}`):[]}));
+    });
   }
-  function reconcile({sourceKey,parsed,mapping,people=[],profiles=[],aliases=[]}={}){
+  function reconcile({sourceKey,parsed,mapping,people=[],profiles=[],aliases=[],leaderCommissions=[]}={}){
     if(!SOURCES.includes(sourceKey))throw new Error('Origem comercial inválida.');
     const csv=typeof require==='function'?require('./strategy-csv-importer'):globalThis.SoftenStrategyCsvImporter;
     if(!csv)throw new Error('Motor CSV indisponível.');
-    const clean=csv.validateMapping(sourceKey,parsed.headers,mapping),identities=identityList(people,profiles);
+    const clean=csv.validateMapping(sourceKey,parsed.headers,mapping),identities=identityList(people,profiles,leaderCommissions);
     const si=parsed.headers.indexOf(clean.seller),gi=parsed.headers.indexOf(clean.squad);
     const grouped=new Map(),summary={matched:0,pending:0,ambiguous:0,eligible:0,ignoredNoGroup:0,ignoredNoSeller:0,groups:0};
     for(const row of parsed.rows){
@@ -36,7 +38,7 @@
       const candidates=matchingAliases.length?identities.filter(i=>matchingAliases.some(a=>String(a.person_id)===i.personId)):identities.filter(i=>i.squad===group.squad&&(normalizeName(i.name)===group.normalized||normalizeName(i.profileName)===group.normalized));
       const matches=candidates.filter(i=>i.squad===group.squad),status=matchingAliases.length&&matches.length!==1?'pending':matches.length===1?'matched':matches.length>1?'ambiguous':'pending';
       summary[status]+=group.count;
-      groups.push(Object.freeze({...group,status,method:status==='matched'?(matchingAliases.length?'alias':'nome exato'):null,personId:status==='matched'?matches[0].personId:null,userId:status==='matched'?matches[0].userId:null,personName:status==='matched'?matches[0].name:null}));
+      groups.push(Object.freeze({...group,status,method:status==='matched'?(matchingAliases.length?'alias':'nome exato'):null,personId:status==='matched'?matches[0].personId:null,userId:status==='matched'?matches[0].userId:null,role:status==='matched'?matches[0].role:null,periods:status==='matched'?matches[0].periods:[],personName:status==='matched'?matches[0].name:null}));
     }
     summary.groups=groups.length;groups.sort((a,b)=>a.squad.localeCompare(b.squad)||a.name.localeCompare(b.name,'pt-BR'));
     return Object.freeze({summary:Object.freeze(summary),groups:Object.freeze(groups),identities:Object.freeze(identities),sourceKey,official:false,persisted:false});

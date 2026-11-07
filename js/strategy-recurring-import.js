@@ -25,13 +25,13 @@
     if(!Number.isFinite(n)||n<=0||n>99999999.99)return null;
     return Math.round(n*100);
   }
-  function build({parsed,mapping,people=[],profiles=[],aliases=[],products=[],organizationId}={}){
+  function build({parsed,mapping,people=[],profiles=[],aliases=[],leaderCommissions=[],products=[],organizationId}={}){
     const csv=typeof require==='function'?require('./strategy-csv-importer'):globalThis.SoftenStrategyCsvImporter;
     const seller=typeof require==='function'?require('./strategy-seller-reconciliation'):globalThis.SoftenStrategySellerReconciliation;
     const catalog=typeof require==='function'?require('./strategy-product-catalog'):globalThis.SoftenStrategyProductCatalog;
     if(!organizationId)throw new Error('Organização não definida.');
     const valid=csv.validateMapping(SOURCE,parsed.headers,mapping);
-    const sellerReview=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases});
+    const sellerReview=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases,leaderCommissions});
     const bySeller=new Map(sellerReview.groups.map(g=>[JSON.stringify([SOURCE,g.squad,g.normalized]),g]));
     const byProduct=new Map(products.filter(p=>p.source_key===SOURCE&&p.generates_mrr===true&&p.active===true).map(p=>[p.normalized_name||catalog.normalize(p.name),p]));
     const idx=k=>valid[k]?parsed.headers.indexOf(valid[k]):-1;
@@ -47,7 +47,7 @@
       const day=date(get(row,'date')),amountCents=cents(get(row,'amount')),activeMonthlyCents=cents(get(row,'activeMonthly'));
       const customer=get(row,'customer'),taxId=get(row,'taxId'),contractDate=get(row,'contractDate');
       let status='ready';
-      if(!resolved||resolved.status!=='matched')status='pendingSeller';
+      if(!resolved||resolved.status!=='matched'||(resolved.role==='super_admin'&&!resolved.periods.includes((day||'').slice(0,7))))status='pendingSeller';
       else if(!product)status='pendingProduct';
       else if(!day)status='pendingDate';
       else if(amountCents===null||activeMonthlyCents===null)status='pendingAmount';

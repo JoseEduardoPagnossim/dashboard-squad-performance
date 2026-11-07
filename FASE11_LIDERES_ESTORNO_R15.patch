@@ -1,0 +1,2090 @@
+--- /dev/null
++++ b/docs/FASE11_LIDERES_ESTORNO_R15.md
+@@ -0,0 +1,35 @@
++# Fase 11 — Líderes vendedores e estorno auditável (R15)
++
++## Antes de instalar
++- Faça um backup do Supabase (banco e, se aplicável, relatórios oficiais).
++- Aplique sobre a versão R14, sem pular nenhuma migration anterior.
++- Execute `supabase/migrations/MIGRACAO_V2.63.11_LIDERES_ESTORNO.sql` no SQL Editor do Supabase ANTES de publicar os arquivos JS/HTML.
++- Se houver erro na migration, não publique o frontend. A SQL não foi executada no Supabase nesta entrega.
++- Execute `npm run check` e valide uma cópia de homologação antes de produzir alterações financeiras reais.
++
++## Para reconhecer o Heitor e outros líderes
++1. O próprio líder mantém o Squad financeiro em **Administração → Bonificação → Minha comissão do mês**, por competência.
++2. Em **Importação / Comissões comerciais**, use **Reconhecer líderes vendedores**. Isso cadastra apenas a identidade estratégica de líderes elegíveis quando ausente, sem criar técnico nem atendimento.
++3. Atualize a conciliação do CSV. Vendas do líder só são elegíveis quando ele tem vínculo financeiro para o Squad E a competência da venda.
++4. Importe, apure comissões e use **Sincronizar vendas dos líderes** para preencher a nova parcela automática.
++5. A coluna `imported_sales_commission` é automática; o campo `sales_commission` anterior permanece MANUAL. Os relatórios somam ambos sem substituir valores prévios. Revise ajustes manuais anteriores para evitar dupla remuneração por decisão humana.
++
++## Para retirar importações incorretas
++1. Em **Histórico de Importações**, abra o lote; exporte as vendas para conferência e backup.
++2. Clique **Conferir estorno deste lote**; verifique quantidade, valores, comissões e bloqueios.
++3. Se permitido, informe justificativa (12–500 caracteres) e clique **Desfazer lote auditado**.
++4. A RPC SQL executa o estorno dentro de uma única transação e registra histórico permanente por venda.
++5. O sistema impede estorno de competência fechada, com snapshot financeiro ou com comissão de técnico já sincronizada. Nesses casos, a orientação é conciliar a folha e planejar uma correção autorizada antes de tentar novamente.
++6. Reimporte um novo lote com o CSV corrigido e os líderes conciliados. Confirme os resumos e só depois feche a competência.
++
++## Limites e cuidados
++- O estorno é por lote, **não** apaga cadastros, regras comerciais ou lançamentos manuais.
++- Não há comando de exclusão direta no frontend: somente RPC transacional autorizada.
++- No máximo 5.000 vendas por estorno; acima disso, exige tratamento específico.
++- Lotes antigos sem identificação confiável não são estornáveis por este botão.
++- Registros de tentativas do lote são preservados para auditoria; o lote muda para `reverted`.
++- Eventos financeiros e comissões importadas são removidos somente após verificações; o estado anterior é preservado nas tabelas `strategy_commercial_batch_reversals_v26311` e `strategy_commercial_reversed_sales_v26311`.
++- Homologação Supabase, RLS, fechamento e testes com dados reais continuam pendentes. Nenhum registro real foi apagado neste trabalho.
++
++## Commit
++`feat: integra vendas de lideres e estorno auditado de importacoes`
+--- a/index.html
++++ b/index.html
+@@ -15,10 +15,10 @@
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
+-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r14" />
+-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r14" />
+-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r14" />
+-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r14" />
++  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r15" />
++  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r15" />
++  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r15" />
++  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r15" />
+ </head>
+ <body>
+   <div class="bg-layer"></div>
+@@ -2443,12 +2443,14 @@
+               <div class="strategy-editor-inline"><label><span>Origem</span><select id="strategyCommercialHistorySource"><option value="">Todas</option><option value="contracted_modules_csv">Anotação de venda (MRR)</option><option value="merchandise_sales_csv">Mercadorias (Não MRR)</option></select></label><button class="btn secondary" type="button" id="strategyCommercialHistoryRefresh">Atualizar histórico</button><button class="btn secondary" type="button" id="strategyCommercialHistoryExport">Exportar lotes CSV</button></div>
+               <p id="strategyCommercialHistoryStatus" class="muted">Consulte os lotes gravados no Supabase. Nenhuma alteração será feita nos registros financeiros.</p>
+               <div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Data</th><th>Origem</th><th>Arquivo</th><th>Status</th><th>Linhas</th><th>Importadas</th><th>Repetidas</th><th>Fechadas</th><th>Auditoria</th></tr></thead><tbody id="strategyCommercialHistoryRows"><tr><td colspan="9">Clique em Atualizar histórico.</td></tr></tbody></table></div>
+-              <section id="strategyCommercialHistoryDetails" hidden><h4>Detalhes do lote selecionado</h4><p id="strategyCommercialHistoryDetailStatus" class="muted"></p><button class="btn secondary" type="button" id="strategyCommercialHistoryExportSales">Exportar vendas deste lote</button><div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Data</th><th>Vendedor</th><th>Squad</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>MRR ativo</th><th>Comissão estimada</th><th>Ocorrência</th></tr></thead><tbody id="strategyCommercialHistorySales"></tbody></table></div></section>
++              <section id="strategyCommercialHistoryDetails" hidden><h4>Detalhes do lote selecionado</h4><p id="strategyCommercialHistoryDetailStatus" class="muted"></p><button class="btn secondary" type="button" id="strategyCommercialHistoryExportSales">Exportar vendas deste lote</button>
++                <div class="strategy-editor-inline"><button class="btn secondary" type="button" id="strategyCommercialReversePreview">Conferir estorno deste lote</button><label><span>Justificativa obrigatória</span><input type="text" id="strategyCommercialReverseReason" maxlength="500" placeholder="Ex.: importação duplicada ou incorreta"></label><button class="btn danger" type="button" id="strategyCommercialReverseConfirm" disabled>Desfazer lote auditado</button></div>
++                <p id="strategyCommercialReverseStatus" class="muted">Somente competências abertas e sem folha consolidada podem ser estornadas.</p><div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Data</th><th>Vendedor</th><th>Squad</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>MRR ativo</th><th>Comissão estimada</th><th>Ocorrência</th></tr></thead><tbody id="strategyCommercialHistorySales"></tbody></table></div></section>
+               <p class="muted">Valores de comissão são estimativas das regras congeladas na venda, não valores oficiais pagos. Lotes em andamento e consultas parciais são identificados. O histórico não remove duplicidades legítimas nem modifica competências fechadas.</p>
+             </details>
+             <article class="strategy-placeholder-card" id="strategyCommissionsSection">
+               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Comissões comerciais por competência</h3><p>Calcula as quatro regras congeladas na venda e mantém as pendências visíveis. Pré-atendimento permanece no Squad C, sem gerar produção técnica.</p></div><span class="strategy-mini-badge">Bonificação</span></div>
+-              <div class="strategy-editor-inline"><label><span>Competência (mês)</span><input type="month" id="strategyCommissionMonth"></label><button type="button" class="btn primary" id="strategyCommissionCalculate">Apurar comissões</button><button type="button" class="btn secondary" id="strategyCommissionRefresh">Consultar resultado</button><button type="button" class="btn secondary" id="strategyCommissionSync">Sincronizar técnicos com Bonificação</button></div>
++              <div class="strategy-editor-inline"><label><span>Competência (mês)</span><input type="month" id="strategyCommissionMonth"></label><button class="btn secondary" type="button" id="strategyLeaderSellerPrepare">Reconhecer líderes vendedores</button><button class="btn secondary" type="button" id="strategyLeaderSalesSync">Sincronizar vendas dos líderes</button><button type="button" class="btn primary" id="strategyCommissionCalculate">Apurar comissões</button><button type="button" class="btn secondary" id="strategyCommissionRefresh">Consultar resultado</button><button type="button" class="btn secondary" id="strategyCommissionSync">Sincronizar técnicos com Bonificação</button></div>
+               <p class="muted" id="strategyCommissionNotice">Apuração não altera outras parcelas da Bonificação. Contas de Pré-atendimento possuem memória comercial separada.</p>
+               <div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Colaborador</th><th>Squad</th><th>Perfil</th><th>Vendas</th><th>Valor vendido</th><th>Comissão</th><th>Pendências</th></tr></thead><tbody id="strategyCommissionRows"><tr><td colspan="7">Selecione a competência e clique em Consultar resultado.</td></tr></tbody></table></div>
+             </article>
+@@ -2620,7 +2622,7 @@
+             <div id="financeTechnicianRows" class="finance-tech-list"></div>
+             <div class="admin-actions finance-report-actions"><span class="muted" id="financeAdminHint">Selecione um mês.</span><button class="btn secondary" id="configureFinanceReportBtn" type="button">⚙ Configurar relatório</button><button class="btn secondary" id="exportFinanceExcelBtn">↓ Relatório Excel</button><button class="btn secondary" id="exportFinancePdfBtn">↓ Relatório PDF</button><button class="btn primary" id="saveFinanceTechniciansBtn">Salvar valores individuais</button></div>
+           </article>
+-          <article class="card admin-card super-only finance-super-card admin-section admin-finance"><span class="eyebrow">ADMINISTRADOR</span><h2>Minha comissão do mês</h2><p>Seu Squad financeiro determina em qual relatório de bonificação você aparece. Líderes não participam dos indicadores operacionais de atendimento.</p><div class="admin-form"><label><span>Squad financeiro</span><select id="superAdminCommissionSquad"><option value="">Selecionar</option><option value="A">Squad A</option><option value="B">Squad B</option><option value="D">Squad D</option><option value="E">Squad E</option></select></label><label><span>Comissão base (R$)</span><input id="superAdminCommissionInput" type="number" min="0" step="0.01"></label><label><span>Comissão de vendas (R$)</span><input id="superAdminSalesInput" type="number" min="0" step="0.01"></label><label><span>Bônus manual (R$)</span><input id="superAdminBonusInput" type="number" min="0" step="0.01"></label><label><span>Descontos (R$)</span><input id="superAdminDiscountInput" type="number" min="0" step="0.01"></label><label><span>Redistribuição (R$)</span><input id="superAdminRedistributionInput" type="number" min="0" step="0.01"></label><label><span>Férias</span><input id="superAdminVacationInput" type="checkbox"></label><label><span>Observação</span><input id="superAdminCommissionNotes" type="text" placeholder="Opcional"></label></div><div class="admin-actions"><span class="muted" id="superAdminCommissionPeriod">Selecione um mês.</span><button class="btn primary" id="saveSuperAdminCommissionBtn">Salvar minha comissão</button></div></article>
++          <article class="card admin-card super-only finance-super-card admin-section admin-finance"><span class="eyebrow">ADMINISTRADOR</span><h2>Minha comissão do mês</h2><p>Seu Squad financeiro determina em qual relatório de bonificação você aparece. Líderes não participam dos indicadores operacionais de atendimento.</p><div class="admin-form"><label><span>Squad financeiro</span><select id="superAdminCommissionSquad"><option value="">Selecionar</option><option value="A">Squad A</option><option value="B">Squad B</option><option value="D">Squad D</option><option value="E">Squad E</option></select></label><label><span>Comissão base (R$)</span><input id="superAdminCommissionInput" type="number" min="0" step="0.01"></label><label><span>Comissão de vendas MANUAL (R$)</span><input id="superAdminSalesInput" type="number" min="0" step="0.01"></label><p class="muted" id="superAdminImportedSalesDisplay">Vendas importadas: R$ 0,00 (apuração separada; não substitui a comissão manual).</p><label><span>Bônus manual (R$)</span><input id="superAdminBonusInput" type="number" min="0" step="0.01"></label><label><span>Descontos (R$)</span><input id="superAdminDiscountInput" type="number" min="0" step="0.01"></label><label><span>Redistribuição (R$)</span><input id="superAdminRedistributionInput" type="number" min="0" step="0.01"></label><label><span>Férias</span><input id="superAdminVacationInput" type="checkbox"></label><label><span>Observação</span><input id="superAdminCommissionNotes" type="text" placeholder="Opcional"></label></div><div class="admin-actions"><span class="muted" id="superAdminCommissionPeriod">Selecione um mês.</span><button class="btn primary" id="saveSuperAdminCommissionBtn">Salvar minha comissão</button></div></article>
+ 
+           <details class="card admin-card full admin-section admin-finance finance-secondary-panel strategy-sales-audit-r5" id="financeSalesAuditR5" data-permission="finance.view">
+             <summary class="finance-secondary-summary"><div><span class="eyebrow">BONIFICAÇÃO · AUDITORIA COMERCIAL</span><strong>Vendas, produtos, comissões e divergências</strong><small>Consulte as vendas importadas e compare Vl Anterior com os registros anteriores.</small></div><span class="finance-secondary-chevron">+</span></summary>
+@@ -2991,55 +2993,55 @@
+   <script src="js/audit-utils.js?v=2.29.9"></script>
+   <script src="js/demo-users.js"></script>
+   <script src="js/default-data.js"></script>
+-  <script src="js/business-calendar.js?v=2.63.9-r14"></script>
+-  <script src="js/finance-rules.js?v=2.63.9-r14"></script>
+-  <script src="js/finance-advanced.js?v=2.63.9-r14"></script>
+-  <script src="js/tv-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/presentation.js?v=2.63.9-r14"></script>
+-  <script src="js/chart-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/chart-export.js?v=2.63.9-r14"></script>
+-  <script src="js/import-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/predictive-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/alert-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/settings-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/performance-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/navigation-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/workspace-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/filter-system.js?v=2.63.9-r14"></script>
+-  <script src="js/comparison-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/finance-report-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/design-system.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-access.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-data.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-cost-engine.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-efficiency.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-capacity.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-result.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-product.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-product-concentration.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-product-history.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-insights.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-automation.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-csv-importer.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-product-catalog.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-recurring-import.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-scenarios.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-scenario-history.js?v=2.63.9-r14"></script>
++  <script src="js/business-calendar.js?v=2.63.9-r15"></script>
++  <script src="js/finance-rules.js?v=2.63.9-r15"></script>
++  <script src="js/finance-advanced.js?v=2.63.9-r15"></script>
++  <script src="js/tv-engine.js?v=2.63.9-r15"></script>
++  <script src="js/presentation.js?v=2.63.9-r15"></script>
++  <script src="js/chart-engine.js?v=2.63.9-r15"></script>
++  <script src="js/chart-export.js?v=2.63.9-r15"></script>
++  <script src="js/import-engine.js?v=2.63.9-r15"></script>
++  <script src="js/predictive-engine.js?v=2.63.9-r15"></script>
++  <script src="js/alert-engine.js?v=2.63.9-r15"></script>
++  <script src="js/settings-engine.js?v=2.63.9-r15"></script>
++  <script src="js/performance-engine.js?v=2.63.9-r15"></script>
++  <script src="js/navigation-engine.js?v=2.63.9-r15"></script>
++  <script src="js/workspace-engine.js?v=2.63.9-r15"></script>
++  <script src="js/filter-system.js?v=2.63.9-r15"></script>
++  <script src="js/comparison-engine.js?v=2.63.9-r15"></script>
++  <script src="js/finance-report-engine.js?v=2.63.9-r15"></script>
++  <script src="js/design-system.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-access.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-data.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-cost-engine.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-efficiency.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-capacity.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-result.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-product.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-squad-comparison.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-product-concentration.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-product-history.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-insights.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-automation.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-csv-importer.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-product-catalog.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-recurring-import.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-merchandise-import.js?v=2.63.9-r15"></script>
++  <script src="js/strategy.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-scenarios.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-scenario-insights.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-scenario-history.js?v=2.63.9-r15"></script>
+   <script>
+     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
+     window.insightEngine = window.SoftenStrategyInsights;
+   </script>
+-  <script src="js/strategy-commissions.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-manual-entries.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-financial-close.js?v=2.63.9-r14"></script>
+-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r14"></script>
+-<script src="js/app.js?v=2.63.9-r14"></script>
++  <script src="js/strategy-commissions.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-manual-entries.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-financial-close.js?v=2.63.9-r15"></script>
++  <script src="js/strategy-person-cost-import.js?v=2.63.9-r15"></script>
++<script src="js/app.js?v=2.63.9-r15"></script>
+ </body>
+ </html>
+--- a/js/app.js
++++ b/js/app.js
+@@ -1257,7 +1257,7 @@
+ 
+   async function enterApp(user){
+     const canonicalRole=normalizeAccessRole(user?.role);state.user={...user,role:canonicalRole,squadCode:canonicalRole==='super_admin'?null:(user?.squadCode||null),permissions:canonicalRole==='super_admin'?{}:(user?.permissions||{})};loadUserUiPreferences(state.user);
+-    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],aliases:[],products:[],catalogError:'',peopleError:'',mappings:[],mappingError:'',aliasError:'',request:strategyAutomationState.request+1});
++    Object.assign(strategyAutomationState,{loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],leaderCommissions:[],aliases:[],products:[],catalogError:'',peopleError:'',mappings:[],mappingError:'',aliasError:'',request:strategyAutomationState.request+1});
+     Object.assign(strategyCsvState,{sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:strategyCsvState.request+1});
+     Object.assign(strategyCatalogState,{sourceKey:'contracted_modules_csv',busy:false,drafts:{},notice:'',request:strategyCatalogState.request+1});
+     state.dataPromises={};state.squadSelectionSeq=0;state.squadSelectionLoadError=false;state.orgOverviewLoaded=false;state.orgOverviewLoading=null;state.superAdminCommissionsLoaded=false;state.superAdminCommissionsLoading=null;state.backgroundHydrationStarted=false;setDataLoadIndicator(false);
+@@ -3586,7 +3586,7 @@
+     if($('#helpSearchCount'))$('#helpSearchCount').textContent=query?`${visible} tópico${visible===1?'':'s'} encontrado${visible===1?'':'s'}`:'Guia completo exibido';
+     if($('#helpNoResults'))$('#helpNoResults').classList.toggle('hidden',!query||visible>0);
+   }
+-  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
++  const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],leaderCommissions:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
+   const strategyCatalogState={sourceKey:'contracted_modules_csv',busy:false,drafts:{},request:0,notice:''};
+   const strategyRecurringState={busy:false,notice:'',last:null};
+   const strategyMerchandiseState={busy:false,notice:'',last:null};
+@@ -3735,9 +3735,42 @@
+     const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+     const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+   }
++  async function prepareStrategyLeaderSellers(){
++    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Acesso financeiro necessário.');
++    try{const {data,error}=await state.supabase.rpc('prepare_strategy_leader_sellers_v26311');if(error)throw error;
++      strategyAutomationState.loaded=false;await loadStrategyAutomation({force:true});toast(`${Number(data?.created||0)} cadastro(s) de líder preparado(s). Revise o vínculo do vendedor.`);
++    }catch(err){toast('Não foi possível preparar líderes: '+String(err.message||err));}
++  }
++  async function syncStrategyLeaderSales(){
++    if(!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return;
++    const competence=$('#strategyCommissionMonth')?.value;if(!/^20\d\d-(0[1-9]|1[0-2])$/.test(competence||''))return toast('Selecione a competência.');
++    if(!window.confirm('Sincronizar a parcela AUTOMÁTICA das comissões de líderes? A comissão manual será preservada.'))return;
++    try{const {data,error}=await state.supabase.rpc('sync_strategy_leader_sales_v26311',{p_competence:competence+'-01'});if(error)throw error;
++      state.superAdminCommissionsLoaded=false;await loadSuperAdminCommissions(true);toast(`Comissões automáticas de ${Number(data?.leaders||0)} líder(es) atualizadas.`);
++    }catch(err){toast('Falha na sincronização: '+String(err.message||err));}
++  }
++  async function previewStrategyCommercialReversal(){
++    const batch=strategyCommercialHistory.selected;if(!batch||!state.supabase)return;
++    const status=$('#strategyCommercialReverseStatus');if(status)status.textContent='Verificando impacto financeiro...';
++    try{const {data,error}=await state.supabase.rpc('preview_strategy_commercial_batch_reversal_v26311',{p_batch_id:batch.id});if(error)throw error;
++      strategyCommercialHistory.preview=data;
++      if(status)status.textContent=`${Number(data.sales||0)} venda(s), ${fmtMoney(data.amount)} em lançamentos, ${Number(data.commissions||0)} comissão(ões). ${data.blocked?'BLOQUEADO: '+data.reason:'Estorno permitido somente após confirmação e justificativa.'}`;
++      const btn=$('#strategyCommercialReverseConfirm');if(btn)btn.disabled=!!data.blocked;
++    }catch(err){if(status)status.textContent='Não foi possível verificar o estorno: '+String(err.message||err);}
++  }
++  async function confirmStrategyCommercialReversal(){
++    const preview=strategyCommercialHistory.preview,batch=strategyCommercialHistory.selected;
++    if(!preview||preview.blocked||!batch||preview.batchId!==batch.id)return toast('Confira o lote novamente.');
++    const reason=String($('#strategyCommercialReverseReason')?.value||'').trim();if(reason.length<12)return toast('Informe uma justificativa com pelo menos 12 caracteres.');
++    if(!window.confirm(`ATENÇÃO: desfazer ${preview.sales} venda(s) do lote ${batch.file_name}? Esta operação é auditada e não pode ser desfeita pela interface.`))return;
++    try{const {data,error}=await state.supabase.rpc('reverse_strategy_commercial_batch_v26311',{p_batch_id:batch.id,p_expected_sales:preview.sales,p_reason:reason});if(error)throw error;
++      strategyCommercialHistory.preview=null;strategyInvalidateFinance();await loadStrategyFinanceData({force:true});state.superAdminCommissionsLoaded=false;await loadSuperAdminCommissions(true);await refreshStrategyCommercialHistory();toast(`${data.removedSales} venda(s) estornada(s). Revise o financeiro antes de reimportar.`);
++    }catch(err){toast('Estorno recusado: '+String(err.message||err));}
++  }
++
+   // Fase 9: visualizacao somente leitura dos lotes comerciais existentes no Supabase.
+-  // A consulta nunca recalcula comissoes, altera vendas ou altera snapshots.
+-  const strategyCommercialHistory={busy:false,rows:[],sales:[],selected:null,truncated:false};
++  // A consulta é somente leitura. Estorno é RPC separada e exige prévia, justificativa e bloqueios financeiros.
++  const strategyCommercialHistory={busy:false,rows:[],sales:[],selected:null,truncated:false,preview:null};
+   const strategyCommercialSourceLabel=key=>key==='contracted_modules_csv'?'MRR':key==='merchandise_sales_csv'?'Mercadorias':'Outra';
+   function strategyCommercialHistoryRows(){const source=$('#strategyCommercialHistorySource')?.value||'';return strategyCommercialHistory.rows.filter(x=>!source||x.source_key===source);}
+   function renderStrategyCommercialHistory(){
+@@ -3765,7 +3798,7 @@
+         return {...r,source_key,...counts,truncated};
+       }));
+       strategyCommercialHistory.rows=result;strategyCommercialHistory.selected=null;strategyCommercialHistory.sales=[];
+-      if($('#strategyCommercialHistoryDetails'))$('#strategyCommercialHistoryDetails').hidden=true;
++      if($('#strategyCommercialHistoryDetails'))$('#strategyCommercialHistoryDetails').hidden=true;strategyCommercialHistory.preview=null;
+       if(status)status.textContent=`${result.length} lote(s) entre os 50 mais recentes. ${result.some(r=>r.truncated)?'Há lotes com mais de 5.000 tentativas: contagens parciais. ':''}Lotes em rascunho podem estar incompletos. Os dados vêm do Supabase.`;
+       renderStrategyCommercialHistory();
+     }catch(err){console.error(err);if(status)status.textContent='Não foi possível consultar o histórico: '+String(err?.message||err);}
+@@ -3783,8 +3816,8 @@
+       const products=await state.supabase.from('strategy_commercial_products').select('id,name').eq('organization_id',org);if(products.error)throw products.error;
+       const names=new Map((products.data||[]).map(p=>[p.id,p.name]));
+       const sales=rows.map(x=>{const amount=Number(batch.source_key==='contracted_modules_csv'?x.monthly_amount:x.gross_amount);const estimate=strategyAuditEstimate({amount,rule:x.commission_rule_at_import});return {...x,customer_name:batch.source_key==='contracted_modules_csv'?x.customer_name:null,active_monthly_amount:batch.source_key==='contracted_modules_csv'?x.active_monthly_amount:null,amount,estimate,productName:names.get(x.product_id)||'Produto não localizado'};});
+-      strategyCommercialHistory.selected=batch;strategyCommercialHistory.sales=sales;strategyCommercialHistory.truncated=truncated;
+-      const section=$('#strategyCommercialHistoryDetails');if(section)section.hidden=false;
++      strategyCommercialHistory.selected=batch;strategyCommercialHistory.sales=sales;strategyCommercialHistory.preview=null;strategyCommercialHistory.truncated=truncated;
++      const section=$('#strategyCommercialHistoryDetails');if(section)section.hidden=false;if($('#strategyCommercialReverseStatus'))$('#strategyCommercialReverseStatus').textContent='Verifique o impacto antes de desfazer este lote.';if($('#strategyCommercialReverseConfirm'))$('#strategyCommercialReverseConfirm').disabled=true;
+       if(status)status.textContent=`Lote ${id} · ${sales.length} venda(s) gravada(s) ${truncated?'(PARCIAL: limite de 5.000 registros)':''} · ${batch.duplicates} tentativa(s) duplicada(s) · ${batch.closed} competência(s) fechada(s). Tentativas recusadas não aparecem como vendas.`;
+       const body=$('#strategyCommercialHistorySales');if(body)body.innerHTML=sales.slice(0,200).map(x=>`<tr><td>${escapeHtml(x.occurred_on||'')}</td><td>${escapeHtml(x.seller_name||'')}</td><td>${escapeHtml(x.squad_code||'')}</td><td>${escapeHtml(x.productName)}</td><td>${escapeHtml(x.customer_name||'')}</td><td>${fmtMoney(x.amount)}</td><td>${batch.source_key==='contracted_modules_csv'?(x.active_monthly_amount==null?'—':fmtMoney(x.active_monthly_amount)):'—'}</td><td>${x.estimate==null?'Regra não reconhecida':fmtMoney(x.estimate)}</td><td>${fmtInt(x.source_occurrence)}</td></tr>`).join('')||'<tr><td colspan="9">Nenhuma venda gravada neste lote.</td></tr>';
+     }catch(err){console.error(err);if(status)status.textContent='Erro ao consultar vendas: '+String(err?.message||err);}
+@@ -3930,18 +3963,19 @@
+     const request=++strategyAutomationState.request,org=state.user?.organizationId;
+     strategyAutomationState.loading=true;strategyAutomationState.error='';
+     try{
+-      const [sources,profiles,people,mappings,sellerProfiles,aliases,products]=await Promise.all([
++      const [sources,profiles,people,mappings,sellerProfiles,aliases,products,leaderCommissions]=await Promise.all([
+         state.supabase.from('strategy_import_sources').select('id,source_key,label,origin,generates_mrr,active').eq('organization_id',org).order('source_key'),
+         state.supabase.from('profiles').select('user_id,full_name,role,active').eq('organization_id',org).eq('role','pre_attendance').eq('active',true).order('full_name'),
+         state.supabase.from('strategy_people').select('id,user_id,name,active,functional_team,default_squad_code').eq('organization_id',org).order('name'),
+         state.supabase.from('strategy_import_mappings').select('id,source_key,name,columns,headers,created_by,updated_at').eq('organization_id',org).order('name'),
+-        state.supabase.from('profiles').select('user_id,full_name,role,active,organization_id').eq('organization_id',org).in('role',['technician','pre_attendance']).eq('active',true).order('full_name'),
++        state.supabase.from('profiles').select('user_id,full_name,role,active,organization_id').eq('organization_id',org).in('role',['technician','pre_attendance','super_admin']).eq('active',true).order('full_name'),
+         state.supabase.from('strategy_seller_aliases').select('id,source_key,squad_code,alias_name,alias_normalized,person_id').eq('organization_id',org).order('alias_name'),
+-        state.supabase.from('strategy_commercial_products').select('id,name,normalized_name,source_key,generates_mrr,commission_type,commission_percentage,third_party_cost,fixed_amount,commission_revision,active').eq('organization_id',org).order('name')
++        state.supabase.from('strategy_commercial_products').select('id,name,normalized_name,source_key,generates_mrr,commission_type,commission_percentage,third_party_cost,fixed_amount,commission_revision,active').eq('organization_id',org).order('name'),
++        state.supabase.from('super_admin_commissions').select('user_id,year,month,squad_code').eq('organization_id',org)
+       ]);
+       if(sources.error)throw sources.error;if(profiles.error)throw profiles.error;if(people.error)throw people.error;
+       if(request!==strategyAutomationState.request||org!==state.user?.organizationId)return;
+-      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':'',sellerProfiles:sellerProfiles.error?[]:(sellerProfiles.data||[]),peopleError:sellerProfiles.error?'Contas de vendedores indisponíveis: '+String(sellerProfiles.error.message||sellerProfiles.error):'',aliases:aliases.error?[]:(aliases.data||[]),aliasError:aliases.error?'Execute a migration V2.63.2 no Supabase para gerenciar aliases.':'',products:products.error?[]:(products.data||[]),catalogError:products.error?'Execute a migration V2.63.3 no Supabase para configurar produtos e comissões.':''});
++      Object.assign(strategyAutomationState,{loaded:true,sources:sources.data||[],users:profiles.data||[],people:people.data||[],mappings:mappings.error?[]:(mappings.data||[]),mappingError:mappings.error?'Execute a migration V2.63.1 no Supabase para salvar modelos.':'',sellerProfiles:sellerProfiles.error?[]:(sellerProfiles.data||[]),leaderCommissions:leaderCommissions.error?[]:(leaderCommissions.data||[]),peopleError:sellerProfiles.error?'Contas de vendedores indisponíveis: '+String(sellerProfiles.error.message||sellerProfiles.error):'',aliases:aliases.error?[]:(aliases.data||[]),aliasError:aliases.error?'Execute a migration V2.63.2 no Supabase para gerenciar aliases.':'',products:products.error?[]:(products.data||[]),catalogError:products.error?'Execute a migration V2.63.3 no Supabase para configurar produtos e comissões.':''});
+     }catch(err){strategyAutomationState.error=String(err.message||err);strategyAutomationState.loaded=false;}
+     finally{strategyAutomationState.loading=false;if(state.currentView==='strategy'&&strategyController.getState().section==='automation')renderStrategyAutomation();}
+   }
+@@ -4061,7 +4095,7 @@
+     const cs=strategyCsvState,engine=window.SoftenStrategyRecurringImport;
+     if(!engine||!cs.parsed||cs.sourceKey!==engine.SOURCE)return null;
+     return engine.build({parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
+-      profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
++      profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
+   }
+   function renderStrategyRecurringImport(){
+     const status=$('#strategyRecurringStatus'),summary=$('#strategyRecurringSummary'),review=$('#strategyRecurringReview'),btn=$('#strategyRecurringConfirm'),result=$('#strategyRecurringResult');
+@@ -4115,7 +4149,7 @@
+     const cs=strategyCsvState,engine=window.SoftenStrategyMerchandiseImport;
+     if(!engine||!cs.parsed||cs.sourceKey!==engine.SOURCE)return null;
+     return engine.build({parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
+-      profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
++      profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
+   }
+   function renderStrategyMerchandiseImport(){
+     const status=$('#strategyMerchandiseStatus'),summary=$('#strategyMerchandiseSummary'),review=$('#strategyMerchandiseReview'),btn=$('#strategyMerchandiseConfirm'),result=$('#strategyMerchandiseResult');
+@@ -4177,7 +4211,7 @@
+     if($('#strategySellerAliasSave'))$('#strategySellerAliasSave').disabled=true;
+     if(!engine||!cs.parsed){summary.textContent='Selecione um CSV para conciliar os vendedores.';body.innerHTML='';return;}
+     let checked;
+-    try{checked=engine.reconcile({sourceKey:cs.sourceKey,parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases});}
++    try{checked=engine.reconcile({sourceKey:cs.sourceKey,parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases});}
+     catch(err){summary.textContent='Conclua o mapeamento das colunas obrigatórias para ver a conciliação.';body.innerHTML='';return;}
+     const {summary:tot,groups,identities}=checked;
+     summary.textContent=`${tot.eligible.toLocaleString('pt-BR')} linha(s) com grupo válido • ${tot.matched.toLocaleString('pt-BR')} conciliada(s) • ${tot.pending.toLocaleString('pt-BR')} pendente(s) • ${tot.ambiguous.toLocaleString('pt-BR')} ambígua(s) • ${tot.ignoredNoGroup.toLocaleString('pt-BR')} sem grupo ignorada(s) • ${tot.ignoredNoSeller.toLocaleString('pt-BR')} sem vendedor. Sem lançamento financeiro.`;
+@@ -4198,7 +4232,7 @@
+     if(strategyAutomationState.aliasError||strategyAutomationState.peopleError)return toast('Verifique a migration V2.63.2 e as permissões.');
+     const engine=window.SoftenStrategySellerReconciliation,cs=strategyCsvState;
+     if(!cs.parsed)return toast('Selecione o CSV primeiro.');
+-    let checked;try{checked=engine.reconcile({sourceKey:cs.sourceKey,parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),profiles:strategyAutomationState.sellerProfiles,aliases:strategyAutomationState.aliases});}catch(err){return toast(err.message||String(err));}
++    let checked;try{checked=engine.reconcile({sourceKey:cs.sourceKey,parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases});}catch(err){return toast(err.message||String(err));}
+     const key=$('#strategySellerAliasKey')?.value,group=checked.groups.find(g=>g.key===key&&g.status!=='matched'),personId=$('#strategySellerAliasPerson')?.value;
+     if(!group||!personId)return toast('Selecione um vendedor pendente e a pessoa do mesmo Squad.');
+     if(!checked.identities.some(i=>i.personId===personId&&i.squad===group.squad))return toast('Pessoa incompatível com o Squad da venda.');
+@@ -6106,7 +6140,7 @@
+     if(e.target.closest('#scenarioHistoryReloadBtn'))return loadStrategyScenarioHistory(true);
+     if(e.target.closest('#scenarioHistoryNewBtn')){if($('#scenarioHistoryGroup'))$('#scenarioHistoryGroup').value='';if($('#scenarioHistoryName'))$('#scenarioHistoryName').value='Planejamento estratégico';if($('#scenarioHistoryNotes'))$('#scenarioHistoryNotes').value='';return}
+     const restore=e.target.closest('[data-scenario-history-restore]');if(restore)return restoreStrategyScenarioHistory(restore.dataset.scenarioHistoryRestore);
+-    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();const wizardNav=e.target.closest('[data-strategy-csv-step]');if(wizardNav)return changeStrategyCsvWizardStep(wizardNav.dataset.strategyCsvStep);if(e.target.closest('#strategyCsvWizardNext'))return changeStrategyCsvWizardStep(strategyCsvWizardStep+1);if(e.target.closest('#strategyCsvWizardBack'))return changeStrategyCsvWizardStep(strategyCsvWizardStep-1);if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategySellerAliasSave'))return saveStrategySellerAlias();if(e.target.closest('#strategyCommercialHistoryRefresh'))return refreshStrategyCommercialHistory();if(e.target.closest('#strategyCommercialHistoryExport'))return exportStrategyCommercialHistory('batches');if(e.target.closest('#strategyCommercialHistoryExportSales'))return exportStrategyCommercialHistory('sales');const commercialBatch=e.target.closest('[data-strategy-commercial-batch]');if(commercialBatch)return openStrategyCommercialHistoryBatch(commercialBatch.dataset.strategyCommercialBatch);if(e.target.closest('#strategyRecurringConfirm'))return confirmStrategyRecurringImport();if(e.target.closest('#strategyMerchandiseConfirm'))return confirmStrategyMerchandiseImport();if(e.target.closest('#strategyManualSave'))return saveStrategyManualEntry();if(e.target.closest('#strategyManualRefresh'))return loadStrategyManualEntries(true);if(e.target.closest('#strategyManualClear'))return strategyManualClear();const manualEdit=e.target.closest('[data-manual-edit]');if(manualEdit)return editStrategyManualEntry(manualEdit.dataset.manualEdit);const manualCancel=e.target.closest('[data-manual-cancel]');if(manualCancel)return cancelStrategyManualEntry(manualCancel.dataset.manualCancel);if(e.target.closest('#strategyFinanceClosePreview'))return strategyFinanceCloseAction('preview');if(e.target.closest('#strategyFinanceCloseSync'))return strategyFinanceCloseAction('sync');const preApprove=e.target.closest('[data-strategy-preapprove]');if(preApprove)return strategyFinanceCloseAction('approve',preApprove.dataset.strategyPreapprove);if(e.target.closest('#strategyCommissionCalculate'))return strategyCommissionAction('calculate');if(e.target.closest('#strategyCommissionRefresh'))return strategyCommissionAction('refresh');if(e.target.closest('#strategyCommissionSync'))return strategyCommissionAction('sync');if(e.target.closest('#strategyCatalogImport'))return registerStrategyCommercialProducts();const catalogSave=e.target.closest('[data-strategy-catalog-save]');if(catalogSave)return saveStrategyCommercialRule(catalogSave.dataset.strategyCatalogSave);if(e.target.closest('#strategyCostSheetChoose'))return $('#strategyCostSheetFile')?.click();if(e.target.closest('#strategyCostSheetConfirm'))return strategyCostSheetConfirm();if(e.target.closest('#strategyCostSheetCancel'))return strategyCostSheetHide();if(e.target.closest('#strategyBonusPullBtn'))return strategyBonusPull();const officialBonus=e.target.closest('[data-strategy-official-bonus]');if(officialBonus)return strategyPersonApplyOfficialBonus(officialBonus.dataset.strategyOfficialBonus);const deletedCost=e.target.closest('[data-strategy-delete-operational]');if(deletedCost)return deleteStrategyOperationalCost(deletedCost.dataset.strategyDeleteOperational);if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
++    const tab=e.target.closest('[data-strategy-section]');if(tab){setStrategySection(tab.dataset.strategySection);return}const compChip=e.target.closest('[data-strategy-competence-chip]');if(compChip){strategyController.setCompetence(compChip.dataset.strategyCompetenceChip);strategyInvalidateFinance();strategyController.setFinancialLoading(true);renderStrategy({skipLoad:true});await loadStrategyFinanceData({force:true});return}if(e.target.closest('#strategyCreateCompetenceBtn'))return createStrategyCompetence();if(e.target.closest('#strategySaveCompetenceBtn'))return saveStrategyCompetence();if(e.target.closest('#strategyCloseCompetenceBtn'))return closeStrategyCompetence();if(e.target.closest('#strategyReopenCompetenceBtn'))return reopenStrategyCompetence();const removePerson=e.target.closest('[data-strategy-remove-person]');if(removePerson)return removeStrategyPersonFromCosts(removePerson.dataset.strategyRemovePerson);if(e.target.closest('#strategySyncOperationalPeopleBtn')){try{const sync=await syncStrategyOperationalPeople();if(sync.created||sync.linked){strategyInvalidateFinance();await loadStrategyFinanceData({force:true});}}catch(err){console.error(err);toast(String(err?.message||err));}return}if(e.target.closest('#strategyAutomationInitSources'))return initStrategyAutomationSources();if(e.target.closest('#strategyAutomationRefresh')){strategyAutomationState.loaded=false;return loadStrategyAutomation({force:true});}if(e.target.closest('#strategyAutomationBindUser'))return bindStrategyPreAttendanceUser();const wizardNav=e.target.closest('[data-strategy-csv-step]');if(wizardNav)return changeStrategyCsvWizardStep(wizardNav.dataset.strategyCsvStep);if(e.target.closest('#strategyCsvWizardNext'))return changeStrategyCsvWizardStep(strategyCsvWizardStep+1);if(e.target.closest('#strategyCsvWizardBack'))return changeStrategyCsvWizardStep(strategyCsvWizardStep-1);if(e.target.closest('#strategyCsvSave'))return saveStrategyCsvTemplate();if(e.target.closest('#strategyCsvApplyTemplate'))return applyStrategyCsvTemplate();if(e.target.closest('#strategySellerAliasSave'))return saveStrategySellerAlias();if(e.target.closest('#strategyLeaderSellerPrepare'))return prepareStrategyLeaderSellers();if(e.target.closest('#strategyLeaderSalesSync'))return syncStrategyLeaderSales();if(e.target.closest('#strategyCommercialReversePreview'))return previewStrategyCommercialReversal();if(e.target.closest('#strategyCommercialReverseConfirm'))return confirmStrategyCommercialReversal();if(e.target.closest('#strategyCommercialHistoryRefresh'))return refreshStrategyCommercialHistory();if(e.target.closest('#strategyCommercialHistoryExport'))return exportStrategyCommercialHistory('batches');if(e.target.closest('#strategyCommercialHistoryExportSales'))return exportStrategyCommercialHistory('sales');const commercialBatch=e.target.closest('[data-strategy-commercial-batch]');if(commercialBatch)return openStrategyCommercialHistoryBatch(commercialBatch.dataset.strategyCommercialBatch);if(e.target.closest('#strategyRecurringConfirm'))return confirmStrategyRecurringImport();if(e.target.closest('#strategyMerchandiseConfirm'))return confirmStrategyMerchandiseImport();if(e.target.closest('#strategyManualSave'))return saveStrategyManualEntry();if(e.target.closest('#strategyManualRefresh'))return loadStrategyManualEntries(true);if(e.target.closest('#strategyManualClear'))return strategyManualClear();const manualEdit=e.target.closest('[data-manual-edit]');if(manualEdit)return editStrategyManualEntry(manualEdit.dataset.manualEdit);const manualCancel=e.target.closest('[data-manual-cancel]');if(manualCancel)return cancelStrategyManualEntry(manualCancel.dataset.manualCancel);if(e.target.closest('#strategyFinanceClosePreview'))return strategyFinanceCloseAction('preview');if(e.target.closest('#strategyFinanceCloseSync'))return strategyFinanceCloseAction('sync');const preApprove=e.target.closest('[data-strategy-preapprove]');if(preApprove)return strategyFinanceCloseAction('approve',preApprove.dataset.strategyPreapprove);if(e.target.closest('#strategyCommissionCalculate'))return strategyCommissionAction('calculate');if(e.target.closest('#strategyCommissionRefresh'))return strategyCommissionAction('refresh');if(e.target.closest('#strategyCommissionSync'))return strategyCommissionAction('sync');if(e.target.closest('#strategyCatalogImport'))return registerStrategyCommercialProducts();const catalogSave=e.target.closest('[data-strategy-catalog-save]');if(catalogSave)return saveStrategyCommercialRule(catalogSave.dataset.strategyCatalogSave);if(e.target.closest('#strategyCostSheetChoose'))return $('#strategyCostSheetFile')?.click();if(e.target.closest('#strategyCostSheetConfirm'))return strategyCostSheetConfirm();if(e.target.closest('#strategyCostSheetCancel'))return strategyCostSheetHide();if(e.target.closest('#strategyBonusPullBtn'))return strategyBonusPull();const officialBonus=e.target.closest('[data-strategy-official-bonus]');if(officialBonus)return strategyPersonApplyOfficialBonus(officialBonus.dataset.strategyOfficialBonus);const deletedCost=e.target.closest('[data-strategy-delete-operational]');if(deletedCost)return deleteStrategyOperationalCost(deletedCost.dataset.strategyDeleteOperational);if(e.target.closest('#strategyAddPersonBtn'))return addStrategyPerson();if(e.target.closest('#strategySavePeopleCostsBtn'))return saveStrategyPeopleCosts();if(e.target.closest('#strategySaveResolutionMetricsBtn'))return saveStrategyResolutionMetrics();if(e.target.closest('#strategyAddOperationalCostBtn'))return addStrategyOperationalCost();if(e.target.closest('#strategySaveOperationalCostsBtn'))return saveStrategyOperationalCosts();if(e.target.closest('#strategyAddDirectRevenueBtn'))return addStrategyDirectRevenue();if(e.target.closest('#strategyAddInfluencedRevenueBtn'))return addStrategyInfluencedRevenue();if(e.target.closest('#strategyAddProtectedRevenueBtn'))return addStrategyProtectedRevenue();if(e.target.closest('#strategySyncProductDemandBtn'))return syncStrategyProductDemand();if(e.target.closest('#strategySyncProductCostBtn'))return syncStrategyProductCost();if(e.target.closest('#strategySyncProductResultBtn'))return syncStrategyProductResult();if(e.target.closest('#strategySyncProductUnitBtn'))return syncStrategyProductUnitEconomics();if(e.target.closest('#strategyAddProductBtn'))return addStrategyProduct();const productToggle=e.target.closest('[data-strategy-product-toggle]');if(productToggle)return toggleStrategyProduct(productToggle.dataset.strategyProductToggle,productToggle.dataset.strategyProductActive==='1');const cancelDirect=e.target.closest('[data-strategy-cancel-direct]');if(cancelDirect)return cancelStrategyDirectRevenue(cancelDirect.dataset.strategyCancelDirect);const cancelInfluenced=e.target.closest('[data-strategy-cancel-influenced]');if(cancelInfluenced)return cancelStrategyInfluencedRevenue(cancelInfluenced.dataset.strategyCancelInfluenced);const confirmProtected=e.target.closest('[data-strategy-confirm-protected]');if(confirmProtected)return confirmStrategyProtectedRevenue(confirmProtected.dataset.strategyConfirmProtected);const cancelProtected=e.target.closest('[data-strategy-cancel-protected]');if(cancelProtected)return cancelStrategyProtectedRevenue(cancelProtected.dataset.strategyCancelProtected);}
+   async function handleStrategyChange(e){
+     if(e.target.id==='strategyCostSheetFile')return strategyCostSheetReadFile(e.target);if(e.target.id==='strategyFinanceCloseMonth'){strategyFinanceCloseState.data=null;strategyFinanceCloseState.month='';strategyFinanceCloseState.notice='';return renderStrategyFinancialClose();}if(e.target.id==='strategyManualMonth'){strategyManualState.month='';strategyManualState.editGroup=null;strategyManualState.pendingToken=null;return loadStrategyManualEntries(true);}
+     if(['strategyManualType','strategyManualSquad'].includes(e.target.id)){renderStrategyManualEntries();return;}
+@@ -7013,7 +7047,7 @@
+   function reportAdminRows(m){
+     if(!m || !['A','B','D','E'].includes(state.squadCode))return [];
+     return (state.superAdminCommissions||[]).filter(c=>safe(c.year)===safe(m.year)&&safe(c.month)===safe(m.month)&&c.squad_code===state.squadCode).map(c=>{
+-      const base=safe(c.amount),sales=safe(c.sales_commission),bonus=safe(c.manual_bonus),discount=safe(c.discount),redistribution=safe(c.redistribution);
++      const base=safe(c.amount),sales=safe(c.sales_commission)+safe(c.imported_sales_commission),bonus=safe(c.manual_bonus),discount=safe(c.discount),redistribution=safe(c.redistribution);
+       const final=Number((base+sales+bonus-discount+redistribution).toFixed(2));
+       return{'Grupo':c.squad_code,'Técnico':c.name||'Líder','Perfil financeiro':'LÍDER','Status financeiro':'LÍDER • SEM PRODUÇÃO',
+         'Modelo oficial':'Bonificação de líder (manual)','Valor oficial':final,'Comissão base do técnico':base,
+@@ -7051,7 +7085,7 @@
+     for(const id of ['superAdminCommissionInput','superAdminSalesInput','superAdminBonusInput','superAdminDiscountInput','superAdminRedistributionInput','superAdminVacationInput','superAdminCommissionSquad','superAdminCommissionNotes','saveSuperAdminCommissionBtn'])if($('#'+id))$('#'+id).disabled=disabled;
+     const mapping={superAdminCommissionInput:'amount',superAdminSalesInput:'sales_commission',superAdminBonusInput:'manual_bonus',superAdminDiscountInput:'discount',superAdminRedistributionInput:'redistribution'};
+     for(const [id,key] of Object.entries(mapping))if($('#'+id))$('#'+id).value=found?safe(found[key]):'';
+-    $('#superAdminVacationInput').checked=!!found?.vacation;
++    $('#superAdminVacationInput').checked=!!found?.vacation;if($('#superAdminImportedSalesDisplay'))$('#superAdminImportedSalesDisplay').textContent='Comissão automática importada: '+fmtMoney(safe(found?.imported_sales_commission))+' • Comissão manual mantida separadamente.';
+     $('#superAdminCommissionSquad').value=found?.squad_code||(['A','B','D','E'].includes(state.squadCode)?state.squadCode:'');
+     $('#superAdminCommissionNotes').value=found?.notes||'';
+     $('#superAdminCommissionPeriod').textContent=m?`${m.monthName} ${m.year} • ${m.isClosed?'competência fechada':'não participa de métricas de atendimento'}`:'Selecione um Squad e um mês para definir a competência.';
+@@ -7072,7 +7106,7 @@
+     if(previous?.squad_code&&previous.squad_code!==squadCode)return toast('O líder já possui vínculo com outro Squad nesta competência. Consulte o financeiro para corrigir com auditoria.');
+     const payload={organization_id:state.user.organizationId,user_id:state.user.userId,year:m.year,month:m.month,squad_code:squadCode,amount,sales_commission,manual_bonus,discount,redistribution,vacation,notes,updated_by:state.user.userId,updated_at:new Date().toISOString()};
+     try{
+-      if(state.supabase){const {data,error}=await state.supabase.from('super_admin_commissions').upsert(payload,{onConflict:'organization_id,user_id,year,month'}).select('id').single();if(error)throw error;state.superAdminCommissions=[...(state.superAdminCommissions||[]).filter(c=>!(c.user_id===state.user.userId&&safe(c.year)===m.year&&safe(c.month)===m.month)),{...payload,id:data.id,name:state.user.fullName}];}
++      if(state.supabase){const {data,error}=await state.supabase.from('super_admin_commissions').upsert(payload,{onConflict:'organization_id,user_id,year,month'}).select('id').single();if(error)throw error;state.superAdminCommissions=[...(state.superAdminCommissions||[]).filter(c=>!(c.user_id===state.user.userId&&safe(c.year)===m.year&&safe(c.month)===m.month)),{...previous,...payload,id:data.id,name:state.user.fullName}];}
+       else{const list=JSON.parse(localStorage.getItem(demoAdminCommissionKey())||'[]').filter(c=>!(c.user_id===state.user.email&&safe(c.year)===m.year&&safe(c.month)===m.month));list.push({...payload,user_id:state.user.email,name:state.user.fullName});localStorage.setItem(demoAdminCommissionKey(),JSON.stringify(list));state.superAdminCommissions=list;}
+       await logAuditEvent('finance.admin_commission',{entityType:'super_admin_commission',entityId:`${m.year}-${String(m.month).padStart(2,'0')}`,squadId:null,description:`Bonificação financeira de líder atualizada em ${m.monthName} ${m.year} • Squad ${squadCode}.`,beforeData:previous||{},afterData:{...payload,final:amount+sales_commission+manual_bonus-discount+redistribution},metadata:{period:m.id,squadCode}});
+       renderSuperAdminCommission(m);toast('Bonificação do líder salva.');
+@@ -7999,7 +8033,7 @@
+   }
+   async function ensureSuperAdminCommissions(force=false){
+     if(!state.supabase||!isSuperAdmin())return;if(state.superAdminCommissionsLoaded&&!force)return;if(state.superAdminCommissionsLoading)return state.superAdminCommissionsLoading;
+-    state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,squad_code,amount,sales_commission,manual_bonus,discount,redistribution,vacation,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin')]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Administrador']));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Administrador',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;}catch(err){console.warn('Comissoes de Administrador indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
++    state.superAdminCommissionsLoading=(async()=>{try{const [{data:comms,error:ce},{data:admins,error:ae}]=await Promise.all([state.supabase.from('super_admin_commissions').select('id,user_id,year,month,squad_code,amount,sales_commission,imported_sales_commission,manual_bonus,discount,redistribution,vacation,notes').order('year',{ascending:false}).order('month',{ascending:false}),state.supabase.from('profiles').select('user_id,full_name,email').eq('role','super_admin')]);if(ce)throw ce;if(ae)throw ae;const names=new Map((admins||[]).map(a=>[a.user_id,a.full_name||a.email||'Administrador']));state.superAdminCommissions=(comms||[]).map(c=>({...c,name:names.get(c.user_id)||'Administrador',amount:safe(c.amount)}));state.superAdminCommissionsLoaded=true;}catch(err){console.warn('Comissoes de Administrador indisponiveis.',err);}finally{state.superAdminCommissionsLoading=null;}})();return state.superAdminCommissionsLoading;
+   }
+   function viewNeedsFullMonth(name,section){return['individual','team','indicators','feedbacks'].includes(name)||(name==='admin'&&['operation','finance','costs'].includes(section))}
+   async function ensureViewData(name=state.currentView,section=state.adminSection,{strict=false,forceMonths=false}={}){
+--- a/js/strategy-merchandise-import.js
++++ b/js/strategy-merchandise-import.js
+@@ -8,13 +8,13 @@
+   function clean(v){return String(v??'').normalize('NFKC').trim();}
+   function normalize(v){return clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+   function quantity(value){const t=clean(value);if(!t)return '';if(!/^\d{1,8}([.,]\d{1,4})?$/.test(t))return null;const n=Number(t.replace(',','.'));if(!Number.isFinite(n)||n<=0||n>99999999)return null;return String(n);}
+-  function build({parsed,mapping,people=[],profiles=[],aliases=[],products=[],organizationId}={}){
++  function build({parsed,mapping,people=[],profiles=[],aliases=[],leaderCommissions=[],products=[],organizationId}={}){
+     const csv=typeof require==='function'?require('./strategy-csv-importer'):globalThis.SoftenStrategyCsvImporter;
+     const seller=typeof require==='function'?require('./strategy-seller-reconciliation'):globalThis.SoftenStrategySellerReconciliation;
+     const catalog=typeof require==='function'?require('./strategy-product-catalog'):globalThis.SoftenStrategyProductCatalog;
+     if(!organizationId)throw new Error('Organização não definida.');
+     const valid=csv.validateMapping(SOURCE,parsed.headers,mapping);
+-    const matched=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases});
++    const matched=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases,leaderCommissions});
+     const peopleByName=new Map(matched.groups.map(g=>[JSON.stringify([SOURCE,g.squad,g.normalized]),g]));
+     const productByName=new Map(products.filter(p=>p.source_key===SOURCE&&p.generates_mrr===false&&p.active===true)
+       .map(p=>[p.normalized_name||catalog.normalize(p.name),p]));
+@@ -31,7 +31,7 @@
+       const day=recurring.date(get(row,'date')),amountCents=recurring.cents(get(row,'amount'));
+       const qty=quantity(get(row,'quantity'));
+       let status='ready';
+-      if(!match||match.status!=='matched')status='pendingSeller';
++      if(!match||match.status!=='matched'||(match.role==='super_admin'&&!match.periods.includes((day||'').slice(0,7))))status='pendingSeller';
+       else if(!product)status='pendingProduct';
+       else if(!day)status='pendingDate';
+       else if(amountCents===null)status='pendingAmount';
+--- a/js/strategy-recurring-import.js
++++ b/js/strategy-recurring-import.js
+@@ -25,13 +25,13 @@
+     if(!Number.isFinite(n)||n<=0||n>99999999.99)return null;
+     return Math.round(n*100);
+   }
+-  function build({parsed,mapping,people=[],profiles=[],aliases=[],products=[],organizationId}={}){
++  function build({parsed,mapping,people=[],profiles=[],aliases=[],leaderCommissions=[],products=[],organizationId}={}){
+     const csv=typeof require==='function'?require('./strategy-csv-importer'):globalThis.SoftenStrategyCsvImporter;
+     const seller=typeof require==='function'?require('./strategy-seller-reconciliation'):globalThis.SoftenStrategySellerReconciliation;
+     const catalog=typeof require==='function'?require('./strategy-product-catalog'):globalThis.SoftenStrategyProductCatalog;
+     if(!organizationId)throw new Error('Organização não definida.');
+     const valid=csv.validateMapping(SOURCE,parsed.headers,mapping);
+-    const sellerReview=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases});
++    const sellerReview=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases,leaderCommissions});
+     const bySeller=new Map(sellerReview.groups.map(g=>[JSON.stringify([SOURCE,g.squad,g.normalized]),g]));
+     const byProduct=new Map(products.filter(p=>p.source_key===SOURCE&&p.generates_mrr===true&&p.active===true).map(p=>[p.normalized_name||catalog.normalize(p.name),p]));
+     const idx=k=>valid[k]?parsed.headers.indexOf(valid[k]):-1;
+@@ -47,7 +47,7 @@
+       const day=date(get(row,'date')),amountCents=cents(get(row,'amount')),activeMonthlyCents=cents(get(row,'activeMonthly'));
+       const customer=get(row,'customer'),taxId=get(row,'taxId'),contractDate=get(row,'contractDate');
+       let status='ready';
+-      if(!resolved||resolved.status!=='matched')status='pendingSeller';
++      if(!resolved||resolved.status!=='matched'||(resolved.role==='super_admin'&&!resolved.periods.includes((day||'').slice(0,7))))status='pendingSeller';
+       else if(!product)status='pendingProduct';
+       else if(!day)status='pendingDate';
+       else if(amountCents===null||activeMonthlyCents===null)status='pendingAmount';
+--- a/js/strategy-seller-reconciliation.js
++++ b/js/strategy-seller-reconciliation.js
+@@ -7,21 +7,23 @@
+   function normalizeName(value){return String(value??'').normalize('NFKC').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+   function squadCode(value){const s=String(value??'').trim().toUpperCase();return /^[A-E]$/.test(s)?s:null;}
+   function roleFor(squad){return squad==='C'?'pre_attendance':'technician';}
+-  function identityList(people,profiles){
++  function identityList(people,profiles,leaderCommissions=[]){
+     const pmap=new Map((profiles||[]).filter(p=>p?.user_id&&p.active===true).map(p=>[String(p.user_id),p]));
+-    return (people||[]).filter(p=>p?.id&&p.user_id&&p.active!==false).map(p=>{
+-      const profile=pmap.get(String(p.user_id)),squad=squadCode(p.default_squad_code);
+-      if(!profile||!squad||String(profile.organization_id)!==String(p.organization_id)||profile.role!==roleFor(squad))return null;
+-      if(squad==='C'&&p.functional_team!=='pre_attendance')return null;
+-      if(squad!=='C'&&p.functional_team==='pre_attendance')return null;
+-      return Object.freeze({personId:String(p.id),userId:String(p.user_id),name:String(p.name||profile.full_name||''),profileName:String(profile.full_name||''),squad,role:profile.role,organizationId:String(p.organization_id)});
+-    }).filter(Boolean);
++    return (people||[]).filter(p=>p?.id&&p.user_id&&p.active!==false).flatMap(p=>{
++      const profile=pmap.get(String(p.user_id));if(!profile||String(profile.organization_id)!==String(p.organization_id))return [];
++      const roles=profile.role==='super_admin'
++        ? [...new Set(leaderCommissions.filter(c=>String(c.user_id)===String(p.user_id)&&['A','B','D','E'].includes(c.squad_code)).map(c=>c.squad_code))]
++        : [squadCode(p.default_squad_code)].filter(Boolean);
++      return roles.filter(squad=>profile.role==='super_admin'?(p.functional_team!=='pre_attendance'):
++        (profile.role===roleFor(squad)&& (squad==='C'?p.functional_team==='pre_attendance':p.functional_team!=='pre_attendance')))
++        .map(squad=>Object.freeze({personId:String(p.id),userId:String(p.user_id),name:String(p.name||profile.full_name||''),profileName:String(profile.full_name||''),squad,role:profile.role,organizationId:String(p.organization_id),periods:profile.role==='super_admin'?leaderCommissions.filter(c=>String(c.user_id)===String(p.user_id)&&c.squad_code===squad).map(c=>`${c.year}-${String(c.month).padStart(2,'0')}`):[]}));
++    });
+   }
+-  function reconcile({sourceKey,parsed,mapping,people=[],profiles=[],aliases=[]}={}){
++  function reconcile({sourceKey,parsed,mapping,people=[],profiles=[],aliases=[],leaderCommissions=[]}={}){
+     if(!SOURCES.includes(sourceKey))throw new Error('Origem comercial inválida.');
+     const csv=typeof require==='function'?require('./strategy-csv-importer'):globalThis.SoftenStrategyCsvImporter;
+     if(!csv)throw new Error('Motor CSV indisponível.');
+-    const clean=csv.validateMapping(sourceKey,parsed.headers,mapping),identities=identityList(people,profiles);
++    const clean=csv.validateMapping(sourceKey,parsed.headers,mapping),identities=identityList(people,profiles,leaderCommissions);
+     const si=parsed.headers.indexOf(clean.seller),gi=parsed.headers.indexOf(clean.squad);
+     const grouped=new Map(),summary={matched:0,pending:0,ambiguous:0,eligible:0,ignoredNoGroup:0,ignoredNoSeller:0,groups:0};
+     for(const row of parsed.rows){
+@@ -36,7 +38,7 @@
+       const candidates=matchingAliases.length?identities.filter(i=>matchingAliases.some(a=>String(a.person_id)===i.personId)):identities.filter(i=>i.squad===group.squad&&(normalizeName(i.name)===group.normalized||normalizeName(i.profileName)===group.normalized));
+       const matches=candidates.filter(i=>i.squad===group.squad),status=matchingAliases.length&&matches.length!==1?'pending':matches.length===1?'matched':matches.length>1?'ambiguous':'pending';
+       summary[status]+=group.count;
+-      groups.push(Object.freeze({...group,status,method:status==='matched'?(matchingAliases.length?'alias':'nome exato'):null,personId:status==='matched'?matches[0].personId:null,userId:status==='matched'?matches[0].userId:null,personName:status==='matched'?matches[0].name:null}));
++      groups.push(Object.freeze({...group,status,method:status==='matched'?(matchingAliases.length?'alias':'nome exato'):null,personId:status==='matched'?matches[0].personId:null,userId:status==='matched'?matches[0].userId:null,role:status==='matched'?matches[0].role:null,periods:status==='matched'?matches[0].periods:[],personName:status==='matched'?matches[0].name:null}));
+     }
+     summary.groups=groups.length;groups.sort((a,b)=>a.squad.localeCompare(b.squad)||a.name.localeCompare(b.name,'pt-BR'));
+     return Object.freeze({summary:Object.freeze(summary),groups:Object.freeze(groups),identities:Object.freeze(identities),sourceKey,official:false,persisted:false});
+--- a/package.json
++++ b/package.json
+@@ -11,5 +11,5 @@
+   "engines": {
+     "node": ">=20"
+   },
+-  "assetVersion": "2.63.9-r14"
++  "assetVersion": "2.63.9-r15"
+ }
+--- /dev/null
++++ b/supabase/migrations/MIGRACAO_V2.63.11_LIDERES_ESTORNO.sql
+@@ -0,0 +1,424 @@
++-- Fase 11: habilita líderes com Squad financeiro para venda e permite estorno controlado de lotes.
++-- Aplicar após todas as migrations anteriores, incluindo V2.63.10.
++-- Não mexe nos dados operacionais dos técnicos nem em snapshots.
++begin;
++
++alter table public.super_admin_commissions add column if not exists imported_sales_commission numeric(14,2) not null default 0;
++comment on column public.super_admin_commissions.imported_sales_commission is 'Somente vendas calculadas do CSV, separado do campo sales_commission manual.';
++
++-- Histórico permanente da retirada; cada venda conserva registro anterior, regra e comissão.
++create table if not exists public.strategy_commercial_batch_reversals_v26311 (
++ id uuid primary key default gen_random_uuid(),
++ organization_id uuid not null references public.organizations(id),
++ batch_id uuid not null unique references public.strategy_import_batches(id),
++ source_key text not null check(source_key in ('contracted_modules_csv','merchandise_sales_csv')),
++ reason text not null check(length(btrim(reason)) between 12 and 500),
++ sales_count integer not null,
++ gross_amount numeric(18,2) not null,
++ reversed_by uuid not null references auth.users(id),
++ reversed_at timestamptz not null default now()
++);
++create table if not exists public.strategy_commercial_reversed_sales_v26311 (
++ id uuid primary key default gen_random_uuid(),
++ organization_id uuid not null references public.organizations(id),
++ reversal_id uuid not null references public.strategy_commercial_batch_reversals_v26311(id),
++ original_sale_id uuid not null,
++ original_event_id uuid not null,
++ sale_data jsonb not null,
++ commission_data jsonb,
++ unique(reversal_id,original_sale_id)
++);
++create index if not exists strategy_reversed_sales_parent_v26311 on public.strategy_commercial_reversed_sales_v26311(reversal_id);
++alter table public.strategy_commercial_batch_reversals_v26311 enable row level security;
++alter table public.strategy_commercial_reversed_sales_v26311 enable row level security;
++revoke all on public.strategy_commercial_batch_reversals_v26311,public.strategy_commercial_reversed_sales_v26311 from public,anon,authenticated;
++grant select on public.strategy_commercial_batch_reversals_v26311,public.strategy_commercial_reversed_sales_v26311 to authenticated;
++create policy strategy_batch_reversal_read_v26311 on public.strategy_commercial_batch_reversals_v26311 for select to authenticated using
++ (organization_id=(select (public.current_profile()).organization_id) and public.has_strategy_access('people_costs') and public.has_strategy_access('edit_costs'));
++create policy strategy_reversed_sale_read_v26311 on public.strategy_commercial_reversed_sales_v26311 for select to authenticated using
++ (organization_id=(select (public.current_profile()).organization_id) and public.has_strategy_access('people_costs') and public.has_strategy_access('edit_costs'));
++
++alter table public.strategy_import_batches drop constraint if exists strategy_import_batches_status_check;
++alter table public.strategy_import_batches add constraint strategy_import_batches_status_check check (status in ('draft','validated','rejected','imported','reverted'));
++
++-- Vínculo de vendedor administrativo usa a pessoa estratégica já existente, ou a cria sem atendimento.
++create or replace function public.prepare_strategy_leader_sellers_v26311()
++returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
++declare v_org uuid;v_count int:=0;v_row record;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs') or not public.has_strategy_access('edit_costs') then
++  raise exception 'Sem acesso financeiro.' using errcode='42501';end if;
++ for v_row in select distinct p.user_id,p.full_name from public.profiles p
++  where p.organization_id=v_org and p.active=true and p.role='super_admin'
++   and exists(select 1 from public.super_admin_commissions c where c.organization_id=v_org and c.user_id=p.user_id and c.squad_code in ('A','B','D','E'))
++ loop
++  if not exists(select 1 from public.strategy_people s where s.organization_id=v_org and s.user_id=v_row.user_id and s.active=true) then
++   insert into public.strategy_people(organization_id,user_id,name,role_label,functional_team,default_squad_code,active,source,created_by,updated_by)
++   values(v_org,v_row.user_id,coalesce(nullif(btrim(v_row.full_name),''),'Líder'),'Líder','other',null,true,'manual',auth.uid(),auth.uid());
++   v_count:=v_count+1;
++  end if;
++ end loop;
++ return jsonb_build_object('created',v_count);
++end $$;
++
++-- Regras oficiais de elegibilidade executadas NO SERVIDOR, inclusive data da venda.
++create or replace function public.import_strategy_recurring_sales_v2639_r5(p_batch_id uuid,p_sales jsonb)
++returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
++declare
++ v_org uuid;v_batch public.strategy_import_batches%rowtype;v_item jsonb;v_person public.strategy_people%rowtype;
++ v_product public.strategy_commercial_products%rowtype;v_profile public.profiles%rowtype;
++ v_date date;v_contract_date text;v_day_text text;v_squad text;v_seller text;v_customer text;v_tax text;
++ v_amount_cents bigint;v_active_cents bigint;v_occurrence integer;v_value numeric(14,2);v_active_value numeric(14,2);v_id text;v_event uuid;v_comp uuid;v_comp_status text;
++ v_normal_seller text;v_normal_customer text;v_key text;v_seen text[]:=array[]::text[];
++ v_new integer:=0;v_duplicate integer:=0;v_closed integer:=0;v_resumed integer:=0;v_previous text;v_first text;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs') or not public.has_strategy_access('edit_costs')
++ then raise exception 'Permissao estrategica insuficiente.' using errcode='42501';end if;
++ if p_sales is null or jsonb_typeof(p_sales)<>'array' or jsonb_array_length(p_sales) not between 1 and 100 then raise exception 'Lote de vendas invalido (maximo 100).';end if;
++ select * into v_batch from public.strategy_import_batches where id=p_batch_id and organization_id=v_org for update;
++ if not found or v_batch.status<>'draft' then raise exception 'Lote inexistente ou finalizado.';end if;
++ if not exists(select 1 from public.strategy_import_sources s where s.id=v_batch.source_id and s.organization_id=v_org and s.source_key='contracted_modules_csv' and s.active=true) then raise exception 'Fonte do lote invalida.';end if;
++ for v_item in select value from jsonb_array_elements(p_sales) loop
++  if jsonb_typeof(v_item)<>'object' then raise exception 'Venda invalida.';end if;
++  v_day_text:=v_item->>'date';
++  if v_day_text is null or v_day_text !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}$' or to_char(to_date(v_day_text,'YYYY-MM-DD'),'YYYY-MM-DD')<>v_day_text
++  then raise exception 'Data da venda invalida.';end if;
++  v_date:=to_date(v_day_text,'YYYY-MM-DD');v_seller:=btrim(coalesce(v_item->>'seller',''));v_squad:=upper(btrim(coalesce(v_item->>'squad','')));
++  v_customer:=left(btrim(coalesce(v_item->>'customer','')),160);v_tax:=left(regexp_replace(coalesce(v_item->>'taxId',''),'[^0-9]','','g'),30);
++  v_contract_date:=coalesce(v_item->>'contractDate','');
++  if v_contract_date<>'' and (v_contract_date !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}$' or to_char(to_date(v_contract_date,'YYYY-MM-DD'),'YYYY-MM-DD')<>v_contract_date) then raise exception 'Data contratual invalida.';end if;
++  if length(v_seller) not between 2 and 160 or v_squad not in ('A','B','C','D','E') then raise exception 'Vendedor/Squad invalido.';end if;
++  if coalesce(v_item->>'amountCents','') !~ '^[0-9]{1,11}$' then raise exception 'Valor mensal invalido.';end if;
++  v_amount_cents:=(v_item->>'amountCents')::bigint;
++  if v_amount_cents not between 1 and 9999999999 then raise exception 'Valor mensal fora dos limites.';end if;
++  v_value:=v_amount_cents::numeric / 100;
++  if coalesce(v_item->>'activeMonthlyCents','') !~ '^[0-9]{1,11}$' then raise exception 'Vl Atual Ativo/MRR ausente ou invalido.';end if;
++  v_active_cents:=(v_item->>'activeMonthlyCents')::bigint;
++  if v_active_cents not between 1 and 9999999999 then raise exception 'MRR fora dos limites.';end if;
++  v_active_value:=v_active_cents::numeric / 100;
++  if coalesce(v_item->>'occurrence','') !~ '^[0-9]{1,5}$' or (v_item->>'occurrence')::integer not between 1 and 10000
++  then raise exception 'Ocorrencia da venda invalida.';end if;
++  v_occurrence:=(v_item->>'occurrence')::integer;
++  select * into v_person from public.strategy_people where id=(v_item->>'personId')::uuid and organization_id=v_org and active=true;
++  if not found or v_person.user_id is null or v_person.default_squad_code is distinct from v_squad then raise exception 'Pessoa nao conciliada no Squad da venda.';end if;
++  select * into v_profile from public.profiles where user_id=v_person.user_id and organization_id=v_org and active=true;
++  if not found or (v_squad='C' and (v_profile.role<>'pre_attendance' or v_person.functional_team<>'pre_attendance'))
++   or (v_squad<>'C' and (v_person.functional_team='pre_attendance' or not (v_profile.role='technician' or (v_profile.role='super_admin' and exists (select 1 from public.super_admin_commissions lc where lc.organization_id=v_org and lc.user_id=v_person.user_id and lc.year=extract(year from v_date)::int and lc.month=extract(month from v_date)::int and lc.squad_code=v_squad))))) then raise exception 'Conta/squad nao elegivel.';end if;
++  v_normal_seller:=public.strategy_catalog_normalize_v2633(v_seller);
++  if v_normal_seller<>public.strategy_catalog_normalize_v2633(v_person.name) and v_normal_seller<>public.strategy_catalog_normalize_v2633(coalesce(v_profile.full_name,''))
++   and not exists(select 1 from public.strategy_seller_aliases a where a.organization_id=v_org and a.source_key='contracted_modules_csv'
++    and a.squad_code=v_squad and a.person_id=v_person.id and a.alias_normalized=v_normal_seller)
++  then raise exception 'Alias do vendedor nao aprovado.';end if;
++  select * into v_product from public.strategy_commercial_products where id=(v_item->>'productId')::uuid
++   and organization_id=v_org and source_key='contracted_modules_csv' and generates_mrr=true and active=true;
++  if not found or public.strategy_catalog_normalize_v2633(coalesce(v_item->>'product',''))<>v_product.normalized_name then raise exception 'Produto recorrente nao cadastrado ou nao corresponde ao arquivo.';end if;
++  v_normal_customer:=public.strategy_catalog_normalize_v2633(v_customer);
++  v_key:=md5(concat_ws('|',v_day_text,v_normal_seller,v_squad,v_product.normalized_name,v_amount_cents::text,v_tax,v_normal_customer,v_contract_date,v_occurrence::text));
++  if v_key=any(v_seen) then raise exception 'Vendas identicas no mesmo lote: revisar antes de contabilizar.';end if;
++  v_seen:=array_append(v_seen,v_key);
++  perform pg_advisory_xact_lock(hashtextextended(v_org::text||':'||v_key,0));
++  select outcome into v_previous from public.strategy_recurring_import_attempts where batch_id=p_batch_id and sale_identity=v_key;
++  if found then v_resumed:=v_resumed+1;continue;end if;
++  if exists(select 1 from public.strategy_recurring_sales where organization_id=v_org and source_key='contracted_modules_csv' and sale_identity=v_key)
++   or exists(select 1 from public.strategy_recurring_sales old
++      where old.organization_id=v_org and old.source_key='contracted_modules_csv'
++       and old.occurred_on=v_date and old.squad_code=v_squad and old.product_id=v_product.id
++       and old.source_occurrence=v_occurrence
++       and public.strategy_catalog_normalize_v2633(old.seller_name)=v_normal_seller
++       and public.strategy_catalog_normalize_v2633(coalesce(old.customer_name,''))=v_normal_customer
++       and regexp_replace(coalesce(old.customer_tax_id,''),'[^0-9]','','g')=v_tax)
++  then v_first:='duplicate';v_duplicate:=v_duplicate+1;
++  else
++   insert into public.strategy_competences(organization_id,competence,created_by)
++    values(v_org,date_trunc('month',v_date)::date,auth.uid()) on conflict(organization_id,competence) do nothing;
++   select id,status into v_comp,v_comp_status from public.strategy_competences where organization_id=v_org and competence=date_trunc('month',v_date)::date for update;
++   if v_comp_status='closed' then v_first:='closed';v_closed:=v_closed+1;
++   else
++    v_id:='contracted_modules_csv:v2634:'||v_key;
++    insert into public.strategy_result_events(organization_id,competence_id,result_type,status,occurred_at,gross_amount,monthly_recurring_amount,annual_recurring_amount,
++      currency,source,source_reference,description,direct_revenue_category,metadata,created_by)
++    values(v_org,v_comp,'direct','confirmed',(v_date::timestamp at time zone 'UTC'),v_value,v_active_value,v_active_value*12,
++      'BRL','csv',v_id,'Contratacao de modulo: '||v_product.name,'module_addon',
++      jsonb_build_object('commercial_source','contracted_modules_csv','product_id',v_product.id,'batch_id',p_batch_id,'sale_identity',v_key,'mrr_contractual',true,'commission_posted',false,'commission_revision_at_import',v_product.commission_revision),auth.uid()) returning id into v_event;
++    insert into public.strategy_result_attributions(organization_id,event_id,person_id,user_id_snapshot,technician_name_snapshot,squad_code_snapshot,attribution_role,attribution_share,created_by)
++    values(v_org,v_event,v_person.id,v_person.user_id,v_person.name,v_squad,'owner',1,auth.uid());
++    insert into public.strategy_recurring_sales(organization_id,source_key,sale_identity,event_id,person_id,product_id,batch_id,occurred_on,competence,squad_code,
++      seller_name,customer_name,customer_tax_id,monthly_amount,annual_equivalent,source_occurrence,commission_revision_at_import,commission_rule_at_import,created_by,active_monthly_amount)
++    values(v_org,'contracted_modules_csv',v_key,v_event,v_person.id,v_product.id,p_batch_id,v_date,date_trunc('month',v_date)::date,v_squad,v_seller,v_customer,v_tax,v_value,v_active_value*12,v_occurrence,v_product.commission_revision,
++      jsonb_build_object('type',v_product.commission_type,'percentage',v_product.commission_percentage,
++       'third_party_cost',v_product.third_party_cost,'fixed_amount',v_product.fixed_amount),auth.uid(),v_active_value);
++    v_first:='imported';v_new:=v_new+1;
++   end if;
++  end if;
++  insert into public.strategy_recurring_import_attempts(organization_id,batch_id,sale_identity,outcome)
++  values(v_org,p_batch_id,v_key,v_first);
++ end loop;
++ if v_batch.accepted_rows+v_batch.rejected_rows+v_new+v_duplicate+v_closed>v_batch.total_rows then raise exception 'Excede o total preparado do lote.';end if;
++ update public.strategy_import_batches set accepted_rows=accepted_rows+v_new,
++ rejected_rows=rejected_rows+v_duplicate+v_closed
++ where id=p_batch_id and organization_id=v_org;
++ return jsonb_build_object('imported',v_new,'duplicates',v_duplicate,'closed',v_closed,'resumed',v_resumed);
++end $$;
++
++create or replace function public.import_strategy_merchandise_sales_v2635(p_batch_id uuid,p_sales jsonb)
++returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
++declare
++ v_org uuid;v_batch public.strategy_import_batches%rowtype;v_item jsonb;v_person public.strategy_people%rowtype;
++ v_product public.strategy_commercial_products%rowtype;v_profile public.profiles%rowtype;
++ v_day_text text;v_date date;v_squad text;v_seller text;v_sale_ref text;v_qty_text text;
++ v_amount_cents bigint;v_occurrence integer;v_value numeric(14,2);v_id text;v_event uuid;v_comp uuid;v_comp_status text;
++ v_normal_seller text;v_normal_ref text;v_key text;v_seen text[]:=array[]::text[];
++ v_new integer:=0;v_duplicate integer:=0;v_closed integer:=0;v_resumed integer:=0;v_previous text;v_first text;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs') or not public.has_strategy_access('edit_costs')
++ then raise exception 'Permissao estrategica insuficiente.' using errcode='42501';end if;
++ if p_sales is null or jsonb_typeof(p_sales)<>'array' or jsonb_array_length(p_sales) not between 1 and 100
++ then raise exception 'Lote invalido (maximo 100).';end if;
++ select * into v_batch from public.strategy_import_batches where id=p_batch_id and organization_id=v_org for update;
++ if not found or v_batch.status<>'draft' then raise exception 'Lote inexistente ou finalizado.';end if;
++ if not exists(select 1 from public.strategy_import_sources s where s.id=v_batch.source_id and s.organization_id=v_org
++ and s.source_key='merchandise_sales_csv' and s.origin='csv' and s.generates_mrr=false and s.active=true)
++ then raise exception 'Origem do lote invalida.';end if;
++ for v_item in select value from jsonb_array_elements(p_sales) loop
++  if jsonb_typeof(v_item)<>'object' then raise exception 'Venda invalida.';end if;
++  v_day_text:=v_item->>'date';
++  if v_day_text is null or v_day_text !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}$'
++   or to_char(to_date(v_day_text,'YYYY-MM-DD'),'YYYY-MM-DD')<>v_day_text
++  then raise exception 'Data invalida.';end if;
++  v_date:=to_date(v_day_text,'YYYY-MM-DD');
++  v_seller:=btrim(coalesce(v_item->>'seller',''));
++  v_squad:=upper(btrim(coalesce(v_item->>'squad','')));
++  v_sale_ref:=left(btrim(coalesce(v_item->>'saleId','')),101);
++  v_qty_text:=btrim(coalesce(v_item->>'quantity',''));
++  if length(v_sale_ref) not between 1 and 100 then raise exception 'ID de venda invalido.';end if;
++  if length(v_seller) not between 2 and 160 or v_squad not in ('A','B','C','D','E') then raise exception 'Vendedor/Squad invalido.';end if;
++  if v_qty_text<>'' then
++   if v_qty_text !~ '^[0-9]{1,8}(\.[0-9]{1,4})?$' or v_qty_text::numeric<=0 or v_qty_text::numeric>99999999
++   then raise exception 'Quantidade invalida.';end if;
++  end if;
++  if coalesce(v_item->>'amountCents','') !~ '^[0-9]{1,11}$' then raise exception 'Valor invalido.';end if;
++  v_amount_cents:=(v_item->>'amountCents')::bigint;
++  if v_amount_cents not between 1 and 9999999999 then raise exception 'Valor fora dos limites.';end if;
++  v_value:=v_amount_cents::numeric/100; -- vlTotalItem ja e o valor total, NAO multiplica pela quantidade
++  if coalesce(v_item->>'occurrence','') !~ '^[0-9]{1,5}$' or (v_item->>'occurrence')::integer not between 1 and 10000
++  then raise exception 'Ocorrencia invalida.';end if;
++  v_occurrence:=(v_item->>'occurrence')::integer;
++  select * into v_person from public.strategy_people where id=(v_item->>'personId')::uuid and organization_id=v_org and active=true;
++  if not found or v_person.user_id is null or v_person.default_squad_code is distinct from v_squad
++  then raise exception 'Pessoa nao conciliada no Squad informado.';end if;
++  select * into v_profile from public.profiles where user_id=v_person.user_id and organization_id=v_org and active=true;
++  if not found or (v_squad='C' and (v_profile.role<>'pre_attendance' or v_person.functional_team<>'pre_attendance'))
++   or (v_squad<>'C' and (v_person.functional_team='pre_attendance' or not (v_profile.role='technician' or (v_profile.role='super_admin' and exists (select 1 from public.super_admin_commissions lc where lc.organization_id=v_org and lc.user_id=v_person.user_id and lc.year=extract(year from v_date)::int and lc.month=extract(month from v_date)::int and lc.squad_code=v_squad)))))
++  then raise exception 'Conta/Squad nao elegivel.';end if;
++  v_normal_seller:=public.strategy_catalog_normalize_v2633(v_seller);
++  if v_normal_seller<>public.strategy_catalog_normalize_v2633(v_person.name)
++   and v_normal_seller<>public.strategy_catalog_normalize_v2633(coalesce(v_profile.full_name,''))
++   and not exists(select 1 from public.strategy_seller_aliases a where a.organization_id=v_org and a.source_key='merchandise_sales_csv'
++     and a.squad_code=v_squad and a.person_id=v_person.id and a.alias_normalized=v_normal_seller)
++  then raise exception 'Alias nao aprovado para o vendedor.';end if;
++  select * into v_product from public.strategy_commercial_products where id=(v_item->>'productId')::uuid
++   and organization_id=v_org and source_key='merchandise_sales_csv' and generates_mrr=false and active=true;
++  if not found or public.strategy_catalog_normalize_v2633(coalesce(v_item->>'product',''))<>v_product.normalized_name
++  then raise exception 'Produto avulso nao cadastrado ou nao corresponde ao CSV.';end if;
++  v_normal_ref:=public.strategy_catalog_normalize_v2633(v_sale_ref);
++  v_key:=md5(concat_ws('|',v_normal_ref,v_day_text,v_normal_seller,v_squad,v_product.normalized_name,v_amount_cents::text,v_qty_text,v_occurrence::text));
++  if v_key=any(v_seen) then raise exception 'Identidades repetidas no lote. Revise as ocorrencias.';end if;
++  v_seen:=array_append(v_seen,v_key);
++  perform pg_advisory_xact_lock(hashtextextended(v_org::text||':merchandise_sales_csv:'||v_key,0));
++  select outcome into v_previous from public.strategy_merchandise_import_attempts where batch_id=p_batch_id and sale_identity=v_key;
++  if found then v_resumed:=v_resumed+1;continue;end if;
++  if exists(select 1 from public.strategy_merchandise_sales where organization_id=v_org and source_key='merchandise_sales_csv' and sale_identity=v_key)
++  then v_first:='duplicate';v_duplicate:=v_duplicate+1;
++  else
++   insert into public.strategy_competences(organization_id,competence,created_by)
++     values(v_org,date_trunc('month',v_date)::date,auth.uid()) on conflict(organization_id,competence) do nothing;
++   select id,status into v_comp,v_comp_status from public.strategy_competences where organization_id=v_org
++     and competence=date_trunc('month',v_date)::date for update;
++   if v_comp_status='closed' then v_first:='closed';v_closed:=v_closed+1;
++   else
++    v_id:='merchandise_sales_csv:v2635:'||v_key;
++    insert into public.strategy_result_events(organization_id,competence_id,result_type,status,occurred_at,gross_amount,monthly_recurring_amount,annual_recurring_amount,
++       currency,source,source_reference,description,direct_revenue_category,metadata,created_by)
++    values(v_org,v_comp,'direct','confirmed',(v_date::timestamp at time zone 'UTC'),v_value,0,0,
++      'BRL','csv',v_id,'Venda avulsa: '||v_product.name,'direct_sale',
++      jsonb_build_object('commercial_source','merchandise_sales_csv','source_sale_id',v_sale_ref,'product_id',v_product.id,'batch_id',p_batch_id,'sale_identity',v_key,
++       'quantity',nullif(v_qty_text,'')::numeric,'mrr_contractual',false,'commission_posted',false,'commission_revision_at_import',v_product.commission_revision),auth.uid())
++       returning id into v_event;
++    insert into public.strategy_result_attributions(organization_id,event_id,person_id,user_id_snapshot,technician_name_snapshot,squad_code_snapshot,attribution_role,attribution_share,created_by)
++    values(v_org,v_event,v_person.id,v_person.user_id,v_person.name,v_squad,'owner',1,auth.uid());
++    insert into public.strategy_merchandise_sales(organization_id,source_key,sale_identity,event_id,person_id,product_id,batch_id,occurred_on,competence,squad_code,
++      source_sale_id,seller_name,item_quantity,gross_amount,source_occurrence,commission_revision_at_import,commission_rule_at_import,created_by)
++    values(v_org,'merchandise_sales_csv',v_key,v_event,v_person.id,v_product.id,p_batch_id,v_date,date_trunc('month',v_date)::date,v_squad,
++      v_sale_ref,v_seller,nullif(v_qty_text,'')::numeric,v_value,v_occurrence,v_product.commission_revision,
++      jsonb_build_object('type',v_product.commission_type,'percentage',v_product.commission_percentage,
++        'third_party_cost',v_product.third_party_cost,'fixed_amount',v_product.fixed_amount),auth.uid());
++    v_first:='imported';v_new:=v_new+1;
++   end if;
++  end if;
++  insert into public.strategy_merchandise_import_attempts(organization_id,batch_id,sale_identity,outcome)
++  values(v_org,p_batch_id,v_key,v_first);
++ end loop;
++ if v_batch.accepted_rows+v_batch.rejected_rows+v_new+v_duplicate+v_closed>v_batch.total_rows
++ then raise exception 'Excede total preparado do lote.';end if;
++ update public.strategy_import_batches set accepted_rows=accepted_rows+v_new,rejected_rows=rejected_rows+v_duplicate+v_closed
++  where id=p_batch_id and organization_id=v_org;
++ return jsonb_build_object('imported',v_new,'duplicates',v_duplicate,'closed',v_closed,'resumed',v_resumed);
++end $$;
++
++create or replace function public.upsert_strategy_seller_alias_v2632(
++ p_source_key text,p_squad_code text,p_alias_name text,p_alias_normalized text,p_person_id uuid
++) returns uuid language plpgsql security definer set search_path=public,pg_temp as $$
++declare v_org uuid;v_person public.strategy_people%rowtype;v_role text;v_active boolean;v_id uuid;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs')
++    or not public.has_strategy_access('edit_costs') then raise exception 'Acesso negado a conciliacao comercial.';end if;
++ if p_source_key not in ('contracted_modules_csv','merchandise_sales_csv') or p_source_key is null
++    or p_squad_code not in ('A','B','C','D','E') or p_squad_code is null
++    or length(btrim(coalesce(p_alias_name,''))) not between 2 and 160
++    or coalesce(p_alias_normalized,'') !~ '^[a-z0-9]{2,160}$' then
++    raise exception 'Dados de alias invalidos.';end if;
++ select * into v_person from public.strategy_people where id=p_person_id and organization_id=v_org and active=true;
++ if not found or v_person.user_id is null then raise exception 'Pessoa sem conta ativa na organizacao.';end if;
++ select role,active into v_role,v_active from public.profiles
++  where user_id=v_person.user_id and organization_id=v_org;
++ if coalesce(v_active,false) is not true then raise exception 'Conta de usuario inativa.';end if;
++ if (v_role<>'super_admin' and coalesce(v_person.default_squad_code,'')<>p_squad_code)
++    or (p_squad_code='C' and (v_role<>'pre_attendance' or v_person.functional_team<>'pre_attendance'))
++    or (p_squad_code<>'C' and (v_person.functional_team='pre_attendance' or not (v_role='technician' or (v_role='super_admin' and exists (select 1 from public.super_admin_commissions lc where lc.organization_id=v_org and lc.user_id=v_person.user_id and lc.squad_code=p_squad_code))))) then
++    raise exception 'Pessoa e grupo incompatíveis.';end if;
++ insert into public.strategy_seller_aliases(organization_id,source_key,squad_code,alias_name,alias_normalized,person_id,created_by,updated_by)
++ values(v_org,p_source_key,p_squad_code,btrim(p_alias_name),p_alias_normalized,p_person_id,auth.uid(),auth.uid())
++ on conflict (organization_id,source_key,squad_code,alias_normalized)
++ do update set alias_name=excluded.alias_name,person_id=excluded.person_id,updated_by=auth.uid(),updated_at=now()
++ returning id into v_id;
++ return v_id;
++end $$;
++
++-- Sincronizar somente a parcela automática separada; nunca sobrescrever a parcela manual.
++create or replace function public.sync_strategy_leader_sales_v26311(p_competence date)
++returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
++declare v_org uuid;v_count int:=0;v_row record;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs') or not public.has_strategy_access('edit_costs') then raise exception 'Sem acesso.' using errcode='42501';end if;
++ if p_competence is null or extract(day from p_competence)<>1 then raise exception 'Competência inválida.';end if;
++ if exists(select 1 from public.squad_months sm join public.squads sq on sq.id=sm.squad_id where sq.organization_id=v_org and sm.year=extract(year from p_competence)::int and sm.month=extract(month from p_competence)::int and sm.is_closed=true) then raise exception 'Mês operacional fechado.';end if;
++ if exists(select 1 from public.strategy_competences where organization_id=v_org and competence=p_competence and status='closed') or
++ exists(select 1 from public.strategy_financial_closure_v2638 fc join public.strategy_competences c on c.id=fc.competence_id where fc.organization_id=v_org and c.competence=p_competence) then raise exception 'Competência consolidada.';end if;
++ for v_row in select a.user_id,a.squad_code,
++ sum(coalesce(sc.commission_amount,0)) as amount,
++ count(*) filter(where sc.status<>'calculated') as pending
++ from public.strategy_sales_commissions sc join public.strategy_people a on a.id=sc.person_id and a.organization_id=v_org
++ join public.profiles pr on pr.user_id=a.user_id and pr.organization_id=v_org and pr.active=true and pr.role='super_admin'
++ where sc.organization_id=v_org and sc.competence=p_competence
++ group by a.user_id,a.squad_code loop
++  if v_row.pending>0 then raise exception 'Comissões de líder pendentes: corrija antes de sincronizar.';end if;
++  if not exists(select 1 from public.super_admin_commissions x where x.organization_id=v_org and x.user_id=v_row.user_id and x.year=extract(year from p_competence)::int and x.month=extract(month from p_competence)::int and x.squad_code=v_row.squad_code) then
++   raise exception 'Líder sem configuração financeira na competência.';end if;
++ end loop;
++ update public.super_admin_commissions c set imported_sales_commission=coalesce((
++  select sum(sc.commission_amount) from public.strategy_sales_commissions sc
++  join public.strategy_people p on p.id=sc.person_id and p.organization_id=v_org
++  where sc.organization_id=v_org and sc.competence=p_competence and p.user_id=c.user_id and sc.squad_code=c.squad_code and sc.status='calculated'),0),updated_at=now(),updated_by=auth.uid()
++ where c.organization_id=v_org and c.year=extract(year from p_competence)::int and c.month=extract(month from p_competence)::int
++  and c.squad_code in ('A','B','D','E') and exists(select 1 from public.profiles p where p.organization_id=v_org and p.user_id=c.user_id and p.role='super_admin' and p.active=true);
++ get diagnostics v_count=row_count;
++ return jsonb_build_object('leaders',v_count,'competence',p_competence);
++end $$;
++
++-- Prévia sempre em tempo real: não depende de números enviados pelo navegador.
++create or replace function public.preview_strategy_commercial_batch_reversal_v26311(p_batch_id uuid)
++returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
++declare v_org uuid;v_source text;v_batch public.strategy_import_batches%rowtype;v_count int;v_sum numeric;v_locked boolean;v_comm int;v_synced boolean;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs') or not public.has_strategy_access('edit_costs') then raise exception 'Sem acesso financeiro.' using errcode='42501';end if;
++ select * into v_batch from public.strategy_import_batches where id=p_batch_id and organization_id=v_org;
++ if not found then raise exception 'Lote não localizado.';end if;
++ select source_key into v_source from public.strategy_import_sources where id=v_batch.source_id and organization_id=v_org;
++ if v_source is null or v_source not in ('contracted_modules_csv','merchandise_sales_csv') then raise exception 'Origem não comercial.';end if;
++ if v_source='contracted_modules_csv' then
++  select count(*),coalesce(sum(monthly_amount),0) into v_count,v_sum from public.strategy_recurring_sales where organization_id=v_org and batch_id=p_batch_id;
++ else
++  select count(*),coalesce(sum(gross_amount),0) into v_count,v_sum from public.strategy_merchandise_sales where organization_id=v_org and batch_id=p_batch_id;
++ end if;
++ select exists(select 1 from (
++   select competence,squad_code,person_id from public.strategy_recurring_sales where organization_id=v_org and batch_id=p_batch_id
++   union all select competence,squad_code,person_id from public.strategy_merchandise_sales where organization_id=v_org and batch_id=p_batch_id
++  ) x join public.strategy_competences c on c.organization_id=v_org and c.competence=x.competence
++  where c.status='closed' or exists(select 1 from public.strategy_competence_snapshots s where s.competence_id=c.id)
++   or exists(select 1 from public.strategy_financial_closure_v2638 f where f.competence_id=c.id)
++   or exists(select 1 from public.squad_months sm join public.squads sq on sq.id=sm.squad_id where sq.organization_id=v_org and sq.code::text=x.squad_code and sm.year=extract(year from x.competence)::int and sm.month=extract(month from x.competence)::int and sm.is_closed=true)
++ ) into v_locked;
++ select count(*) into v_comm from public.strategy_sales_commissions sc where sc.organization_id=v_org and
++ ((sc.source_key='contracted_modules_csv' and sc.sale_id in(select id from public.strategy_recurring_sales where organization_id=v_org and batch_id=p_batch_id)) or
++  (sc.source_key='merchandise_sales_csv' and sc.sale_id in(select id from public.strategy_merchandise_sales where organization_id=v_org and batch_id=p_batch_id)));
++ -- Se houver lançamento técnico já sincronizado, não se presume um estorno automático seguro.
++ select exists(select 1 from public.strategy_sales_commissions sc
++  join public.strategy_people p on p.id=sc.person_id and p.organization_id=v_org
++  join public.profiles pr on pr.user_id=p.user_id and pr.organization_id=v_org and pr.role='technician'
++  join public.technician_monthly tm on tm.user_id=p.user_id
++  join public.squad_months sm on sm.id=tm.squad_month_id and sm.year=extract(year from sc.competence)::int and sm.month=extract(month from sc.competence)::int
++  join public.squads sq on sq.id=sm.squad_id and sq.organization_id=v_org and sq.code::text=sc.squad_code
++  join public.technician_finance_monthly tf on tf.technician_month_id=tm.id
++  where sc.organization_id=v_org and tf.sales_commission<>0 and
++   ((sc.source_key='contracted_modules_csv' and sc.sale_id in(select id from public.strategy_recurring_sales where batch_id=p_batch_id and organization_id=v_org)) or
++    (sc.source_key='merchandise_sales_csv' and sc.sale_id in(select id from public.strategy_merchandise_sales where batch_id=p_batch_id and organization_id=v_org)))
++ ) into v_synced;
++ return jsonb_build_object('batchId',p_batch_id,'source',v_source,'status',v_batch.status,'sales',v_count,'amount',v_sum,'commissions',v_comm,
++  'blocked',v_locked or v_synced or v_count>5000 or v_batch.status not in ('imported','draft'),
++  'reason',case when v_locked then 'Competência fechada ou snapshot existente' when v_synced then 'Comissão técnica já lançada: conciliar folha antes do estorno' when v_count>5000 then 'Lote acima de 5.000 vendas' when v_batch.status not in ('imported','draft') then 'Lote não elegível' else null end);
++end $$;
++
++create or replace function public.reverse_strategy_commercial_batch_v26311(p_batch_id uuid,p_expected_sales integer,p_reason text)
++returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
++declare v_org uuid;v_preview jsonb;v_reversal uuid;v_source text;v_event uuid;v_sale record;v_count int:=0;
++begin
++ v_org:=(select (public.current_profile()).organization_id);
++ if auth.uid() is null or v_org is null or not public.has_strategy_access('people_costs') or not public.has_strategy_access('edit_costs') then raise exception 'Sem acesso.' using errcode='42501';end if;
++ if length(btrim(coalesce(p_reason,''))) not between 12 and 500 then raise exception 'Informe justificativa com 12 a 500 caracteres.';end if;
++ perform 1 from public.strategy_import_batches where id=p_batch_id and organization_id=v_org for update;
++ v_preview:=public.preview_strategy_commercial_batch_reversal_v26311(p_batch_id);
++ if (v_preview->>'blocked')::boolean then raise exception 'Estorno bloqueado: %',coalesce(v_preview->>'reason','Verifique as pendências.');end if;
++ if (v_preview->>'sales')::int<>p_expected_sales then raise exception 'Quantidade de vendas alterada; confira novamente.';end if;
++ v_source:=v_preview->>'source';
++ insert into public.strategy_commercial_batch_reversals_v26311(organization_id,batch_id,source_key,reason,sales_count,gross_amount,reversed_by)
++ values(v_org,p_batch_id,v_source,btrim(p_reason),p_expected_sales,(v_preview->>'amount')::numeric,auth.uid()) returning id into v_reversal;
++ for v_sale in
++  select to_jsonb(s) sale_row,s.id,s.event_id,s.competence,s.squad_code,s.person_id from public.strategy_recurring_sales s where s.organization_id=v_org and s.batch_id=p_batch_id and v_source='contracted_modules_csv'
++  union all
++  select to_jsonb(s),s.id,s.event_id,s.competence,s.squad_code,s.person_id from public.strategy_merchandise_sales s where s.organization_id=v_org and s.batch_id=p_batch_id and v_source='merchandise_sales_csv'
++ loop
++  insert into public.strategy_commercial_reversed_sales_v26311(organization_id,reversal_id,original_sale_id,original_event_id,sale_data,commission_data)
++  values(v_org,v_reversal,v_sale.id,v_sale.event_id,v_sale.sale_row,(select to_jsonb(c) from public.strategy_sales_commissions c where c.organization_id=v_org and c.source_key=v_source and c.sale_id=v_sale.id));
++  delete from public.strategy_sales_commissions where organization_id=v_org and source_key=v_source and sale_id=v_sale.id;
++  if v_source='contracted_modules_csv' then delete from public.strategy_recurring_sales where organization_id=v_org and id=v_sale.id;
++  else delete from public.strategy_merchandise_sales where organization_id=v_org and id=v_sale.id;end if;
++  delete from public.strategy_result_attributions where organization_id=v_org and event_id=v_sale.event_id;
++  delete from public.strategy_result_events where organization_id=v_org and id=v_sale.event_id;
++  v_count:=v_count+1;
++ end loop;
++ update public.strategy_import_batches set status='reverted',notes=left(coalesce(notes,'')||' | Estornado: '||btrim(p_reason),2000) where id=p_batch_id and organization_id=v_org;
++ -- A parcela automática dos líderes ainda abertos passa a refletir as comissões restantes.
++ update public.super_admin_commissions c set imported_sales_commission=coalesce((select sum(sc.commission_amount)
++  from public.strategy_sales_commissions sc join public.strategy_people p on p.id=sc.person_id and p.organization_id=v_org
++  where sc.organization_id=v_org and p.user_id=c.user_id and sc.competence=make_date(c.year,c.month,1)
++    and sc.squad_code=c.squad_code and sc.status='calculated'),0),updated_by=auth.uid(),updated_at=now()
++ where c.organization_id=v_org and c.squad_code in ('A','B','D','E') and exists(select 1 from public.profiles p where p.organization_id=v_org and p.user_id=c.user_id and p.role='super_admin');
++ return jsonb_build_object('reversalId',v_reversal,'removedSales',v_count,'amount',v_preview->>'amount');
++end $$;
++
++revoke all on function public.prepare_strategy_leader_sellers_v26311() from public,anon;
++revoke all on function public.sync_strategy_leader_sales_v26311(date) from public,anon;
++revoke all on function public.preview_strategy_commercial_batch_reversal_v26311(uuid) from public,anon;
++revoke all on function public.reverse_strategy_commercial_batch_v26311(uuid,integer,text) from public,anon;
++grant execute on function public.prepare_strategy_leader_sellers_v26311() to authenticated;
++grant execute on function public.sync_strategy_leader_sales_v26311(date) to authenticated;
++grant execute on function public.preview_strategy_commercial_batch_reversal_v26311(uuid) to authenticated;
++grant execute on function public.reverse_strategy_commercial_batch_v26311(uuid,integer,text) to authenticated;
++notify pgrst,'reload schema';
++commit;
+--- a/tests/business-calendar-ui.test.js
++++ b/tests/business-calendar-ui.test.js
+@@ -11,7 +11,7 @@
+ test('V2.48.7 publica o calendário operacional na área de bonificação',()=>{
+   assert.ok(index.includes('id="configBusinessCalendarCard"'));
+   for(const id of ['businessCalendarYearSelect','businessCalendarRows','businessCalendarDateInput','businessCalendarAddBtn','businessCalendarSaveBtn']) assert.ok(index.includes(`id="${id}"`));
+-  assert.ok(index.includes('js/business-calendar.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/business-calendar.js?v=2.63.9-r15'));
+   assert.ok(existsSync(join(root,'js','business-calendar.js')));
+ });
+ 
+--- a/tests/cache-buster-v2630-r3.test.js
++++ b/tests/cache-buster-v2630-r3.test.js
+@@ -9,7 +9,7 @@
+ 
+ test('todos os scripts e estilos do HTML usam a mesma revisao de assets declarada no package.json',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   const refs=[...html.matchAll(/(?:src|href)=["']([^"']+\?v=([^"']+))["']/g)]
+     .map(m=>({ref:m[1],version:m[2]}))
+     .filter(x=>!x.ref.startsWith('js/audit-utils.js'));
+@@ -21,6 +21,6 @@
+ 
+ test('o cache-buster da versao e uniforme sem misturar revisoes',()=>{
+   assert.doesNotMatch(html,/\?v=2\.63\.0-r[123](?=["'])/);
+-  assert.match(html,/js\/app\.js\?v=2\.63\.9-r14/);
++  assert.match(html,/js\/app\.js\?v=2\.63\.9-r15/);
+   assert.match(html,/id="newUserRole"[^>]*>[\s\S]*?value="pre_attendance"/);
+ });
+--- a/tests/daily-active-days-v2532.test.js
++++ b/tests/daily-active-days-v2532.test.js
+@@ -18,7 +18,7 @@
+ 
+ test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
+   assert.ok(index.includes('V2.60.7'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+ });
+--- a/tests/daily-range-v2531.test.js
++++ b/tests/daily-range-v2531.test.js
+@@ -43,8 +43,8 @@
+ 
+ test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
+   assert.ok(index.includes('V2.60.7'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/design-system.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
++  assert.ok(index.includes('js/design-system.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+ });
+--- a/tests/filter-system-v2491.test.js
++++ b/tests/filter-system-v2491.test.js
+@@ -18,8 +18,8 @@
+ 
+ test('V2.49.1 identifica a versão correta',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+ });
+ 
+ test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
+@@ -81,5 +81,5 @@
+ test('R3 mantém menus customizados acima do Período de análise',()=>{
+   assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
+   assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+ });
+--- a/tests/finance-report-v2501.test.js
++++ b/tests/finance-report-v2501.test.js
+@@ -12,8 +12,8 @@
+ 
+ test('V2.53.0 carrega o configurador de relatório antes do app',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.63.9-r14');
+-  const appPos=index.indexOf('js/app.js?v=2.63.9-r14');
++  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.63.9-r15');
++  const appPos=index.indexOf('js/app.js?v=2.63.9-r15');
+   assert.ok(enginePos>=0 && appPos>enginePos);
+   assert.match(app,/window\.SoftenFinanceReportEngine/);
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+--- a/tests/indicator-official-status-hotfix-v2614-r1.test.js
++++ b/tests/indicator-official-status-hotfix-v2614-r1.test.js
+@@ -30,7 +30,7 @@
+ });
+ 
+ test('V2.61.4 R1 força recarga do app sem consumir V2.61.5',()=>{
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+ });
+--- a/tests/indicator-squad-filter-v2562.test.js
++++ b/tests/indicator-squad-filter-v2562.test.js
+@@ -46,7 +46,7 @@
+ 
+ test('cache-bust acompanha a versao atual',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+--- a/tests/indicator-squad-filter-v2563.test.js
++++ b/tests/indicator-squad-filter-v2563.test.js
+@@ -37,7 +37,7 @@
+ });
+ test('V2.57.7 publica cache-bust completo sem migration',()=>{
+   for(const asset of ['css/styles.css','css/design-system.css','css/presentation.css','js/performance-engine.js','js/filter-system.js','js/app.js']){
+-    assert.ok(index.includes(`${asset}?v=2.63.9-r14`),asset);
++    assert.ok(index.includes(`${asset}?v=2.63.9-r15`),asset);
+   }
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+--- a/tests/indicator-squad-filter-v2565.test.js
++++ b/tests/indicator-squad-filter-v2565.test.js
+@@ -43,7 +43,7 @@
+ 
+ test('V2.57.7 inclui teste legado do GitHub e cache-bust coerente',()=>{
+   assert.ok(fs.existsSync(path.join(root,'tests','indicator-squad-filter-v2563.test.js')));
+-  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.63.9-r14`),asset);
++  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.63.9-r15`),asset);
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+--- a/tests/indicator-subtab-visibility-v2566.test.js
++++ b/tests/indicator-subtab-visibility-v2566.test.js
+@@ -24,7 +24,7 @@
+ 
+ test('V2.57.7 publica cache-bust coerente sem migration',()=>{
+   for(const asset of ['css/styles.css','js/app.js','js/design-system.js','js/filter-system.js']){
+-    assert.ok(index.includes(`${asset}?v=2.63.9-r14`),asset);
++    assert.ok(index.includes(`${asset}?v=2.63.9-r15`),asset);
+   }
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+--- a/tests/indicators-export-v2520.test.js
++++ b/tests/indicators-export-v2520.test.js
+@@ -51,8 +51,8 @@
+ });
+ 
+ test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
+-  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.63.9-r14');
+-  const appIndex = index.indexOf('js/app.js?v=2.63.9-r14');
++  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.63.9-r15');
++  const appIndex = index.indexOf('js/app.js?v=2.63.9-r15');
+   assert.ok(chartExportIndex >= 0 && appIndex > chartExportIndex, 'chart-export precisa carregar antes do app');
+   const svg = exporter.buildExportSvg({
+     title: 'Avaliação por Squad',
+--- a/tests/individual-comparison-v2500.test.js
++++ b/tests/individual-comparison-v2500.test.js
+@@ -10,8 +10,8 @@
+ 
+ test('V2.50 identifica a versão e carrega o motor comparativo antes do app',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  const comparePos=index.indexOf('js/comparison-engine.js?v=2.63.9-r14');
+-  const appPos=index.indexOf('js/app.js?v=2.63.9-r14');
++  const comparePos=index.indexOf('js/comparison-engine.js?v=2.63.9-r15');
++  const appPos=index.indexOf('js/app.js?v=2.63.9-r15');
+   assert.ok(comparePos>=0 && appPos>comparePos);
+   assert.match(app,/window\.SoftenComparisonEngine/);
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+--- a/tests/org-daily-squad-average-v2567.test.js
++++ b/tests/org-daily-squad-average-v2567.test.js
+@@ -31,7 +31,7 @@
+ 
+ test('V2.57.7 publica cache-bust coerente sem migration',()=>{
+   for(const asset of ['css/styles.css','js/app.js','js/chart-engine.js']){
+-    assert.ok(index.includes(`${asset}?v=2.63.9-r14`),asset);
++    assert.ok(index.includes(`${asset}?v=2.63.9-r15`),asset);
+   }
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+--- a/tests/period-context-v2540.test.js
++++ b/tests/period-context-v2540.test.js
+@@ -42,7 +42,7 @@
+ });
+ 
+ test('V2.57.7 atualiza os assets principais sem migration nova',()=>{
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/workspace-engine.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
++  assert.ok(index.includes('js/workspace-engine.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+ });
+--- a/tests/period-picker-layout-v2541.test.js
++++ b/tests/period-picker-layout-v2541.test.js
+@@ -16,7 +16,7 @@
+ });
+ 
+ test('V2.57.7 atualiza cache-bust principal sem migration nova', () => {
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+   assert.ok(index.includes('V2.60.7'));
+ });
+--- /dev/null
++++ b/tests/phase11-leaders-reversal-r15.test.js
+@@ -0,0 +1,43 @@
++'use strict';
++const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
++const seller=require('../js/strategy-seller-reconciliation');
++const csv=require('../js/strategy-csv-importer');
++const recurring=require('../js/strategy-recurring-import');
++const merchandise=require('../js/strategy-merchandise-import');
++const read=p=>fs.readFileSync(p,'utf8');
++const org='org1';
++const people=[{id:'leader1',user_id:'heitor',name:'Heitor',active:true,functional_team:'other',default_squad_code:null,organization_id:org}];
++const profiles=[{user_id:'heitor',full_name:'Heitor',active:true,role:'super_admin',organization_id:org}];
++const months=[{user_id:'heitor',year:2026,month:10,squad_code:'A'}];
++const products=[{id:'prod',name:'Modulo',normalized_name:'modulo',source_key:'contracted_modules_csv',generates_mrr:true,active:true}];
++test('líder sem Squad operacional não é vendedor sem vinculação financeira',()=>{
++ assert.deepEqual(seller.identityList(people,profiles,[]),[]);
++ assert.deepEqual(seller.identityList(people,profiles,months).map(x=>x.squad),['A']);
++});
++test('líder conciliado recebe vendas somente na competência financeira',()=>{
++ const parsed=csv.parse('Data Lançam.,UsuarioVenda,grupoAtendimento,Produto,Vl Anterior,Vl Atual Ativo\n28/10/2026,Heitor,A,Modulo,50,20\n28/11/2026,Heitor,A,Modulo,50,20');
++ const r=recurring.build({parsed,mapping:csv.suggest('contracted_modules_csv',parsed.headers),people,profiles,leaderCommissions:months,products,organizationId:org});
++ assert.equal(r.summary.ready,1);assert.equal(r.summary.pendingSeller,1);assert.equal(r.ready[0].personId,'leader1');
++});
++test('mercadorias também respeitam mês financeiro do líder',()=>{
++ const parsed=csv.parse('id,Data,Vendedor,grupo,Produto,vlTotalItem\n1,28/10/2026,Heitor,A,Modulo,25\n2,28/11/2026,Heitor,A,Modulo,30');
++ const r=merchandise.build({parsed,mapping:csv.suggest('merchandise_sales_csv',parsed.headers),people,profiles,leaderCommissions:months,products:[{...products[0],source_key:'merchandise_sales_csv',generates_mrr:false}],organizationId:org});
++ assert.equal(r.summary.ready,1);assert.equal(r.summary.pendingSeller,1);
++});
++test('SQL autoriza líder por Squad/competência e preserva comissão manual',()=>{
++ const sql=read('supabase/migrations/MIGRACAO_V2.63.11_LIDERES_ESTORNO.sql');
++ for(const token of ['import_strategy_recurring_sales_v2639_r5','import_strategy_merchandise_sales_v2635','upsert_strategy_seller_alias_v2632','v_profile.role=\'super_admin\'','lc.year=extract(year from v_date)','imported_sales_commission','sales_commission','sync_strategy_leader_sales_v26311'])assert.ok(sql.includes(token),token);
++});
++test('estorno é transacional, auditado, por lote e bloqueia meses fechados',()=>{
++ const sql=read('supabase/migrations/MIGRACAO_V2.63.11_LIDERES_ESTORNO.sql');
++ for(const token of ['strategy_commercial_batch_reversals_v26311','strategy_commercial_reversed_sales_v26311','preview_strategy_commercial_batch_reversal_v26311','reverse_strategy_commercial_batch_v26311','p_expected_sales','p_reason','status=\'closed\'','strategy_competence_snapshots','strategy_financial_closure_v2638','strategy_sales_commissions','strategy_result_attributions','strategy_result_events','status=\'reverted\''])assert.ok(sql.includes(token),token);
++ assert.match(sql,/revoke all on function public\.reverse_strategy_commercial_batch_v26311/);
++ assert.doesNotMatch(sql,/grant (delete|update) on public\.strategy_recurring_sales to authenticated/i);
++});
++test('tela usa prévia antes do estorno e não remove vendas diretamente',()=>{
++ const html=read('index.html'),app=read('js/app.js');
++ for(const id of ['strategyLeaderSellerPrepare','strategyLeaderSalesSync','strategyCommercialReversePreview','strategyCommercialReverseReason','strategyCommercialReverseConfirm'])assert.ok(html.includes('id="'+id+'"'),id);
++ assert.match(app,/preview_strategy_commercial_batch_reversal_v26311/);
++ assert.match(app,/reverse_strategy_commercial_batch_v26311/);
++ assert.doesNotMatch(app,/\.from\('strategy_recurring_sales'\)\.delete\(/);
++});
+--- a/tests/phase4-integrated-homologation-r8.test.js
++++ b/tests/phase4-integrated-homologation-r8.test.js
+@@ -55,6 +55,6 @@
+ });
+ 
+ test('Fase 4: interface publica cache-buster novo e conferência de MRR',()=>{
+-  assert.match(html,/js\/app\.js\?v=2\.63\.9-r14/);
++  assert.match(html,/js\/app\.js\?v=2\.63\.9-r15/);
+   assert.match(app,/missingMonthly/);
+ });
+--- a/tests/phase5-finance-export-r9.test.js
++++ b/tests/phase5-finance-export-r9.test.js
+@@ -44,5 +44,5 @@
+   assert.equal(report.computedValue({'Observação':'Férias e ajuste'},report.columnById('notes')),'Férias e ajuste');
+   assert.match(app,/financeReportProjectedRows\(rows,columns\)/);
+   assert.match(app,/financeReportDisplayValue\(row,column\)/);
+-  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r14/);
++  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r15/);
+ });
+--- a/tests/phase6-leader-financial-summary-r10.test.js
++++ b/tests/phase6-leader-financial-summary-r10.test.js
+@@ -36,5 +36,5 @@
+   assert.match(app,/'Bonificação líderes \(fora das métricas\)':leadership\.total/);
+   assert.match(app,/Líderes financeiros \$\{leadership\.count\}: \$\{fmtMoney\(leadership\.total\)\}/);
+   assert.match(app,/function financeReportRows\(m\)\{return \[\.\.\.individualMetricTechnicians\(m\)\.map/);
+-  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r14/);
++  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r15/);
+ });
+--- a/tests/portfolio-benchmark-v2523.test.js
++++ b/tests/portfolio-benchmark-v2523.test.js
+@@ -44,7 +44,7 @@
+ });
+ 
+ test('V2.52.3 atualiza cache e permanece frontend-only', () => {
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
+ });
+--- a/tests/pre-attendance-create-modal-v2630-r2.test.js
++++ b/tests/pre-attendance-create-modal-v2630-r2.test.js
+@@ -60,9 +60,9 @@
+ });
+ 
+ test('HTML requisita novo app cache-bust sem alterar identidade da versao 2.63.0',()=>{
+- assert.match(html,/src="js\/app\.js\?v=2\.63\.9-r14"/);
++ assert.match(html,/src="js\/app\.js\?v=2\.63\.9-r15"/);
+  assert.match(html,/id="newUserRole"[^>]*>.*value="pre_attendance"/);
+  const pkg=JSON.parse(read('package.json'));
+  assert.equal(pkg.version,'2.63.9');
+- assert.equal(pkg.assetVersion,'2.63.9-r14');
++ assert.equal(pkg.assetVersion,'2.63.9-r15');
+ });
+--- a/tests/predictive-scope-v2560.test.js
++++ b/tests/predictive-scope-v2560.test.js
+@@ -34,8 +34,8 @@
+ 
+ test('V2.57.7 é frontend-only e preserva o motor financeiro e as demais abas',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.ok(index.includes('js/predictive-engine.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/predictive-engine.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+   assert.match(app,/function periodGoalForTechnician\(/);
+   assert.match(app,/function periodTeamGoal\(/);
+--- a/tests/presentation-refresh-v2491.test.js
++++ b/tests/presentation-refresh-v2491.test.js
+@@ -54,6 +54,6 @@
+   assert.match(refresh,/backupMeta=clone\(state\.presentationDataMeta\|\|null\)/);
+   assert.match(refresh,/state\.orgTechnicianDailyOverview=backup/);
+   assert.match(refresh,/state\.presentationDataMeta=backupMeta/);
+-  assert.ok(index.includes('js/presentation.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/presentation.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+ });
+--- a/tests/quality-full-v2530.test.js
++++ b/tests/quality-full-v2530.test.js
+@@ -49,8 +49,8 @@
+ });
+ 
+ test('V2.53.0 atualiza cache de assets e scripts',()=>{
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/import-engine.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
++  assert.ok(index.includes('js/import-engine.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+   assert.ok(index.includes('V2.60.7'));
+ });
+--- a/tests/resolution-fcr-required-fte-v2595.test.js
++++ b/tests/resolution-fcr-required-fte-v2595.test.js
+@@ -12,14 +12,14 @@
+ 
+ test('V2.59.5 publica FCR automatico e FTE necessario',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_FTE_NECESSARIO_FCR_V2.59.5.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.5.sql')));
+   assert.match(index,/strategyCapacityRequiredFteDetail/);
+   assert.match(index,/indicatorFcrTechRows/);
+   assert.match(index,/portfolioFcrTotal/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+ });
+ 
+ test('Resolve reconhece Sim, Nao, vazio e valor invalido',()=>{
+--- a/tests/strategy-automation-foundation-v2630.test.js
++++ b/tests/strategy-automation-foundation-v2630.test.js
+@@ -151,7 +151,7 @@
+ test('Versao consistente',()=>{
+  assert.equal(JSON.parse(r('package.json')).version,'2.63.9');
+  assert.match(app,/const APP_VERSION = '2\.63\.9'/);
+- assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.9-r14/);
++ assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.9-r15/);
+  assert.ok(r('supabase/migrations/README.md').includes('V2.63.0'));
+ });
+ 
+--- a/tests/strategy-automation-layout-v2639-r2.test.js
++++ b/tests/strategy-automation-layout-v2639-r2.test.js
+@@ -25,7 +25,7 @@
+ 
+ test('Hotfix R2 atualiza todos os assets e nao exige nova migration',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   const refs=[...html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g)];
+   assert.ok(refs.length>=40);
+   for(const m of refs)if(m[1]!=='js/audit-utils.js')assert.equal(m[2],pkg.assetVersion,m[1]);
+--- a/tests/strategy-capacity-available-v2591.test.js
++++ b/tests/strategy-capacity-available-v2591.test.js
+@@ -13,14 +13,14 @@
+ 
+ test('V2.59.1 publica capacidade disponivel com migration propria',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.59\.1/);
+   assert.match(index,/strategyCapacitySquadRows/);
+   assert.match(index,/strategyCapacityTechnicianRows/);
+   assert.match(index,/Disponib\. %/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+ });
+ 
+ test('FTE disponivel respeita FTE nominal e disponibilidade explicita',()=>{
+--- a/tests/strategy-capacity-diagnostics-v2597.test.js
++++ b/tests/strategy-capacity-diagnostics-v2597.test.js
+@@ -14,7 +14,7 @@
+ 
+ test('V2.59.7 publica diagnostico de capacidade sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_DIAGNOSTICOS_V2.59.7.md')));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.7.sql')),false);
+@@ -22,7 +22,7 @@
+   assert.match(index,/strategyCapacityDiagnosticSituation/);
+   assert.match(index,/strategyCapacityDiagnosticSquadRows/);
+   assert.equal((index.match(/id=\"strategyCapacityDiagnosticSituation\"/g)||[]).length,1);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+   assert.match(app,/renderStrategyCapacityDiagnostics/);
+ });
+ 
+--- a/tests/strategy-capacity-foundation-v2590.test.js
++++ b/tests/strategy-capacity-foundation-v2590.test.js
+@@ -13,7 +13,7 @@
+ 
+  test('V2.59.2 publica fundacao de capacidade isolada',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(strategy.VALID_SECTIONS.includes('capacity'));
+   assert.equal(strategy.SECTION_META.capacity.label,'Capacidade');
+@@ -21,8 +21,8 @@
+   assert.match(index,/data-strategy-panel="capacity"/);
+   assert.match(index,/strategyCapacityNominalFte/);
+   assert.match(index,/strategyCapacityReadinessRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
+-  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.63.9-r14')<index.indexOf('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
++  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.63.9-r15')<index.indexOf('js/app.js?v=2.63.9-r15'));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.0.sql')),false);
+ });
+ 
+--- a/tests/strategy-capacity-gap-v2596.test.js
++++ b/tests/strategy-capacity-gap-v2596.test.js
+@@ -10,14 +10,14 @@
+ 
+ test('V2.59.6 publica gap de capacidade sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_GAP_V2.59.6.md')));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.6.sql')),false);
+   assert.match(index,/INDICADOR V2\.59\.6/);
+   assert.match(index,/strategyCapacityGapFte/);
+   assert.match(index,/strategyCapacityGapSquadRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+   assert.match(app,/renderStrategyCapacityGap/);
+ });
+ 
+--- a/tests/strategy-capacity-hardening-v2599.test.js
++++ b/tests/strategy-capacity-hardening-v2599.test.js
+@@ -18,13 +18,13 @@
+ 
+ test('V2.59.9 fecha a Fase 4 com hardening versionado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.60\.7/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+ });
+ 
+ test('historico escolhe maior revisao independentemente da ordem',()=>{
+--- a/tests/strategy-capacity-history-v2598.test.js
++++ b/tests/strategy-capacity-history-v2598.test.js
+@@ -17,12 +17,12 @@
+ 
+ test('V2.59.8 publica snapshots e evolucao de capacidade',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(migrationPath));
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_SNAPSHOTS_HISTORICO_V2.59.8.md')));
+   for(const id of ['strategyCapacitySnapshotCount','strategyCapacitySnapshotOfficial','strategyCapacitySnapshotBackfill','strategyCapacitySnapshotLatestStatus','strategyCapacityEvolutionFteChart','strategyCapacityEvolutionUtilizationChart','strategyCapacityHistoryRows']) assert.ok(index.includes(`id="${id}"`),id);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+   assert.match(app,/get_strategy_capacity_snapshot_history/);
+   assert.match(app,/renderStrategyCapacityHistory/);
+ });
+--- a/tests/strategy-capacity-productivity-v2594.test.js
++++ b/tests/strategy-capacity-productivity-v2594.test.js
+@@ -8,7 +8,7 @@
+ const index=readFileSync(join(root,'index.html'),'utf8');
+ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ function row(name,squadCode,fte,availabilityFactor,attendance,resolutions){return {name,squadCode,nominalFte:fte,availabilityFactor,attendance,resolutions,attendanceSourceAvailable:true,resolutionSourceAvailable:true};}
+-test('V2.59.6 publica produtividade por FTE sem migration nova',()=>{assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r14');assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');assert.match(index,/INDICADOR V2\.59\.4/);assert.match(index,/strategyCapacityResolutionsPerAvailableFte/);assert.match(index,/strategyCapacityProductivitySquadRows/);assert.match(index,/strategyCapacityProductivityTechnicianRows/);assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.4.sql')),false);});
++test('V2.59.6 publica produtividade por FTE sem migration nova',()=>{assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r15');assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');assert.match(index,/INDICADOR V2\.59\.4/);assert.match(index,/strategyCapacityResolutionsPerAvailableFte/);assert.match(index,/strategyCapacityProductivitySquadRows/);assert.match(index,/strategyCapacityProductivityTechnicianRows/);assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.4.sql')),false);});
+ test('produtividade usa FTE disponivel e nao headcount ou FTE nominal',()=>{const result=capacity.buildFteProductivity([row('A','A',1,1,200,160),row('B','A',1,0.5,100,80)]);assert.equal(result.summary.availableFte,1.5);assert.equal(result.summary.resolutions,240);assert.equal(result.summary.resolutionsPerAvailableFte,160);assert.equal(result.summary.attendancePerAvailableFte,200);assert.equal(result.summary.resolutionRate,0.8);});
+ test('indice relativo mantem operacao como 100 e compara Squads proporcionalmente',()=>{const result=capacity.buildFteProductivity([row('A1','A',1,1,200,200),row('B1','B',1,1,200,100)]);assert.equal(result.summary.resolutionsPerAvailableFte,150);assert.equal(result.summary.operationIndex,100);const a=result.squads.find(x=>x.squadCode==='A'),b=result.squads.find(x=>x.squadCode==='B');assert.ok(Math.abs(a.operationIndex-133.3333333333)<1e-6);assert.ok(Math.abs(b.operationIndex-66.6666666667)<1e-6);});
+ test('tecnico recebe indice contra Squad e operacao usando a mesma metrica',()=>{const result=capacity.buildFteProductivity([row('A1','A',1,1,200,180),row('A2','A',1,1,200,120),row('B1','B',1,1,200,150)]);const tech=result.rows.find(x=>x.name==='A1');assert.equal(tech.resolutionsPerAvailableFte,180);assert.equal(tech.squadIndex,120);assert.equal(tech.operationIndex,120);});
+--- a/tests/strategy-capacity-used-v2592.test.js
++++ b/tests/strategy-capacity-used-v2592.test.js
+@@ -13,7 +13,7 @@
+ 
+ test('V2.59.2 publica capacidade utilizada sem antecipar taxa de utilizacao',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.59\.2/);
+@@ -21,7 +21,7 @@
+   assert.match(index,/strategyCapacityUsedPerFte/);
+   assert.match(index,/strategyCapacityUsedSquadRows/);
+   assert.match(index,/strategyCapacityUsedTechnicianRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+ });
+ 
+ test('capacidade utilizada mede volume e intensidade por FTE disponivel',()=>{
+--- a/tests/strategy-capacity-utilization-v2593.test.js
++++ b/tests/strategy-capacity-utilization-v2593.test.js
+@@ -17,14 +17,14 @@
+ 
+ test('V2.59.6 publica utilizacao com regra e migration proprias',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.59\.3/);
+   assert.match(index,/strategyCapacityUtilizationRate/);
+   assert.match(index,/strategyCapacityReferencePerFte/);
+   assert.match(index,/strategyCapacityUtilizationSquadRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r15'));
+ });
+ 
+ test('referencia historica usa exatamente os meses anteriores da janela e mediana',()=>{
+--- a/tests/strategy-commissions-v2636.test.js
++++ b/tests/strategy-commissions-v2636.test.js
+@@ -17,4 +17,4 @@
+ test('sumario nao inclui pendencias em valores pagos',()=>{const s=e.summarize([{person_id:'p1',competence:'2026-10-01',squad_code:'C',status:'calculated',commission_amount:10},{person_id:'p1',competence:'2026-10-01',squad_code:'C',status:'pending_rule',commission_amount:null}]);assert.equal(s.length,1);assert.equal(s[0].commission,10);assert.equal(s[0].pending,1);});
+ test('migration usa regra congelada e identidade unica da venda',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.6.sql');for(const x of ['commission_rule_at_import','unique(organization_id,source_key,sale_id)','on conflict(organization_id,source_key,sale_id) do nothing','strategy_recurring_sales','strategy_merchandise_sales','status=\'closed\''])assert.ok(sql.includes(x),x);});
+ test('sincronizacao nao cria tecnico ficticio, e nao sobrescreve comissao manual',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.6.sql');for(const x of ["pr.role='technician'","v_old-v_row.amount","sm.is_closed","v_tm is null","noOperationalMonth"])assert.ok(sql.includes(x),x);});
+-test('o frontend expõe apurar, consultar e sincronizar',()=>{const html=read('index.html'),app=read('js/app.js');for(const id of ['strategyCommissionCalculate','strategyCommissionRefresh','strategyCommissionSync','strategyCommissionMonth'])assert.ok(html.includes('id="'+id+'"'));assert.ok(html.includes('js/strategy-commissions.js?v=2.63.9-r14'));for(const f of ['calculate_strategy_sales_commissions_v2636','strategy_commissions_summary_v2636','sync_strategy_sales_bonus_v2636'])assert.ok(app.includes(f));});
++test('o frontend expõe apurar, consultar e sincronizar',()=>{const html=read('index.html'),app=read('js/app.js');for(const id of ['strategyCommissionCalculate','strategyCommissionRefresh','strategyCommissionSync','strategyCommissionMonth'])assert.ok(html.includes('id="'+id+'"'));assert.ok(html.includes('js/strategy-commissions.js?v=2.63.9-r15'));for(const f of ['calculate_strategy_sales_commissions_v2636','strategy_commissions_summary_v2636','sync_strategy_sales_bonus_v2636'])assert.ok(app.includes(f));});
+--- a/tests/strategy-cost-per-attendance-v2581.test.js
++++ b/tests/strategy-cost-per-attendance-v2581.test.js
+@@ -11,7 +11,7 @@
+ 
+ test('V2.58.1 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.match(index,/INDICADOR V2\.58\.1/);
+   assert.match(index,/strategyCostPerAttendanceValue/);
+--- a/tests/strategy-cost-per-resolution-v2582.test.js
++++ b/tests/strategy-cost-per-resolution-v2582.test.js
+@@ -14,7 +14,7 @@
+ 
+ test('V2.58.2 permanece preservada com custo por resolução e migration própria',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.58\.2[\s\S]*Custo por resolução/);
+--- a/tests/strategy-costs-hotfix-v2639-r4.test.js
++++ b/tests/strategy-costs-hotfix-v2639-r4.test.js
+@@ -15,4 +15,4 @@
+ test('R4 importa em lote com auditoria, token e rateio de provisoes sem dobrar',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.9_R4.sql');assert.match(sql,/request_token uuid not null/);assert.match(sql,/unique\(organization_id,request_token\)/);assert.match(sql,/v_new_other:=round\(v_old_other-v_prev_extra\+v_extra,2\)/);assert.match(sql,/strategy_person_cost_import_lines_v2639_r4/);assert.match(sql,/v_seen:=array_append\(v_seen,v_person_id\)/);assert.match(sql,/p_competence date,p_rows jsonb/);});
+ test('R4 escolha da Bonificacao oficial registra vinculo financeiro',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.9_R4.sql');assert.match(sql,/strategy_bonus_reconciliation_preview_v2638/);assert.match(sql,/strategy_bonus_cost_links_v2638/);assert.match(sql,/strategy_bonus_sync_audit_v2638/);assert.match(sql,/strategy_set_official_bonus_v2639_r4/);});
+ test('R4 nao incorpora migration desconsiderar produtos da R3 descartada',()=>{assert.equal(fs.existsSync(path.join(root,'supabase/migrations/MIGRACAO_V2.63.9_R3.sql')),false)});
+-test('R4 cache bust uniforme e modulo do importador publicado',()=>{const index=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r14');assert.match(index,/js\/strategy-person-cost-import\.js\?v=2\.63\.9-r14/);const assets=[...index.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]+)"/g)];assert.ok(assets.length>40);assert.ok(assets.every(m=>m[1]===pkg.assetVersion||m[0].includes('js/audit-utils.js?v=2.29.9')))});
++test('R4 cache bust uniforme e modulo do importador publicado',()=>{const index=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r15');assert.match(index,/js\/strategy-person-cost-import\.js\?v=2\.63\.9-r15/);const assets=[...index.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]+)"/g)];assert.ok(assets.length>40);assert.ok(assets.every(m=>m[1]===pkg.assetVersion||m[0].includes('js/audit-utils.js?v=2.29.9')))});
+--- a/tests/strategy-csv-importer-v2631.test.js
++++ b/tests/strategy-csv-importer-v2631.test.js
+@@ -25,7 +25,7 @@
+ test('mapeamento salvo é validado novamente quando as colunas mudam',()=>{const x=engine.parse(recurring),m=engine.suggest('contracted_modules_csv',x.headers);assert.throws(()=>engine.validateMapping('contracted_modules_csv',['Produto'],m),/indisponível/);});
+ test('SQL cria apenas modelos comerciais com isolamento por organização e escrita restrita',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.1.sql');for(const v of ['strategy_import_mappings','enable row level security','strategy_import_mappings_read_v2631','strategy_import_mappings_insert_v2631','strategy_import_mappings_update_v2631','has_strategy_access(\'people_costs\')','has_strategy_access(\'edit_costs\')','created_by=(select auth.uid())'])assert.ok(sql.includes(v),v);assert.doesNotMatch(sql,/grant\s+(?:all|delete).*?strategy_import_mappings\s+to\s+authenticated/i);});
+ test('UI de importacao somente le dados, gera previa, identifica produto, salva mapeamento',()=>{const html=read('index.html'),js=read('js/app.js');for(const id of ['strategyCsvFile','strategyCsvSource','strategyCsvFields','strategyCsvPreview','strategyCsvProducts','strategyCsvTemplate','strategyCsvSave','strategyCsvApplyTemplate'])assert.ok(html.includes(`id="${id}"`),id);assert.match(js,/createTemplatePayload/);assert.match(js,/engine\.parse\(text\)/);assert.match(js,/identifyProducts\(/);assert.match(js,/renderStrategyCsvImporter/);assert.doesNotMatch(js.slice(js.indexOf('function renderStrategyCsvImporter()'),js.indexOf('async function initStrategyAutomationSources')),/strategy_result_events|strategy_employee_costs|\.from\('strategy_import_batches'\)/);});
+-test('todos scripts JS/CSS usam o cache-buster 2.63.9-r14',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r14');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r14/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r14");});
++test('todos scripts JS/CSS usam o cache-buster 2.63.9-r15',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r15');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r15/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r15");});
+ 
+ test('V2.63.11: opcionais iniciam desligadas mesmo quando coluna existe',()=>{
+  for(const [key,raw] of [['contracted_modules_csv',recurring],['merchandise_sales_csv',merch]]){
+--- a/tests/strategy-direct-revenue-v2601.test.js
++++ b/tests/strategy-direct-revenue-v2601.test.js
+@@ -12,7 +12,7 @@
+ 
+ test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.ok(result.DIRECT_CATEGORY_IDS.includes('upsell'));
+   assert.equal(result.DIRECT_REVENUE_CATEGORIES.find(x=>x.id==='upsell').label,'Up-sell');
+@@ -22,7 +22,7 @@
+   assert.match(index,/strategyDirectRevenueTotal/);
+   assert.match(index,/strategyDirectRevenueCategory/);
+   assert.match(index,/strategyAddDirectRevenueBtn/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor soma somente valor confirmado e mantém MRR/ARR separados',()=>{
+--- a/tests/strategy-economic-productivity-squad-v2584.test.js
++++ b/tests/strategy-economic-productivity-squad-v2584.test.js
+@@ -11,7 +11,7 @@
+ 
+ test('V2.58.4 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/INDICADOR V2\.58\.4/);
+--- a/tests/strategy-economic-productivity-v2583.test.js
++++ b/tests/strategy-economic-productivity-v2583.test.js
+@@ -11,7 +11,7 @@
+ 
+ test('V2.58.3 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/Produtividade econômica por técnico/);
+--- a/tests/strategy-efficiency-benchmarks-v2585.test.js
++++ b/tests/strategy-efficiency-benchmarks-v2585.test.js
+@@ -11,7 +11,7 @@
+ 
+ test('V2.58.5 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/INDICADOR V2\.58\.5/);
+--- a/tests/strategy-efficiency-diagnostics-v2586.test.js
++++ b/tests/strategy-efficiency-diagnostics-v2586.test.js
+@@ -11,7 +11,7 @@
+ 
+ test('V2.58.6 publica insights e diagnostico explicavel sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/INDICADOR V2\.58\.6/);
+--- a/tests/strategy-efficiency-hardening-v2589.test.js
++++ b/tests/strategy-efficiency-hardening-v2589.test.js
+@@ -14,13 +14,13 @@
+ 
+ test('V2.58.9 fecha a Fase 3 com hardening versionado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.60\.7/);
+-  assert.ok(index.includes('js/strategy-efficiency.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-efficiency.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+ });
+ 
+ test('null permanece sem base e nao vira zero nos calculos relativos',()=>{
+--- a/tests/strategy-efficiency-history-v2588.test.js
++++ b/tests/strategy-efficiency-history-v2588.test.js
+@@ -14,7 +14,7 @@
+ 
+ test('V2.58.8 publica snapshots, historico e evolucao com migration propria',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(efficiency.SNAPSHOT_VERSION,'ES-1.0.0');
+   assert.equal(existsSync(migrationPath),true);
+--- a/tests/strategy-efficiency-v2580.test.js
++++ b/tests/strategy-efficiency-v2580.test.js
+@@ -18,8 +18,8 @@
+   assert.match(index,/strategyEfficiencyBaseCost/);
+   assert.match(index,/strategyEfficiencyReadinessRows/);
+   assert.match(index,/js\/strategy-efficiency\.js\?v=2\.63\.9/);
+-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r14')<index.indexOf('js/strategy.js?v=2.63.9-r14'));
+-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r14')<index.indexOf('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r15')<index.indexOf('js/strategy.js?v=2.63.9-r15'));
++  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r15')<index.indexOf('js/app.js?v=2.63.9-r15'));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
+ });
+ 
+--- a/tests/strategy-financial-close-v2638.test.js
++++ b/tests/strategy-financial-close-v2638.test.js
+@@ -11,6 +11,6 @@
+ test('V2.63.8: fonte da Bonificacao exige mes operacional fechado e comparacao com snapshot',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');for(const x of ['operational_month_open','official_snapshot_mismatch','v_snapshot_final is distinct from v_src','public.technician_finance_monthly','v_op.closed_snapshot','commission_pending','approval_outdated'])assert.ok(s.includes(x),x)});
+ test('V2.63.8: sincronizacao nao reconta comissao, nem modifica salarios ou benefícios',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');assert.ok(s.includes('set variable_pay='));assert.ok(!s.includes('set salary='));assert.ok(!s.includes('set benefits='));assert.ok(!s.includes('update public.technician_finance_monthly'));assert.ok(s.includes('manual_conflict'));assert.ok(s.includes('fte_not_one'));assert.ok(s.includes('on conflict(organization_id,competence_id,person_id) do update'))});
+ test('V2.63.8: fecha apenas se sem pendencias e preserva snapshot financeiro original',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');assert.ok(s.includes("if (v_preview->>'issues')::int>0"));assert.ok(s.includes('close_strategy_competence_core_v2638'));assert.ok(s.includes('strategy_financial_closure_v2638'));assert.ok(s.includes('finance_snapshot_id'));assert.ok(!s.includes('update public.strategy_competence_snapshots'))});
+-test('V2.63.8: interface conecta prévia, aprovação, sincronização e fechamento',()=>{const h=r('index.html'),a=r('js/app.js');for(const x of ['strategyFinanceCloseSection','strategyFinanceCloseRows','strategyFinanceCloseChurn','strategyFinanceCloseSync','strategyFinanceCloseMonth'])assert.ok(h.includes('id="'+x+'"'),x);for(const x of ['strategy_bonus_reconciliation_preview_v2638','strategy_approve_pre_bonus_v2638','strategy_sync_official_bonus_v2638','strategyFinanceCloseAction','data-strategy-preapprove'])assert.ok(a.includes(x),x);assert.ok(h.includes('js/strategy-financial-close.js?v=2.63.9-r14'))});
++test('V2.63.8: interface conecta prévia, aprovação, sincronização e fechamento',()=>{const h=r('index.html'),a=r('js/app.js');for(const x of ['strategyFinanceCloseSection','strategyFinanceCloseRows','strategyFinanceCloseChurn','strategyFinanceCloseSync','strategyFinanceCloseMonth'])assert.ok(h.includes('id="'+x+'"'),x);for(const x of ['strategy_bonus_reconciliation_preview_v2638','strategy_approve_pre_bonus_v2638','strategy_sync_official_bonus_v2638','strategyFinanceCloseAction','data-strategy-preapprove'])assert.ok(a.includes(x),x);assert.ok(h.includes('js/strategy-financial-close.js?v=2.63.9-r15'))});
+ 
+ test('V2.63.8: aprovacoes historicas sao revisionadas, nao substituidas',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');assert.ok(s.includes('coalesce(v_old.revision,0)+1'));assert.ok(s.includes('order by revision desc limit 1'));assert.ok(!s.includes('update public.strategy_pre_bonus_approvals_v2638'))});
+--- a/tests/strategy-foundation-v2570.test.js
++++ b/tests/strategy-foundation-v2570.test.js
+@@ -27,7 +27,7 @@
+   assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.63\.9/);
+   assert.match(index, /js\/strategy-insights\.js\?v=2\.63\.9/);
+   assert.match(index, /js\/strategy\.js\?v=2\.63\.9/);
+-  assert.ok(index.indexOf('js/strategy.js?v=2.63.9-r14') < index.indexOf('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.indexOf('js/strategy.js?v=2.63.9-r15') < index.indexOf('js/app.js?v=2.63.9-r15'));
+   assert.match(app, /APP_VERSION = '2\.63\.9'/);
+ });
+ 
+--- a/tests/strategy-influenced-revenue-v2602.test.js
++++ b/tests/strategy-influenced-revenue-v2602.test.js
+@@ -12,7 +12,7 @@
+ 
+ test('V2.60.2 publica Receita Influenciada separada da Receita Direta',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.ok(result.INFLUENCE_STAGE_IDS.includes('originated'));
+   assert.ok(result.INFLUENCE_STAGE_IDS.includes('qualified'));
+@@ -23,7 +23,7 @@
+   assert.match(index,/strategyInfluencedRevenueTotal/);
+   assert.match(index,/strategyInfluencedRevenueStage/);
+   assert.match(index,/strategyAddInfluencedRevenueBtn/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor separa pipeline aberto de receita influenciada convertida',()=>{
+--- a/tests/strategy-insights-cache-v2580.test.js
++++ b/tests/strategy-insights-cache-v2580.test.js
+@@ -11,7 +11,7 @@
+ 
+ test('release atual preserva o hardening de cache introduzido na R5',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.match(index,/js\/app\.js\?v=2\.63\.9/);
+   assert.match(index,/V2\.63\.9 • Fase 8 — Automação/);
+   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);
+--- a/tests/strategy-manual-entries-v2637.test.js
++++ b/tests/strategy-manual-entries-v2637.test.js
+@@ -19,7 +19,7 @@
+ test('SQL: correcao e cancelamento sao atomicos e preservam historico',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');for(const token of ['v_previous.revision+1','v_rev:=v_previous.revision+1','entry_group_id','revision','status=\'cancelled\'','set_config(\'strategy.manual_edit_v2637\''])assert.ok(s.includes(token),token);assert.ok(!s.includes('delete from public.strategy_manual_entries'));});
+ test('SQL: faz projecao unica para resultado ou custo e utiliza custo direto',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');for(const token of ['insert into public.strategy_result_events','insert into public.strategy_result_attributions','insert into public.strategy_operational_costs','insert into public.strategy_cost_allocations',"'direct_sale' then 'direct'", "'direct',1,1,v_amount"])assert.ok(s.includes(token),token);});
+ test('SQL: validacao de pessoas impede squad C de receber tecnico',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');assert.ok(s.includes("v_squad='C' and v_person_role<>'pre_attendance'"));assert.ok(s.includes("v_squad<>'C' and v_person_role<>'technician'"));});
+-test('UI: formulario, revisoes, RPCs e historico integrados',()=>{const h=read('index.html'),a=read('js/app.js');for(const id of ['strategyManualEntriesSection','strategyManualType','strategyManualMonth','strategyManualDate','strategyManualSquad','strategyManualPerson','strategyManualAmount','strategyManualMrr','strategyManualReason','strategyManualSave','strategyManualRefresh','strategyManualRows'])assert.ok(h.includes(`id="${id}"`),id);for(const code of ['save_strategy_manual_entry_v2637','cancel_strategy_manual_entry_v2637','strategy_manual_entries','data-manual-edit','data-manual-cancel','loadStrategyManualEntries'])assert.ok(a.includes(code),code);assert.ok(h.includes('js/strategy-manual-entries.js?v=2.63.9-r14'));});
++test('UI: formulario, revisoes, RPCs e historico integrados',()=>{const h=read('index.html'),a=read('js/app.js');for(const id of ['strategyManualEntriesSection','strategyManualType','strategyManualMonth','strategyManualDate','strategyManualSquad','strategyManualPerson','strategyManualAmount','strategyManualMrr','strategyManualReason','strategyManualSave','strategyManualRefresh','strategyManualRows'])assert.ok(h.includes(`id="${id}"`),id);for(const code of ['save_strategy_manual_entry_v2637','cancel_strategy_manual_entry_v2637','strategy_manual_entries','data-manual-edit','data-manual-cancel','loadStrategyManualEntries'])assert.ok(a.includes(code),code);assert.ok(h.includes('js/strategy-manual-entries.js?v=2.63.9-r15'));});
+ test('manual: sem comissao automatica e sem reprocessar CSV',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');assert.ok(!s.includes('insert into public.strategy_sales_commissions'));assert.ok(!s.includes('update public.strategy_recurring_sales'));assert.ok(!s.includes('update public.strategy_merchandise_sales'));});
+ 
+ test('SQL: token de requisicao fornece idempotencia no salvamento',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.7.sql');for(const x of ['request_token uuid','unique(organization_id,request_token)','v_request_token:=','idempotent'])assert.ok(sql.includes(x),x);});
+--- a/tests/strategy-merchandise-import-v2635.test.js
++++ b/tests/strategy-merchandise-import-v2635.test.js
+@@ -38,7 +38,7 @@
+ test('lote respeita blocos de até 100 e falha em tamanho inválido',()=>{const v=mod.chunks({ready:Array.from({length:207},(_,i)=>i)});assert.deepEqual(v.map(x=>x.length),[100,100,7]);assert.throws(()=>mod.chunks({ready:[]},101));});
+ test('UI separa módulo avulso de recorrente e exige confirmação explícita',()=>{const app=read('js/app.js'),html=read('index.html');for(const id of ['strategyMerchandiseStatus','strategyMerchandiseSummary','strategyMerchandiseReview','strategyMerchandiseConfirm','strategyMerchandiseResult'])assert.ok(html.includes(`id="${id}"`),id);
+ for(const token of ['SoftenStrategyMerchandiseImport','prepareStrategyMerchandise','window.confirm','start_strategy_merchandise_batch_v2635','import_strategy_merchandise_sales_v2635','finish_strategy_merchandise_batch_v2635','strategyInvalidateFinance'])assert.ok(app.includes(token),token);
+-assert.match(html,/strategy-merchandise-import\.js\?v=2\.63\.9-r14/);});
++assert.match(html,/strategy-merchandise-import\.js\?v=2\.63\.9-r15/);});
+ test('migration gera receita direta com MRR e ARR ZERO e sem duplicar quantidade',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.5.sql');for(const x of ["'merchandise_sales_csv'","'direct_sale'",'v_value,0,0','v_amount_cents::numeric/100','source_sale_id','item_quantity','source_occurrence','commission_posted'])assert.ok(sql.includes(x),x);assert.doesNotMatch(sql,/v_value\s*\*\s*(?:v_qty|v_item)/);});
+ test('migration valida conta ativa, Squad C, alias, produto não MRR e competência fechada',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.5.sql');for(const x of ['v_profile.role',"'pre_attendance'","'technician'",'strategy_seller_aliases','strategy_commercial_products','generates_mrr=false',"v_comp_status='closed'",'organization_id=v_org'])assert.ok(sql.includes(x),x);});
+ test('ledger e tentativas são imutáveis sob RLS, sem atualização direta',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.5.sql');for(const x of ['enable row level security','unique(organization_id,source_key,sale_identity)','unique(batch_id,sale_identity)','pg_advisory_xact_lock','strategy_merchandise_protect_result_v2635','strategy_merchandise_protect_attr_v2635',"has_strategy_access('people_costs')","has_strategy_access('edit_costs')"] )assert.ok(sql.includes(x),x);
+--- a/tests/strategy-phase8-hardening-v2639.test.js
++++ b/tests/strategy-phase8-hardening-v2639.test.js
+@@ -16,7 +16,7 @@
+  assert.equal(report.milestones,10); assert.ok(report.references>=40);
+ });
+ test('2639: auditoria detecta conflito de cache-buster', async()=>{
+- const check = await audited(); const report = check(f=>f==='index.html'?read(f).replace('js/app.js?v=2.63.9-r14','js/app.js?v=2.62.9-r1'):read(f));
++ const check = await audited(); const report = check(f=>f==='index.html'?read(f).replace('js/app.js?v=2.63.9-r15','js/app.js?v=2.62.9-r1'):read(f));
+  assert.equal(report.passed,false); assert.ok(report.errors.some(s=>s.includes('Cache-buster')));
+ });
+ test('2639: auditoria detecta retirada do preflight sem fallback', async()=>{
+@@ -125,7 +125,7 @@
+ });
+ test('2639: o pacote e a aplicacao usam a revisao 2.63.9',()=>{
+  const pkg=JSON.parse(read('package.json'));
+- assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r14');
++ assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r15');
+  assert.ok(read('index.html').includes('V2.63.9'));
+  assert.ok(read('js/app.js').includes("const APP_VERSION = '2.63.9'"));
+ });
+--- a/tests/strategy-product-catalog-v2633.test.js
++++ b/tests/strategy-product-catalog-v2633.test.js
+@@ -25,4 +25,4 @@
+ test('sem regra permanece pendente sem inventar comissão zero',()=>{assert.deepEqual(catalog.calculate({type:'unconfigured'},100),{status:'pending',amount:null});});
+ test('SQL implementa escopo multi-tenant, chave única, MRR derivado da origem e RLS',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.3.sql');for(const token of ['strategy_commercial_products','strategy_commercial_commission_revisions','unique (organization_id,source_key,normalized_name)','generates_mrr=(source_key=','enable row level security',"has_strategy_access('edit_costs')","has_strategy_access('people_costs')",'current_profile()', 'auth.uid()'])assert.ok(sql.includes(token),token);});
+ test('RPCs protegem escrita, preservam revisões e não alteram receitas',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.3.sql');for(const token of ['register_strategy_commercial_products_v2633','set_strategy_commercial_commission_v2633','on conflict (organization_id,source_key,normalized_name) do nothing','for update','commission_revision+1','insert into public.strategy_commercial_commission_revisions','revoke all on public.strategy_commercial_products','grant select on public.strategy_commercial_products'])assert.ok(sql.includes(token),token);assert.doesNotMatch(sql,/grant (insert|update|delete|all) on public\.strategy_commercial_products to authenticated/i);assert.doesNotMatch(sql,/insert into public\.strategy_result_events|update public\.strategy_finance|insert into public\.technician_finance_monthly/i);});
+-test('UI apresenta modal de seleção por origem e as quatro regras, salvando por RPC',()=>{const html=read('index.html'),app=read('js/app.js');for(const id of ['strategyCatalogSource','strategyCatalogImport','strategyCatalogRows','strategyCatalogNotice','strategyCatalogCount'])assert.ok(html.includes(`id="${id}"`),id);for(const token of ['SoftenStrategyProductCatalog','register_strategy_commercial_products_v2633','set_strategy_commercial_commission_v2633','strategyCatalogImport','data-strategy-catalog-save'])assert.ok(app.includes(token),token);assert.match(html,/strategy-product-catalog\.js\?v=2\.63\.9-r14/);});
++test('UI apresenta modal de seleção por origem e as quatro regras, salvando por RPC',()=>{const html=read('index.html'),app=read('js/app.js');for(const id of ['strategyCatalogSource','strategyCatalogImport','strategyCatalogRows','strategyCatalogNotice','strategyCatalogCount'])assert.ok(html.includes(`id="${id}"`),id);for(const token of ['SoftenStrategyProductCatalog','register_strategy_commercial_products_v2633','set_strategy_commercial_commission_v2633','strategyCatalogImport','data-strategy-catalog-save'])assert.ok(app.includes(token),token);assert.match(html,/strategy-product-catalog\.js\?v=2\.63\.9-r15/);});
+--- a/tests/strategy-product-concentration-v2617.test.js
++++ b/tests/strategy-product-concentration-v2617.test.js
+@@ -23,7 +23,7 @@
+ });
+ test('interface e motor V2.63.0 presentes com proteção de acesso',()=>{
+  const root=path.join(__dirname,'..'),index=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
+- assert.ok(index.includes('js/strategy-product-concentration.js?v=2.63.9-r14'));
++ assert.ok(index.includes('js/strategy-product-concentration.js?v=2.63.9-r15'));
+  assert.ok(index.includes('strategyConcentrationProductRows'));
+  assert.ok(app.includes('renderStrategyProductConcentration(vm,displayAggregate)'));
+  assert.ok(app.includes('if(!displayAggregate){body.innerHTML'));
+--- a/tests/strategy-product-cost-v2612.test.js
++++ b/tests/strategy-product-cost-v2612.test.js
+@@ -15,14 +15,14 @@
+ 
+ test('V2.61.2 ativa Custo por Produto e preserva roadmap posterior',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.61\.2 • CUSTO POR PRODUTO/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor calcula Cost to Serve e custos unitários sem inventar denominadores',()=>{
+--- a/tests/strategy-product-demand-v2611.test.js
++++ b/tests/strategy-product-demand-v2611.test.js
+@@ -15,7 +15,7 @@
+ 
+ test('V2.61.1 mantém Demanda por Produto ativa na Fase 6',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='product-squad-foundation').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='demand-by-product').state,'ready');
+--- a/tests/strategy-product-foundation-v2610.test.js
++++ b/tests/strategy-product-foundation-v2610.test.js
+@@ -15,7 +15,7 @@
+ 
+ test('V2.61.0 inicia a Fase 6 com Fundação Produto/Squad versionada',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG[0].version,'V2.61.0');
+   assert.equal(product.CATALOG[0].state,'ready');
+@@ -23,9 +23,9 @@
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/FASE 6 • V2\.61\.0/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r14'));
+-  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r14')<index.indexOf('js/strategy.js?v=2.63.9-r14'));
+-  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r14')<index.indexOf('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r15'));
++  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r15')<index.indexOf('js/strategy.js?v=2.63.9-r15'));
++  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r15')<index.indexOf('js/app.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor mantém os seis domínios fundacionais após ativação de Unit Economics',()=>{
+--- a/tests/strategy-product-result-v2613.test.js
++++ b/tests/strategy-product-result-v2613.test.js
+@@ -15,14 +15,14 @@
+ 
+ test('V2.61.3 mantém Resultado econômico por Produto após Unit Economics',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.61\.3 • RESULTADO ECONÔMICO POR PRODUTO/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor mantém Direta, Influenciada e Protegida separadas',()=>{
+--- a/tests/strategy-product-unit-economics-v2614.test.js
++++ b/tests/strategy-product-unit-economics-v2614.test.js
+@@ -15,14 +15,14 @@
+ 
+ test('V2.61.4 ativa Unit Economics por Produto e mantém comparativos posteriores',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='squad-comparison').state,'ready');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.61\.4 • UNIT ECONOMICS POR PRODUTO/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor cruza custo, demanda, FTE e Receita Direta no ROI por Produto',()=>{
+--- a/tests/strategy-protected-revenue-v2603.test.js
++++ b/tests/strategy-protected-revenue-v2603.test.js
+@@ -12,7 +12,7 @@
+ 
+ test('V2.60.3 publica Receita Protegida com retenção, recuperação e prevenção',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.deepEqual(result.PROTECTED_TYPE_IDS,['retention','recovery','cancellation_prevention']);
+   assert.ok(existsSync(join(root,'docs','RESULTADO_RECEITA_PROTEGIDA_V2.60.3.md')));
+@@ -20,7 +20,7 @@
+   assert.match(index,/V2\.60\.3 • RECEITA PROTEGIDA/);
+   assert.match(index,/strategyProtectedRevenueTotal/);
+   assert.match(index,/strategyAddProtectedRevenueBtn/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor separa receita em risco, protegida e perdida sem somar recorrência no total',()=>{
+--- a/tests/strategy-recurring-import-v2634.test.js
++++ b/tests/strategy-recurring-import-v2634.test.js
+@@ -24,6 +24,6 @@
+ test('linhas idênticas recebem ocorrências distintas e são vendas independentes',()=>{const data=csv.parse([headers,row('28/10/2026','Ana','C','Módulo A','120'),row('28/10/2026','Ana','C','Módulo A','120')].join('\n')+'\n');const out=build({parsed:data,mapping:csv.suggest('contracted_modules_csv',data.headers)});assert.equal(out.summary.repeatedRows,2);assert.equal(out.summary.ready,2);assert.deepEqual(out.ready.map(x=>x.occurrence),[1,2]);});
+ test('duas vendas com clientes diferentes são preservadas',()=>{const data=csv.parse([headers,row('28/10/2026','Ana','C','Módulo A','120','Cliente A','123'),row('28/10/2026','Ana','C','Módulo A','120','Cliente B','456')].join('\n')+'\n');const out=build({parsed:data,mapping:csv.suggest('contracted_modules_csv',data.headers)});assert.equal(out.summary.ready,2);});
+ test('lote é dividido em grupos de no máximo 100 registros',()=>{const prep={ready:Array.from({length:201},(_,i)=>({i}))};assert.deepEqual(recurrent.chunks(prep).map(c=>c.length),[100,100,1]);assert.throws(()=>recurrent.chunks(prep,101));});
+-test('fluxo UI exige confirmação, mostra pendências e não cria comissões',()=>{const app=get('js/app.js'),html=get('index.html');for(const id of ['strategyRecurringConfirm','strategyRecurringSummary','strategyRecurringReview','strategyRecurringStatus'])assert.ok(html.includes(`id="${id}"`),id);for(const v of ['SoftenStrategyRecurringImport','window.confirm','start_strategy_recurring_batch_v2634','import_strategy_recurring_sales_v2639_r5','finish_strategy_recurring_batch_v2634','strategyInvalidateFinance'])assert.ok(app.includes(v),v);assert.match(html,/strategy-recurring-import\.js\?v=2\.63\.9-r14/);});
++test('fluxo UI exige confirmação, mostra pendências e não cria comissões',()=>{const app=get('js/app.js'),html=get('index.html');for(const id of ['strategyRecurringConfirm','strategyRecurringSummary','strategyRecurringReview','strategyRecurringStatus'])assert.ok(html.includes(`id="${id}"`),id);for(const v of ['SoftenStrategyRecurringImport','window.confirm','start_strategy_recurring_batch_v2634','import_strategy_recurring_sales_v2639_r5','finish_strategy_recurring_batch_v2634','strategyInvalidateFinance'])assert.ok(app.includes(v),v);assert.match(html,/strategy-recurring-import\.js\?v=2\.63\.9-r15/);});
+ test('migration protege acesso por organização, permissões, conta e catálogo',()=>{const sql=get('supabase/migrations/MIGRACAO_V2.63.4.sql');for(const x of ['strategy_recurring_sales','strategy_recurring_import_attempts','enable row level security','current_profile()','people_costs','edit_costs','pre_attendance','technician','strategy_seller_aliases','contracted_modules_csv','strategy_commercial_products','pg_advisory_xact_lock'])assert.ok(sql.includes(x),x);});
+ test('idempotência, snapshots e comissão permanecem protegidos',()=>{const sql=get('supabase/migrations/MIGRACAO_V2.63.4.sql');for(const x of ['unique(organization_id,source_key,sale_identity)','strategy_result_events','strategy_result_attributions',"v_comp_status='closed'",'v_value*12','commission_posted','duplicate','strategy_recurring_protect_result_v2634','source_occurrence'])assert.ok(sql.includes(x),x);assert.doesNotMatch(sql,/insert into public\.technician_finance_monthly/i);assert.doesNotMatch(sql,/update public\.strategy_result_snapshots/i);});
+--- a/tests/strategy-result-diagnostics-v2607.test.js
++++ b/tests/strategy-result-diagnostics-v2607.test.js
+@@ -10,7 +10,7 @@
+ 
+ test('V2.60.7 publica insights de resultado sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-diagnostics')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_DIAGNOSTICOS_V2.60.7.md')));
+@@ -19,7 +19,7 @@
+   assert.match(index,/strategyResultDiagnosticPriority/);
+   assert.match(index,/strategyResultDiagnosticSquadRows/);
+   assert.match(index,/strategyResultDiagnosticTechRows/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('retorno direto forte usa cobertura e não soma outras naturezas',()=>{
+--- a/tests/strategy-result-foundation-v2600.test.js
++++ b/tests/strategy-result-foundation-v2600.test.js
+@@ -15,7 +15,7 @@
+ 
+ test('V2.60.0 publica Fundação de Resultado isolada',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.ok(strategy.VALID_SECTIONS.includes('result'));
+   assert.equal(strategy.SECTION_META.result.label,'Resultado');
+@@ -23,9 +23,9 @@
+   assert.match(index,/data-strategy-panel="result"/);
+   assert.match(index,/strategyResultEventCount/);
+   assert.match(index,/strategyResultReadinessRows/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
+-  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r14')<index.indexOf('js/strategy.js?v=2.63.9-r14'));
+-  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r14')<index.indexOf('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
++  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r15')<index.indexOf('js/strategy.js?v=2.63.9-r15'));
++  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r15')<index.indexOf('js/app.js?v=2.63.9-r15'));
+   assert.ok(existsSync(join(root,'docs','RESULTADO_FUNDACAO_V2.60.0.md')));
+ });
+ 
+--- a/tests/strategy-result-hardening-v2609.test.js
++++ b/tests/strategy-result-hardening-v2609.test.js
+@@ -27,7 +27,7 @@
+ 
+ test('V2.60.9 fecha a Fase 5 com hardening versionado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.RESULT_SNAPSHOT_VERSION,'RS-1.0.0');
+   assert.equal(result.RESULT_HARDENING_VERSION,'RH-1.0.0');
+@@ -36,7 +36,7 @@
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('historico escolhe maior revisao e desempata fechamento oficial sobre backfill',()=>{
+--- a/tests/strategy-result-history-v2608.test.js
++++ b/tests/strategy-result-history-v2608.test.js
+@@ -19,14 +19,14 @@
+ 
+ test('V2.60.8 publica snapshots e histórico de Resultado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-history')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_HISTORICO_V2.60.8.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.8.sql')));
+   assert.match(index,/V2\.60\.8 • SNAPSHOTS, HISTÓRICO E EVOLUÇÃO/);
+   assert.match(index,/strategyResultHistoryRows/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('histórico ordena competências e calcula evolução entre snapshots fechados',()=>{
+--- a/tests/strategy-result-roi-v2606.test.js
++++ b/tests/strategy-result-roi-v2606.test.js
+@@ -13,13 +13,13 @@
+ 
+ test('V2.60.6 publica ROI e retorno operacional',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-roi')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_ROI_RETORNO_V2.60.6.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.6.sql')));
+   assert.match(index,/V2\.60\.6 • ROI E RETORNO OPERACIONAL/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor calcula ROI direto, retorno líquido e cobertura sem misturar naturezas',()=>{
+--- a/tests/strategy-result-squad-v2605.test.js
++++ b/tests/strategy-result-squad-v2605.test.js
+@@ -16,13 +16,13 @@
+ 
+ test('V2.60.5 publica Resultado por Squad e atualiza motor',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-by-squad')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_SQUAD_V2.60.5.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.5.sql')));
+   assert.ok(index.includes('V2.60.5 • RESULTADO POR SQUAD'));
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor normaliza e ordena Resultado por Squad sem total composto',()=>{
+--- a/tests/strategy-result-technician-v2604.test.js
++++ b/tests/strategy-result-technician-v2604.test.js
+@@ -13,13 +13,13 @@
+ 
+ test('V2.60.4 publica Resultado por técnico e atualiza motor',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.buildFoundation({aggregate:{sourceAvailable:true}}).catalog.find(x=>x.id==='result-by-technician').status,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_TECNICO_V2.60.4.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.4.sql')));
+   assert.match(index,/V2\.60\.4 • RESULTADO POR TÉCNICO/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r15'));
+ });
+ 
+ test('motor mantém as três naturezas separadas por técnico',()=>{
+--- a/tests/strategy-scenario-hardening-v2629.test.js
++++ b/tests/strategy-scenario-hardening-v2629.test.js
+@@ -152,7 +152,7 @@
+ });
+ test('versões e cache bust estão coerentes e sem nova migração de dados oficiais',()=>{
+  const pkg=require('../package.json');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+- assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r14');
+- assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.9-r14/);
++ assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r15');
++ assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.9-r15/);
+  assert.doesNotMatch(sql,/update\s+public\.strategy_competences|delete\s+from\s+public\.strategy_employee_costs/i);
+ });
+--- a/tests/strategy-scenario-history-v2628.test.js
++++ b/tests/strategy-scenario-history-v2628.test.js
+@@ -85,7 +85,7 @@
+  const index=fs.readFileSync(path.join(root,'index.html'),'utf8');const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
+  assert.match(index,/id="scenarioHistorySaveBtn"/);assert.match(index,/id="scenarioHistoryGroup"/);
+  assert.match(index,/id="scenarioHistoryLeft"/);assert.match(index,/id="scenarioHistoryRight"/);
+- assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.9-r14/);
++ assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.9-r15/);
+  assert.match(app,/save_strategy_scenario_revision/);assert.match(app,/loadStrategyScenarioHistory/);assert.match(app,/restoreStrategyScenarioHistory/);
+  assert.match(app,/escapeHtml\(row\.name\)/);assert.match(app,/scenarioHistoryState\.lastProjection=compared/);
+  assert.match(app,/strategyEditAccess\(\)/);
+--- a/tests/strategy-scenario-insights-v2627.test.js
++++ b/tests/strategy-scenario-insights-v2627.test.js
+@@ -91,9 +91,9 @@
+ test('contrato UI integra motor, segurança por escape, listeners e versões',()=>{
+   const root=path.join(__dirname,'..');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+   const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');const css=fs.readFileSync(path.join(root,'css/strategy.css'),'utf8');
+-  const pkg=require('../package.json');assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r14');
++  const pkg=require('../package.json');assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.match(index,/id="strategyScenarioInsightsSection"/);assert.match(index,/id="scenarioInsightsScenario"/);
+-  assert.match(index,/id="scenarioInsightsKind"/);assert.match(index,/js\/strategy-scenario-insights\.js\?v=2\.63\.9-r14/);
++  assert.match(index,/id="scenarioInsightsKind"/);assert.match(index,/js\/strategy-scenario-insights\.js\?v=2\.63\.9-r15/);
+   assert.match(app,/insightEngine\.analyze\(compared/);assert.match(app,/escapeHtml\(item\.title\)/);
+   assert.match(app,/scenarioInsightsScenario, #view-strategy #scenarioInsightsKind/);
+   assert.match(css,/strategy-scenario-insight-card/);
+--- a/tests/strategy-schema-compat-v2580-r5.test.js
++++ b/tests/strategy-schema-compat-v2580-r5.test.js
+@@ -32,7 +32,7 @@
+ 
+ test('R5 permanece preservada como migration histórica após a V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   assert.match(index,/js\/app\.js\?v=2\.63\.9/);
+   assert.match(migration,/notify pgrst,'reload schema'/);
+ });
+--- a/tests/strategy-seller-reconciliation-v2632.test.js
++++ b/tests/strategy-seller-reconciliation-v2632.test.js
+@@ -37,4 +37,4 @@
+ test('aliasPayload normaliza e nao envia valor financeiro do CSV',()=>{const p=recon.aliasPayload({organizationId:org,sourceKey:'contracted_modules_csv',group:'C',personId:'p2',alias:' GÁBRIEL GARCIA '});assert.equal(p.p_alias_normalized,'gabrielgarcia');assert.equal(p.p_squad_code,'C');assert.equal(Object.isFrozen(p),true);assert.equal(JSON.stringify(p).includes('25'),false);});
+ test('resultado de conciliação nao modifica estruturas de origem ou cria receita',()=>{const before=JSON.stringify(parsed),r=run();assert.equal(JSON.stringify(parsed),before);assert.equal(r.persisted,false);assert.equal(r.official,false);assert.equal(Object.isFrozen(r.groups),true);});
+ test('SQL V2.63.2 cria aliases com RLS e gravação por RPC validada no servidor',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.2.sql');for(const x of ['strategy_seller_aliases','enable row level security','has_strategy_access(\'edit_costs\')','has_strategy_access(\'people_costs\')','auth.uid()','upsert_strategy_seller_alias_v2632','organization_id=v_org','v_person.user_id','v_person.functional_team','v_role','person_id uuid'])assert.ok(sql.includes(x),x);assert.match(sql,/revoke all on public\.strategy_seller_aliases from anon,authenticated/i);assert.doesNotMatch(sql,/grant (insert|update|delete|all) on public\.strategy_seller_aliases to authenticated/i);});
+-test('UI integra conciliador com seleção e RPC, sem postar CSV ao backend',()=>{const html=read('index.html'),js=read('js/app.js');for(const id of ['strategySellerSummary','strategySellerRows','strategySellerAliasKey','strategySellerAliasPerson','strategySellerAliasSave'])assert.ok(html.includes(`id="${id}"`));assert.match(js,/SoftenStrategySellerReconciliation/);assert.match(js,/upsert_strategy_seller_alias_v2632/);assert.match(js,/renderStrategySellerReconciliation/);assert.match(html,/strategy-seller-reconciliation\.js\?v=2\.63\.9-r14/);});
++test('UI integra conciliador com seleção e RPC, sem postar CSV ao backend',()=>{const html=read('index.html'),js=read('js/app.js');for(const id of ['strategySellerSummary','strategySellerRows','strategySellerAliasKey','strategySellerAliasPerson','strategySellerAliasSave'])assert.ok(html.includes(`id="${id}"`));assert.match(js,/SoftenStrategySellerReconciliation/);assert.match(js,/upsert_strategy_seller_alias_v2632/);assert.match(js,/renderStrategySellerReconciliation/);assert.match(html,/strategy-seller-reconciliation\.js\?v=2\.63\.9-r15/);});
+--- a/tests/strategy-summary-hotfix-v2596-r1.test.js
++++ b/tests/strategy-summary-hotfix-v2596-r1.test.js
+@@ -8,7 +8,7 @@
+ 
+ test('V2.59.6 R1 preserva campos estendidos no resumo estratégico',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r14');
++  assert.equal(pkg.assetVersion,'2.63.9-r15');
+   const merged=costEngine.mergeFinancialSummary({
+     peopleCount:29,fte:29,totalCost:40000,attendance:4860,
+     resolutions:4785,resolutionEntries:29,
+@@ -28,6 +28,6 @@
+ 
+ test('hotfix do resumo permanece coberto na V2.59.7',()=>{
+   const index=readFileSync(join(root,'index.html'),'utf8');
+-  assert.ok(index.includes('js/strategy-cost-engine.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('js/strategy-cost-engine.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+ });
+--- a/tests/team-portfolio-v2522.test.js
++++ b/tests/team-portfolio-v2522.test.js
+@@ -54,8 +54,8 @@
+ });
+ 
+ test('V2.52.2 atualiza cache e continua frontend-only', () => {
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/chart-export.js?v=2.63.9-r14'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
++  assert.ok(index.includes('js/chart-export.js?v=2.63.9-r15'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
+ });
+--- a/tests/topbar-stability-v24812.test.js
++++ b/tests/topbar-stability-v24812.test.js
+@@ -45,6 +45,6 @@
+ test('V2.48.12 atualiza somente versão de frontend', () => {
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+   assert.ok(index.includes('V2.60.7'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r14'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r14'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r15'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r15'));
+ });

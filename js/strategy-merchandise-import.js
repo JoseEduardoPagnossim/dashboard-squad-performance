@@ -8,13 +8,13 @@
   function clean(v){return String(v??'').normalize('NFKC').trim();}
   function normalize(v){return clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
   function quantity(value){const t=clean(value);if(!t)return '';if(!/^\d{1,8}([.,]\d{1,4})?$/.test(t))return null;const n=Number(t.replace(',','.'));if(!Number.isFinite(n)||n<=0||n>99999999)return null;return String(n);}
-  function build({parsed,mapping,people=[],profiles=[],aliases=[],products=[],organizationId}={}){
+  function build({parsed,mapping,people=[],profiles=[],aliases=[],leaderCommissions=[],products=[],organizationId}={}){
     const csv=typeof require==='function'?require('./strategy-csv-importer'):globalThis.SoftenStrategyCsvImporter;
     const seller=typeof require==='function'?require('./strategy-seller-reconciliation'):globalThis.SoftenStrategySellerReconciliation;
     const catalog=typeof require==='function'?require('./strategy-product-catalog'):globalThis.SoftenStrategyProductCatalog;
     if(!organizationId)throw new Error('Organização não definida.');
     const valid=csv.validateMapping(SOURCE,parsed.headers,mapping);
-    const matched=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases});
+    const matched=seller.reconcile({sourceKey:SOURCE,parsed,mapping:valid,people,profiles,aliases,leaderCommissions});
     const peopleByName=new Map(matched.groups.map(g=>[JSON.stringify([SOURCE,g.squad,g.normalized]),g]));
     const productByName=new Map(products.filter(p=>p.source_key===SOURCE&&p.generates_mrr===false&&p.active===true)
       .map(p=>[p.normalized_name||catalog.normalize(p.name),p]));
@@ -31,7 +31,7 @@
       const day=recurring.date(get(row,'date')),amountCents=recurring.cents(get(row,'amount'));
       const qty=quantity(get(row,'quantity'));
       let status='ready';
-      if(!match||match.status!=='matched')status='pendingSeller';
+      if(!match||match.status!=='matched'||(match.role==='super_admin'&&!match.periods.includes((day||'').slice(0,7))))status='pendingSeller';
       else if(!product)status='pendingProduct';
       else if(!day)status='pendingDate';
       else if(amountCents===null)status='pendingAmount';

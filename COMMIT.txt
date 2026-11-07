@@ -1,1 +1,1 @@
-feat: simplifica importacao CSV e desativa opcionais por padrao
+feat: integra vendas de lideres e estorno auditado de importacoes

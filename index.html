@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r14" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r14" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r14" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r14" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r15" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r15" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r15" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r15" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -2443,12 +2443,14 @@
               <div class="strategy-editor-inline"><label><span>Origem</span><select id="strategyCommercialHistorySource"><option value="">Todas</option><option value="contracted_modules_csv">Anotação de venda (MRR)</option><option value="merchandise_sales_csv">Mercadorias (Não MRR)</option></select></label><button class="btn secondary" type="button" id="strategyCommercialHistoryRefresh">Atualizar histórico</button><button class="btn secondary" type="button" id="strategyCommercialHistoryExport">Exportar lotes CSV</button></div>
               <p id="strategyCommercialHistoryStatus" class="muted">Consulte os lotes gravados no Supabase. Nenhuma alteração será feita nos registros financeiros.</p>
               <div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Data</th><th>Origem</th><th>Arquivo</th><th>Status</th><th>Linhas</th><th>Importadas</th><th>Repetidas</th><th>Fechadas</th><th>Auditoria</th></tr></thead><tbody id="strategyCommercialHistoryRows"><tr><td colspan="9">Clique em Atualizar histórico.</td></tr></tbody></table></div>
-              <section id="strategyCommercialHistoryDetails" hidden><h4>Detalhes do lote selecionado</h4><p id="strategyCommercialHistoryDetailStatus" class="muted"></p><button class="btn secondary" type="button" id="strategyCommercialHistoryExportSales">Exportar vendas deste lote</button><div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Data</th><th>Vendedor</th><th>Squad</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>MRR ativo</th><th>Comissão estimada</th><th>Ocorrência</th></tr></thead><tbody id="strategyCommercialHistorySales"></tbody></table></div></section>
+              <section id="strategyCommercialHistoryDetails" hidden><h4>Detalhes do lote selecionado</h4><p id="strategyCommercialHistoryDetailStatus" class="muted"></p><button class="btn secondary" type="button" id="strategyCommercialHistoryExportSales">Exportar vendas deste lote</button>
+                <div class="strategy-editor-inline"><button class="btn secondary" type="button" id="strategyCommercialReversePreview">Conferir estorno deste lote</button><label><span>Justificativa obrigatória</span><input type="text" id="strategyCommercialReverseReason" maxlength="500" placeholder="Ex.: importação duplicada ou incorreta"></label><button class="btn danger" type="button" id="strategyCommercialReverseConfirm" disabled>Desfazer lote auditado</button></div>
+                <p id="strategyCommercialReverseStatus" class="muted">Somente competências abertas e sem folha consolidada podem ser estornadas.</p><div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Data</th><th>Vendedor</th><th>Squad</th><th>Produto</th><th>Cliente</th><th>Valor</th><th>MRR ativo</th><th>Comissão estimada</th><th>Ocorrência</th></tr></thead><tbody id="strategyCommercialHistorySales"></tbody></table></div></section>
               <p class="muted">Valores de comissão são estimativas das regras congeladas na venda, não valores oficiais pagos. Lotes em andamento e consultas parciais são identificados. O histórico não remove duplicidades legítimas nem modifica competências fechadas.</p>
             </details>
             <article class="strategy-placeholder-card" id="strategyCommissionsSection">
               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Comissões comerciais por competência</h3><p>Calcula as quatro regras congeladas na venda e mantém as pendências visíveis. Pré-atendimento permanece no Squad C, sem gerar produção técnica.</p></div><span class="strategy-mini-badge">Bonificação</span></div>
-              <div class="strategy-editor-inline"><label><span>Competência (mês)</span><input type="month" id="strategyCommissionMonth"></label><button type="button" class="btn primary" id="strategyCommissionCalculate">Apurar comissões</button><button type="button" class="btn secondary" id="strategyCommissionRefresh">Consultar resultado</button><button type="button" class="btn secondary" id="strategyCommissionSync">Sincronizar técnicos com Bonificação</button></div>
+              <div class="strategy-editor-inline"><label><span>Competência (mês)</span><input type="month" id="strategyCommissionMonth"></label><button class="btn secondary" type="button" id="strategyLeaderSellerPrepare">Reconhecer líderes vendedores</button><button class="btn secondary" type="button" id="strategyLeaderSalesSync">Sincronizar vendas dos líderes</button><button type="button" class="btn primary" id="strategyCommissionCalculate">Apurar comissões</button><button type="button" class="btn secondary" id="strategyCommissionRefresh">Consultar resultado</button><button type="button" class="btn secondary" id="strategyCommissionSync">Sincronizar técnicos com Bonificação</button></div>
               <p class="muted" id="strategyCommissionNotice">Apuração não altera outras parcelas da Bonificação. Contas de Pré-atendimento possuem memória comercial separada.</p>
               <div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Colaborador</th><th>Squad</th><th>Perfil</th><th>Vendas</th><th>Valor vendido</th><th>Comissão</th><th>Pendências</th></tr></thead><tbody id="strategyCommissionRows"><tr><td colspan="7">Selecione a competência e clique em Consultar resultado.</td></tr></tbody></table></div>
             </article>
@@ -2620,7 +2622,7 @@
             <div id="financeTechnicianRows" class="finance-tech-list"></div>
             <div class="admin-actions finance-report-actions"><span class="muted" id="financeAdminHint">Selecione um mês.</span><button class="btn secondary" id="configureFinanceReportBtn" type="button">⚙ Configurar relatório</button><button class="btn secondary" id="exportFinanceExcelBtn">↓ Relatório Excel</button><button class="btn secondary" id="exportFinancePdfBtn">↓ Relatório PDF</button><button class="btn primary" id="saveFinanceTechniciansBtn">Salvar valores individuais</button></div>
           </article>
-          <article class="card admin-card super-only finance-super-card admin-section admin-finance"><span class="eyebrow">ADMINISTRADOR</span><h2>Minha comissão do mês</h2><p>Seu Squad financeiro determina em qual relatório de bonificação você aparece. Líderes não participam dos indicadores operacionais de atendimento.</p><div class="admin-form"><label><span>Squad financeiro</span><select id="superAdminCommissionSquad"><option value="">Selecionar</option><option value="A">Squad A</option><option value="B">Squad B</option><option value="D">Squad D</option><option value="E">Squad E</option></select></label><label><span>Comissão base (R$)</span><input id="superAdminCommissionInput" type="number" min="0" step="0.01"></label><label><span>Comissão de vendas (R$)</span><input id="superAdminSalesInput" type="number" min="0" step="0.01"></label><label><span>Bônus manual (R$)</span><input id="superAdminBonusInput" type="number" min="0" step="0.01"></label><label><span>Descontos (R$)</span><input id="superAdminDiscountInput" type="number" min="0" step="0.01"></label><label><span>Redistribuição (R$)</span><input id="superAdminRedistributionInput" type="number" min="0" step="0.01"></label><label><span>Férias</span><input id="superAdminVacationInput" type="checkbox"></label><label><span>Observação</span><input id="superAdminCommissionNotes" type="text" placeholder="Opcional"></label></div><div class="admin-actions"><span class="muted" id="superAdminCommissionPeriod">Selecione um mês.</span><button class="btn primary" id="saveSuperAdminCommissionBtn">Salvar minha comissão</button></div></article>
+          <article class="card admin-card super-only finance-super-card admin-section admin-finance"><span class="eyebrow">ADMINISTRADOR</span><h2>Minha comissão do mês</h2><p>Seu Squad financeiro determina em qual relatório de bonificação você aparece. Líderes não participam dos indicadores operacionais de atendimento.</p><div class="admin-form"><label><span>Squad financeiro</span><select id="superAdminCommissionSquad"><option value="">Selecionar</option><option value="A">Squad A</option><option value="B">Squad B</option><option value="D">Squad D</option><option value="E">Squad E</option></select></label><label><span>Comissão base (R$)</span><input id="superAdminCommissionInput" type="number" min="0" step="0.01"></label><label><span>Comissão de vendas MANUAL (R$)</span><input id="superAdminSalesInput" type="number" min="0" step="0.01"></label><p class="muted" id="superAdminImportedSalesDisplay">Vendas importadas: R$ 0,00 (apuração separada; não substitui a comissão manual).</p><label><span>Bônus manual (R$)</span><input id="superAdminBonusInput" type="number" min="0" step="0.01"></label><label><span>Descontos (R$)</span><input id="superAdminDiscountInput" type="number" min="0" step="0.01"></label><label><span>Redistribuição (R$)</span><input id="superAdminRedistributionInput" type="number" min="0" step="0.01"></label><label><span>Férias</span><input id="superAdminVacationInput" type="checkbox"></label><label><span>Observação</span><input id="superAdminCommissionNotes" type="text" placeholder="Opcional"></label></div><div class="admin-actions"><span class="muted" id="superAdminCommissionPeriod">Selecione um mês.</span><button class="btn primary" id="saveSuperAdminCommissionBtn">Salvar minha comissão</button></div></article>
 
           <details class="card admin-card full admin-section admin-finance finance-secondary-panel strategy-sales-audit-r5" id="financeSalesAuditR5" data-permission="finance.view">
             <summary class="finance-secondary-summary"><div><span class="eyebrow">BONIFICAÇÃO · AUDITORIA COMERCIAL</span><strong>Vendas, produtos, comissões e divergências</strong><small>Consulte as vendas importadas e compare Vl Anterior com os registros anteriores.</small></div><span class="finance-secondary-chevron">+</span></summary>
@@ -2991,55 +2993,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r14"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r14"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r14"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r14"></script>
-  <script src="js/presentation.js?v=2.63.9-r14"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r14"></script>
-  <script src="js/chart-export.js?v=2.63.9-r14"></script>
-  <script src="js/import-engine.js?v=2.63.9-r14"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r14"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r14"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r14"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r14"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r14"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r14"></script>
-  <script src="js/filter-system.js?v=2.63.9-r14"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r14"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r14"></script>
-  <script src="js/design-system.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r14"></script>
-  <script src="js/strategy.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r14"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r15"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r15"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r15"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r15"></script>
+  <script src="js/presentation.js?v=2.63.9-r15"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r15"></script>
+  <script src="js/chart-export.js?v=2.63.9-r15"></script>
+  <script src="js/import-engine.js?v=2.63.9-r15"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r15"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r15"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r15"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r15"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r15"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r15"></script>
+  <script src="js/filter-system.js?v=2.63.9-r15"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r15"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r15"></script>
+  <script src="js/design-system.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r15"></script>
+  <script src="js/strategy.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r15"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r14"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r14"></script>
-<script src="js/app.js?v=2.63.9-r14"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r15"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r15"></script>
+<script src="js/app.js?v=2.63.9-r15"></script>
 </body>
 </html>
