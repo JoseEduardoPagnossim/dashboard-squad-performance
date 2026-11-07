@@ -1,0 +1,6 @@
+R16 - Apenas diferenças sobre R15.
+1) Backup do banco. No Supabase SQL Editor, execute supabase/migrations/MIGRACAO_V2.63.12_ESTORNO_COMPETENCIA.sql.
+2) Publique os arquivos alterados preservando os caminhos e esvazie cache do navegador.
+3) Consulte a PRÉVIA do estorno (não execute estorno antes de verificar valor e elegibilidade).
+4) Para outubro: Importação -> Período das vendas -> Somente uma competência -> 2026-10. Importações anuais: Todas as competências.
+5) Teste primeiro em homologação com usuários/permissões reais; não editar squad_months nem snapshots diretamente.

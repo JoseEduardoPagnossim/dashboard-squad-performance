@@ -144,6 +144,25 @@
     }
     return Object.freeze({summary:Object.freeze(summary),bySquad:Object.freeze([...bySquad.values()].map(x=>Object.freeze(x)))});
   }
+  // Escopo de competencia apenas no processamento: a fonte CSV original permanece imutavel.
+  function filterCompetence(sourceKey,parsed,mapping,month){
+    if(!month)return Object.freeze({parsed,excluded:0,invalidDates:0,selected:parsed.rows.length});
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Selecione uma competência válida no formato AAAA-MM.');
+    const clean=validateMapping(sourceKey,parsed.headers,mapping);
+    const dateColumn=parsed.headers.indexOf(clean.date);
+    if(dateColumn<0)throw new Error('Vincule a coluna Data da venda antes de filtrar competências.');
+    let invalidDates=0;
+    const rows=parsed.rows.filter(row=>{
+      const dateText=dateOnly(row[dateColumn]);
+      const parts=dateText.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(!parts){invalidDates++;return false;}
+      const year=Number(parts[3]),monthNumber=Number(parts[2]),day=Number(parts[1]);
+      const dt=new Date(Date.UTC(year,monthNumber-1,day));
+      if(dt.getUTCFullYear()!==year||dt.getUTCMonth()!==monthNumber-1||dt.getUTCDate()!==day){invalidDates++;return false;}
+      return `${parts[3]}-${parts[2]}`===month;
+    });
+    return Object.freeze({parsed:{...parsed,rows,rowCount:rows.length},excluded:parsed.rows.length-rows.length,invalidDates,selected:rows.length});
+  }
   function createTemplatePayload({organizationId,userId,sourceKey,name,headers,mapping}){
     if(!organizationId||!userId)throw new Error('Organização e usuário obrigatórios.');
     if(!definition(sourceKey))throw new Error('Origem inválida.');
@@ -152,5 +171,5 @@
     const clean=validateMapping(sourceKey,headers,mapping);
     return Object.freeze({organization_id:organizationId,created_by:userId,source_key:sourceKey,name:templateName,columns:clean,headers:headers.slice()});
   }
-  return Object.freeze({DEFINITIONS,MAX_BYTES,MAX_ROWS,MAX_COLUMNS,definition,normalize,normalizeSquad,dateOnly,sniffDelimiter,parse,suggest,validateMapping,identifyProducts,preview,auditPreview,createTemplatePayload});
+  return Object.freeze({DEFINITIONS,MAX_BYTES,MAX_ROWS,MAX_COLUMNS,definition,normalize,normalizeSquad,dateOnly,sniffDelimiter,parse,suggest,validateMapping,identifyProducts,preview,auditPreview,filterCompetence,createTemplatePayload});
 });

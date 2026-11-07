@@ -3920,6 +3920,14 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   document.addEventListener('change',e=>{if(e.target.closest('#financeSalesAuditPerson,#financeSalesAuditSource'))strategyAuditRender();if(e.target.closest('#financeSalesAuditFile'))$('#financeSalesAuditChosen').textContent=e.target.files?.[0]?.name||'';});
 
   const strategyCsvState={sourceKey:'contracted_modules_csv',fileName:'',parsed:null,mapping:{},error:'',busy:false,request:0};
+  let strategyCsvPeriodMode='all',strategyCsvPeriodMonth='';
+  function strategyCsvScoped(){
+    const cs=strategyCsvState;
+    if(!cs.parsed)return null;
+    const month=strategyCsvPeriodMode==='month'?strategyCsvPeriodMonth:null;
+    if(strategyCsvPeriodMode==='month'&&!month)throw new Error('Selecione a competência antes de importar.');
+    return window.SoftenStrategyCsvImporter.filterCompetence(cs.sourceKey,cs.parsed,cs.mapping,month);
+  }
   // R12: navegação exclusivamente visual; a validação e a confirmação financeira
   // permanecem nas funções oficiais das duas origens e nas RPCs do Supabase.
   let strategyCsvWizardStep=1;
@@ -3929,30 +3937,31 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{return !!engine.validateMapping(cs.sourceKey,cs.parsed.headers,cs.mapping)}catch(_){return false}
   }
   function renderStrategyCsvWizard(){
-    const cs=strategyCsvState,valid=strategyCsvWizardMappingValid();
+    const cs=strategyCsvState,valid=strategyCsvWizardMappingValid(),periodValid=strategyCsvPeriodMode!=='month'||!!strategyCsvPeriodMonth;
     for(let step=1;step<=4;step++){
       const panel=$('#strategyCsvWizardStep'+step);
       if(panel)panel.hidden=strategyCsvWizardStep!==step;
       const nav=$('[data-strategy-csv-step="'+step+'"]');
-      if(nav){nav.disabled=step>strategyCsvWizardStep+1||step>1&&!cs.parsed||step>2&&!valid||cs.busy;
+      if(nav){nav.disabled=step>strategyCsvWizardStep+1||step>1&&!cs.parsed||step>2&&(!valid||!periodValid)||cs.busy;
         if(strategyCsvWizardStep===step)nav.setAttribute('aria-current','step');else nav.removeAttribute('aria-current');}
     }
     const back=$('#strategyCsvWizardBack'),next=$('#strategyCsvWizardNext');
     if(back)back.disabled=strategyCsvWizardStep===1||cs.busy;
-    if(next){next.hidden=strategyCsvWizardStep===4;next.disabled=cs.busy||strategyCsvWizardStep===1&&!cs.parsed||strategyCsvWizardStep>=2&&!valid;}
+    if(next){next.hidden=strategyCsvWizardStep===4;next.disabled=cs.busy||strategyCsvWizardStep===1&&!cs.parsed||strategyCsvWizardStep>=2&&(!valid||!periodValid);}
     const hint=$('#strategyCsvWizardHint');
     if(hint)hint.textContent=cs.busy?'Lendo arquivo...':strategyCsvWizardStep===1?'Selecione o tipo e carregue um CSV.':!valid?'Revise as colunas obrigatórias para continuar.':strategyCsvWizardStep===2?'Campos opcionais ficam desvinculados por padrão.':strategyCsvWizardStep===3?'Confira pendências antes de importar.':'A confirmação definitiva é feita abaixo; nada foi gravado pela navegação.';
     const recurring=$('#strategyRecurringImportSection'),merchandise=$('#strategyMerchandiseImportSection');
     if(recurring)recurring.hidden=strategyCsvWizardStep!==4||cs.sourceKey!=='contracted_modules_csv';
     if(merchandise)merchandise.hidden=strategyCsvWizardStep!==4||cs.sourceKey!=='merchandise_sales_csv';
     const confirmation=$('#strategyCsvWizardConfirmation');
-    if(confirmation)confirmation.textContent=`Origem: ${cs.sourceKey==='contracted_modules_csv'?'Anotação de venda (novo MRR)':'Venda de mercadorias (sem MRR)'} · Arquivo: ${cs.fileName||'nenhum'} · ${cs.parsed?cs.parsed.rowCount.toLocaleString('pt-BR'):'0'} linha(s). Revise o painel de receita abaixo antes de confirmar. Reimportações e competências fechadas são verificadas pelo processo oficial.`;
+    if(confirmation)confirmation.textContent=`Origem: ${cs.sourceKey==='contracted_modules_csv'?'Anotação de venda (novo MRR)':'Venda de mercadorias (sem MRR)'} · Arquivo: ${cs.fileName||'nenhum'} · ${cs.parsed?cs.parsed.rowCount.toLocaleString('pt-BR'):'0'} linha(s) no CSV · ${strategyCsvPeriodMode==='month'?'Somente '+(strategyCsvPeriodMonth||'competência não selecionada'):'Todas as competências'}. Revise o painel de receita abaixo antes de confirmar. Reimportações e competências fechadas são verificadas pelo processo oficial.`;
   }
   function changeStrategyCsvWizardStep(target){
     const next=Number(target);if(!Number.isInteger(next)||next<1||next>4)return;
     if(next>strategyCsvWizardStep+1)return toast('Avance pelas etapas na ordem apresentada.');
     if(next>1&&!strategyCsvState.parsed)return toast('Selecione um CSV antes de continuar.');
     if(next>2&&!strategyCsvWizardMappingValid())return toast('Corrija o mapeamento obrigatório antes de continuar.');
+    if(next>2&&strategyCsvPeriodMode==='month'&&!strategyCsvPeriodMonth)return toast('Escolha a competência para continuar.');
     strategyCsvWizardStep=next;renderStrategyCsvWizard();
     $('#strategyCsvImporter')?.scrollIntoView?.({block:'start',behavior:'smooth'});
   }
@@ -3998,7 +4007,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const engine=window.SoftenStrategyCsvImporter,cs=strategyCsvState,parsed=cs.parsed,def=engine.definition(cs.sourceKey),canManage=!!state.supabase&&strategyEditAccess()&&strategyPeopleAccess();
     const status=$('#strategyCsvStatus');if(!status)return;
     if($('#strategyCsvSource')&&$('#strategyCsvSource').value!==cs.sourceKey)$('#strategyCsvSource').value=cs.sourceKey;
+    if($('#strategyCsvPeriodMode'))$('#strategyCsvPeriodMode').value=strategyCsvPeriodMode;
+    if($('#strategyCsvMonthWrap'))$('#strategyCsvMonthWrap').hidden=strategyCsvPeriodMode!=='month';
+    if($('#strategyCsvMonth'))$('#strategyCsvMonth').value=strategyCsvPeriodMonth;
     const validMapping=parsed?(()=>{try{return engine.validateMapping(cs.sourceKey,parsed.headers,cs.mapping)}catch(_){return null}})():null;
+    const scopeNotice=$('#strategyCsvScopeNotice');
+    if(scopeNotice){try{const scope=validMapping?strategyCsvScoped():null;scopeNotice.textContent=scope?(strategyCsvPeriodMode==='month'?`${scope.selected} de ${parsed.rowCount} linhas em ${strategyCsvPeriodMonth}; ${scope.excluded} fora do filtro ou sem data válida.`:`Todas as ${parsed.rowCount} linhas serão consideradas.`):'Conclua a seleção do mês e o mapeamento das colunas. ';}catch(err){scopeNotice.textContent=String(err.message||err);}}
     status.textContent=cs.error?`Falha: ${cs.error}`:cs.busy?'Lendo arquivo...':!parsed?'Selecione a origem e um arquivo CSV. O arquivo será analisado apenas no navegador.':`${cs.fileName} • ${parsed.rowCount.toLocaleString('pt-BR')} linhas • ${parsed.headers.length} colunas • separador ${parsed.delimiter==='\t'?'TAB':parsed.delimiter} • ${def.generatesMrr?'Gera MRR':'Não gera MRR'}. Nenhuma receita foi lançada.`;
     if($('#strategyCsvTemplateMessage'))$('#strategyCsvTemplateMessage').textContent=strategyAutomationState.mappingError||'O modelo salva somente nomes de colunas e escolhas, nunca os dados do arquivo.';
     const templates=strategyAutomationState.mappings.filter(x=>x.source_key===cs.sourceKey);
@@ -4094,7 +4108,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function prepareStrategyRecurring(){
     const cs=strategyCsvState,engine=window.SoftenStrategyRecurringImport;
     if(!engine||!cs.parsed||cs.sourceKey!==engine.SOURCE)return null;
-    return engine.build({parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
+    return engine.build({parsed:strategyCsvScoped().parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
       profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
   }
   function renderStrategyRecurringImport(){
@@ -4121,6 +4135,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const cs=strategyCsvState,engine=window.SoftenStrategyRecurringImport;
     let prepared;try{prepared=prepareStrategyRecurring();}catch(err){return toast('Revise os campos e vendedores: '+String(err.message||err));}
     if(!prepared||!prepared.ready.length)return toast('Nenhuma venda recorrente apta neste arquivo.');
+    if(strategyCsvPeriodMode==='month'&&!strategyCsvPeriodMonth)return toast('Selecione a competência para importar.');
     if(!window.confirm(`Confirma a importação de ${prepared.ready.length} contratações recorrentes? O Supabase ignorará vendas já registradas e competências fechadas. A operação NÃO gera comissões.`))return;
     const org=state.user.organizationId,request=cs.request,source=cs.sourceKey,rs=strategyRecurringState;
     rs.busy=true;rs.notice='Preparando lote no Supabase...';renderStrategyRecurringImport();
@@ -4148,7 +4163,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function prepareStrategyMerchandise(){
     const cs=strategyCsvState,engine=window.SoftenStrategyMerchandiseImport;
     if(!engine||!cs.parsed||cs.sourceKey!==engine.SOURCE)return null;
-    return engine.build({parsed:cs.parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
+    return engine.build({parsed:strategyCsvScoped().parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
       profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
   }
   function renderStrategyMerchandiseImport(){
@@ -4179,6 +4194,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const cs=strategyCsvState,engine=window.SoftenStrategyMerchandiseImport;
     let prepared;try{prepared=prepareStrategyMerchandise();}catch(err){return toast('Revise os dados: '+String(err.message||err));}
     if(!prepared||!prepared.ready.length)return toast('Não existem vendas avulsas aptas neste arquivo.');
+    if(strategyCsvPeriodMode==='month'&&!strategyCsvPeriodMonth)return toast('Selecione a competência para importar.');
     if(!window.confirm(`Confirma a importação de ${prepared.ready.length} itens de venda avulsa? O Supabase rejeitará duplicidades e competências fechadas. O valor de vlTotalItem NÃO será multiplicado pela quantidade. Não gera MRR nem comissões.`))return;
     const org=state.user.organizationId,request=cs.request,source=cs.sourceKey,ms=strategyMerchandiseState;
     ms.busy=true;ms.notice='Criando lote de vendas avulsas...';renderStrategyMerchandiseImport();
@@ -4295,6 +4311,11 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   async function handleStrategyCsvChange(e){
     if(e.target.id==='strategyCommercialHistorySource'){renderStrategyCommercialHistory();return true;}
+    if(e.target.id==='strategyCsvPeriodMode'||e.target.id==='strategyCsvMonth'){
+      if(e.target.id==='strategyCsvPeriodMode')strategyCsvPeriodMode=e.target.value;else strategyCsvPeriodMonth=e.target.value;
+      strategyRecurringState.notice='';strategyMerchandiseState.notice='';
+      renderStrategyCsvImporter();return true;
+    }
     if(e.target.id==='strategyCsvSource'){
       strategyRecurringState.notice='';strategyMerchandiseState.notice='';strategySellerSelection.key='';Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
       strategyCatalogState.sourceKey=e.target.value;strategyCatalogState.notice='';
