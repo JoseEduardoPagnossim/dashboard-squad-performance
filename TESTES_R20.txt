@@ -1,0 +1,1 @@
+npm run check: 1124 testes aprovados, 0 falhas (validacao estatica, nao Supabase real).

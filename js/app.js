@@ -3976,6 +3976,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const request=++strategyAutomationState.request,org=state.user?.organizationId;
     strategyAutomationState.loading=true;strategyAutomationState.error='';
     try{
+      // R20: preenche apenas identidades estrategicas ausentes de lideres ja vinculados
+      // financeiramente; nao cria tecnicos nem modifica o perfil administrativo.
+      const preparedLeaders=await state.supabase.rpc('prepare_strategy_leader_sellers_v26311');
+      if(preparedLeaders.error)throw new Error('Nao foi possivel preparar os lideres vendedores: '+String(preparedLeaders.error.message||preparedLeaders.error));
       const [sources,profiles,people,mappings,sellerProfiles,aliases,products,leaderCommissions]=await Promise.all([
         state.supabase.from('strategy_import_sources').select('id,source_key,label,origin,generates_mrr,active').eq('organization_id',org).order('source_key'),
         state.supabase.from('profiles').select('user_id,full_name,role,active').eq('organization_id',org).eq('role','pre_attendance').eq('active',true).order('full_name'),
@@ -4242,8 +4246,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const selected= pending.find(g=>g.key===strategySellerSelection.key);
     if(selected&&sellerSelect)sellerSelect.value=selected.key;
     const available=selected?identities.filter(i=>i.squad===selected.squad):[];
-    if(personSelect)personSelect.innerHTML='<option value="">Selecione a pessoa do mesmo Squad</option>'+available.map(i=>`<option value="${escapeHtml(i.personId)}">${escapeHtml(i.name)} · ${escapeHtml(i.role==='pre_attendance'?'Pré-atendimento':'Técnico')} · Squad ${i.squad}</option>`).join('');
-    if(notice)notice.textContent=strategyAutomationState.aliasError||strategyAutomationState.peopleError||'Somente associações confirmadas serão gravadas. Os dados do CSV permanecem locais.';
+    if(personSelect)personSelect.innerHTML='<option value="">Selecione a pessoa do mesmo Squad</option>'+available.map(i=>`<option value="${escapeHtml(i.personId)}">${escapeHtml(i.name)} · ${escapeHtml(i.role==='super_admin'?'Líder/Administrador':i.role==='pre_attendance'?'Pré-atendimento':'Técnico')} · Squad ${i.squad}</option>`).join('');
+    if(notice)notice.textContent=strategyAutomationState.aliasError||strategyAutomationState.peopleError||'Para líder, cadastre primeiro o Squad financeiro do mês em Bonificação. O vínculo do CSV exige confirmação por alias; nenhuma venda é gravada nesta etapa.';
     if($('#strategySellerAliasSave'))$('#strategySellerAliasSave').disabled=!!strategyAutomationState.aliasError||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess()||!selected||!available.length;
   }
   const strategySellerSelection={key:''};
