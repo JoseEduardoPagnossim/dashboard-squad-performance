@@ -1,0 +1,1 @@
+Instale sobre R16. Faca backup do banco, execute a migration MIGRACAO_V2.63.13_ESTORNO_CASCATA_R17.sql no Supabase SQL Editor e confira a previa no painel antes de confirmar o estorno. Frontend nao muda.
