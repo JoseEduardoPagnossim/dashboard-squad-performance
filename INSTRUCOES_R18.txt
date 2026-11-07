@@ -1,0 +1,6 @@
+HOTFIX R18 - Instalar apos R17
+1. Backup Supabase
+2. Executar supabase/migrations/MIGRACAO_V2.63.14_ESTORNO_IMUTABILIDADE_R18.sql
+3. Recarregar painel R16+ e conferir estorno do lote
+4. Confirmar registros em strategy_commercial_batch_reversals_v26311 e strategy_commercial_reversed_sales_v26311
+Commit: fix: autoriza estorno auditado sem desativar imutabilidade comercial
