@@ -16,7 +16,7 @@ test('2639: auditoria Fase 8 aprova contrato integral e migrations 0 a 9', async
  assert.equal(report.milestones,10); assert.ok(report.references>=40);
 });
 test('2639: auditoria detecta conflito de cache-buster', async()=>{
- const check = await audited(); const report = check(f=>f==='index.html'?read(f).replace('js/app.js?v=2.63.9-r21','js/app.js?v=2.62.9-r1'):read(f));
+ const check = await audited(); const report = check(f=>f==='index.html'?read(f).replace('js/app.js?v=2.63.9-r23','js/app.js?v=2.62.9-r1'):read(f));
  assert.equal(report.passed,false); assert.ok(report.errors.some(s=>s.includes('Cache-buster')));
 });
 test('2639: auditoria detecta retirada do preflight sem fallback', async()=>{
@@ -125,7 +125,7 @@ test('2639: frontend comunica pendências específicas sem expor valor inventado
 });
 test('2639: o pacote e a aplicacao usam a revisao 2.63.9',()=>{
  const pkg=JSON.parse(read('package.json'));
- assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r21');
+ assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r23');
  assert.ok(read('index.html').includes('V2.63.9'));
  assert.ok(read('js/app.js').includes("const APP_VERSION = '2.63.9'"));
 });

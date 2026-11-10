@@ -44,5 +44,5 @@ test('Fase 5: perfil e observações são campos opcionais selecionáveis nos do
   assert.equal(report.computedValue({'Observação':'Férias e ajuste'},report.columnById('notes')),'Férias e ajuste');
   assert.match(app,/financeReportProjectedRows\(rows,columns\)/);
   assert.match(app,/financeReportDisplayValue\(row,column\)/);
-  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r21/);
+  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r23/);
 });

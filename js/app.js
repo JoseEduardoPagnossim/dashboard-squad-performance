@@ -4055,10 +4055,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if($('#strategyCsvProducts'))$('#strategyCsvProducts').innerHTML=`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Produto identificado</th><th>Ocorrências</th></tr></thead><tbody>${products.products.slice(0,70).map(x=>`<tr><td>${escapeHtml(x.name)}</td><td>${x.count.toLocaleString('pt-BR')}</td></tr>`).join('')}</tbody></table></div>${products.products.length>70?`<p class="muted">Mostrando 70 de ${products.totalUnique} produtos. A lista completa pode ser pré-cadastrada pelo botão do Catálogo.</p>`:''}`;
     renderStrategySellerReconciliation();renderStrategyRecurringImport();renderStrategyMerchandiseImport();renderStrategyCsvWizard();
   }
+  document.addEventListener('input',event=>{if(event.target?.id==='strategyCatalogSearch')renderStrategyCommercialCatalog();});
   function renderStrategyCommercialCatalog(){
     const engine=window.SoftenStrategyProductCatalog,cs=strategyCatalogState,selected=cs.sourceKey;
     const table=$('#strategyCatalogRows');if(!table||!engine)return;
-    const imported=strategyAutomationState.products.filter(p=>p.source_key===selected);
+    const search=String($('#strategyCatalogSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');
+    const imported=strategyAutomationState.products.filter(p=>p.source_key===selected&&(!search||String(p.name||'').toLocaleLowerCase('pt-BR').includes(search)));
     const mrr=engine.ORIGINS[selected],count=imported.filter(p=>p.commission_type!=='unconfigured').length;
     const canManage=!!state.supabase&&strategyEditAccess()&&strategyPeopleAccess()&&!cs.busy&&!strategyAutomationState.catalogError;
     const source=$('#strategyCatalogSource');if(source)source.value=selected;
@@ -4141,6 +4143,22 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(review)review.innerHTML=examples.length?`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Linha do CSV</th><th>Vendedor</th><th>Produto</th><th>Motivo</th></tr></thead><tbody>${examples.map(x=>`<tr><td>${x.line}</td><td>${escapeHtml(x.seller)}</td><td>${escapeHtml(x.product)}</td><td>${escapeHtml(({pendingSeller:'Vendedor não conciliado',pendingProduct:'Produto sem cadastro',pendingDate:'Data inválida',pendingAmount:'MRR inválido'})[x.status]||x.status)}</td></tr>`).join('')}</tbody></table></div><p class="muted">Mostrando até 12 pendências; corrija os dados ou utilize lançamento manual na etapa V2.63.7.</p>`:'<p class="muted">Nenhuma pendência identificada nas linhas com grupo.</p>';
     if(btn)btn.disabled=rs.busy||!t.ready||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess()||!!strategyAutomationState.error;
   }
+  async function replaceStrategyBatchCommissionsR23(batchId){
+    if(!$('#strategyImportReplaceCommissions')?.checked)return;
+    const preview=await state.supabase.rpc('replace_strategy_batch_commissions_r23',{p_batch_id:batchId,p_apply:false});
+    if(preview.error)throw new Error('Importação concluída, mas a prévia de recálculo falhou: '+preview.error.message);
+    const info=preview.data||{};
+    if(!Number(info.eligible||0))return toast('Lote importado. Não há comissões existentes elegíveis para substituir.');
+    const money=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const message=`Reimportação R23: ${info.eligible} comissão(ões) elegível(is) de vendas já existentes.\n`+
+      `Comissão atual: ${money(info.oldTotal)}\nRegra atual do catálogo: ${money(info.newTotal)}\nDiferença: ${money(info.delta)}\n`+
+      `Sem comissão anterior: ${info.missingLedger||0}. Sem regra aprovada: ${info.pendingRule||0}. Já atualizadas neste lote: ${info.alreadyApplied||0}.\n\nConfirmar somente o recálculo das comissões elegíveis?`;
+    if(!window.confirm(message))return toast('Vendas importadas; recálculo de comissões não confirmado.');
+    const applied=await state.supabase.rpc('replace_strategy_batch_commissions_r23',{p_batch_id:batchId,p_apply:true});
+    if(applied.error)throw new Error('Importação concluída, mas recálculo não aplicado: '+applied.error.message);
+    toast(`${applied.data?.changed||0} comissão(ões) recalculada(s) com auditoria R23.`);
+    strategyInvalidateFinance();await loadStrategyFinanceData({force:true});
+  }
   async function confirmStrategyRecurringImport(){
     if(strategyRecurringState.busy||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissão para importar receitas.');
     const cs=strategyCsvState,engine=window.SoftenStrategyRecurringImport;
@@ -4165,8 +4183,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
       const finished=await state.supabase.rpc('finish_strategy_recurring_batch_v2634',{p_batch_id:batchId});
       if(finished.error)throw finished.error;
+      let recalcErrorMessage='';if($('#strategyImportReplaceCommissions')?.checked){try{await replaceStrategyBatchCommissionsR23(batchId);}catch(recalcError){recalcErrorMessage=String(recalcError.message||recalcError);toast(recalcErrorMessage);}}
       rs.last={batchId,imported,duplicates,closed};
-      rs.notice=`Lote confirmado: ${imported} venda(s) nova(s), ${duplicates} duplicada(s), ${closed} em competência fechada. Lote: ${batchId}. Nenhuma comissão gerada.`;
+      rs.notice=`Lote confirmado: ${imported} venda(s) nova(s), ${duplicates} duplicada(s), ${closed} em competência fechada. Lote: ${batchId}. ${recalcErrorMessage?'Atenção: recálculo não aplicado: '+recalcErrorMessage:'Recálculo solicitado tratado separadamente.'}`;
       strategyInvalidateFinance();await loadStrategyFinanceData({force:true});if($('#strategyCommercialHistorySection')?.open)await refreshStrategyCommercialHistory();toast('Receita recorrente importada. Confira o resultado e as pendências.');
     }catch(err){rs.notice=`Falha: ${String(err.message||err)}.${batchId?' Lote '+batchId+' pode estar parcialmente gravado; reimportar o CSV não duplicará vendas já confirmadas.':' Nenhum lote foi criado.'}`;toast(rs.notice);}
     finally{rs.busy=false;renderStrategyRecurringImport();}
@@ -4224,7 +4243,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
       const finished=await state.supabase.rpc('finish_strategy_merchandise_batch_v2635',{p_batch_id:batchId});
       if(finished.error)throw finished.error;
-      ms.last={batchId,imported,duplicates,closed};ms.notice=`Lote confirmado: ${imported} venda(s) nova(s), ${duplicates} duplicada(s), ${closed} em competência fechada. Lote ${batchId}. Sem MRR ou comissão.`;
+      let recalcErrorMessage='';if($('#strategyImportReplaceCommissions')?.checked){try{await replaceStrategyBatchCommissionsR23(batchId);}catch(recalcError){recalcErrorMessage=String(recalcError.message||recalcError);toast(recalcErrorMessage);}}
+      ms.last={batchId,imported,duplicates,closed};ms.notice=`Lote confirmado: ${imported} venda(s) nova(s), ${duplicates} duplicada(s), ${closed} em competência fechada. Lote ${batchId}. ${recalcErrorMessage?'Atenção: recálculo não aplicado: '+recalcErrorMessage:'Recálculo solicitado tratado separadamente.'}`;
       strategyInvalidateFinance();await loadStrategyFinanceData({force:true});if($('#strategyCommercialHistorySection')?.open)await refreshStrategyCommercialHistory();toast('Vendas avulsas importadas. Confira os resultados.');
     }catch(err){ms.notice=`Falha: ${String(err.message||err)}.${batchId?' Lote '+batchId+' pode estar parcialmente gravado; reimporte o mesmo CSV para não duplicar.':' Nenhum lote criado.'}`;toast(ms.notice);}
     finally{ms.busy=false;renderStrategyMerchandiseImport();}

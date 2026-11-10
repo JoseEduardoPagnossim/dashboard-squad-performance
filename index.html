@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r21" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r21" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r21" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r21" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r23" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r23" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r23" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r23" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -2356,6 +2356,14 @@
               <div class="strategy-editor-footer"><span>Fontes padrão: Anotação de Venda (MRR), Venda de Mercadorias (sem MRR) e lançamento manual.</span><button class="btn secondary" type="button" id="strategyAutomationInitSources">Preparar fontes</button><button class="btn secondary" type="button" id="strategyAutomationRefresh">Atualizar</button></div>
               <div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Fonte</th><th>Origem</th><th>MRR</th><th>Estado</th></tr></thead><tbody id="strategyAutomationSourceRows"><tr><td colspan="4">Abra a seção para consultar as fontes.</td></tr></tbody></table></div>
             </article>
+              <article class="strategy-placeholder-card" id="strategyCsvCatalogDetails" data-strategy-independent="catalog">
+              <section class="strategy-catalog-panel" id="strategyCommercialCatalog">
+                <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · R23</span><h3>Catálogo Comercial · Regras de comissão</h3><p>Produtos pré-cadastrados por origem. Anotação de venda gera MRR; mercadorias são avulsas. Configure comissão integral, percentual, diferença após custo de terceiros ou valor fixo. O pré-cadastro não lança vendas; a confirmação de Novo MRR fica na seção Receita recorrente.</p></div><span class="strategy-mini-badge">Regras versionadas</span></div>
+                <div class="strategy-csv-controls"><label><span>Buscar produto</span><input id="strategyCatalogSearch" type="search" placeholder="Nome do produto"></label><label><span>Origem do catálogo</span><select id="strategyCatalogSource"><option value="contracted_modules_csv">Anotação de venda · MRR</option><option value="merchandise_sales_csv">Venda de mercadorias · sem MRR</option></select></label><button type="button" class="btn primary" id="strategyCatalogImport">Reprocessar pré-cadastro do CSV</button></div>
+                <p class="muted" id="strategyCatalogNotice">Aplique a migration V2.63.3; ao selecionar um CSV válido, os produtos são pré-cadastrados sem duplicidade.</p><p class="muted" id="strategyCatalogCount">Nenhum produto cadastrado.</p>
+                <div class="strategy-table-wrap"><table class="strategy-table strategy-catalog-table"><thead><tr><th>Produto</th><th>Modalidade</th><th>Revisão</th><th>Regra de comissão</th><th>Parâmetro</th><th>Ação</th></tr></thead><tbody id="strategyCatalogRows"><tr><td colspan="6">Consulte o catálogo após carregar a Gestão Estratégica.</td></tr></tbody></table></div>
+                <p class="muted">As regras são versionadas. Editar o catálogo não muda comissões antigas automaticamente; somente uma reimportação substitutiva confirmada recalcula os registros correspondentes e ainda abertos.</p>
+              </section></article>
             <article class="strategy-placeholder-card strategy-csv-importer" id="strategyCsvImporter">
               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Importação de vendas em etapas</h3><p>Siga as quatro etapas: arquivo, colunas, pendências e confirmação. A gravação financeira ocorre somente na etapa final.</p></div><span class="strategy-mini-badge">Prévia · Sem lançamento</span></div>
               <nav class="strategy-csv-wizard-progress" aria-label="Etapas da importação" id="strategyCsvWizardProgress">
@@ -2398,14 +2406,6 @@
               <details class="strategy-csv-advanced" id="strategyCsvProductsDetails"><summary>Produtos identificados no CSV</summary>
               <p class="muted" id="strategyCsvProductsInfo">Sem arquivo selecionado.</p>
               <div id="strategyCsvProducts"></div></details>
-              <details class="strategy-csv-advanced" id="strategyCsvCatalogDetails"><summary>Catálogo comercial e regras de comissão</summary>
-              <section class="strategy-catalog-panel" id="strategyCommercialCatalog">
-                <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h4>Catálogo comercial e comissões por produto</h4><p>Produtos pré-cadastrados por origem. Anotação de venda gera MRR; mercadorias são avulsas. Configure comissão integral, percentual, diferença após custo de terceiros ou valor fixo. O pré-cadastro não lança vendas; a confirmação de Novo MRR fica na seção Receita recorrente.</p></div><span class="strategy-mini-badge">Regras versionadas</span></div>
-                <div class="strategy-csv-controls"><label><span>Origem do catálogo</span><select id="strategyCatalogSource"><option value="contracted_modules_csv">Anotação de venda · MRR</option><option value="merchandise_sales_csv">Venda de mercadorias · sem MRR</option></select></label><button type="button" class="btn primary" id="strategyCatalogImport">Reprocessar pré-cadastro do CSV</button></div>
-                <p class="muted" id="strategyCatalogNotice">Aplique a migration V2.63.3; ao selecionar um CSV válido, os produtos são pré-cadastrados sem duplicidade.</p><p class="muted" id="strategyCatalogCount">Nenhum produto cadastrado.</p>
-                <div class="strategy-table-wrap"><table class="strategy-table strategy-catalog-table"><thead><tr><th>Produto</th><th>Modalidade</th><th>Revisão</th><th>Regra de comissão</th><th>Parâmetro</th><th>Ação</th></tr></thead><tbody id="strategyCatalogRows"><tr><td colspan="6">Consulte o catálogo após carregar a Gestão Estratégica.</td></tr></tbody></table></div>
-                <p class="muted">Produtos novos permanecem pendentes até a configuração. Alterações da regra geram revisões preservadas no Supabase; o cálculo de vendas e bonificações será integrado nas próximas versões.</p>
-              </section></details>
               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.2</span><h4>Conciliação de vendedores e Squads</h4><p>Vínculo por conta ativa e pessoa estratégica. Correspondência automática somente por nome exato normalizado e Squad; nomes divergentes exigem alias aprovado.</p></div></div>
               <label class="strategy-seller-filter"><input id="strategySellerOnlyPending" type="checkbox" checked> Mostrar somente vendedores pendentes</label><p class="muted" id="strategySellerSummary">Selecione um CSV para conferir vendedores.</p>
               <div id="strategySellerRows"></div>
@@ -2418,6 +2418,7 @@
               </div><div id="strategyCsvWizardStep4" class="strategy-csv-wizard-step" hidden>
                 <div class="strategy-csv-stage"><strong>4 · Confirmar a importação</strong><span>Confira o resumo financeiro do tipo selecionado. Os dados só serão gravados após confirmação explícita no painel abaixo.</span></div>
                 <p id="strategyCsvWizardConfirmation" class="strategy-product-demand-note" aria-live="polite">Revise o arquivo e as pendências para continuar.</p>
+                <label class="strategy-product-demand-note" style="display:block;margin-top:12px"><input type="checkbox" id="strategyImportReplaceCommissions" checked> <strong>Reimportação substitutiva: recalcular com as regras atuais do catálogo</strong><small style="display:block;margin-top:4px">Mantém vendas únicas e receita sem duplicação. Após importar, apresenta uma prévia das diferenças para confirmação separada. Competências fechadas e bonificações sincronizadas são protegidas.</small></label>
               </div>
               <div class="strategy-csv-wizard-footer">
                 <button type="button" class="btn secondary" id="strategyCsvWizardBack">← Voltar</button>
@@ -2996,55 +2997,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r21"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r21"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r21"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r21"></script>
-  <script src="js/presentation.js?v=2.63.9-r21"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r21"></script>
-  <script src="js/chart-export.js?v=2.63.9-r21"></script>
-  <script src="js/import-engine.js?v=2.63.9-r21"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r21"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r21"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r21"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r21"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r21"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r21"></script>
-  <script src="js/filter-system.js?v=2.63.9-r21"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r21"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r21"></script>
-  <script src="js/design-system.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r21"></script>
-  <script src="js/strategy.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r21"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r23"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r23"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r23"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r23"></script>
+  <script src="js/presentation.js?v=2.63.9-r23"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r23"></script>
+  <script src="js/chart-export.js?v=2.63.9-r23"></script>
+  <script src="js/import-engine.js?v=2.63.9-r23"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r23"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r23"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r23"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r23"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r23"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r23"></script>
+  <script src="js/filter-system.js?v=2.63.9-r23"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r23"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r23"></script>
+  <script src="js/design-system.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r23"></script>
+  <script src="js/strategy.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r23"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r21"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r21"></script>
-<script src="js/app.js?v=2.63.9-r21"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r23"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r23"></script>
+<script src="js/app.js?v=2.63.9-r23"></script>
 </body>
 </html>

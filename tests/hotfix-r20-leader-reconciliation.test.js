@@ -11,7 +11,7 @@ test('R20 carrega dados estrategicos apos preparar lideres, e rotula perfil corr
  assert.match(js,/await state\.supabase\.rpc\('prepare_strategy_leader_sellers_v26311'\)/);
  assert.ok(js.indexOf("rpc('prepare_strategy_leader_sellers_v26311')")<js.indexOf("from('strategy_people').select('id,user_id,name,active,functional_team,default_squad_code')"));
  assert.match(js,/Líder\/Administrador/);
- assert.match(html,/js\/app\.js\?v=2\.63\.9-r21/);
+ assert.match(html,/js\/app\.js\?v=2\.63\.9-r23/);
 });
 test('R20 Heitor por Squad A exige identidade estrategica e alias sem virar tecnico',()=>{
  const people=[{id:'person-heitor',user_id:'user-heitor',name:'HEITOR DRAGO',active:true,functional_team:'other',organization_id:'org',default_squad_code:null}];
