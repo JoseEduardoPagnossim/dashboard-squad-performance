@@ -1,0 +1,19 @@
+--- a/js/app.js
++++ b/js/app.js
+@@ -7321,7 +7321,15 @@
+   function qualityFullTableUnavailable(error){const code=String(error?.code||''),msg=String(error?.message||'').toLowerCase();return code==='42P01'||code==='PGRST205'||msg.includes('quality_full_daily')&&msg.includes('not find')}
+   async function ensureQualityFullLoaded(force=false){
+     if(state.qualityFullLoading)return state.qualityFullLoading;if(state.qualityFullLoaded&&!force)return state.qualityFullRows;
+-    const task=(async()=>{state.qualityFullError='';try{let rows=[];if(state.supabase){const {data,error}=await state.supabase.from('quality_full_daily').select('organization_id,squad_id,squad_code,metric_date,service_n1,service_n2,service_n3,service_n4,service_n5,product_n1,product_n2,product_n3,product_n4,product_n5,company_n1,company_n2,company_n3,company_n4,company_n5,source_rows,source_file,imported_at').eq('organization_id',state.user.organizationId).order('metric_date');if(error)throw error;rows=data||[];}else rows=loadDemoQualityFullRows();state.qualityFullRows=rows.map(normalizeQualityFullRow);state.qualityFullLoaded=true;return state.qualityFullRows;}catch(err){console.warn('Qualidade Completa indisponível.',err);state.qualityFullRows=[];state.qualityFullLoaded=true;state.qualityFullError=qualityFullTableUnavailable(err)?'Execute a migração V2.53.0 para habilitar a Qualidade Completa.':(err?.message||'Não foi possível carregar a Qualidade Completa.');return[];}finally{state.qualityFullLoading=null}})();state.qualityFullLoading=task;return task;
++    const task=(async()=>{state.qualityFullError='';try{let rows=[];if(state.supabase){const pageSize=500;
++          const fields='organization_id,squad_id,squad_code,metric_date,service_n1,service_n2,service_n3,service_n4,service_n5,product_n1,product_n2,product_n3,product_n4,product_n5,company_n1,company_n2,company_n3,company_n4,company_n5,source_rows,source_file,imported_at';
++          for(let offset=0;;offset+=pageSize){
++            const {data,error}=await state.supabase.from('quality_full_daily').select(fields).eq('organization_id',state.user.organizationId).order('metric_date',{ascending:true}).order('squad_id',{ascending:true}).range(offset,offset+pageSize-1);
++            if(error)throw error;
++            const page=data||[];
++            rows.push(...page);
++            if(page.length<pageSize)break;
++          }}else rows=loadDemoQualityFullRows();state.qualityFullRows=rows.map(normalizeQualityFullRow);state.qualityFullLoaded=true;return state.qualityFullRows;}catch(err){console.warn('Qualidade Completa indisponível.',err);state.qualityFullRows=[];state.qualityFullLoaded=true;state.qualityFullError=qualityFullTableUnavailable(err)?'Execute a migração V2.53.0 para habilitar a Qualidade Completa.':(err?.message||'Não foi possível carregar a Qualidade Completa.');return[];}finally{state.qualityFullLoading=null}})();state.qualityFullLoading=task;return task;
+   }
+   function negativeImportValues(pending,id){if(pending?.kind!=='service')return 0;let count=0;for(const r of pending.rows||[]){if(r.id!==id)continue;for(const key of ['att','notes5','notes4','notes3','notes2','notes1'])if(safe(r[key])<0)count++;}return count}
+   function buildImportPreview(pending,id){

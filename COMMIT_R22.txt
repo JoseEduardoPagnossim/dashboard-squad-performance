@@ -1,0 +1,1 @@
+fix: pagina Qualidade Completa e inclui novembro no historico
