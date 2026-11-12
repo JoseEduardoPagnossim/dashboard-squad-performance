@@ -1,0 +1,57 @@
+--- a/index.html
++++ b/index.html
+@@ -2686,7 +2686,7 @@
+             <div class="support-cost-footer"><span>Valores confidenciais e visíveis somente ao Administrador. Não alteram bonificação, metas ou pontuação.</span><strong id="supportCostStatus">Selecione uma competência.</strong></div>
+           </article>
+ 
+-          <article id="configAppearanceCard" class="card admin-card full admin-section admin-appearance" data-central-config="appearance" data-central-label="APARÊNCIA E GRÁFICOS" data-central-icon="✦" data-permission="appearance.manage"><span class="eyebrow">APARÊNCIA • SOMENTE ADMIN</span><h2>Tema e ambientação do Squad</h2><p>Cada Squad pode ter paletas próprias para modo claro e escuro, mantendo fundo, identidade visual, favicon e trilha sonora. A escolha Light/Dark é individual e fica salva no navegador de cada usuário.</p><div class="appearance-scope-control"><label><span>Aplicar aparência em</span><select id="appearanceScopeSelect"><option value="squad">Somente Squad atual</option><option value="all">Todos os Squads</option></select></label><small id="appearanceScopeHint">As alterações serão salvas somente no Squad selecionado.</small></div><div class="appearance-actions"><button class="btn primary" id="adminThemeBtn">✦ Personalizar tema</button><button class="btn secondary" id="importThemeBtn">Importar tema JSON</button><button class="btn secondary" id="exportThemeBtn">Exportar tema</button></div><div class="theme-preview"><div><small>ATUAL</small><strong id="themeName">Vermithor</strong></div><span class="theme-mode-preview" id="themePaletteModeLabel">Modo escuro</span></div><div class="chart-preferences-card" id="chartPreferencesCard">
++          <article id="configAppearanceCard" class="card admin-card full admin-section admin-appearance" data-central-config="appearance" data-central-label="APARÊNCIA E GRÁFICOS" data-central-icon="✦" data-permission="appearance.manage"><span class="eyebrow">APARÊNCIA • SOMENTE ADMIN</span><h2>Tema e ambientação do Squad</h2><p>Cada Squad pode ter paletas próprias para modo claro e escuro, mantendo fundo, identidade visual, favicon e trilha sonora. A escolha Light/Dark é individual e fica salva no navegador de cada usuário.</p><div class="appearance-scope-control"><label><span>Aplicar aparência em</span><select id="appearanceScopeSelect"><option value="squad">Somente Squad atual</option><option value="all">Todos os Squads</option></select></label><small id="appearanceScopeHint">As alterações serão salvas somente no Squad selecionado.</small></div><div class="appearance-actions"><button class="btn primary" id="adminThemeBtn">✦ Personalizar tema</button><button class="btn secondary" id="importThemeBtn">Importar tema JSON</button><button class="btn secondary" id="exportThemeBtn">Exportar tema</button></div><div class="theme-preview"><img class="theme-preview-art hidden" alt="" aria-hidden="true"><div><small>ATUAL</small><strong id="themeName">Vermithor</strong></div><span class="theme-mode-preview" id="themePaletteModeLabel">Modo escuro</span></div><div class="chart-preferences-card" id="chartPreferencesCard">
+   <div class="chart-preferences-head"><div><span class="eyebrow">APARÊNCIA DOS GRÁFICOS</span><h3>Leitura simples, consistente e pronta para apresentação</h3></div><p>Escolha um perfil visual, defina como os percentuais devem abrir no eixo e padronize as cores dos Squads. Os ajustes técnicos continuam disponíveis abaixo, mas ficam fora do caminho no uso diário.</p></div>
+   <div class="chart-simple-settings">
+     <section class="chart-simple-block">
+--- a/js/app.js
++++ b/js/app.js
+@@ -7898,8 +7898,20 @@
+     const tagline=theme.campaignTagline||fallbackTagline||'Acompanhe, evolua e conquiste.';
+     const art=safeBg||(theme.preset==='vermithor'?'assets/casa-do-dragao-sidebar.png':'');
+     $$('[data-theme-art]').forEach(img=>{if(art){img.src=art;img.classList.remove('hidden')}else{img.removeAttribute('src');img.classList.add('hidden')}img.alt=`Arte da campanha ${title}`});
++    // A faixa de prévia usa a imagem real, não uma URL Base64 em background CSS.
++    // Isso evita exibir uma arte antiga quando o CSS não aplica a imagem grande.
++    const previewArt=$('#configAppearanceCard .theme-preview-art');
++    if(previewArt){
++      if(safeBg){
++        if(previewArt.getAttribute('src')!==safeBg)previewArt.src=safeBg;
++        previewArt.classList.remove('hidden');
++      }else{
++        previewArt.removeAttribute('src');
++        previewArt.classList.add('hidden');
++      }
++    }
+     const cssArt=art?`url(\"${art}\")`:'none';
+-    $$('.hero,.team-hero,.help-hero,.profile-hero,.theme-preview,.login-screen,.boot-card,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
++    $$('.hero,.team-hero,.help-hero,.profile-hero,.login-screen,.boot-card,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
+     if($('#campaignVisual'))$('#campaignVisual').setAttribute('aria-label',`Campanha ${title}`);
+     if($('#campaignTitleDisplay'))$('#campaignTitleDisplay').textContent=title;
+     if($('#campaignTaglineDisplay'))$('#campaignTaglineDisplay').textContent=tagline;
+--- a/css/styles.css
++++ b/css/styles.css
+@@ -1777,7 +1777,7 @@
+ /* Login renovado */
+ .login-screen{padding:32px clamp(20px,4vw,64px);overflow:auto}
+ .login-screen:before{background:linear-gradient(90deg,rgba(3,9,17,.92),rgba(3,12,24,.68) 48%,rgba(4,12,22,.82)),var(--hero-img) center/cover;opacity:.72}
+-.login-shell-v241{width:min(1180px,100%);min-height:min(690px,calc(100vh - 64px));display:grid;grid-template-columns:minmax(0,1.2fr) minmax(390px,.72fr);gap:clamp(28px,5vw,72px);align-items:center;position:relative;z-index:1}
++.login-shell-v241{width:min(1180px,100%);min-height:min(690px,calc(100vh - 64px));display:grid;grid-template-columns:minmax(0,1.2fr) minmax(390px,.72fr);gap:clamp(28px,5vw,72px);align-items:center;position:relative;z-index:2}
+ .login-identity-panel{display:flex;min-height:560px;flex-direction:column;justify-content:center;padding:clamp(12px,2vw,28px);color:#fff}
+ .login-product-brand{display:flex;align-items:center;gap:18px;margin-bottom:clamp(54px,8vh,92px)}
+ .login-brand-logo{display:block;width:clamp(195px,18vw,285px);height:auto;max-height:105px;object-fit:contain;object-position:left center;filter:drop-shadow(0 12px 26px rgba(0,0,0,.28))}
+@@ -2910,3 +2910,10 @@
+ @media(max-width:1250px){.team-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+ @media(max-width:1000px){.team-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.squad-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:620px){.team-kpis{grid-template-columns:1fr!important}.portfolio-fcr-card{align-items:flex-start;flex-direction:column}.portfolio-fcr-value{text-align:left}.squad-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
++
++/* Tema: faixa de pré-visualização usa o mesmo arquivo de imagem salvo no tema. */
++#configAppearanceCard .theme-preview{position:relative;isolation:isolate;overflow:hidden;background:var(--panel2)!important}
++#configAppearanceCard .theme-preview-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;pointer-events:none}
++#configAppearanceCard .theme-preview-art.hidden{display:none!important}
++#configAppearanceCard .theme-preview::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,10,15,.78),rgba(8,10,15,.17));z-index:1;pointer-events:none}
++#configAppearanceCard .theme-preview>div,#configAppearanceCard .theme-preview>.theme-mode-preview{position:relative;z-index:2}

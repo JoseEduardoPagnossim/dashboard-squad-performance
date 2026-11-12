@@ -7898,8 +7898,20 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const tagline=theme.campaignTagline||fallbackTagline||'Acompanhe, evolua e conquiste.';
     const art=safeBg||(theme.preset==='vermithor'?'assets/casa-do-dragao-sidebar.png':'');
     $$('[data-theme-art]').forEach(img=>{if(art){img.src=art;img.classList.remove('hidden')}else{img.removeAttribute('src');img.classList.add('hidden')}img.alt=`Arte da campanha ${title}`});
+    // A faixa de prévia usa a imagem real, não uma URL Base64 em background CSS.
+    // Isso evita exibir uma arte antiga quando o CSS não aplica a imagem grande.
+    const previewArt=$('#configAppearanceCard .theme-preview-art');
+    if(previewArt){
+      if(safeBg){
+        if(previewArt.getAttribute('src')!==safeBg)previewArt.src=safeBg;
+        previewArt.classList.remove('hidden');
+      }else{
+        previewArt.removeAttribute('src');
+        previewArt.classList.add('hidden');
+      }
+    }
     const cssArt=art?`url(\"${art}\")`:'none';
-    $$('.hero,.team-hero,.help-hero,.profile-hero,.theme-preview,.login-screen,.boot-card,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
+    $$('.hero,.team-hero,.help-hero,.profile-hero,.login-screen,.boot-card,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
     if($('#campaignVisual'))$('#campaignVisual').setAttribute('aria-label',`Campanha ${title}`);
     if($('#campaignTitleDisplay'))$('#campaignTitleDisplay').textContent=title;
     if($('#campaignTaglineDisplay'))$('#campaignTaglineDisplay').textContent=tagline;
