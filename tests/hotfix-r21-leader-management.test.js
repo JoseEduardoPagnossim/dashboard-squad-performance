@@ -22,5 +22,5 @@ test('R21 usa RPC autorizada e nao sobrescreve campos financeiros',()=>{
 test('R21 carrega somente admins ativos e usa competencia independente do squad aberto',()=>{
  assert.match(app,/\.eq\('active',true\)\.eq\('organization_id',state\.user\.organizationId\)/);
  assert.match(app,/financeLeaderPeriod/);
- assert.match(index,/2\.63\.9-r23/);
+ assert.match(index,/2\.63\.9-r25/);
 });

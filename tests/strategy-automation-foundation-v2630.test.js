@@ -151,7 +151,7 @@ test('regras obrigatorias ficam no repositorio para futuras entregas',()=>{
 test('Versao consistente',()=>{
  assert.equal(JSON.parse(r('package.json')).version,'2.63.9');
  assert.match(app,/const APP_VERSION = '2\.63\.9'/);
- assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.9-r23/);
+ assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.9-r25/);
  assert.ok(r('supabase/migrations/README.md').includes('V2.63.0'));
 });
 

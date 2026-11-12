@@ -1783,6 +1783,14 @@
     if(code!=='all'&&!state.squads?.[code])return;
     const selectionSeq=++state.squadSelectionSeq,previousMonth=state.currentId,previousRange={start:state.analysisStartDate,end:state.analysisEndDate,preset:state.analysisPreset,mode:state.analysisMode,competenceId:state.analysisCompetenceId};
     state.squadSelectionLoadError=false;state.squadCode=code;
+    // O tema do Squad deve ser revalidado no Supabase em TODA troca de Squad.
+    // O cache local e o cache de 10 minutos podem conter uma arte antiga;
+    // aguardar a identidade visual correta antes de pintar a nova tela.
+    if(code!=='all'&&state.supabase){
+      try{await ensureSquadTheme(code,{force:true,apply:false});}
+      catch(err){console.warn('Tema do Squad indisponivel; usando a ultima configuracao em cache.',err);}
+      if(selectionSeq!==state.squadSelectionSeq||state.squadCode!==code)return;
+    }
     if(code==='all'){
       const ids=competenceIdsForSquad('all');state.currentId=ids.includes(previousMonth)?previousMonth:(ids[0]||null);state.techName='';
       // A visão consolidada preserva a identidade visual do último Squad selecionado.
@@ -7900,6 +7908,16 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     $$('[data-theme-art]').forEach(img=>{if(art){img.src=art;img.classList.remove('hidden')}else{img.removeAttribute('src');img.classList.add('hidden')}img.alt=`Arte da campanha ${title}`});
     // A faixa de prévia usa a imagem real, não uma URL Base64 em background CSS.
     // Isso evita exibir uma arte antiga quando o CSS não aplica a imagem grande.
+    const individualArt=$('#view-individual .individual-hero-art');
+    if(individualArt){
+      if(safeBg){
+        if(individualArt.getAttribute('src')!==safeBg)individualArt.src=safeBg;
+        individualArt.classList.remove('hidden');
+      }else{
+        individualArt.removeAttribute('src');
+        individualArt.classList.add('hidden');
+      }
+    }
     const previewArt=$('#configAppearanceCard .theme-preview-art');
     if(previewArt){
       if(safeBg){
