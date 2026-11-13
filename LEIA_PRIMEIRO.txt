@@ -1,0 +1,1 @@
+Hotfix R26 sobre R25. Aplicar os arquivos mantendo caminhos relativos. Nao exige migration SQL. Consulte docs/HOTFIX_R26_COMPARATIVO_SQUADS_TECNICOS.md.

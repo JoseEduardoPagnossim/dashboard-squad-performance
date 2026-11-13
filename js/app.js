@@ -2830,18 +2830,27 @@ function filteredOrgDailyRows(){const code=orgDailyScopeCode();return orgDailyRo
 function buildOrgDailyComparison(){const rows=filteredOrgDailyRows(),map=new Map(),scopeLabel=orgDailyScopeLabel(),specific=Boolean(orgDailyScopeCode());rows.forEach(r=>{const date=r.date||isoDateParts(r.year,r.month,r.day);map.set(date,(map.get(date)||0)+safe(r.totalAtt));});const days=[...map.entries()].map(([date,value])=>({date,value:safe(value)})).filter(item=>item.value>0).sort((a,b)=>a.date.localeCompare(b.date)),values=days.map(x=>x.value),average=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;return{labels:days.map(x=>{const d=parseIsoAnalysisDate(x.date);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`}),series:[{name:specific?`Atendimentos diários do ${scopeLabel}`:'Atendimentos diários consolidados',color:'var(--accent)',values},{name:specific?`Média diária do ${scopeLabel}`:'Média geral dos dias com atendimento',color:'var(--accent2)',dashed:true,values:days.map(()=>average)}],average,days:days.length,scopeLabel,specific};}
 function renderTeamOrgDailyComparison(){const el=$('#teamOrgDailyChart');if(!el)return;const data=buildOrgDailyComparison(),title=data.specific?`Atendimentos diários do ${data.scopeLabel} x média do período`:'Atendimentos diários consolidados x média do período';if($('#teamOrgDailyTitle'))$('#teamOrgDailyTitle').textContent=title;if($('#teamOrgDailyNote'))$('#teamOrgDailyNote').textContent=`${data.scopeLabel} • ${analysisRangeLabel()} • média ${fmtNum(data.average)} atend./dia • ${fmtInt(data.days)} dia(s) com atendimento`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:null,percent:false,decimals:0,height:390});}
 function renderIndicatorOrgDailyComparison(){const el=$('#indicatorOrgDailyChart');if(!el)return;const data=buildOrgDailyComparison(),title=data.specific?`Atendimentos diários do ${data.scopeLabel} x média do período`:'Atendimentos diários consolidados x média do período';if($('#indicatorOrgDailyTitle'))$('#indicatorOrgDailyTitle').textContent=title;if($('#indicatorOrgDailyNote'))$('#indicatorOrgDailyNote').textContent=`${data.scopeLabel} • ${analysisRangeLabel()} • média ${fmtNum(data.average)} atend./dia • ${fmtInt(data.days)} dia(s) com atendimento`;renderIndicatorLineChart(el,data.labels,data.series,{maxValue:null,percent:false,decimals:0,height:390});}
-function buildOrgSquadMonthlySeries(){
+function buildOrgSquadMonthlySeries(overviewRows=null){
   // Os dois gráficos executivos do setor são mensais por definição.
   // O calendário continua definindo quais competências entram no recorte, mas cada ponto
   // representa a competência consolidada (e não cada dia), evitando dezenas de pontos
   // comprimidos quando o usuário seleciona vários meses.
-  const allRows=orgOverviewRows(),available=orgOverviewMonthIds(allRows,0),ids=analysisMonthIds().filter(id=>available.includes(id));
+  const allRows=overviewRows??orgOverviewRows(),available=orgOverviewMonthIds(allRows,0),ids=analysisMonthIds().filter(id=>available.includes(id));
   const data=buildOrgSquadSeries(ids,allRows);
   return{ids,labels:ids.map(shortHistoryMonth),attendance:data.attendance,evaluation:data.evaluation,average:data.average};
 }
 function renderTeamSquadOverview(){
   if(!$('#teamSquadAttendanceChart'))return;
-  const data=buildOrgSquadMonthlySeries();
+  // R26: sem consolidado autenticado, nao apresentar apenas o Squad local
+  // como se fosse um comparativo organizacional completo.
+  if(state.supabase&&!state.orgOverviewLoaded){
+    const message='Carregando comparativo consolidado dos Squads...';
+    $('#teamSquadAttendanceChart').innerHTML=`<div class="chart-empty">${message}</div>`;
+    $('#teamSquadEvaluationChart').innerHTML=`<div class="chart-empty">${message}</div>`;
+    $('#teamSectorPeriod').textContent=analysisRangeLabel();
+    return;
+  }
+  const data=buildOrgSquadMonthlySeries(state.supabase?state.orgOverview:null);
   $('#teamSectorPeriod').textContent=analysisRangeLabel();
   renderIndicatorLineChart($('#teamSquadAttendanceChart'),data.labels,data.attendance,{maxValue:null,percent:false,decimals:0,height:280,fitWidth:true});
   renderIndicatorLineChart($('#teamSquadEvaluationChart'),data.labels,data.evaluation,{maxValue:null,percent:true,decimals:1,height:280,fitWidth:true});
@@ -8175,7 +8184,13 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     const ids=(['indicators','team','individual','presentation'].includes(name))?analysisMonthIds().filter(Boolean):(state.currentId?[state.currentId]:[]),codes=state.squadCode==='all'?Object.keys(state.squads||{}):(state.squadCode?[state.squadCode]:[]),jobs=[];
     if(viewNeedsFullMonth(name,section)&&ids.length&&codes.length)jobs.push(ensureMonthsLoaded(codes,ids,{silent:true,strict,force:forceMonths}));
     if(name==='presentation')jobs.push(ensurePresentationDailyOverview());
-    else if((name==='indicators'||name==='team')&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
+    else if(name==='team'){
+      // R26: indicadores coletivos para todos os perfis; detalhes individuais
+      // e diarios continuam sujeitos as permissoes anteriores.
+      const privileged=isSuperAdmin();
+      jobs.push(ensureOrgOverviewData({daily:privileged,technicians:privileged,strict:true}));
+    }
+    else if(name==='indicators'&&isSuperAdmin())jobs.push(ensureOrgOverviewData({daily:true,technicians:true}));
     if(name==='indicators'||name==='team')jobs.push(ensureOperationalFcrData());
     if(name==='admin'&&section==='finance'&&isSuperAdmin())jobs.push(ensureSuperAdminCommissions());
     if(!jobs.length)return;const metricName=`view:${name}${section?`:${section}`:''}`,started=performance.now();setDataLoadIndicator(true,'Atualizando dados da tela...');try{const result=await Promise.all(jobs);recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,squad:state.squadCode||'',period:state.currentId||''},true,'lazy');return result;}catch(err){recordRuntimePerformance('module',metricName,performance.now()-started,{jobs:jobs.length,message:String(err?.message||err||'').slice(0,180)},false,'lazy');throw err;}finally{setDataLoadIndicator(false);}
