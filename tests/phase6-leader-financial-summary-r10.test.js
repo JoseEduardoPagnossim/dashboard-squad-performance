@@ -36,5 +36,5 @@ test('Fase 6: Excel e PDF utilizam o mesmo consolidado, sem alterar indicadores'
   assert.match(app,/'Bonificação líderes \(fora das métricas\)':leadership\.total/);
   assert.match(app,/Líderes financeiros \$\{leadership\.count\}: \$\{fmtMoney\(leadership\.total\)\}/);
   assert.match(app,/function financeReportRows\(m\)\{return \[\.\.\.individualMetricTechnicians\(m\)\.map/);
-  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r26/);
+  assert.match(html,/js\/finance-report-engine\.js\?v=2\.63\.9-r27/);
 });

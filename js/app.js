@@ -6368,7 +6368,11 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     $('#editUserSquad').disabled=role!=='technician'||!isSuperAdmin();if(role!=='technician')$('#editUserSquad').value='';
     $('#editTechnicianNameField').classList.toggle('hidden',role!=='technician');$('#editTechnicianAliasesField')?.classList.toggle('hidden',role!=='technician');$('#editUserTechName').required=role==='technician';
     $('#editUserRole').disabled=false;
-    const moved=isSuperAdmin()&&role==='technician'&&$('#editUserSquad').value&&$('#editUserSquad').value!==($('#editUserSquad').dataset.originalSquad||'');
+    const original=directoryUserById($('#editUserId').value);
+    const roleTransition=original?.role==='pre_attendance'&&role==='technician';
+    const moved=isSuperAdmin()&&role==='technician'&&$('#editUserSquad').value&&(roleTransition||$('#editUserSquad').value!==($('#editUserSquad').dataset.originalSquad||''));
+    const currentMonth=new Date().toISOString().slice(0,7);$('#editUserEffectiveMonth').min=roleTransition?currentMonth:'';$('#editUserEffectiveMonth').max=currentMonth;
+    if(roleTransition)$('#editUserEffectiveMonth').value=currentMonth;
     $('#editMovementPeriodField')?.classList.toggle('hidden',!moved);$('#editUserEffectiveMonth').required=moved;
   }
   async function handleEditUser(e){
@@ -6377,7 +6381,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     try{
       const role=$('#editUserRole').value,squadCode=role==='technician'?$('#editUserSquad').value:null,techName=role==='technician'?normalizeName($('#editUserTechName').value):null;
       const period=$('#editUserEffectiveMonth').value||'',parts=period.split('-').map(Number);
-      if((u.role==='pre_attendance')!==(role==='pre_attendance'))throw new Error('Para preservar historicos, nao altere usuarios existentes de/para Pre-atendimento. Crie uma conta dedicada.');
+      if(u.role==='technician'&&role==='pre_attendance')throw new Error('Movimentação de Suporte para Pré-atendimento ainda não é suportada.');
+      const converting=u.role==='pre_attendance'&&role==='technician';
+      if(converting&&!isSuperAdmin())throw new Error('Somente Super Admin pode movimentar Pré-atendimento para Suporte.');
       const permissions=role==='technician'&&hasPermission('permissions.manage')?collectPermissionOverrides():{};
       const manualAliases=role==='technician'?parseTechnicianAliasesInput($('#editUserAliases')?.value||''):[],payload={userId:u.userId,fullName:$('#editUserName').value.trim(),role,squadCode,techName,effectiveYear:parts[0]||null,effectiveMonth:parts[1]||null,permissions};
       if(!payload.fullName)throw new Error('Informe o nome completo.');if(role==='technician'&&!state.squads[squadCode])throw new Error('Selecione um Squad válido.');if(role==='technician'&&!techName)throw new Error('Informe o nome do técnico como aparece no CSV.');
@@ -6385,8 +6391,10 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       if(state.supabase){
         // Preserva o nome anterior antes de alterar o perfil. Se a estrutura de aliases estiver
         // indisponível, a troca é interrompida antes de mudar a identidade visível do técnico.
-        if(role==='technician')await persistTechnicianAliasesForUser({userId:u.userId,oldTechName:u.techName,oldFullName:u.fullName,newTechName:techName,newFullName:payload.fullName,manualAliases});
+        if(role==='technician'&&!converting)await persistTechnicianAliasesForUser({userId:u.userId,oldTechName:u.techName,oldFullName:u.fullName,newTechName:techName,newFullName:payload.fullName,manualAliases});
         await manageSupabaseUser('update',payload);
+        // Apenas apos a movimentacao atomica: nao cria aliases de Suporte para uma conta ainda no Squad C.
+        if(converting){try{await persistTechnicianAliasesForUser({userId:u.userId,newTechName:techName,newFullName:payload.fullName,manualAliases});}catch(aliasErr){console.warn('Movimentação concluída, mas os aliases precisam ser conferidos:',aliasErr);toast('Perfil movimentado. Confira os aliases do CSV antes da importação.');}}
       }else updateDemoUser({...payload,active:u.active,aliases:normalizedAliasValues([...(u.aliases||[]),u.techName,...manualAliases])});
       state.userDirectoryLoaded=false;await loadUserDirectory();renderUserRows();closeModal('editUserModal');toast(csvNameChanged?`Usuário ${payload.fullName} atualizado. O nome anterior foi preservado como alias do CSV.`:`Usuário ${payload.fullName} atualizado${u.squadCode!==squadCode?` e movimentado para o Squad ${squadCode}`:''}.`);
     }catch(err){console.error(err);$('#editUserError').textContent=humanManageUserError(err)}finally{btn.disabled=false;btn.textContent='Salvar alterações'}
@@ -6410,7 +6418,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     throw new Error('Usuários de demonstração padrão não são editáveis. Crie um usuário demo para testar esta função.');
   }
   function deleteDemoUser(u){const list=loadDemoCreatedUsers(),next=list.filter(x=>String(x.userId)!==String(u.userId));if(next.length===list.length)throw new Error('Usuários de demonstração padrão não podem ser excluídos.');saveDemoCreatedUsers(next)}
-  function humanManageUserError(err){const m=String(err?.message||err||'');if(/function|failed to fetch|non-2xx/i.test(m))return'Falha no servidor. Confira se a Edge Function manage-user V2.38.0 foi publicada.';if(/self|próprio|proprio/i.test(m))return'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.';if(/movimenta.*futur|competência.*futur/i.test(m))return'A movimentação deve começar no mês atual ou em uma competência anterior.';return m||'Não foi possível concluir a operação.'}
+  function humanManageUserError(err){const m=String(err?.message||err||'');if(/function|failed to fetch|non-2xx/i.test(m))return'Falha no servidor. Confira se a Edge Function manage-user V2.38.0 foi publicada.';if(/self|próprio|proprio/i.test(m))return'Não é permitido alterar, inativar ou excluir o próprio acesso por esta tela.';if(/migracao.*R27|migração.*R27|function.*r27/i.test(m))return'A movimentação exige a migration R27 e a Edge Function manage-user atualizada.';if(/movimenta.*futur|competência.*futur/i.test(m))return'A movimentação deve começar no mês atual ou em uma competência anterior.';return m||'Não foi possível concluir a operação.'}
 
   function openCreateUser(){
     if(!isAdmin()||!hasPermission('users.manage'))return;

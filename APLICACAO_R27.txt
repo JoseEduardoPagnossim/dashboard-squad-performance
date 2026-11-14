@@ -1,0 +1,1 @@
+R27: executar migration SQL, publicar Edge Function manage-user e frontend; nao aplicar somente a interface. Consultar docs/HOTFIX_R27_MOVIMENTACAO_PRE_ATENDIMENTO_E_MODAL.md.

@@ -55,6 +55,6 @@ test('Fase 4: líderes vinculados somente à bonificação, com isolamento do Sq
 });
 
 test('Fase 4: interface publica cache-buster novo e conferência de MRR',()=>{
-  assert.match(html,/js\/app\.js\?v=2\.63\.9-r26/);
+  assert.match(html,/js\/app\.js\?v=2\.63\.9-r27/);
   assert.match(app,/missingMonthly/);
 });

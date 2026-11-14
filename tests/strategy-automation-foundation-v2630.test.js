@@ -90,9 +90,9 @@ test('contas sao criadas no backend com perfil distinto e pessoa estrategica',()
  assert.match(create,/await admin\.auth\.admin\.deleteUser\(created\.user\.id\)/);
  assert.match(create,/if \(role === 'technician' && targetSquad/);
 });
-test('alteracao de conta impede conversao pre suporte com historico existente',()=>{
- assert.match(manage,/\(role==='pre_attendance'\)!==\(target\.role==='pre_attendance'\)/);
- assert.match(app,/\(u\.role==='pre_attendance'\)!==\(role==='pre_attendance'\)/);
+test('alteracao de pre para suporte somente pela migracao auditada R27',()=>{
+ assert.match(manage,/admin\.rpc\('convert_pre_attendance_to_support_r27'/);
+ assert.match(app,/const converting=u\.role==='pre_attendance'&&role==='technician'/);
 });
 test('RLS pre tem seletor proprio e nao expoe custos salariais',()=>{
  assert.match(sql,/strategy_pre_attendance_self_select/);
@@ -151,7 +151,7 @@ test('regras obrigatorias ficam no repositorio para futuras entregas',()=>{
 test('Versao consistente',()=>{
  assert.equal(JSON.parse(r('package.json')).version,'2.63.9');
  assert.match(app,/const APP_VERSION = '2\.63\.9'/);
- assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.9-r26/);
+ assert.match(index,/js\/strategy-automation\.js\?v=2\.63\.9-r27/);
  assert.ok(r('supabase/migrations/README.md').includes('V2.63.0'));
 });
 

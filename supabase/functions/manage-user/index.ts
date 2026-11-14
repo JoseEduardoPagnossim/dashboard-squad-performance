@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
     let targetSquadCode:string|null=null
     role=String(body.role||canonicalRole(target.role))
     if(!['super_admin','technician','pre_attendance'].includes(role))return json({error:'Perfil inválido.'},400)
-    if((role==='pre_attendance')!==(target.role==='pre_attendance'))return json({error:'Não altere perfis entre Pré-atendimento e Suporte; crie uma conta separada para preservar o histórico.'},409)
+    const converting=canonicalRole(target.role)==='pre_attendance'&&role==='technician'
+    if(role==='pre_attendance'&&canonicalRole(target.role)!=='pre_attendance')return json({error:'Movimentação de Suporte para Pré-atendimento ainda não está disponível.'},409)
     if(role==='super_admin'||role==='pre_attendance'){
       squadId=null;technicianName=null;permissions={}
     }else{
@@ -103,6 +104,20 @@ Deno.serve(async (req) => {
       if(historyPreflight)return json({error:'Histórico de movimentação indisponível. Execute a migração V2.19.0 antes de mover técnicos entre Squads.'},409)
     }
 
+    if(converting){
+      // A migration R27 faz a transicao em uma unica transacao: nunca alterar apenas profiles.
+      const {data:converted,error:conversionError}=await admin.rpc('convert_pre_attendance_to_support_r27',{
+        p_actor_id:requester.user_id,p_user_id:targetId,p_squad_id:squadId,
+        p_technician_name:technicianName,p_full_name:fullName,
+        p_effective_year:effectiveYear,p_effective_month:effectiveMonth,
+        p_permissions:permissions
+      })
+      if(conversionError)return json({error:conversionError.message||'Falha na movimentacao R27.'},409)
+      const {error:authNameError}=await admin.auth.admin.updateUserById(targetId,{user_metadata:{full_name:fullName}})
+      if(authNameError)console.warn('Nome no Auth pendente apos movimentacao R27:',authNameError.message)
+      await writeAudit(admin,requester,{action:'user.pre_attendance_to_support',entityType:'profile',entityId:targetId,squadId:squadId,description:`${fullName} movimentado de Pré-atendimento para Squad ${targetSquadCode} na competência ${effectiveYear}-${String(effectiveMonth).padStart(2,'0')}.`,beforeData:{role:target.role,squad_id:target.squad_id,technician_name:target.technician_name},afterData:{role, squad_id:squadId,technician_name:technicianName},metadata:{effective_year:effectiveYear,effective_month:effectiveMonth,conversion:converted}})
+      return json({ok:true,user:{id:targetId,email:target.email,full_name:fullName,role,squad_code:targetSquadCode,technician_name:technicianName,active:target.active,permissions},movement:{effective_year:effectiveYear,effective_month:effectiveMonth}})
+    }
     const {error:authUpdateError}=await admin.auth.admin.updateUserById(targetId,{user_metadata:{full_name:fullName}})
     if(authUpdateError)return json({error:authUpdateError.message||'Não foi possível atualizar o usuário no Auth.'},400)
     const {error:profileError}=await admin.from('profiles').update({full_name:fullName,role,squad_id:squadId,technician_name:technicianName,permissions,updated_at:new Date().toISOString()}).eq('user_id',targetId)

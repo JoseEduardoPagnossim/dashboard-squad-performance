@@ -2924,3 +2924,9 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 #view-individual .individual-hero-art.hidden{display:none!important}
 #view-individual .hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,13,25,.90) 0%,rgba(7,13,25,.72) 56%,rgba(7,13,25,.52) 100%);z-index:1;pointer-events:none}
 #view-individual .hero>.hero-copy,#view-individual .hero>.hero-rank{position:relative;z-index:2}
+
+/* R27: cadastro/edicao acessiveis com zoom elevado e viewport reduzida. */
+#userModal,#editUserModal{overflow-y:auto;overscroll-behavior:contain;align-items:safe center;justify-items:center;padding:12px;}
+#userModal .user-modal,#editUserModal .user-modal{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-bottom:0;}
+#userModal .user-form .modal-actions,#editUserModal .user-form .modal-actions{position:sticky;bottom:0;z-index:3;margin:15px -28px 0;padding:14px 28px max(14px,env(safe-area-inset-bottom));background:var(--panel2,#111722);border-top:1px solid var(--border);flex-wrap:wrap;}
+@media(max-width:560px){#userModal .user-modal,#editUserModal .user-modal{width:100%;padding-left:16px;padding-right:16px;}#userModal .user-form .modal-actions,#editUserModal .user-form .modal-actions{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;}}
