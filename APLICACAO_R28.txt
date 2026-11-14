@@ -1,0 +1,7 @@
+R28 — Importacao unica Produto/Empresa e Impacto Financeiro
+
+Base: R27 (desconsidera R24 de bonificacao).
+Copie index.html e package.json para a raiz e js/app.js e js/import-engine.js para js/.
+Opcional: copie tests/*.test.js para atualizar a suite de validacao.
+Nao requer migration SQL.
+Leia docs/HOTFIX_R28_IMPORTACAO_UNICA_QUALIDADE_IMPACTO.md para restricoes de identificacao de clientes e Nota Servico.

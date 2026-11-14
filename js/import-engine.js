@@ -108,9 +108,10 @@
     const get=(row,key)=>{const idx=Number(mapping?.[key]);return Number.isInteger(idx)&&idx>=0&&idx<row.length?row[idx]:''};
     const hasResolve=kind==='quality-full'&&Number.isInteger(Number(mapping?.resolve))&&Number(mapping.resolve)>=0&&Number(mapping.resolve)<headers.length;
     const canonicalHeaders=kind==='quality-full'?['DataAvaliacao','nomeApresentativo','NotaServico','NotaProduto','NotaEmpresa','grupoAtendimento',...(hasResolve?['Resolve']:[])]:['DataAvaliacao','nomeApresentativo','NotaProduto','NotaEmpresa'];
+    const retainedSourceIndexes=sourceRows.filter(item=>!duplicateIndexes.has(item.index)).map(item=>item.index);
     const canonicalRows=kept.map(row=>kind==='quality-full'?[get(row,'date'),get(row,'technician'),get(row,'service'),get(row,'product'),get(row,'company'),get(row,'group'),...(hasResolve?[get(row,'resolve')]:[])]:[get(row,'date'),get(row,'technician'),get(row,'product'),get(row,'company')]);
     const csvText=[canonicalHeaders,...canonicalRows].map(row=>row.map(csvEscape).join(',')).join('\n');
-    return{csvText,headers:canonicalHeaders,rows:canonicalRows,stats:{sourceRows:sourceRows.length,sourceColumns:headers.length,resultRows:canonicalRows.length,duplicatesRemoved:duplicateIndexes.size,blankDedupKeys,dedupeEnabled:!!dedupeEnabled,dedupeColumns:dedupeIdx,keep:keep==='last'?'last':'first',partitionByCompetence:true},mapping:{...mapping}};
+    return{csvText,headers:canonicalHeaders,rows:canonicalRows,retainedSourceIndexes,stats:{sourceRows:sourceRows.length,sourceColumns:headers.length,resultRows:canonicalRows.length,duplicatesRemoved:duplicateIndexes.size,blankDedupKeys,dedupeEnabled:!!dedupeEnabled,dedupeColumns:dedupeIdx,keep:keep==='last'?'last':'first',partitionByCompetence:true},mapping:{...mapping}};
   }
 
   function summarizeService(rows,period,codes,currentByCode={}){
