@@ -152,16 +152,19 @@
     const dateColumn=parsed.headers.indexOf(clean.date);
     if(dateColumn<0)throw new Error('Vincule a coluna Data da venda antes de filtrar competências.');
     let invalidDates=0;
-    const rows=parsed.rows.filter(row=>{
+    const sourceLineNumbers=[];
+    const rows=parsed.rows.filter((row,index)=>{
       const dateText=dateOnly(row[dateColumn]);
       const parts=dateText.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if(!parts){invalidDates++;return false;}
       const year=Number(parts[3]),monthNumber=Number(parts[2]),day=Number(parts[1]);
       const dt=new Date(Date.UTC(year,monthNumber-1,day));
       if(dt.getUTCFullYear()!==year||dt.getUTCMonth()!==monthNumber-1||dt.getUTCDate()!==day){invalidDates++;return false;}
-      return `${parts[3]}-${parts[2]}`===month;
+      const selected=`${parts[3]}-${parts[2]}`===month;
+      if(selected)sourceLineNumbers.push(parsed.sourceLineNumbers?.[index]||index+2);
+      return selected;
     });
-    return Object.freeze({parsed:{...parsed,rows,rowCount:rows.length},excluded:parsed.rows.length-rows.length,invalidDates,selected:rows.length});
+    return Object.freeze({parsed:{...parsed,rows,rowCount:rows.length,sourceLineNumbers},excluded:parsed.rows.length-rows.length,invalidDates,selected:rows.length});
   }
   function createTemplatePayload({organizationId,userId,sourceKey,name,headers,mapping}){
     if(!organizationId||!userId)throw new Error('Organização e usuário obrigatórios.');

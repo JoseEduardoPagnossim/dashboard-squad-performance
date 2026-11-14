@@ -53,7 +53,7 @@
       else if(amountCents===null||activeMonthlyCents===null)status='pendingAmount';
       const fingerprint=JSON.stringify([day||'',normalize(sellerName),group,catalog.normalize(productName),amountCents,normalize(taxId),normalize(customer),date(contractDate)||'']);
       const occurrence=status==='ready'?(occurrences.get(fingerprint)||0)+1:0;
-      const entry={line:index+2,status,occurrence,day,amountCents,activeMonthlyCents,personId:resolved?.personId||null,userId:resolved?.userId||null,productId:product?.id||null,
+      const entry={line:parsed.sourceLineNumbers?.[index]||index+2,status,occurrence,day,amountCents,activeMonthlyCents,personId:resolved?.personId||null,userId:resolved?.userId||null,productId:product?.id||null,
         seller:sellerName,squad:group,product:productName,customer,taxId,contractDate:date(contractDate)||'',fingerprint};
       records.push(entry);
       if(status==='ready')occurrences.set(fingerprint,occurrence);
@@ -61,7 +61,7 @@
     // Cada linha representa uma venda, inclusive linhas idênticas. O ordinal por identidade
     // preserva todas as ocorrências na reimportação integral do arquivo.
     for(const entry of records){if(entry.status==='ready'&&occurrences.get(entry.fingerprint)>1)summary.repeatedRows++;summary[entry.status]++;if(entry.status==='ready')summary.readyMrrCents+=entry.activeMonthlyCents;}
-    const ready=records.filter(r=>r.status==='ready').map(r=>Object.freeze({date:r.day,seller:r.seller,squad:r.squad,product:r.product,productId:r.productId,personId:r.personId,amountCents:r.amountCents,activeMonthlyCents:r.activeMonthlyCents,customer:r.customer.slice(0,160),taxId:r.taxId.slice(0,30),contractDate:r.contractDate,occurrence:r.occurrence}));
+    const ready=records.filter(r=>r.status==='ready').map(r=>Object.freeze({line:r.line,date:r.day,seller:r.seller,squad:r.squad,product:r.product,productId:r.productId,personId:r.personId,amountCents:r.amountCents,activeMonthlyCents:r.activeMonthlyCents,customer:r.customer.slice(0,160),taxId:r.taxId.slice(0,30),contractDate:r.contractDate,occurrence:r.occurrence}));
     return Object.freeze({sourceKey:SOURCE,summary:Object.freeze(summary),records:Object.freeze(records),ready:Object.freeze(ready),note:'Vl Anterior define venda e comissão; Vl Atual Ativo permanece referência de MRR. Vendas antigas com valor diferente serão reconhecidas como duplicadas e devem ser conciliadas em Bonificação.'});
   }
   function chunks(prepared,size=100){if(!prepared||!Array.isArray(prepared.ready)||size<1||size>100)throw new Error('Lote inválido.');const result=[];for(let i=0;i<prepared.ready.length;i+=size)result.push(prepared.ready.slice(i,i+size));return result;}

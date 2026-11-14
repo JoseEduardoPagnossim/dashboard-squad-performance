@@ -1,0 +1,2 @@
+Ordem: 1) backup; 2) executar supabase/migrations/MIGRACAO_V2.63.19_PREFLIGHT_IMPORTACAO_R29.sql; 3) publicar os arquivos incrementais sobre R28; 4) Ctrl+Shift+R; 5) auditar CSV antigo antes de reimportar.
+Commit: fix: audita linhas CSV e pre-valida lotes comerciais antes de gravar (R29)
