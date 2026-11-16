@@ -465,3 +465,7 @@
 .strategy-panel[data-strategy-panel="automation"] .strategy-recurring-import[hidden],
 .strategy-panel[data-strategy-panel="automation"] .strategy-merchandise-import[hidden]{display:none!important}
 @media(max-width:620px){.strategy-csv-wizard-progress{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-csv-wizard-footer{justify-content:flex-start}.strategy-csv-wizard-footer .muted{order:3;flex-basis:100%;text-align:left}}
+
+/* R29.1: erros da pre-validacao visiveis antes da confirmacao. */
+.strategy-import-diagnostic:not([hidden]){border:1px solid #e3a852;background:rgba(179,92,21,.13);padding:12px 16px;border-radius:10px;margin:12px 0;color:var(--text,#f6f6f6);line-height:1.5}
+.strategy-import-diagnostic p{margin:6px 0 0;overflow-wrap:anywhere}

@@ -1,0 +1,1405 @@
+diff --git a/css/strategy.css b/css/strategy.css
+index 563846cc..85b7aab1 100644
+--- a/css/strategy.css
++++ b/css/strategy.css
+@@ -465,3 +465,7 @@
+ .strategy-panel[data-strategy-panel="automation"] .strategy-recurring-import[hidden],
+ .strategy-panel[data-strategy-panel="automation"] .strategy-merchandise-import[hidden]{display:none!important}
+ @media(max-width:620px){.strategy-csv-wizard-progress{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-csv-wizard-footer{justify-content:flex-start}.strategy-csv-wizard-footer .muted{order:3;flex-basis:100%;text-align:left}}
++
++/* R29.1: erros da pre-validacao visiveis antes da confirmacao. */
++.strategy-import-diagnostic:not([hidden]){border:1px solid #e3a852;background:rgba(179,92,21,.13);padding:12px 16px;border-radius:10px;margin:12px 0;color:var(--text,#f6f6f6);line-height:1.5}
++.strategy-import-diagnostic p{margin:6px 0 0;overflow-wrap:anywhere}
+diff --git a/index.html b/index.html
+index 6efecb59..1f27ae96 100644
+--- a/index.html
++++ b/index.html
+@@ -15,10 +15,10 @@
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
+-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r29" />
+-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r29" />
+-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r29" />
+-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r29" />
++  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r291" />
++  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r291" />
++  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r291" />
++  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r291" />
+ </head>
+ <body>
+   <div class="bg-layer"></div>
+@@ -2429,6 +2429,7 @@
+             </article>
+             <article class="strategy-placeholder-card strategy-recurring-import" id="strategyRecurringImportSection">
+               <div class="strategy-section-heading"><div><span class="eyebrow">FASE 8 · V2.63.6</span><h3>Receita recorrente · Novo MRR</h3><p>Confira a conciliação e confirme a importação de contratações únicas. Nenhuma comissão é paga nesta etapa.</p></div><span class="strategy-mini-badge">MRR contratado</span></div>
++              <div id="strategyRecurringDiagnosticR291" class="strategy-import-diagnostic" role="alert" hidden></div>
+               <p class="muted" id="strategyRecurringStatus">Selecione o CSV de Anotação de Venda e confira as colunas, vendedores e produtos.</p>
+               <div id="strategyRecurringSummary"></div>
+               <div id="strategyRecurringReview"></div>
+@@ -3007,55 +3008,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
+   <script src="js/audit-utils.js?v=2.29.9"></script>
+   <script src="js/demo-users.js"></script>
+   <script src="js/default-data.js"></script>
+-  <script src="js/business-calendar.js?v=2.63.9-r29"></script>
+-  <script src="js/finance-rules.js?v=2.63.9-r29"></script>
+-  <script src="js/finance-advanced.js?v=2.63.9-r29"></script>
+-  <script src="js/tv-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/presentation.js?v=2.63.9-r29"></script>
+-  <script src="js/chart-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/chart-export.js?v=2.63.9-r29"></script>
+-  <script src="js/import-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/predictive-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/alert-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/settings-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/performance-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/navigation-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/workspace-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/filter-system.js?v=2.63.9-r29"></script>
+-  <script src="js/comparison-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/finance-report-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/design-system.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-access.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-data.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-cost-engine.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-efficiency.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-capacity.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-result.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-product.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-product-concentration.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-product-history.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-insights.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-automation.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-csv-importer.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-product-catalog.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-recurring-import.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-scenarios.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-scenario-history.js?v=2.63.9-r29"></script>
++  <script src="js/business-calendar.js?v=2.63.9-r291"></script>
++  <script src="js/finance-rules.js?v=2.63.9-r291"></script>
++  <script src="js/finance-advanced.js?v=2.63.9-r291"></script>
++  <script src="js/tv-engine.js?v=2.63.9-r291"></script>
++  <script src="js/presentation.js?v=2.63.9-r291"></script>
++  <script src="js/chart-engine.js?v=2.63.9-r291"></script>
++  <script src="js/chart-export.js?v=2.63.9-r291"></script>
++  <script src="js/import-engine.js?v=2.63.9-r291"></script>
++  <script src="js/predictive-engine.js?v=2.63.9-r291"></script>
++  <script src="js/alert-engine.js?v=2.63.9-r291"></script>
++  <script src="js/settings-engine.js?v=2.63.9-r291"></script>
++  <script src="js/performance-engine.js?v=2.63.9-r291"></script>
++  <script src="js/navigation-engine.js?v=2.63.9-r291"></script>
++  <script src="js/workspace-engine.js?v=2.63.9-r291"></script>
++  <script src="js/filter-system.js?v=2.63.9-r291"></script>
++  <script src="js/comparison-engine.js?v=2.63.9-r291"></script>
++  <script src="js/finance-report-engine.js?v=2.63.9-r291"></script>
++  <script src="js/design-system.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-access.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-data.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-cost-engine.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-efficiency.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-capacity.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-result.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-product.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-squad-comparison.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-product-concentration.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-product-history.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-insights.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-automation.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-csv-importer.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-product-catalog.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-recurring-import.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-merchandise-import.js?v=2.63.9-r291"></script>
++  <script src="js/strategy.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-scenarios.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-scenario-insights.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-scenario-history.js?v=2.63.9-r291"></script>
+   <script>
+     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
+     window.insightEngine = window.SoftenStrategyInsights;
+   </script>
+-  <script src="js/strategy-commissions.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-manual-entries.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-financial-close.js?v=2.63.9-r29"></script>
+-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r29"></script>
+-<script src="js/app.js?v=2.63.9-r29"></script>
++  <script src="js/strategy-commissions.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-manual-entries.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-financial-close.js?v=2.63.9-r291"></script>
++  <script src="js/strategy-person-cost-import.js?v=2.63.9-r291"></script>
++<script src="js/app.js?v=2.63.9-r291"></script>
+ </body>
+ </html>
+diff --git a/js/app.js b/js/app.js
+index 5da2f084..6a14d40b 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -3658,7 +3658,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
+   }
+   const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],leaderCommissions:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
+   const strategyCatalogState={sourceKey:'contracted_modules_csv',busy:false,drafts:{},request:0,notice:''};
+-  const strategyRecurringState={busy:false,notice:'',last:null,lastAudit:[]};
++  const strategyRecurringState={busy:false,notice:'',last:null,lastAudit:[],previewTotals:null};
+   const strategyMerchandiseState={busy:false,notice:'',last:null};
+   const strategyCommissionState={busy:false,notice:'',rows:[]};
+   const strategyManualState={busy:false,rows:[],month:'',notice:'',editGroup:null,pendingToken:null};
+@@ -4249,7 +4249,15 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
+     if(!status)return;
+     const cs=strategyCsvState,rs=strategyRecurringState;
+     if(btn)btn.disabled=true;
+-    if(result)result.textContent=rs.notice||'Nenhum lote confirmado nesta sessão.';
++    if(result){result.textContent=rs.notice||'Nenhum lote confirmado nesta sessão.';result.hidden=!rs.notice;}
++    const diagnostic=$('#strategyRecurringDiagnosticR291');
++    if(diagnostic){
++      diagnostic.hidden=!rs.lastAudit?.length;
++      if(rs.lastAudit?.length){
++        const first=rs.lastAudit[0];
++        diagnostic.innerHTML=`<strong>Importação bloqueada antes de gravar: ${rs.lastAudit.length} linha(s) com erro no banco.</strong><p>Linha ${escapeHtml(String(first.line))}: ${escapeHtml(first.seller)} / ${escapeHtml(first.product)} — ${escapeHtml(first.reason)}. Corrija o vínculo e exporte o diagnóstico para conferir todas as ocorrências.</p>`;
++      }else diagnostic.textContent='';
++    }
+     if($('#strategyRecurringAuditExport'))$('#strategyRecurringAuditExport').hidden=!rs.lastAudit?.length;
+     if(!cs.parsed||cs.sourceKey!=='contracted_modules_csv'){
+       status.textContent='Selecione o CSV Anotação de Venda / Produtos Contratados para preparar o Novo MRR.';
+@@ -4288,16 +4296,21 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
+     if(strategyCsvPeriodMode==='month'&&!strategyCsvPeriodMonth)return toast('Selecione a competência para importar.');
+     if(!window.confirm(`Confirma a importação de ${prepared.ready.length} contratações recorrentes? O Supabase ignorará vendas já registradas e competências fechadas. A operação NÃO gera comissões.`))return;
+     const org=state.user.organizationId,request=cs.request,source=cs.sourceKey,rs=strategyRecurringState;
+-    rs.busy=true;rs.lastAudit=[];rs.notice='Preparando lote no Supabase...';renderStrategyRecurringImport();
++    rs.busy=true;rs.lastAudit=[];rs.previewTotals=null;rs.notice='Preparando lote no Supabase...';renderStrategyRecurringImport();
+     let batchId=null;
+     try{
+       // R29: valida cada linha no MESMO motor SQL de importacao, com rollback garantido.
+       // Uma falha no segundo bloco nunca deve deixar o primeiro bloco gravado.
+       const preflightIssues=[];
++      const previewTotals={newSales:0,duplicates:0,closed:0,resumed:0,known:true};
+       const checkChunk=async(chunk)=>{
+         const result=await state.supabase.rpc('preview_strategy_recurring_chunk_r29',{p_sales:chunk});
+         if(result.error)throw new Error('Pre-validacao R29 indisponivel: '+result.error.message+' (aplique a migration R29).');
+-        if(result.data?.ok)return;
++        if(result.data?.ok){
++          if(!Number.isFinite(Number(result.data.imported))||!Number.isFinite(Number(result.data.duplicates))||!Number.isFinite(Number(result.data.closed)))previewTotals.known=false;
++          else{previewTotals.newSales+=Number(result.data.imported);previewTotals.duplicates+=Number(result.data.duplicates);previewTotals.closed+=Number(result.data.closed);previewTotals.resumed+=Number(result.data.resumed||0);}
++          return;
++        }
+         if(chunk.length===1){preflightIssues.push({line:chunk[0].line||'?',seller:chunk[0].seller,product:chunk[0].product,reason:String(result.data?.error||'Rejeitada pelo banco')});return;}
+         const middle=Math.floor(chunk.length/2);
+         await checkChunk(chunk.slice(0,middle));await checkChunk(chunk.slice(middle));
+@@ -4307,12 +4320,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
+         if(org!==state.user?.organizationId||request!==cs.request||source!==cs.sourceKey)throw new Error('Arquivo alterado durante a pre-validacao.');
+         await checkChunk(chunk);
+       }
+-      rs.lastAudit=preflightIssues;
++      rs.lastAudit=preflightIssues;rs.previewTotals=previewTotals;
+       if(preflightIssues.length){
+         const first=preflightIssues[0];
+         rs.notice=`Importacao NAO iniciada: ${preflightIssues.length} linha(s) recusada(s) pelo Supabase. Primeira: linha ${first.line}, ${first.seller} / ${first.product}: ${first.reason}. Exporte o diagnostico R29 e corrija os vinculos antes de confirmar.`;
+-        renderStrategyRecurringImport();toast('R29: nenhuma venda foi gravada; confira as pendencias de validacao.');return;
++        renderStrategyRecurringImport();toast(`R29.1: ${preflightIssues.length} linha(s) bloqueada(s). Primeira: ${first.line} — ${first.reason}. Nenhum lote criado.`);return;
++      }
++      if(previewTotals.known&&previewTotals.newSales===0&&previewTotals.duplicates+previewTotals.closed===prepared.ready.length&&!$('#strategyImportReplaceCommissions')?.checked){
++        rs.notice=`Pré-validação concluída: 0 vendas novas, ${previewTotals.duplicates} já registradas e ${previewTotals.closed} em competência fechada. Nenhum novo lote foi criado. As comissões existentes não foram alteradas.`;
++        renderStrategyRecurringImport();toast('R29.1: nenhuma venda nova para importar. Confira o resumo da pré-validação.');return;
+       }
++      rs.notice=previewTotals.known?`Pré-validação aprovada: ${previewTotals.newSales} nova(s), ${previewTotals.duplicates} duplicada(s), ${previewTotals.closed} fechada(s). Iniciando gravação...`:'Pré-validação aprovada. Iniciando gravação...';renderStrategyRecurringImport();
+       const started=await state.supabase.rpc('start_strategy_recurring_batch_v2634',{p_file_name:cs.fileName,p_total_rows:prepared.ready.length,p_mapping:cs.mapping});
+       if(started.error)throw started.error;batchId=started.data;
+       let imported=0,duplicates=0,closed=0;let index=0;
+diff --git a/package.json b/package.json
+index 2337a54c..fc50ce8d 100644
+--- a/package.json
++++ b/package.json
+@@ -11,5 +11,5 @@
+   "engines": {
+     "node": ">=20"
+   },
+-  "assetVersion": "2.63.9-r29"
++  "assetVersion": "2.63.9-r291"
+ }
+diff --git a/tests/business-calendar-ui.test.js b/tests/business-calendar-ui.test.js
+index 69c836dc..28bf5568 100644
+--- a/tests/business-calendar-ui.test.js
++++ b/tests/business-calendar-ui.test.js
+@@ -11,7 +11,7 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.48.7
+ test('V2.48.7 publica o calendário operacional na área de bonificação',()=>{
+   assert.ok(index.includes('id="configBusinessCalendarCard"'));
+   for(const id of ['businessCalendarYearSelect','businessCalendarRows','businessCalendarDateInput','businessCalendarAddBtn','businessCalendarSaveBtn']) assert.ok(index.includes(`id="${id}"`));
+-  assert.ok(index.includes('js/business-calendar.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/business-calendar.js?v=2.63.9-r291'));
+   assert.ok(existsSync(join(root,'js','business-calendar.js')));
+ });
+ 
+diff --git a/tests/cache-buster-v2630-r3.test.js b/tests/cache-buster-v2630-r3.test.js
+index 157a2d8a..9f14e962 100644
+--- a/tests/cache-buster-v2630-r3.test.js
++++ b/tests/cache-buster-v2630-r3.test.js
+@@ -9,7 +9,7 @@ const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+ 
+ test('todos os scripts e estilos do HTML usam a mesma revisao de assets declarada no package.json',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   const refs=[...html.matchAll(/(?:src|href)=["']([^"']+\?v=([^"']+))["']/g)]
+     .map(m=>({ref:m[1],version:m[2]}))
+     .filter(x=>!x.ref.startsWith('js/audit-utils.js'));
+diff --git a/tests/daily-active-days-v2532.test.js b/tests/daily-active-days-v2532.test.js
+index b9730049..141abe7d 100644
+--- a/tests/daily-active-days-v2532.test.js
++++ b/tests/daily-active-days-v2532.test.js
+@@ -18,7 +18,7 @@ test('V2.57.7 exclui dias zerados do grafico e da media diaria',()=>{
+ 
+ test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
+   assert.ok(index.includes('V2.60.7'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+ });
+diff --git a/tests/daily-range-v2531.test.js b/tests/daily-range-v2531.test.js
+index 80561170..d2de8da6 100644
+--- a/tests/daily-range-v2531.test.js
++++ b/tests/daily-range-v2531.test.js
+@@ -43,8 +43,8 @@ test('V2.57.7 permite rolar o menu do select sem fecha-lo',()=>{
+ 
+ test('V2.57.7 atualiza cache-bust e versao visivel',()=>{
+   assert.ok(index.includes('V2.60.7'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/design-system.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
++  assert.ok(index.includes('js/design-system.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+ });
+diff --git a/tests/filter-system-v2491.test.js b/tests/filter-system-v2491.test.js
+index dfcf2aad..4717ef74 100644
+--- a/tests/filter-system-v2491.test.js
++++ b/tests/filter-system-v2491.test.js
+@@ -18,8 +18,8 @@ function topbarHtml(){
+ 
+ test('V2.49.1 identifica a versão correta',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+ });
+ 
+ test('Competência e período ocupam um único controle visual quando há análise temporal',()=>{
+@@ -81,5 +81,5 @@ test('hotfix mantém a troca de competência estável dentro da dialog',()=>{
+ test('R3 mantém menus customizados acima do Período de análise',()=>{
+   assert.match(css,/\.analysis-period-popover\{[^}]*z-index:1650/);
+   assert.match(css,/\.ds-select-menu\.ds-select-portal\{z-index:1800!important\}/);
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+ });
+diff --git a/tests/finance-report-v2501.test.js b/tests/finance-report-v2501.test.js
+index 3b40a0c4..2e640906 100644
+--- a/tests/finance-report-v2501.test.js
++++ b/tests/finance-report-v2501.test.js
+@@ -12,8 +12,8 @@ const pkg = require(join(root,'package.json'));
+ 
+ test('V2.53.0 carrega o configurador de relatório antes do app',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.63.9-r29');
+-  const appPos=index.indexOf('js/app.js?v=2.63.9-r29');
++  const enginePos=index.indexOf('js/finance-report-engine.js?v=2.63.9-r291');
++  const appPos=index.indexOf('js/app.js?v=2.63.9-r291');
+   assert.ok(enginePos>=0 && appPos>enginePos);
+   assert.match(app,/window\.SoftenFinanceReportEngine/);
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+diff --git a/tests/indicator-official-status-hotfix-v2614-r1.test.js b/tests/indicator-official-status-hotfix-v2614-r1.test.js
+index 250f29fd..321ff64b 100644
+--- a/tests/indicator-official-status-hotfix-v2614-r1.test.js
++++ b/tests/indicator-official-status-hotfix-v2614-r1.test.js
+@@ -30,7 +30,7 @@ test('V2.61.4 R1 matriz continua baseada no status mensal oficial persistido',()
+ });
+ 
+ test('V2.61.4 R1 força recarga do app sem consumir V2.61.5',()=>{
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+ });
+diff --git a/tests/indicator-squad-filter-v2562.test.js b/tests/indicator-squad-filter-v2562.test.js
+index a5d5bdaa..72b26a8c 100644
+--- a/tests/indicator-squad-filter-v2562.test.js
++++ b/tests/indicator-squad-filter-v2562.test.js
+@@ -46,7 +46,7 @@ test('regressao: Qualidade usa o mesmo ciclo de hidratacao das demais subabas',(
+ 
+ test('cache-bust acompanha a versao atual',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff --git a/tests/indicator-squad-filter-v2563.test.js b/tests/indicator-squad-filter-v2563.test.js
+index 6e3b22db..4f9ffd3d 100644
+--- a/tests/indicator-squad-filter-v2563.test.js
++++ b/tests/indicator-squad-filter-v2563.test.js
+@@ -37,7 +37,7 @@ test('V2.57.7 permite recarga forcada do mesmo carregador mensal',()=>{
+ });
+ test('V2.57.7 publica cache-bust completo sem migration',()=>{
+   for(const asset of ['css/styles.css','css/design-system.css','css/presentation.css','js/performance-engine.js','js/filter-system.js','js/app.js']){
+-    assert.ok(index.includes(`${asset}?v=2.63.9-r29`),asset);
++    assert.ok(index.includes(`${asset}?v=2.63.9-r291`),asset);
+   }
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+diff --git a/tests/indicator-squad-filter-v2565.test.js b/tests/indicator-squad-filter-v2565.test.js
+index a04c5112..cfb3827f 100644
+--- a/tests/indicator-squad-filter-v2565.test.js
++++ b/tests/indicator-squad-filter-v2565.test.js
+@@ -43,7 +43,7 @@ test('V2.57.7 Qualidade recalcula escopo no instante da renderização',()=>{
+ 
+ test('V2.57.7 inclui teste legado do GitHub e cache-bust coerente',()=>{
+   assert.ok(fs.existsSync(path.join(root,'tests','indicator-squad-filter-v2563.test.js')));
+-  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.63.9-r29`),asset);
++  for(const asset of ['css/styles.css','js/app.js','js/performance-engine.js','js/filter-system.js']) assert.ok(index.includes(`${asset}?v=2.63.9-r291`),asset);
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+ });
+diff --git a/tests/indicator-subtab-visibility-v2566.test.js b/tests/indicator-subtab-visibility-v2566.test.js
+index 378996a1..aea14d81 100644
+--- a/tests/indicator-subtab-visibility-v2566.test.js
++++ b/tests/indicator-subtab-visibility-v2566.test.js
+@@ -24,7 +24,7 @@ test('V2.57.7 continua alternando Desempenho e Qualidade pela classe hidden',()=
+ 
+ test('V2.57.7 publica cache-bust coerente sem migration',()=>{
+   for(const asset of ['css/styles.css','js/app.js','js/design-system.js','js/filter-system.js']){
+-    assert.ok(index.includes(`${asset}?v=2.63.9-r29`),asset);
++    assert.ok(index.includes(`${asset}?v=2.63.9-r291`),asset);
+   }
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+diff --git a/tests/indicators-export-v2520.test.js b/tests/indicators-export-v2520.test.js
+index 727daa6c..b21a9b71 100644
+--- a/tests/indicators-export-v2520.test.js
++++ b/tests/indicators-export-v2520.test.js
+@@ -51,8 +51,8 @@ test('presets simplificam a configuração e preservam ajustes avançados', () =
+ });
+ 
+ test('exportação gera SVG vetorial e layout 16:9 para apresentação', () => {
+-  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.63.9-r29');
+-  const appIndex = index.indexOf('js/app.js?v=2.63.9-r29');
++  const chartExportIndex = index.indexOf('js/chart-export.js?v=2.63.9-r291');
++  const appIndex = index.indexOf('js/app.js?v=2.63.9-r291');
+   assert.ok(chartExportIndex >= 0 && appIndex > chartExportIndex, 'chart-export precisa carregar antes do app');
+   const svg = exporter.buildExportSvg({
+     title: 'Avaliação por Squad',
+diff --git a/tests/individual-comparison-v2500.test.js b/tests/individual-comparison-v2500.test.js
+index ede6ca88..48344b13 100644
+--- a/tests/individual-comparison-v2500.test.js
++++ b/tests/individual-comparison-v2500.test.js
+@@ -10,8 +10,8 @@ const pkg = require(join(root,'package.json'));
+ 
+ test('V2.50 identifica a versão e carrega o motor comparativo antes do app',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  const comparePos=index.indexOf('js/comparison-engine.js?v=2.63.9-r29');
+-  const appPos=index.indexOf('js/app.js?v=2.63.9-r29');
++  const comparePos=index.indexOf('js/comparison-engine.js?v=2.63.9-r291');
++  const appPos=index.indexOf('js/app.js?v=2.63.9-r291');
+   assert.ok(comparePos>=0 && appPos>comparePos);
+   assert.match(app,/window\.SoftenComparisonEngine/);
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+diff --git a/tests/org-daily-squad-average-v2567.test.js b/tests/org-daily-squad-average-v2567.test.js
+index dc1a7ac8..2f320176 100644
+--- a/tests/org-daily-squad-average-v2567.test.js
++++ b/tests/org-daily-squad-average-v2567.test.js
+@@ -31,7 +31,7 @@ test('V2.57.7 adapta titulo legenda e resumo ao Squad selecionado',()=>{
+ 
+ test('V2.57.7 publica cache-bust coerente sem migration',()=>{
+   for(const asset of ['css/styles.css','js/app.js','js/chart-engine.js']){
+-    assert.ok(index.includes(`${asset}?v=2.63.9-r29`),asset);
++    assert.ok(index.includes(`${asset}?v=2.63.9-r291`),asset);
+   }
+   assert.ok(index.includes('V2.60.7'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+diff --git a/tests/period-context-v2540.test.js b/tests/period-context-v2540.test.js
+index f21c2e40..28667f57 100644
+--- a/tests/period-context-v2540.test.js
++++ b/tests/period-context-v2540.test.js
+@@ -42,7 +42,7 @@ test('V2.57.7 preserva Squad e periodo como contexto global',()=>{
+ });
+ 
+ test('V2.57.7 atualiza os assets principais sem migration nova',()=>{
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/workspace-engine.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
++  assert.ok(index.includes('js/workspace-engine.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+ });
+diff --git a/tests/period-picker-layout-v2541.test.js b/tests/period-picker-layout-v2541.test.js
+index 71b97e6e..91dc405f 100644
+--- a/tests/period-picker-layout-v2541.test.js
++++ b/tests/period-picker-layout-v2541.test.js
+@@ -16,7 +16,7 @@ test('V2.57.7 mantém mês e ano visíveis dentro da navegação do calendário'
+ });
+ 
+ test('V2.57.7 atualiza cache-bust principal sem migration nova', () => {
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+   assert.ok(index.includes('V2.60.7'));
+ });
+diff --git a/tests/portfolio-benchmark-v2523.test.js b/tests/portfolio-benchmark-v2523.test.js
+index 0b616841..cf0e6333 100644
+--- a/tests/portfolio-benchmark-v2523.test.js
++++ b/tests/portfolio-benchmark-v2523.test.js
+@@ -44,7 +44,7 @@ test('renderer aceita controle por série e o gráfico entra no fluxo de exporta
+ });
+ 
+ test('V2.52.3 atualiza cache e permanece frontend-only', () => {
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
+ });
+diff --git a/tests/pre-attendance-create-modal-v2630-r2.test.js b/tests/pre-attendance-create-modal-v2630-r2.test.js
+index 7cfb9408..31ec7c82 100644
+--- a/tests/pre-attendance-create-modal-v2630-r2.test.js
++++ b/tests/pre-attendance-create-modal-v2630-r2.test.js
+@@ -60,9 +60,9 @@ test('trocar Pre para Tecnico e Administrador restaura respectivamente squad e a
+ });
+ 
+ test('HTML requisita novo app cache-bust sem alterar identidade da versao 2.63.0',()=>{
+- assert.match(html,/src="js\/app\.js\?v=2\.63\.9-r29"/);
++ assert.match(html,/src="js\/app\.js\?v=2\.63\.9-r291"/);
+  assert.match(html,/id="newUserRole"[^>]*>.*value="pre_attendance"/);
+  const pkg=JSON.parse(read('package.json'));
+  assert.equal(pkg.version,'2.63.9');
+- assert.equal(pkg.assetVersion,'2.63.9-r29');
++ assert.equal(pkg.assetVersion,'2.63.9-r291');
+ });
+diff --git a/tests/predictive-scope-v2560.test.js b/tests/predictive-scope-v2560.test.js
+index d91f621c..b4092e6d 100644
+--- a/tests/predictive-scope-v2560.test.js
++++ b/tests/predictive-scope-v2560.test.js
+@@ -34,8 +34,8 @@ test('V2.57.7 diferencia projeção de desempenho realizado e corrige semântica
+ 
+ test('V2.57.7 é frontend-only e preserva o motor financeiro e as demais abas',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.ok(index.includes('js/predictive-engine.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/predictive-engine.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+   assert.ok(!fs.existsSync(path.join(root,'supabase','migrations','MIGRACAO_V2.56.7.sql')));
+   assert.match(app,/function periodGoalForTechnician\(/);
+   assert.match(app,/function periodTeamGoal\(/);
+diff --git a/tests/presentation-refresh-v2491.test.js b/tests/presentation-refresh-v2491.test.js
+index f835201a..59a03215 100644
+--- a/tests/presentation-refresh-v2491.test.js
++++ b/tests/presentation-refresh-v2491.test.js
+@@ -54,6 +54,6 @@ test('R4 preserva última visão válida em falha e atualiza cache-bust',()=>{
+   assert.match(refresh,/backupMeta=clone\(state\.presentationDataMeta\|\|null\)/);
+   assert.match(refresh,/state\.orgTechnicianDailyOverview=backup/);
+   assert.match(refresh,/state\.presentationDataMeta=backupMeta/);
+-  assert.ok(index.includes('js/presentation.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/presentation.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+ });
+diff --git a/tests/quality-full-v2530.test.js b/tests/quality-full-v2530.test.js
+index 284cac96..9f2183ff 100644
+--- a/tests/quality-full-v2530.test.js
++++ b/tests/quality-full-v2530.test.js
+@@ -49,8 +49,8 @@ test('V2.53.0 exige migration e armazena somente agregados diarios',()=>{
+ });
+ 
+ test('V2.53.0 atualiza cache de assets e scripts',()=>{
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/import-engine.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
++  assert.ok(index.includes('js/import-engine.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+   assert.ok(index.includes('V2.60.7'));
+ });
+diff --git a/tests/resolution-fcr-required-fte-v2595.test.js b/tests/resolution-fcr-required-fte-v2595.test.js
+index 92c8534f..f5b04c2b 100644
+--- a/tests/resolution-fcr-required-fte-v2595.test.js
++++ b/tests/resolution-fcr-required-fte-v2595.test.js
+@@ -12,14 +12,14 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.59.5
+ 
+ test('V2.59.5 publica FCR automatico e FTE necessario',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_FTE_NECESSARIO_FCR_V2.59.5.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.5.sql')));
+   assert.match(index,/strategyCapacityRequiredFteDetail/);
+   assert.match(index,/indicatorFcrTechRows/);
+   assert.match(index,/portfolioFcrTotal/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+ });
+ 
+ test('Resolve reconhece Sim, Nao, vazio e valor invalido',()=>{
+diff --git a/tests/strategy-automation-layout-v2639-r2.test.js b/tests/strategy-automation-layout-v2639-r2.test.js
+index 3140672a..5c2bf809 100644
+--- a/tests/strategy-automation-layout-v2639-r2.test.js
++++ b/tests/strategy-automation-layout-v2639-r2.test.js
+@@ -25,7 +25,7 @@ test('Tabelas da Automacao rolam dentro dos cartoes sem empurrar a largura da pa
+ 
+ test('Hotfix R2 atualiza todos os assets e nao exige nova migration',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   const refs=[...html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g)];
+   assert.ok(refs.length>=40);
+   for(const m of refs)if(m[1]!=='js/audit-utils.js')assert.equal(m[2],pkg.assetVersion,m[1]);
+diff --git a/tests/strategy-capacity-available-v2591.test.js b/tests/strategy-capacity-available-v2591.test.js
+index 03e6a718..f9fdaea6 100644
+--- a/tests/strategy-capacity-available-v2591.test.js
++++ b/tests/strategy-capacity-available-v2591.test.js
+@@ -13,14 +13,14 @@ const migration=readFileSync(migrationPath,'utf8');
+ 
+ test('V2.59.1 publica capacidade disponivel com migration propria',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.59\.1/);
+   assert.match(index,/strategyCapacitySquadRows/);
+   assert.match(index,/strategyCapacityTechnicianRows/);
+   assert.match(index,/Disponib\. %/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+ });
+ 
+ test('FTE disponivel respeita FTE nominal e disponibilidade explicita',()=>{
+diff --git a/tests/strategy-capacity-diagnostics-v2597.test.js b/tests/strategy-capacity-diagnostics-v2597.test.js
+index d5cc1a8c..243d4252 100644
+--- a/tests/strategy-capacity-diagnostics-v2597.test.js
++++ b/tests/strategy-capacity-diagnostics-v2597.test.js
+@@ -14,7 +14,7 @@ function history({resolutionPerFte=250,attendancePerFte=300,squadCode='A'}={}){
+ 
+ test('V2.59.7 publica diagnostico de capacidade sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_DIAGNOSTICOS_V2.59.7.md')));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.7.sql')),false);
+@@ -22,7 +22,7 @@ test('V2.59.7 publica diagnostico de capacidade sem migration nova',()=>{
+   assert.match(index,/strategyCapacityDiagnosticSituation/);
+   assert.match(index,/strategyCapacityDiagnosticSquadRows/);
+   assert.equal((index.match(/id=\"strategyCapacityDiagnosticSituation\"/g)||[]).length,1);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+   assert.match(app,/renderStrategyCapacityDiagnostics/);
+ });
+ 
+diff --git a/tests/strategy-capacity-foundation-v2590.test.js b/tests/strategy-capacity-foundation-v2590.test.js
+index 6f557ef0..970e7169 100644
+--- a/tests/strategy-capacity-foundation-v2590.test.js
++++ b/tests/strategy-capacity-foundation-v2590.test.js
+@@ -13,7 +13,7 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ 
+  test('V2.59.2 publica fundacao de capacidade isolada',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(strategy.VALID_SECTIONS.includes('capacity'));
+   assert.equal(strategy.SECTION_META.capacity.label,'Capacidade');
+@@ -21,8 +21,8 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
+   assert.match(index,/data-strategy-panel="capacity"/);
+   assert.match(index,/strategyCapacityNominalFte/);
+   assert.match(index,/strategyCapacityReadinessRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
+-  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.63.9-r29')<index.indexOf('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
++  assert.ok(index.indexOf('js/strategy-capacity.js?v=2.63.9-r291')<index.indexOf('js/app.js?v=2.63.9-r291'));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.0.sql')),false);
+ });
+ 
+diff --git a/tests/strategy-capacity-gap-v2596.test.js b/tests/strategy-capacity-gap-v2596.test.js
+index 0651efeb..d0831d2f 100644
+--- a/tests/strategy-capacity-gap-v2596.test.js
++++ b/tests/strategy-capacity-gap-v2596.test.js
+@@ -10,14 +10,14 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ 
+ test('V2.59.6 publica gap de capacidade sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_GAP_V2.59.6.md')));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.6.sql')),false);
+   assert.match(index,/INDICADOR V2\.59\.6/);
+   assert.match(index,/strategyCapacityGapFte/);
+   assert.match(index,/strategyCapacityGapSquadRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+   assert.match(app,/renderStrategyCapacityGap/);
+ });
+ 
+diff --git a/tests/strategy-capacity-hardening-v2599.test.js b/tests/strategy-capacity-hardening-v2599.test.js
+index b86e9b88..572bcbde 100644
+--- a/tests/strategy-capacity-hardening-v2599.test.js
++++ b/tests/strategy-capacity-hardening-v2599.test.js
+@@ -18,13 +18,13 @@ function frozen(competence,{revision=1,source='close',availableFte=4,nominalFte=
+ 
+ test('V2.59.9 fecha a Fase 4 com hardening versionado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.60\.7/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+ });
+ 
+ test('historico escolhe maior revisao independentemente da ordem',()=>{
+diff --git a/tests/strategy-capacity-history-v2598.test.js b/tests/strategy-capacity-history-v2598.test.js
+index b8ffeeef..e9e29d51 100644
+--- a/tests/strategy-capacity-history-v2598.test.js
++++ b/tests/strategy-capacity-history-v2598.test.js
+@@ -17,12 +17,12 @@ function snapshot(competence,{source='close',availableFte=4,resolutions=1000,res
+ 
+ test('V2.59.8 publica snapshots e evolucao de capacidade',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.ok(existsSync(migrationPath));
+   assert.ok(existsSync(join(root,'docs','CAPACIDADE_SNAPSHOTS_HISTORICO_V2.59.8.md')));
+   for(const id of ['strategyCapacitySnapshotCount','strategyCapacitySnapshotOfficial','strategyCapacitySnapshotBackfill','strategyCapacitySnapshotLatestStatus','strategyCapacityEvolutionFteChart','strategyCapacityEvolutionUtilizationChart','strategyCapacityHistoryRows']) assert.ok(index.includes(`id="${id}"`),id);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+   assert.match(app,/get_strategy_capacity_snapshot_history/);
+   assert.match(app,/renderStrategyCapacityHistory/);
+ });
+diff --git a/tests/strategy-capacity-productivity-v2594.test.js b/tests/strategy-capacity-productivity-v2594.test.js
+index 23257f5b..c64c15a5 100644
+--- a/tests/strategy-capacity-productivity-v2594.test.js
++++ b/tests/strategy-capacity-productivity-v2594.test.js
+@@ -8,7 +8,7 @@ const capacity=require(join(root,'js','strategy-capacity.js'));
+ const index=readFileSync(join(root,'index.html'),'utf8');
+ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ function row(name,squadCode,fte,availabilityFactor,attendance,resolutions){return {name,squadCode,nominalFte:fte,availabilityFactor,attendance,resolutions,attendanceSourceAvailable:true,resolutionSourceAvailable:true};}
+-test('V2.59.6 publica produtividade por FTE sem migration nova',()=>{assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r29');assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');assert.match(index,/INDICADOR V2\.59\.4/);assert.match(index,/strategyCapacityResolutionsPerAvailableFte/);assert.match(index,/strategyCapacityProductivitySquadRows/);assert.match(index,/strategyCapacityProductivityTechnicianRows/);assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.4.sql')),false);});
++test('V2.59.6 publica produtividade por FTE sem migration nova',()=>{assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r291');assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');assert.match(index,/INDICADOR V2\.59\.4/);assert.match(index,/strategyCapacityResolutionsPerAvailableFte/);assert.match(index,/strategyCapacityProductivitySquadRows/);assert.match(index,/strategyCapacityProductivityTechnicianRows/);assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.59.4.sql')),false);});
+ test('produtividade usa FTE disponivel e nao headcount ou FTE nominal',()=>{const result=capacity.buildFteProductivity([row('A','A',1,1,200,160),row('B','A',1,0.5,100,80)]);assert.equal(result.summary.availableFte,1.5);assert.equal(result.summary.resolutions,240);assert.equal(result.summary.resolutionsPerAvailableFte,160);assert.equal(result.summary.attendancePerAvailableFte,200);assert.equal(result.summary.resolutionRate,0.8);});
+ test('indice relativo mantem operacao como 100 e compara Squads proporcionalmente',()=>{const result=capacity.buildFteProductivity([row('A1','A',1,1,200,200),row('B1','B',1,1,200,100)]);assert.equal(result.summary.resolutionsPerAvailableFte,150);assert.equal(result.summary.operationIndex,100);const a=result.squads.find(x=>x.squadCode==='A'),b=result.squads.find(x=>x.squadCode==='B');assert.ok(Math.abs(a.operationIndex-133.3333333333)<1e-6);assert.ok(Math.abs(b.operationIndex-66.6666666667)<1e-6);});
+ test('tecnico recebe indice contra Squad e operacao usando a mesma metrica',()=>{const result=capacity.buildFteProductivity([row('A1','A',1,1,200,180),row('A2','A',1,1,200,120),row('B1','B',1,1,200,150)]);const tech=result.rows.find(x=>x.name==='A1');assert.equal(tech.resolutionsPerAvailableFte,180);assert.equal(tech.squadIndex,120);assert.equal(tech.operationIndex,120);});
+diff --git a/tests/strategy-capacity-used-v2592.test.js b/tests/strategy-capacity-used-v2592.test.js
+index 25bf3314..d3d85c73 100644
+--- a/tests/strategy-capacity-used-v2592.test.js
++++ b/tests/strategy-capacity-used-v2592.test.js
+@@ -13,7 +13,7 @@ const migration=readFileSync(migrationPath,'utf8');
+ 
+ test('V2.59.2 publica capacidade utilizada sem antecipar taxa de utilizacao',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.59\.2/);
+@@ -21,7 +21,7 @@ test('V2.59.2 publica capacidade utilizada sem antecipar taxa de utilizacao',()=
+   assert.match(index,/strategyCapacityUsedPerFte/);
+   assert.match(index,/strategyCapacityUsedSquadRows/);
+   assert.match(index,/strategyCapacityUsedTechnicianRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+ });
+ 
+ test('capacidade utilizada mede volume e intensidade por FTE disponivel',()=>{
+diff --git a/tests/strategy-capacity-utilization-v2593.test.js b/tests/strategy-capacity-utilization-v2593.test.js
+index 770f254f..8758c5eb 100644
+--- a/tests/strategy-capacity-utilization-v2593.test.js
++++ b/tests/strategy-capacity-utilization-v2593.test.js
+@@ -17,14 +17,14 @@ function historyRow(competence,squadCode,usedPerAvailableFte,availableFte=2){
+ 
+ test('V2.59.6 publica utilizacao com regra e migration proprias',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(capacity.RULE_VERSION,'CA-1.0.0-phase4-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.59\.3/);
+   assert.match(index,/strategyCapacityUtilizationRate/);
+   assert.match(index,/strategyCapacityReferencePerFte/);
+   assert.match(index,/strategyCapacityUtilizationSquadRows/);
+-  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-capacity.js?v=2.63.9-r291'));
+ });
+ 
+ test('referencia historica usa exatamente os meses anteriores da janela e mediana',()=>{
+diff --git a/tests/strategy-commissions-v2636.test.js b/tests/strategy-commissions-v2636.test.js
+index 512a2a3e..2fea6d53 100644
+--- a/tests/strategy-commissions-v2636.test.js
++++ b/tests/strategy-commissions-v2636.test.js
+@@ -17,4 +17,4 @@ test('valor de venda negativo e rejeitado',()=>assert.equal(e.calculate(-1,{type
+ test('sumario nao inclui pendencias em valores pagos',()=>{const s=e.summarize([{person_id:'p1',competence:'2026-10-01',squad_code:'C',status:'calculated',commission_amount:10},{person_id:'p1',competence:'2026-10-01',squad_code:'C',status:'pending_rule',commission_amount:null}]);assert.equal(s.length,1);assert.equal(s[0].commission,10);assert.equal(s[0].pending,1);});
+ test('migration usa regra congelada e identidade unica da venda',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.6.sql');for(const x of ['commission_rule_at_import','unique(organization_id,source_key,sale_id)','on conflict(organization_id,source_key,sale_id) do nothing','strategy_recurring_sales','strategy_merchandise_sales','status=\'closed\''])assert.ok(sql.includes(x),x);});
+ test('sincronizacao nao cria tecnico ficticio, e nao sobrescreve comissao manual',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.6.sql');for(const x of ["pr.role='technician'","v_old-v_row.amount","sm.is_closed","v_tm is null","noOperationalMonth"])assert.ok(sql.includes(x),x);});
+-test('o frontend expõe apurar, consultar e sincronizar',()=>{const html=read('index.html'),app=read('js/app.js');for(const id of ['strategyCommissionCalculate','strategyCommissionRefresh','strategyCommissionSync','strategyCommissionMonth'])assert.ok(html.includes('id="'+id+'"'));assert.ok(html.includes('js/strategy-commissions.js?v=2.63.9-r29'));for(const f of ['calculate_strategy_sales_commissions_v2636','strategy_commissions_summary_v2636','sync_strategy_sales_bonus_v2636'])assert.ok(app.includes(f));});
++test('o frontend expõe apurar, consultar e sincronizar',()=>{const html=read('index.html'),app=read('js/app.js');for(const id of ['strategyCommissionCalculate','strategyCommissionRefresh','strategyCommissionSync','strategyCommissionMonth'])assert.ok(html.includes('id="'+id+'"'));assert.ok(html.includes('js/strategy-commissions.js?v=2.63.9-r291'));for(const f of ['calculate_strategy_sales_commissions_v2636','strategy_commissions_summary_v2636','sync_strategy_sales_bonus_v2636'])assert.ok(app.includes(f));});
+diff --git a/tests/strategy-cost-per-attendance-v2581.test.js b/tests/strategy-cost-per-attendance-v2581.test.js
+index 2dfb35a6..814ae435 100644
+--- a/tests/strategy-cost-per-attendance-v2581.test.js
++++ b/tests/strategy-cost-per-attendance-v2581.test.js
+@@ -11,7 +11,7 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ 
+ test('V2.58.1 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.match(index,/INDICADOR V2\.58\.1/);
+   assert.match(index,/strategyCostPerAttendanceValue/);
+diff --git a/tests/strategy-cost-per-resolution-v2582.test.js b/tests/strategy-cost-per-resolution-v2582.test.js
+index 3008f653..1d94682f 100644
+--- a/tests/strategy-cost-per-resolution-v2582.test.js
++++ b/tests/strategy-cost-per-resolution-v2582.test.js
+@@ -14,7 +14,7 @@ const migration=readFileSync(migrationPath,'utf8');
+ 
+ test('V2.58.2 permanece preservada com custo por resolução e migration própria',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.match(index,/INDICADOR V2\.58\.2[\s\S]*Custo por resolução/);
+diff --git a/tests/strategy-costs-hotfix-v2639-r4.test.js b/tests/strategy-costs-hotfix-v2639-r4.test.js
+index 5e4a29b2..129c21f8 100644
+--- a/tests/strategy-costs-hotfix-v2639-r4.test.js
++++ b/tests/strategy-costs-hotfix-v2639-r4.test.js
+@@ -15,4 +15,4 @@ test('R4 migration cria exclusao auditada e bloqueia meses fechados',()=>{const
+ test('R4 importa em lote com auditoria, token e rateio de provisoes sem dobrar',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.9_R4.sql');assert.match(sql,/request_token uuid not null/);assert.match(sql,/unique\(organization_id,request_token\)/);assert.match(sql,/v_new_other:=round\(v_old_other-v_prev_extra\+v_extra,2\)/);assert.match(sql,/strategy_person_cost_import_lines_v2639_r4/);assert.match(sql,/v_seen:=array_append\(v_seen,v_person_id\)/);assert.match(sql,/p_competence date,p_rows jsonb/);});
+ test('R4 escolha da Bonificacao oficial registra vinculo financeiro',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.9_R4.sql');assert.match(sql,/strategy_bonus_reconciliation_preview_v2638/);assert.match(sql,/strategy_bonus_cost_links_v2638/);assert.match(sql,/strategy_bonus_sync_audit_v2638/);assert.match(sql,/strategy_set_official_bonus_v2639_r4/);});
+ test('R4 nao incorpora migration desconsiderar produtos da R3 descartada',()=>{assert.equal(fs.existsSync(path.join(root,'supabase/migrations/MIGRACAO_V2.63.9_R3.sql')),false)});
+-test('R4 cache bust uniforme e modulo do importador publicado',()=>{const index=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r29');assert.match(index,/js\/strategy-person-cost-import\.js\?v=2\.63\.9-r29/);const assets=[...index.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]+)"/g)];assert.ok(assets.length>40);assert.ok(assets.every(m=>m[1]===pkg.assetVersion||m[0].includes('js/audit-utils.js?v=2.29.9')))});
++test('R4 cache bust uniforme e modulo do importador publicado',()=>{const index=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r291');assert.match(index,/js\/strategy-person-cost-import\.js\?v=2\.63\.9-r29/);const assets=[...index.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]+)"/g)];assert.ok(assets.length>40);assert.ok(assets.every(m=>m[1]===pkg.assetVersion||m[0].includes('js/audit-utils.js?v=2.29.9')))});
+diff --git a/tests/strategy-csv-importer-v2631.test.js b/tests/strategy-csv-importer-v2631.test.js
+index d11b2f7f..6b311cf3 100644
+--- a/tests/strategy-csv-importer-v2631.test.js
++++ b/tests/strategy-csv-importer-v2631.test.js
+@@ -25,7 +25,7 @@ test('template salvo contém apenas nomes de colunas e nunca as linhas do CSV',(
+ test('mapeamento salvo é validado novamente quando as colunas mudam',()=>{const x=engine.parse(recurring),m=engine.suggest('contracted_modules_csv',x.headers);assert.throws(()=>engine.validateMapping('contracted_modules_csv',['Produto'],m),/indisponível/);});
+ test('SQL cria apenas modelos comerciais com isolamento por organização e escrita restrita',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.1.sql');for(const v of ['strategy_import_mappings','enable row level security','strategy_import_mappings_read_v2631','strategy_import_mappings_insert_v2631','strategy_import_mappings_update_v2631','has_strategy_access(\'people_costs\')','has_strategy_access(\'edit_costs\')','created_by=(select auth.uid())'])assert.ok(sql.includes(v),v);assert.doesNotMatch(sql,/grant\s+(?:all|delete).*?strategy_import_mappings\s+to\s+authenticated/i);});
+ test('UI de importacao somente le dados, gera previa, identifica produto, salva mapeamento',()=>{const html=read('index.html'),js=read('js/app.js');for(const id of ['strategyCsvFile','strategyCsvSource','strategyCsvFields','strategyCsvPreview','strategyCsvProducts','strategyCsvTemplate','strategyCsvSave','strategyCsvApplyTemplate'])assert.ok(html.includes(`id="${id}"`),id);assert.match(js,/createTemplatePayload/);assert.match(js,/engine\.parse\(text\)/);assert.match(js,/identifyProducts\(/);assert.match(js,/renderStrategyCsvImporter/);assert.doesNotMatch(js.slice(js.indexOf('function renderStrategyCsvImporter()'),js.indexOf('async function initStrategyAutomationSources')),/strategy_result_events|strategy_employee_costs|\.from\('strategy_import_batches'\)/);});
+-test('todos scripts JS/CSS usam o cache-buster 2.63.9-r29',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r29');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r29/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r29");});
++test('todos scripts JS/CSS usam o cache-buster 2.63.9-r291',()=>{const html=read('index.html'),pkg=JSON.parse(read('package.json'));assert.equal(pkg.assetVersion,'2.63.9-r291');assert.match(html,/strategy-csv-importer\.js\?v=2\.63\.9-r29/);for(const [,ref,v] of html.matchAll(/(?:src|href)="([^"?]+)\?v=([^" ]+)"/g))if(!ref.includes("audit-utils"))assert.equal(v,"2.63.9-r291");});
+ 
+ test('V2.63.11: opcionais iniciam desligadas mesmo quando coluna existe',()=>{
+  for(const [key,raw] of [['contracted_modules_csv',recurring],['merchandise_sales_csv',merch]]){
+diff --git a/tests/strategy-direct-revenue-v2601.test.js b/tests/strategy-direct-revenue-v2601.test.js
+index 5c1fa455..fc2f7e88 100644
+--- a/tests/strategy-direct-revenue-v2601.test.js
++++ b/tests/strategy-direct-revenue-v2601.test.js
+@@ -12,7 +12,7 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.1
+ 
+ test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.ok(result.DIRECT_CATEGORY_IDS.includes('upsell'));
+   assert.equal(result.DIRECT_REVENUE_CATEGORIES.find(x=>x.id==='upsell').label,'Up-sell');
+@@ -22,7 +22,7 @@ test('V2.60.1 publica Receita Direta com Up-sell nativo',()=>{
+   assert.match(index,/strategyDirectRevenueTotal/);
+   assert.match(index,/strategyDirectRevenueCategory/);
+   assert.match(index,/strategyAddDirectRevenueBtn/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor soma somente valor confirmado e mantém MRR/ARR separados',()=>{
+diff --git a/tests/strategy-economic-productivity-squad-v2584.test.js b/tests/strategy-economic-productivity-squad-v2584.test.js
+index 259804f8..72b291ad 100644
+--- a/tests/strategy-economic-productivity-squad-v2584.test.js
++++ b/tests/strategy-economic-productivity-squad-v2584.test.js
+@@ -11,7 +11,7 @@ const doc=join(root,'docs','EFICIENCIA_PRODUTIVIDADE_SQUAD_V2.58.4.md');
+ 
+ test('V2.58.4 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/INDICADOR V2\.58\.4/);
+diff --git a/tests/strategy-economic-productivity-v2583.test.js b/tests/strategy-economic-productivity-v2583.test.js
+index 727be617..d9a71acc 100644
+--- a/tests/strategy-economic-productivity-v2583.test.js
++++ b/tests/strategy-economic-productivity-v2583.test.js
+@@ -11,7 +11,7 @@ const doc=join(root,'docs','EFICIENCIA_PRODUTIVIDADE_TECNICO_V2.58.3.md');
+ 
+ test('V2.58.3 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/Produtividade econômica por técnico/);
+diff --git a/tests/strategy-efficiency-benchmarks-v2585.test.js b/tests/strategy-efficiency-benchmarks-v2585.test.js
+index efc0ca8b..a3a02b25 100644
+--- a/tests/strategy-efficiency-benchmarks-v2585.test.js
++++ b/tests/strategy-efficiency-benchmarks-v2585.test.js
+@@ -11,7 +11,7 @@ const doc=join(root,'docs','EFICIENCIA_BENCHMARKS_V2.58.5.md');
+ 
+ test('V2.58.5 permanece preservada dentro da V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/INDICADOR V2\.58\.5/);
+diff --git a/tests/strategy-efficiency-diagnostics-v2586.test.js b/tests/strategy-efficiency-diagnostics-v2586.test.js
+index e2909bf3..a8b60312 100644
+--- a/tests/strategy-efficiency-diagnostics-v2586.test.js
++++ b/tests/strategy-efficiency-diagnostics-v2586.test.js
+@@ -11,7 +11,7 @@ const doc=join(root,'docs','EFICIENCIA_DIAGNOSTICOS_V2.58.6.md');
+ 
+ test('V2.58.6 publica insights e diagnostico explicavel sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(doc),true);
+   assert.match(index,/INDICADOR V2\.58\.6/);
+diff --git a/tests/strategy-efficiency-hardening-v2589.test.js b/tests/strategy-efficiency-hardening-v2589.test.js
+index 308d3baa..605ef797 100644
+--- a/tests/strategy-efficiency-hardening-v2589.test.js
++++ b/tests/strategy-efficiency-hardening-v2589.test.js
+@@ -14,13 +14,13 @@ const docPath=join(root,'docs','HARDENING_EFICIENCIA_V2.58.9.md');
+ 
+ test('V2.58.9 fecha a Fase 3 com hardening versionado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.60\.7/);
+-  assert.ok(index.includes('js/strategy-efficiency.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-efficiency.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+ });
+ 
+ test('null permanece sem base e nao vira zero nos calculos relativos',()=>{
+diff --git a/tests/strategy-efficiency-history-v2588.test.js b/tests/strategy-efficiency-history-v2588.test.js
+index cede889f..166fe9ce 100644
+--- a/tests/strategy-efficiency-history-v2588.test.js
++++ b/tests/strategy-efficiency-history-v2588.test.js
+@@ -14,7 +14,7 @@ const docPath=join(root,'docs','EFICIENCIA_SNAPSHOTS_HISTORICO_V2.58.8.md');
+ 
+ test('V2.58.8 publica snapshots, historico e evolucao com migration propria',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(efficiency.RULE_VERSION,'EF-0.9.0-phase3-hardening');
+   assert.equal(efficiency.SNAPSHOT_VERSION,'ES-1.0.0');
+   assert.equal(existsSync(migrationPath),true);
+diff --git a/tests/strategy-efficiency-v2580.test.js b/tests/strategy-efficiency-v2580.test.js
+index 5aa0662c..b3af7a84 100644
+--- a/tests/strategy-efficiency-v2580.test.js
++++ b/tests/strategy-efficiency-v2580.test.js
+@@ -18,8 +18,8 @@ test('V2.58.8 publica a Fundação da Eficiência isolada do operacional',()=>{
+   assert.match(index,/strategyEfficiencyBaseCost/);
+   assert.match(index,/strategyEfficiencyReadinessRows/);
+   assert.match(index,/js\/strategy-efficiency\.js\?v=2\.63\.9/);
+-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r29')<index.indexOf('js/strategy.js?v=2.63.9-r29'));
+-  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r29')<index.indexOf('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r291')<index.indexOf('js/strategy.js?v=2.63.9-r291'));
++  assert.ok(index.indexOf('js/strategy-efficiency.js?v=2.63.9-r291')<index.indexOf('js/app.js?v=2.63.9-r291'));
+   assert.equal(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.58.0.sql')),false);
+ });
+ 
+diff --git a/tests/strategy-financial-close-v2638.test.js b/tests/strategy-financial-close-v2638.test.js
+index d0ea207a..637e0b4a 100644
+--- a/tests/strategy-financial-close-v2638.test.js
++++ b/tests/strategy-financial-close-v2638.test.js
+@@ -11,6 +11,6 @@ test('V2.63.8: quatro tabelas e grants select com RLS sem escrita direta',()=>{c
+ test('V2.63.8: fonte da Bonificacao exige mes operacional fechado e comparacao com snapshot',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');for(const x of ['operational_month_open','official_snapshot_mismatch','v_snapshot_final is distinct from v_src','public.technician_finance_monthly','v_op.closed_snapshot','commission_pending','approval_outdated'])assert.ok(s.includes(x),x)});
+ test('V2.63.8: sincronizacao nao reconta comissao, nem modifica salarios ou benefícios',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');assert.ok(s.includes('set variable_pay='));assert.ok(!s.includes('set salary='));assert.ok(!s.includes('set benefits='));assert.ok(!s.includes('update public.technician_finance_monthly'));assert.ok(s.includes('manual_conflict'));assert.ok(s.includes('fte_not_one'));assert.ok(s.includes('on conflict(organization_id,competence_id,person_id) do update'))});
+ test('V2.63.8: fecha apenas se sem pendencias e preserva snapshot financeiro original',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');assert.ok(s.includes("if (v_preview->>'issues')::int>0"));assert.ok(s.includes('close_strategy_competence_core_v2638'));assert.ok(s.includes('strategy_financial_closure_v2638'));assert.ok(s.includes('finance_snapshot_id'));assert.ok(!s.includes('update public.strategy_competence_snapshots'))});
+-test('V2.63.8: interface conecta prévia, aprovação, sincronização e fechamento',()=>{const h=r('index.html'),a=r('js/app.js');for(const x of ['strategyFinanceCloseSection','strategyFinanceCloseRows','strategyFinanceCloseChurn','strategyFinanceCloseSync','strategyFinanceCloseMonth'])assert.ok(h.includes('id="'+x+'"'),x);for(const x of ['strategy_bonus_reconciliation_preview_v2638','strategy_approve_pre_bonus_v2638','strategy_sync_official_bonus_v2638','strategyFinanceCloseAction','data-strategy-preapprove'])assert.ok(a.includes(x),x);assert.ok(h.includes('js/strategy-financial-close.js?v=2.63.9-r29'))});
++test('V2.63.8: interface conecta prévia, aprovação, sincronização e fechamento',()=>{const h=r('index.html'),a=r('js/app.js');for(const x of ['strategyFinanceCloseSection','strategyFinanceCloseRows','strategyFinanceCloseChurn','strategyFinanceCloseSync','strategyFinanceCloseMonth'])assert.ok(h.includes('id="'+x+'"'),x);for(const x of ['strategy_bonus_reconciliation_preview_v2638','strategy_approve_pre_bonus_v2638','strategy_sync_official_bonus_v2638','strategyFinanceCloseAction','data-strategy-preapprove'])assert.ok(a.includes(x),x);assert.ok(h.includes('js/strategy-financial-close.js?v=2.63.9-r291'))});
+ 
+ test('V2.63.8: aprovacoes historicas sao revisionadas, nao substituidas',()=>{const s=r('supabase/migrations/MIGRACAO_V2.63.8.sql');assert.ok(s.includes('coalesce(v_old.revision,0)+1'));assert.ok(s.includes('order by revision desc limit 1'));assert.ok(!s.includes('update public.strategy_pre_bonus_approvals_v2638'))});
+diff --git a/tests/strategy-foundation-v2570.test.js b/tests/strategy-foundation-v2570.test.js
+index 9dffacf2..145d65a6 100644
+--- a/tests/strategy-foundation-v2570.test.js
++++ b/tests/strategy-foundation-v2570.test.js
+@@ -27,7 +27,7 @@ test('V2.57.7 publica a fundação isolada da Gestão Estratégica', () => {
+   assert.match(index, /js\/strategy-cost-engine\.js\?v=2\.63\.9/);
+   assert.match(index, /js\/strategy-insights\.js\?v=2\.63\.9/);
+   assert.match(index, /js\/strategy\.js\?v=2\.63\.9/);
+-  assert.ok(index.indexOf('js/strategy.js?v=2.63.9-r29') < index.indexOf('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.indexOf('js/strategy.js?v=2.63.9-r291') < index.indexOf('js/app.js?v=2.63.9-r291'));
+   assert.match(app, /APP_VERSION = '2\.63\.9'/);
+ });
+ 
+diff --git a/tests/strategy-influenced-revenue-v2602.test.js b/tests/strategy-influenced-revenue-v2602.test.js
+index 822cd791..8ae66096 100644
+--- a/tests/strategy-influenced-revenue-v2602.test.js
++++ b/tests/strategy-influenced-revenue-v2602.test.js
+@@ -12,7 +12,7 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.2
+ 
+ test('V2.60.2 publica Receita Influenciada separada da Receita Direta',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.ok(result.INFLUENCE_STAGE_IDS.includes('originated'));
+   assert.ok(result.INFLUENCE_STAGE_IDS.includes('qualified'));
+@@ -23,7 +23,7 @@ test('V2.60.2 publica Receita Influenciada separada da Receita Direta',()=>{
+   assert.match(index,/strategyInfluencedRevenueTotal/);
+   assert.match(index,/strategyInfluencedRevenueStage/);
+   assert.match(index,/strategyAddInfluencedRevenueBtn/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor separa pipeline aberto de receita influenciada convertida',()=>{
+diff --git a/tests/strategy-insights-cache-v2580.test.js b/tests/strategy-insights-cache-v2580.test.js
+index 08e83da4..4fe7a1ec 100644
+--- a/tests/strategy-insights-cache-v2580.test.js
++++ b/tests/strategy-insights-cache-v2580.test.js
+@@ -11,7 +11,7 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ 
+ test('release atual preserva o hardening de cache introduzido na R5',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.match(index,/js\/app\.js\?v=2\.63\.9/);
+   assert.match(index,/V2\.63\.9 • Fase 8 — Automação/);
+   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);
+diff --git a/tests/strategy-manual-entries-v2637.test.js b/tests/strategy-manual-entries-v2637.test.js
+index add4c5d4..9756db70 100644
+--- a/tests/strategy-manual-entries-v2637.test.js
++++ b/tests/strategy-manual-entries-v2637.test.js
+@@ -19,7 +19,7 @@ test('SQL: competencias fechadas barram lancamento e cancelamento',()=>{const s=
+ test('SQL: correcao e cancelamento sao atomicos e preservam historico',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');for(const token of ['v_previous.revision+1','v_rev:=v_previous.revision+1','entry_group_id','revision','status=\'cancelled\'','set_config(\'strategy.manual_edit_v2637\''])assert.ok(s.includes(token),token);assert.ok(!s.includes('delete from public.strategy_manual_entries'));});
+ test('SQL: faz projecao unica para resultado ou custo e utiliza custo direto',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');for(const token of ['insert into public.strategy_result_events','insert into public.strategy_result_attributions','insert into public.strategy_operational_costs','insert into public.strategy_cost_allocations',"'direct_sale' then 'direct'", "'direct',1,1,v_amount"])assert.ok(s.includes(token),token);});
+ test('SQL: validacao de pessoas impede squad C de receber tecnico',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');assert.ok(s.includes("v_squad='C' and v_person_role<>'pre_attendance'"));assert.ok(s.includes("v_squad<>'C' and v_person_role<>'technician'"));});
+-test('UI: formulario, revisoes, RPCs e historico integrados',()=>{const h=read('index.html'),a=read('js/app.js');for(const id of ['strategyManualEntriesSection','strategyManualType','strategyManualMonth','strategyManualDate','strategyManualSquad','strategyManualPerson','strategyManualAmount','strategyManualMrr','strategyManualReason','strategyManualSave','strategyManualRefresh','strategyManualRows'])assert.ok(h.includes(`id="${id}"`),id);for(const code of ['save_strategy_manual_entry_v2637','cancel_strategy_manual_entry_v2637','strategy_manual_entries','data-manual-edit','data-manual-cancel','loadStrategyManualEntries'])assert.ok(a.includes(code),code);assert.ok(h.includes('js/strategy-manual-entries.js?v=2.63.9-r29'));});
++test('UI: formulario, revisoes, RPCs e historico integrados',()=>{const h=read('index.html'),a=read('js/app.js');for(const id of ['strategyManualEntriesSection','strategyManualType','strategyManualMonth','strategyManualDate','strategyManualSquad','strategyManualPerson','strategyManualAmount','strategyManualMrr','strategyManualReason','strategyManualSave','strategyManualRefresh','strategyManualRows'])assert.ok(h.includes(`id="${id}"`),id);for(const code of ['save_strategy_manual_entry_v2637','cancel_strategy_manual_entry_v2637','strategy_manual_entries','data-manual-edit','data-manual-cancel','loadStrategyManualEntries'])assert.ok(a.includes(code),code);assert.ok(h.includes('js/strategy-manual-entries.js?v=2.63.9-r291'));});
+ test('manual: sem comissao automatica e sem reprocessar CSV',()=>{const s=read('supabase/migrations/MIGRACAO_V2.63.7.sql');assert.ok(!s.includes('insert into public.strategy_sales_commissions'));assert.ok(!s.includes('update public.strategy_recurring_sales'));assert.ok(!s.includes('update public.strategy_merchandise_sales'));});
+ 
+ test('SQL: token de requisicao fornece idempotencia no salvamento',()=>{const sql=read('supabase/migrations/MIGRACAO_V2.63.7.sql');for(const x of ['request_token uuid','unique(organization_id,request_token)','v_request_token:=','idempotent'])assert.ok(sql.includes(x),x);});
+diff --git a/tests/strategy-phase8-hardening-v2639.test.js b/tests/strategy-phase8-hardening-v2639.test.js
+index 4796b20b..027a1413 100644
+--- a/tests/strategy-phase8-hardening-v2639.test.js
++++ b/tests/strategy-phase8-hardening-v2639.test.js
+@@ -16,7 +16,7 @@ test('2639: auditoria Fase 8 aprova contrato integral e migrations 0 a 9', async
+  assert.equal(report.milestones,10); assert.ok(report.references>=40);
+ });
+ test('2639: auditoria detecta conflito de cache-buster', async()=>{
+- const check = await audited(); const report = check(f=>f==='index.html'?read(f).replace('js/app.js?v=2.63.9-r29','js/app.js?v=2.62.9-r1'):read(f));
++ const check = await audited(); const report = check(f=>f==='index.html'?read(f).replace('js/app.js?v=2.63.9-r291','js/app.js?v=2.62.9-r1'):read(f));
+  assert.equal(report.passed,false); assert.ok(report.errors.some(s=>s.includes('Cache-buster')));
+ });
+ test('2639: auditoria detecta retirada do preflight sem fallback', async()=>{
+@@ -125,7 +125,7 @@ test('2639: frontend comunica pendências específicas sem expor valor inventado
+ });
+ test('2639: o pacote e a aplicacao usam a revisao 2.63.9',()=>{
+  const pkg=JSON.parse(read('package.json'));
+- assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r29');
++ assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r291');
+  assert.ok(read('index.html').includes('V2.63.9'));
+  assert.ok(read('js/app.js').includes("const APP_VERSION = '2.63.9'"));
+ });
+diff --git a/tests/strategy-product-concentration-v2617.test.js b/tests/strategy-product-concentration-v2617.test.js
+index 1bfcebc3..5ab45f3f 100644
+--- a/tests/strategy-product-concentration-v2617.test.js
++++ b/tests/strategy-product-concentration-v2617.test.js
+@@ -23,7 +23,7 @@ test('sem fonte não produz percentuais zero artificiais',()=>{
+ });
+ test('interface e motor V2.63.0 presentes com proteção de acesso',()=>{
+  const root=path.join(__dirname,'..'),index=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
+- assert.ok(index.includes('js/strategy-product-concentration.js?v=2.63.9-r29'));
++ assert.ok(index.includes('js/strategy-product-concentration.js?v=2.63.9-r291'));
+  assert.ok(index.includes('strategyConcentrationProductRows'));
+  assert.ok(app.includes('renderStrategyProductConcentration(vm,displayAggregate)'));
+  assert.ok(app.includes('if(!displayAggregate){body.innerHTML'));
+diff --git a/tests/strategy-product-cost-v2612.test.js b/tests/strategy-product-cost-v2612.test.js
+index 9e2ba207..1d6a7f81 100644
+--- a/tests/strategy-product-cost-v2612.test.js
++++ b/tests/strategy-product-cost-v2612.test.js
+@@ -15,14 +15,14 @@ const docPath=join(root,'docs','PRODUTO_SQUAD_CUSTO_V2.61.2.md');
+ 
+ test('V2.61.2 ativa Custo por Produto e preserva roadmap posterior',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='cost-by-product').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.61\.2 • CUSTO POR PRODUTO/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor calcula Cost to Serve e custos unitários sem inventar denominadores',()=>{
+diff --git a/tests/strategy-product-demand-v2611.test.js b/tests/strategy-product-demand-v2611.test.js
+index 1a098b6a..964e296e 100644
+--- a/tests/strategy-product-demand-v2611.test.js
++++ b/tests/strategy-product-demand-v2611.test.js
+@@ -15,7 +15,7 @@ const docPath=join(root,'docs','PRODUTO_SQUAD_DEMANDA_V2.61.1.md');
+ 
+ test('V2.61.1 mantém Demanda por Produto ativa na Fase 6',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='product-squad-foundation').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='demand-by-product').state,'ready');
+diff --git a/tests/strategy-product-foundation-v2610.test.js b/tests/strategy-product-foundation-v2610.test.js
+index c8ddc81f..e0bb8517 100644
+--- a/tests/strategy-product-foundation-v2610.test.js
++++ b/tests/strategy-product-foundation-v2610.test.js
+@@ -15,7 +15,7 @@ const docPath=join(root,'docs','PRODUTO_SQUAD_FUNDACAO_V2.61.0.md');
+ 
+ test('V2.61.0 inicia a Fase 6 com Fundação Produto/Squad versionada',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG[0].version,'V2.61.0');
+   assert.equal(product.CATALOG[0].state,'ready');
+@@ -23,9 +23,9 @@ test('V2.61.0 inicia a Fase 6 com Fundação Produto/Squad versionada',()=>{
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/FASE 6 • V2\.61\.0/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r29'));
+-  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r29')<index.indexOf('js/strategy.js?v=2.63.9-r29'));
+-  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r29')<index.indexOf('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r291'));
++  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r291')<index.indexOf('js/strategy.js?v=2.63.9-r291'));
++  assert.ok(index.indexOf('js/strategy-product.js?v=2.63.9-r291')<index.indexOf('js/app.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor mantém os seis domínios fundacionais após ativação de Unit Economics',()=>{
+diff --git a/tests/strategy-product-result-v2613.test.js b/tests/strategy-product-result-v2613.test.js
+index 2fa09ca8..3d45a201 100644
+--- a/tests/strategy-product-result-v2613.test.js
++++ b/tests/strategy-product-result-v2613.test.js
+@@ -15,14 +15,14 @@ const docPath=join(root,'docs','PRODUTO_SQUAD_RESULTADO_V2.61.3.md');
+ 
+ test('V2.61.3 mantém Resultado econômico por Produto após Unit Economics',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='result-by-product').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.61\.3 • RESULTADO ECONÔMICO POR PRODUTO/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor mantém Direta, Influenciada e Protegida separadas',()=>{
+diff --git a/tests/strategy-product-unit-economics-v2614.test.js b/tests/strategy-product-unit-economics-v2614.test.js
+index f2d35f76..f812101c 100644
+--- a/tests/strategy-product-unit-economics-v2614.test.js
++++ b/tests/strategy-product-unit-economics-v2614.test.js
+@@ -15,14 +15,14 @@ const docPath=join(root,'docs','PRODUTO_SQUAD_UNIT_ECONOMICS_V2.61.4.md');
+ 
+ test('V2.61.4 ativa Unit Economics por Produto e mantém comparativos posteriores',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(product.RULE_VERSION,'PS-0.5.0-unit-economics');
+   assert.equal(product.CATALOG.find(x=>x.id==='unit-economics-product').state,'ready');
+   assert.equal(product.CATALOG.find(x=>x.id==='squad-comparison').state,'ready');
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.61\.4 • UNIT ECONOMICS POR PRODUTO/);
+-  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-product.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor cruza custo, demanda, FTE e Receita Direta no ROI por Produto',()=>{
+diff --git a/tests/strategy-protected-revenue-v2603.test.js b/tests/strategy-protected-revenue-v2603.test.js
+index 037f218c..e7f15cd5 100644
+--- a/tests/strategy-protected-revenue-v2603.test.js
++++ b/tests/strategy-protected-revenue-v2603.test.js
+@@ -12,7 +12,7 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.3
+ 
+ test('V2.60.3 publica Receita Protegida com retenção, recuperação e prevenção',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.deepEqual(result.PROTECTED_TYPE_IDS,['retention','recovery','cancellation_prevention']);
+   assert.ok(existsSync(join(root,'docs','RESULTADO_RECEITA_PROTEGIDA_V2.60.3.md')));
+@@ -20,7 +20,7 @@ test('V2.60.3 publica Receita Protegida com retenção, recuperação e prevenç
+   assert.match(index,/V2\.60\.3 • RECEITA PROTEGIDA/);
+   assert.match(index,/strategyProtectedRevenueTotal/);
+   assert.match(index,/strategyAddProtectedRevenueBtn/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor separa receita em risco, protegida e perdida sem somar recorrência no total',()=>{
+diff --git a/tests/strategy-result-diagnostics-v2607.test.js b/tests/strategy-result-diagnostics-v2607.test.js
+index 24d2dcfa..6e92b058 100644
+--- a/tests/strategy-result-diagnostics-v2607.test.js
++++ b/tests/strategy-result-diagnostics-v2607.test.js
+@@ -10,7 +10,7 @@ const app=readFileSync(join(root,'js','app.js'),'utf8');
+ 
+ test('V2.60.7 publica insights de resultado sem migration nova',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-diagnostics')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_DIAGNOSTICOS_V2.60.7.md')));
+@@ -19,7 +19,7 @@ test('V2.60.7 publica insights de resultado sem migration nova',()=>{
+   assert.match(index,/strategyResultDiagnosticPriority/);
+   assert.match(index,/strategyResultDiagnosticSquadRows/);
+   assert.match(index,/strategyResultDiagnosticTechRows/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('retorno direto forte usa cobertura e não soma outras naturezas',()=>{
+diff --git a/tests/strategy-result-foundation-v2600.test.js b/tests/strategy-result-foundation-v2600.test.js
+index ca379fcc..bef93cd4 100644
+--- a/tests/strategy-result-foundation-v2600.test.js
++++ b/tests/strategy-result-foundation-v2600.test.js
+@@ -15,7 +15,7 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.0
+ 
+ test('V2.60.0 publica Fundação de Resultado isolada',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.ok(strategy.VALID_SECTIONS.includes('result'));
+   assert.equal(strategy.SECTION_META.result.label,'Resultado');
+@@ -23,9 +23,9 @@ test('V2.60.0 publica Fundação de Resultado isolada',()=>{
+   assert.match(index,/data-strategy-panel="result"/);
+   assert.match(index,/strategyResultEventCount/);
+   assert.match(index,/strategyResultReadinessRows/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
+-  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r29')<index.indexOf('js/strategy.js?v=2.63.9-r29'));
+-  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r29')<index.indexOf('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
++  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r291')<index.indexOf('js/strategy.js?v=2.63.9-r291'));
++  assert.ok(index.indexOf('js/strategy-result.js?v=2.63.9-r291')<index.indexOf('js/app.js?v=2.63.9-r291'));
+   assert.ok(existsSync(join(root,'docs','RESULTADO_FUNDACAO_V2.60.0.md')));
+ });
+ 
+diff --git a/tests/strategy-result-hardening-v2609.test.js b/tests/strategy-result-hardening-v2609.test.js
+index 96933a6f..49538298 100644
+--- a/tests/strategy-result-hardening-v2609.test.js
++++ b/tests/strategy-result-hardening-v2609.test.js
+@@ -27,7 +27,7 @@ function frozen(competence,{revision=1,source='close',cost=100,direct=120,influe
+ 
+ test('V2.60.9 fecha a Fase 5 com hardening versionado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.RESULT_SNAPSHOT_VERSION,'RS-1.0.0');
+   assert.equal(result.RESULT_HARDENING_VERSION,'RH-1.0.0');
+@@ -36,7 +36,7 @@ test('V2.60.9 fecha a Fase 5 com hardening versionado',()=>{
+   assert.equal(existsSync(migrationPath),true);
+   assert.equal(existsSync(docPath),true);
+   assert.match(index,/V2\.60\.9 • HARDENING E FECHAMENTO DA FASE 5/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('historico escolhe maior revisao e desempata fechamento oficial sobre backfill',()=>{
+diff --git a/tests/strategy-result-history-v2608.test.js b/tests/strategy-result-history-v2608.test.js
+index 37392b46..a4414162 100644
+--- a/tests/strategy-result-history-v2608.test.js
++++ b/tests/strategy-result-history-v2608.test.js
+@@ -19,14 +19,14 @@ function frozen(competence,{revision=1,source='close',cost=100,direct=120,influe
+ 
+ test('V2.60.8 publica snapshots e histórico de Resultado',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-history')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_HISTORICO_V2.60.8.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.8.sql')));
+   assert.match(index,/V2\.60\.8 • SNAPSHOTS, HISTÓRICO E EVOLUÇÃO/);
+   assert.match(index,/strategyResultHistoryRows/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('histórico ordena competências e calcula evolução entre snapshots fechados',()=>{
+diff --git a/tests/strategy-result-roi-v2606.test.js b/tests/strategy-result-roi-v2606.test.js
+index 5b7c431a..a2145777 100644
+--- a/tests/strategy-result-roi-v2606.test.js
++++ b/tests/strategy-result-roi-v2606.test.js
+@@ -13,13 +13,13 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.6
+ 
+ test('V2.60.6 publica ROI e retorno operacional',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-roi')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_ROI_RETORNO_V2.60.6.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.6.sql')));
+   assert.match(index,/V2\.60\.6 • ROI E RETORNO OPERACIONAL/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor calcula ROI direto, retorno líquido e cobertura sem misturar naturezas',()=>{
+diff --git a/tests/strategy-result-squad-v2605.test.js b/tests/strategy-result-squad-v2605.test.js
+index b7e77f84..98400b62 100644
+--- a/tests/strategy-result-squad-v2605.test.js
++++ b/tests/strategy-result-squad-v2605.test.js
+@@ -16,13 +16,13 @@ function access(){return{canViewStrategy:true,canViewAggregates:true,canViewPeop
+ 
+ test('V2.60.5 publica Resultado por Squad e atualiza motor',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.CATALOG.find(item=>item.id==='result-by-squad')?.state,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_SQUAD_V2.60.5.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.5.sql')));
+   assert.ok(index.includes('V2.60.5 • RESULTADO POR SQUAD'));
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor normaliza e ordena Resultado por Squad sem total composto',()=>{
+diff --git a/tests/strategy-result-technician-v2604.test.js b/tests/strategy-result-technician-v2604.test.js
+index 2e7faa66..5309da8a 100644
+--- a/tests/strategy-result-technician-v2604.test.js
++++ b/tests/strategy-result-technician-v2604.test.js
+@@ -13,13 +13,13 @@ const migration=readFileSync(join(root,'supabase','migrations','MIGRACAO_V2.60.4
+ 
+ test('V2.60.4 publica Resultado por técnico e atualiza motor',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.equal(result.RULE_VERSION,'RE-1.0.0-phase5-hardening');
+   assert.equal(result.buildFoundation({aggregate:{sourceAvailable:true}}).catalog.find(x=>x.id==='result-by-technician').status,'ready');
+   assert.ok(existsSync(join(root,'docs','RESULTADO_TECNICO_V2.60.4.md')));
+   assert.ok(existsSync(join(root,'supabase','migrations','MIGRACAO_V2.60.4.sql')));
+   assert.match(index,/V2\.60\.4 • RESULTADO POR TÉCNICO/);
+-  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-result.js?v=2.63.9-r291'));
+ });
+ 
+ test('motor mantém as três naturezas separadas por técnico',()=>{
+diff --git a/tests/strategy-scenario-hardening-v2629.test.js b/tests/strategy-scenario-hardening-v2629.test.js
+index 96142b54..33520e4f 100644
+--- a/tests/strategy-scenario-hardening-v2629.test.js
++++ b/tests/strategy-scenario-hardening-v2629.test.js
+@@ -152,7 +152,7 @@ test('frontend bloqueia salvamento duplicado e respostas obsoletas por alteraç
+ });
+ test('versões e cache bust estão coerentes e sem nova migração de dados oficiais',()=>{
+  const pkg=require('../package.json');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+- assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r29');
++ assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r291');
+  assert.match(index,/js\/strategy-scenario-history\.js\?v=2\.63\.9-r29/);
+  assert.doesNotMatch(sql,/update\s+public\.strategy_competences|delete\s+from\s+public\.strategy_employee_costs/i);
+ });
+diff --git a/tests/strategy-scenario-insights-v2627.test.js b/tests/strategy-scenario-insights-v2627.test.js
+index 39300fec..73f001a2 100644
+--- a/tests/strategy-scenario-insights-v2627.test.js
++++ b/tests/strategy-scenario-insights-v2627.test.js
+@@ -91,7 +91,7 @@ test('identificadores e prioridades são determinísticos sem cartões duplicado
+ test('contrato UI integra motor, segurança por escape, listeners e versões',()=>{
+   const root=path.join(__dirname,'..');const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+   const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');const css=fs.readFileSync(path.join(root,'css/strategy.css'),'utf8');
+-  const pkg=require('../package.json');assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r29');
++  const pkg=require('../package.json');assert.equal(pkg.version,'2.63.9');assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.match(index,/id="strategyScenarioInsightsSection"/);assert.match(index,/id="scenarioInsightsScenario"/);
+   assert.match(index,/id="scenarioInsightsKind"/);assert.match(index,/js\/strategy-scenario-insights\.js\?v=2\.63\.9-r29/);
+   assert.match(app,/insightEngine\.analyze\(compared/);assert.match(app,/escapeHtml\(item\.title\)/);
+diff --git a/tests/strategy-schema-compat-v2580-r5.test.js b/tests/strategy-schema-compat-v2580-r5.test.js
+index f5894745..97cf0fa9 100644
+--- a/tests/strategy-schema-compat-v2580-r5.test.js
++++ b/tests/strategy-schema-compat-v2580-r5.test.js
+@@ -32,7 +32,7 @@ test('UI points schema-drift errors to the R5 migration',()=>{
+ 
+ test('R5 permanece preservada como migration histórica após a V2.58.9',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   assert.match(index,/js\/app\.js\?v=2\.63\.9/);
+   assert.match(migration,/notify pgrst,'reload schema'/);
+ });
+diff --git a/tests/strategy-summary-hotfix-v2596-r1.test.js b/tests/strategy-summary-hotfix-v2596-r1.test.js
+index eb5e9eca..73a51672 100644
+--- a/tests/strategy-summary-hotfix-v2596-r1.test.js
++++ b/tests/strategy-summary-hotfix-v2596-r1.test.js
+@@ -8,7 +8,7 @@ const costEngine=require(join(root,'js','strategy-cost-engine.js'));
+ 
+ test('V2.59.6 R1 preserva campos estendidos no resumo estratégico',()=>{
+   assert.equal(pkg.version,'2.63.9');
+-  assert.equal(pkg.assetVersion,'2.63.9-r29');
++  assert.equal(pkg.assetVersion,'2.63.9-r291');
+   const merged=costEngine.mergeFinancialSummary({
+     peopleCount:29,fte:29,totalCost:40000,attendance:4860,
+     resolutions:4785,resolutionEntries:29,
+@@ -28,6 +28,6 @@ test('V2.59.6 R1 preserva campos estendidos no resumo estratégico',()=>{
+ 
+ test('hotfix do resumo permanece coberto na V2.59.7',()=>{
+   const index=readFileSync(join(root,'index.html'),'utf8');
+-  assert.ok(index.includes('js/strategy-cost-engine.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('js/strategy-cost-engine.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+ });
+diff --git a/tests/team-portfolio-v2522.test.js b/tests/team-portfolio-v2522.test.js
+index 545ac693..98b82395 100644
+--- a/tests/team-portfolio-v2522.test.js
++++ b/tests/team-portfolio-v2522.test.js
+@@ -54,8 +54,8 @@ test('exportador reforça legibilidade dos labels em tema e transparência', ()
+ });
+ 
+ test('V2.52.2 atualiza cache e continua frontend-only', () => {
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/chart-export.js?v=2.63.9-r29'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
++  assert.ok(index.includes('js/chart-export.js?v=2.63.9-r291'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
+   assert.equal(existsSync(join(root, 'supabase', 'migrations', 'MIGRACAO_V2.52.3.sql')), false);
+ });
+diff --git a/tests/topbar-stability-v24812.test.js b/tests/topbar-stability-v24812.test.js
+index d86b3731..b7b386b1 100644
+--- a/tests/topbar-stability-v24812.test.js
++++ b/tests/topbar-stability-v24812.test.js
+@@ -45,6 +45,6 @@ test('V2.48.12 preserva calendário próprio, sidebar e regra financeira', () =>
+ test('V2.48.12 atualiza somente versão de frontend', () => {
+   assert.match(app,/APP_VERSION = '2\.63\.9'/);
+   assert.ok(index.includes('V2.60.7'));
+-  assert.ok(index.includes('css/styles.css?v=2.63.9-r29'));
+-  assert.ok(index.includes('js/app.js?v=2.63.9-r29'));
++  assert.ok(index.includes('css/styles.css?v=2.63.9-r291'));
++  assert.ok(index.includes('js/app.js?v=2.63.9-r291'));
+ });

@@ -3658,7 +3658,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],leaderCommissions:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
   const strategyCatalogState={sourceKey:'contracted_modules_csv',busy:false,drafts:{},request:0,notice:''};
-  const strategyRecurringState={busy:false,notice:'',last:null,lastAudit:[]};
+  const strategyRecurringState={busy:false,notice:'',last:null,lastAudit:[],previewTotals:null};
   const strategyMerchandiseState={busy:false,notice:'',last:null};
   const strategyCommissionState={busy:false,notice:'',rows:[]};
   const strategyManualState={busy:false,rows:[],month:'',notice:'',editGroup:null,pendingToken:null};
@@ -4249,7 +4249,15 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(!status)return;
     const cs=strategyCsvState,rs=strategyRecurringState;
     if(btn)btn.disabled=true;
-    if(result)result.textContent=rs.notice||'Nenhum lote confirmado nesta sessão.';
+    if(result){result.textContent=rs.notice||'Nenhum lote confirmado nesta sessão.';result.hidden=!rs.notice;}
+    const diagnostic=$('#strategyRecurringDiagnosticR291');
+    if(diagnostic){
+      diagnostic.hidden=!rs.lastAudit?.length;
+      if(rs.lastAudit?.length){
+        const first=rs.lastAudit[0];
+        diagnostic.innerHTML=`<strong>Importação bloqueada antes de gravar: ${rs.lastAudit.length} linha(s) com erro no banco.</strong><p>Linha ${escapeHtml(String(first.line))}: ${escapeHtml(first.seller)} / ${escapeHtml(first.product)} — ${escapeHtml(first.reason)}. Corrija o vínculo e exporte o diagnóstico para conferir todas as ocorrências.</p>`;
+      }else diagnostic.textContent='';
+    }
     if($('#strategyRecurringAuditExport'))$('#strategyRecurringAuditExport').hidden=!rs.lastAudit?.length;
     if(!cs.parsed||cs.sourceKey!=='contracted_modules_csv'){
       status.textContent='Selecione o CSV Anotação de Venda / Produtos Contratados para preparar o Novo MRR.';
@@ -4288,16 +4296,21 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(strategyCsvPeriodMode==='month'&&!strategyCsvPeriodMonth)return toast('Selecione a competência para importar.');
     if(!window.confirm(`Confirma a importação de ${prepared.ready.length} contratações recorrentes? O Supabase ignorará vendas já registradas e competências fechadas. A operação NÃO gera comissões.`))return;
     const org=state.user.organizationId,request=cs.request,source=cs.sourceKey,rs=strategyRecurringState;
-    rs.busy=true;rs.lastAudit=[];rs.notice='Preparando lote no Supabase...';renderStrategyRecurringImport();
+    rs.busy=true;rs.lastAudit=[];rs.previewTotals=null;rs.notice='Preparando lote no Supabase...';renderStrategyRecurringImport();
     let batchId=null;
     try{
       // R29: valida cada linha no MESMO motor SQL de importacao, com rollback garantido.
       // Uma falha no segundo bloco nunca deve deixar o primeiro bloco gravado.
       const preflightIssues=[];
+      const previewTotals={newSales:0,duplicates:0,closed:0,resumed:0,known:true};
       const checkChunk=async(chunk)=>{
         const result=await state.supabase.rpc('preview_strategy_recurring_chunk_r29',{p_sales:chunk});
         if(result.error)throw new Error('Pre-validacao R29 indisponivel: '+result.error.message+' (aplique a migration R29).');
-        if(result.data?.ok)return;
+        if(result.data?.ok){
+          if(!Number.isFinite(Number(result.data.imported))||!Number.isFinite(Number(result.data.duplicates))||!Number.isFinite(Number(result.data.closed)))previewTotals.known=false;
+          else{previewTotals.newSales+=Number(result.data.imported);previewTotals.duplicates+=Number(result.data.duplicates);previewTotals.closed+=Number(result.data.closed);previewTotals.resumed+=Number(result.data.resumed||0);}
+          return;
+        }
         if(chunk.length===1){preflightIssues.push({line:chunk[0].line||'?',seller:chunk[0].seller,product:chunk[0].product,reason:String(result.data?.error||'Rejeitada pelo banco')});return;}
         const middle=Math.floor(chunk.length/2);
         await checkChunk(chunk.slice(0,middle));await checkChunk(chunk.slice(middle));
@@ -4307,12 +4320,17 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
         if(org!==state.user?.organizationId||request!==cs.request||source!==cs.sourceKey)throw new Error('Arquivo alterado durante a pre-validacao.');
         await checkChunk(chunk);
       }
-      rs.lastAudit=preflightIssues;
+      rs.lastAudit=preflightIssues;rs.previewTotals=previewTotals;
       if(preflightIssues.length){
         const first=preflightIssues[0];
         rs.notice=`Importacao NAO iniciada: ${preflightIssues.length} linha(s) recusada(s) pelo Supabase. Primeira: linha ${first.line}, ${first.seller} / ${first.product}: ${first.reason}. Exporte o diagnostico R29 e corrija os vinculos antes de confirmar.`;
-        renderStrategyRecurringImport();toast('R29: nenhuma venda foi gravada; confira as pendencias de validacao.');return;
+        renderStrategyRecurringImport();toast(`R29.1: ${preflightIssues.length} linha(s) bloqueada(s). Primeira: ${first.line} — ${first.reason}. Nenhum lote criado.`);return;
       }
+      if(previewTotals.known&&previewTotals.newSales===0&&previewTotals.duplicates+previewTotals.closed===prepared.ready.length&&!$('#strategyImportReplaceCommissions')?.checked){
+        rs.notice=`Pré-validação concluída: 0 vendas novas, ${previewTotals.duplicates} já registradas e ${previewTotals.closed} em competência fechada. Nenhum novo lote foi criado. As comissões existentes não foram alteradas.`;
+        renderStrategyRecurringImport();toast('R29.1: nenhuma venda nova para importar. Confira o resumo da pré-validação.');return;
+      }
+      rs.notice=previewTotals.known?`Pré-validação aprovada: ${previewTotals.newSales} nova(s), ${previewTotals.duplicates} duplicada(s), ${previewTotals.closed} fechada(s). Iniciando gravação...`:'Pré-validação aprovada. Iniciando gravação...';renderStrategyRecurringImport();
       const started=await state.supabase.rpc('start_strategy_recurring_batch_v2634',{p_file_name:cs.fileName,p_total_rows:prepared.ready.length,p_mapping:cs.mapping});
       if(started.error)throw started.error;batchId=started.data;
       let imported=0,duplicates=0,closed=0;let index=0;

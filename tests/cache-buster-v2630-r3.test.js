@@ -9,7 +9,7 @@ const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 
 test('todos os scripts e estilos do HTML usam a mesma revisao de assets declarada no package.json',()=>{
   assert.equal(pkg.version,'2.63.9');
-  assert.equal(pkg.assetVersion,'2.63.9-r29');
+  assert.equal(pkg.assetVersion,'2.63.9-r291');
   const refs=[...html.matchAll(/(?:src|href)=["']([^"']+\?v=([^"']+))["']/g)]
     .map(m=>({ref:m[1],version:m[2]}))
     .filter(x=>!x.ref.startsWith('js/audit-utils.js'));
