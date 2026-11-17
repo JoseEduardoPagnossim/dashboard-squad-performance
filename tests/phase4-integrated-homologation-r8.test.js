@@ -21,13 +21,13 @@ test('Fase 4: MRR e avulsas sugerem obrigatórias, opcionais iniciam desligadas'
   }
 });
 
-test('Fase 4: MRR ausente gera pendência sem descartar venda nem afetar grupo C',()=>{
+test('R30: Vl Atual Ativo vazio nao gera pendencia e nao afeta grupo C',()=>{
   const csv='Data Lançam.,UsuarioVenda,grupoAtendimento,Produto,Vl Anterior,Vl Atual Ativo\n06/11/2026,Ana,C,Módulo X,100,\n06/11/2026,Ana,C,Módulo X,100,20\n';
   const parsed=importer.parse(csv),m=importer.suggest('contracted_modules_csv',parsed.headers);
   const audit=importer.auditPreview('contracted_modules_csv',parsed,m);
   assert.equal(audit.summary.total,2);
-  assert.equal(audit.summary.missingMonthly,1);
-  assert.equal(audit.summary.needsReview,1);
+  assert.equal(audit.summary.missingMonthly,0);
+  assert.equal(audit.summary.needsReview,0);
   assert.equal(audit.bySquad.find(x=>x.squad==='C').rows,2);
   assert.equal(parsed.rowCount,2);
 });
@@ -55,6 +55,6 @@ test('Fase 4: líderes vinculados somente à bonificação, com isolamento do Sq
 });
 
 test('Fase 4: interface publica cache-buster novo e conferência de MRR',()=>{
-  assert.match(html,/js\/app\.js\?v=2\.63\.9-r29/);
+  assert.match(html,/js\/app\.js\?v=2\.63\.9-r30/);
   assert.match(app,/missingMonthly/);
 });

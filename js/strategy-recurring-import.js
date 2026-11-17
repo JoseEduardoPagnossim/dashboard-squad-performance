@@ -44,17 +44,17 @@
       if(!group){summary.ignoredNoGroup++;continue;}
       const sellerName=get(row,'seller'),sKey=JSON.stringify([SOURCE,group,seller.normalizeName(sellerName)]),resolved=bySeller.get(sKey);
       const productName=get(row,'product'),product=byProduct.get(catalog.normalize(productName));
-      const day=date(get(row,'date')),amountCents=cents(get(row,'amount')),activeMonthlyCents=cents(get(row,'activeMonthly'));
+      const day=date(get(row,'date')),amountCents=cents(get(row,'amount')),activeMonthlyCents=amountCents;
       const customer=get(row,'customer'),taxId=get(row,'taxId'),contractDate=get(row,'contractDate');
       let status='ready';
       if(!resolved||resolved.status!=='matched'||(resolved.role==='super_admin'&&!resolved.periods.includes((day||'').slice(0,7))))status='pendingSeller';
       else if(!product)status='pendingProduct';
       else if(!day)status='pendingDate';
-      else if(amountCents===null||activeMonthlyCents===null)status='pendingAmount';
+      else if(amountCents===null)status='pendingAmount';
       const fingerprint=JSON.stringify([day||'',normalize(sellerName),group,catalog.normalize(productName),amountCents,normalize(taxId),normalize(customer),date(contractDate)||'']);
       const occurrence=status==='ready'?(occurrences.get(fingerprint)||0)+1:0;
       const entry={line:parsed.sourceLineNumbers?.[index]||index+2,status,occurrence,day,amountCents,activeMonthlyCents,personId:resolved?.personId||null,userId:resolved?.userId||null,productId:product?.id||null,
-        seller:sellerName,squad:group,product:productName,customer,taxId,contractDate:date(contractDate)||'',fingerprint};
+        seller:sellerName,squad:group,product:productName,customer,taxId,contractDate:date(contractDate)||'',contractTimestamp:contractDate,fingerprint};
       records.push(entry);
       if(status==='ready')occurrences.set(fingerprint,occurrence);
     }
@@ -62,8 +62,69 @@
     // preserva todas as ocorrências na reimportação integral do arquivo.
     for(const entry of records){if(entry.status==='ready'&&occurrences.get(entry.fingerprint)>1)summary.repeatedRows++;summary[entry.status]++;if(entry.status==='ready')summary.readyMrrCents+=entry.activeMonthlyCents;}
     const ready=records.filter(r=>r.status==='ready').map(r=>Object.freeze({line:r.line,date:r.day,seller:r.seller,squad:r.squad,product:r.product,productId:r.productId,personId:r.personId,amountCents:r.amountCents,activeMonthlyCents:r.activeMonthlyCents,customer:r.customer.slice(0,160),taxId:r.taxId.slice(0,30),contractDate:r.contractDate,occurrence:r.occurrence}));
-    return Object.freeze({sourceKey:SOURCE,summary:Object.freeze(summary),records:Object.freeze(records),ready:Object.freeze(ready),note:'Vl Anterior define venda e comissão; Vl Atual Ativo permanece referência de MRR. Vendas antigas com valor diferente serão reconhecidas como duplicadas e devem ser conciliadas em Bonificação.'});
+    return Object.freeze({sourceKey:SOURCE,summary:Object.freeze(summary),records:Object.freeze(records),ready:Object.freeze(ready),note:'R30: somente Vl Anterior alimenta vendas, MRR e comissões. Negociações especiais são revisadas antes da gravação.'});
   }
-  function chunks(prepared,size=100){if(!prepared||!Array.isArray(prepared.ready)||size<1||size>100)throw new Error('Lote inválido.');const result=[];for(let i=0;i<prepared.ready.length;i+=size)result.push(prepared.ready.slice(i,i+size));return result;}
-  return Object.freeze({SOURCE,date,cents,normalize,build,chunks});
+  // R30: detecção local de candidatos, sem persistir prefixo do CNPJ ou horário bruto.
+  // Não é uma chave única; toda sugestão exige classificação expressa do administrador.
+  function timestampMinute(value){
+    const s=clean(value);let match=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,6})?)?$/);
+    if(!match){const br=s.match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2})(?:[.,]\d{1,6})?)?$/);if(!br)return null;match=[br[0],br[3],br[2],br[1],br[4],br[5],br[6]||'00'];}
+    const [_,y,m,d,h,minute,second='00']=match;
+    if(!date(`${y}-${m}-${d}`)||Number(h)>23||Number(minute)>59||Number(second)>59)return null;
+    return Date.UTC(+y,+m-1,+d,+h,+minute,+second);
+  }
+  function detectSpecialDeals(prepared){
+    if(!prepared?.records)return [];
+    const candidates=new Map();
+    for(const r of prepared.records){
+      if(r.status!=='ready')continue;
+      const digits=String(r.taxId||'').replace(/\D/g,'');
+      const moment=timestampMinute(r.contractTimestamp);
+      if(digits.length<7||moment===null)continue;
+      const key=JSON.stringify([digits.slice(0,7),normalize(r.seller),r.squad]);
+      if(!candidates.has(key))candidates.set(key,[]);
+      candidates.get(key).push({line:r.line,moment,amountCents:r.amountCents,product:r.product,seller:r.seller,squad:r.squad});
+    }
+    const groups=[];let seq=0;
+    for(const items of candidates.values()){
+      items.sort((a,b)=>a.moment-b.moment||a.line-b.line);
+      let group=[];
+      const flush=()=>{if(group.length>1){groups.push({id:`R30-${String(++seq).padStart(5,'0')}`,lines:group.map(x=>x.line),items:group.map(({line,product,amountCents})=>({line,product,amountCents})),seller:group[0].seller,squad:group[0].squad,totalCents:group.reduce((sum,x)=>sum+x.amountCents,0)});}group=[];};
+      for(const item of items){if(group.length&&item.moment-group[0].moment>60000)flush();group.push(item);}
+      flush();
+    }
+    return groups.sort((a,b)=>a.lines[0]-b.lines[0]);
+  }
+  function applySpecialDecisions(prepared,decisions){
+    const groups=detectSpecialDeals(prepared);
+    const mapped=new Map();
+    for(const group of groups){
+      const decision=decisions[group.id];
+      if(!decision||!['independent','special'].includes(decision.mode))throw new Error(`Revise a negociação ${group.id} (${group.seller}).`);
+      if(decision.mode==='independent')continue;
+      const mrrCents=decision.mrrCents,commissionCents=decision.commissionCents;
+      if(!Number.isSafeInteger(mrrCents)||mrrCents<0||mrrCents>9999999999||!Number.isSafeInteger(commissionCents)||commissionCents<0||commissionCents>9999999999)throw new Error(`Informe MRR e comissão válidos para ${group.id}.`);
+      group.lines.forEach((line,i)=>mapped.set(line,{specialGroupId:group.id,specialRole:i===0?'anchor':'member',specialMrrCents:i===0?mrrCents:0,specialCommissionCents:i===0?commissionCents:0,specialSumCents:group.totalCents,specialLineCount:group.lines.length}));
+    }
+    return {...prepared,ready:prepared.ready.map(row=>({...row,...(mapped.get(row.line)||{})}))};
+  }
+  function chunks(prepared,size=100){
+    if(!prepared||!Array.isArray(prepared.ready)||size<1||size>100)throw new Error('Lote inválido.');
+    const bundles=[],seen=new Set(),byGroup=new Map();
+    for(const row of prepared.ready){if(row.specialGroupId){if(!byGroup.has(row.specialGroupId))byGroup.set(row.specialGroupId,[]);byGroup.get(row.specialGroupId).push(row);}}
+    for(const row of prepared.ready){
+      if(!row.specialGroupId){bundles.push([row]);continue;}
+      if(seen.has(row.specialGroupId))continue;
+      seen.add(row.specialGroupId);bundles.push(byGroup.get(row.specialGroupId));
+    }
+    const result=[];let chunk=[];
+    for(const bundle of bundles){
+      if(bundle.length>size)throw new Error('Negociação R30 maior que o limite de 100 módulos; revise o grupo.');
+      if(chunk.length+bundle.length>size){result.push(chunk);chunk=[];}
+      chunk.push(...bundle);
+    }
+    if(chunk.length)result.push(chunk);
+    return result;
+  }
+  return Object.freeze({SOURCE,date,cents,normalize,build,chunks,detectSpecialDeals,applySpecialDecisions,timestampMinute});
 });

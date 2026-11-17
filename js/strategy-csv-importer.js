@@ -14,7 +14,7 @@
         {key:'squad',label:'Grupo / Squad',required:true,aliases:['grupoAtendimento','grupo','Squad']},
         {key:'product',label:'Produto contratado',required:true,aliases:['Produto','Módulo']},
         {key:'amount',label:'Valor vendido (Vl Anterior)',required:true,aliases:['Vl Anterior','Valor Anterior']},
-        {key:'activeMonthly',label:'Mensalidade ativa (MRR)',required:true,aliases:['Vl Atual Ativo','Valor Atual Ativo']},
+        {key:'activeMonthly',label:'Vl Atual Ativo (não usado nos cálculos)',required:false,aliases:['Vl Atual Ativo','Valor Atual Ativo']},
         {key:'customer',label:'Cliente',required:false,aliases:['Cliente']},
         {key:'taxId',label:'CNPJ do cliente',required:false,aliases:['ClienteCNPJ','CNPJ']},
         {key:'contractDate',label:'Cadastro do item contratual',required:false,aliases:['DataCadItemContrato']},
@@ -81,7 +81,7 @@
     if(!Array.isArray(headers)||!headers.length)throw new Error('Cabeçalhos obrigatórios.');
     const used=new Set(),mapping={};
     for(const f of def.fields){
-      if(!f.required)continue; // Campos opcionais nunca sao vinculados automaticamente.
+      if(!f.required && !(sourceKey==='contracted_modules_csv'&&['taxId','contractDate'].includes(f.key)))continue; // R30: só CNPJ/data-hora para detecção transitória.
       const found=headers.find(h=>!used.has(h)&&f.aliases.some(a=>normalize(a)===normalize(h)));
       if(found){mapping[f.key]=found;used.add(found);}
     }
@@ -129,7 +129,7 @@
     for(const row of parsed.rows){
       const value=key=>indices[key]<0?'':String(row[indices[key]]??'').trim();
       const squad=normalizeSquad(value('squad'));
-      const missingSeller=!value('seller'),missingProduct=!value('product'),missingDate=!value('date'),missingAmount=!value('amount'),missingMonthly=sourceKey==='contracted_modules_csv'&&!value('activeMonthly');
+      const missingSeller=!value('seller'),missingProduct=!value('product'),missingDate=!value('date'),missingAmount=!value('amount'),missingMonthly=false;
       if(!squad)summary.missingSquad++;else{summary.validSquad++;bySquad.get(squad).rows++;}
       if(missingSeller)summary.missingSeller++;
       if(missingProduct)summary.missingProduct++;

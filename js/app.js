@@ -3658,7 +3658,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   }
   const strategyAutomationState={loaded:false,loading:false,error:'',sources:[],users:[],people:[],sellerProfiles:[],leaderCommissions:[],aliases:[],peopleError:'',mappings:[],mappingError:'',aliasError:'',request:0};
   const strategyCatalogState={sourceKey:'contracted_modules_csv',busy:false,drafts:{},request:0,notice:''};
-  const strategyRecurringState={busy:false,notice:'',last:null,lastAudit:[],previewTotals:null};
+  const strategyRecurringState={busy:false,notice:'',last:null,lastAudit:[],previewTotals:null,specialDecisions:{},specialFileKey:''};
   const strategyMerchandiseState={busy:false,notice:'',last:null};
   const strategyCommissionState={busy:false,notice:'',rows:[]};
   const strategyManualState={busy:false,rows:[],month:'',notice:'',editGroup:null,pendingToken:null};
@@ -4244,6 +4244,46 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     return engine.build({parsed:strategyCsvScoped().parsed,mapping:cs.mapping,people:strategyAutomationState.people.map(p=>({...p,organization_id:state.user?.organizationId})),
       profiles:strategyAutomationState.sellerProfiles,leaderCommissions:strategyAutomationState.leaderCommissions,aliases:strategyAutomationState.aliases,products:strategyAutomationState.products,organizationId:state.user?.organizationId});
   }
+  function renderStrategySpecialReviewR30(prepared){
+    const section=$('#strategySpecialReviewR30'),rows=$('#strategySpecialRowsR30'),summary=$('#strategySpecialSummaryR30');
+    if(!section)return;
+    const engine=window.SoftenStrategyRecurringImport,rs=strategyRecurringState;
+    const groups=prepared?engine.detectSpecialDeals(prepared):[];
+    const fileKey=`${strategyCsvState.request}:${strategyCsvState.sourceKey}:${strategyCsvPeriodMonth}:${strategyCsvPeriodMode}`;
+    if(rs.specialFileKey!==fileKey){rs.specialDecisions={};rs.specialFileKey=fileKey;}
+    section.hidden=!groups.length;
+    if(!groups.length){if(rows)rows.innerHTML='';return;}
+    if(summary)summary.textContent=`${groups.length} possível(is) negociação(ões) identificada(s) · ${groups.reduce((n,g)=>n+g.lines.length,0)} linhas para conferência. Nenhuma classificação é automática.`;
+    const fmt=n=>(n/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    rows.innerHTML=groups.map(g=>{
+      const d=rs.specialDecisions[g.id]||{},mode=d.mode||'';
+      return `<div class="strategy-special-deal-r30" data-special-group="${g.id}">
+        <strong>${escapeHtml(g.seller)} · Squad ${escapeHtml(g.squad)} · ${g.lines.length} módulos</strong>
+        <p class="muted">Linhas ${g.lines.join(', ')} · Soma de Vl Anterior: <strong>${fmt(g.totalCents)}</strong></p>
+        <p class="muted">${g.items.map(i=>`${escapeHtml(i.product)} (${fmt(i.amountCents)})`).join(' · ')}</p>
+        <label>Classificação da operação<select data-special-mode="${g.id}">
+          <option value="" ${!mode?'selected':''}>Selecione antes de confirmar</option>
+          <option value="independent" ${mode==='independent'?'selected':''}>Vendas independentes (catálogo normal)</option>
+          <option value="special" ${mode==='special'?'selected':''}>Migração / fidelidade (valores manuais)</option>
+        </select></label>
+        ${mode==='special'?`<div class="strategy-special-fields"><label>MRR incremental a considerar (R$)<input inputmode="decimal" data-special-amount="${g.id}" data-special-kind="mrr" value="${escapeHtml(d.mrrText||'')}" placeholder="0,00"></label><label>Comissão única da operação (R$)<input inputmode="decimal" data-special-amount="${g.id}" data-special-kind="commission" value="${escapeHtml(d.commissionText||'')}" placeholder="0,00"></label></div>`:''}
+      </div>`;
+    }).join('');
+  }
+  function specialMoneyCentsR30(text){
+    const v=String(text||'').trim();if(!/^(?:\d+(?:,\d{1,2})?|\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?)$/.test(v))return null;
+    const n=Number(v.replace(/\./g,'').replace(',','.'));
+    return Number.isFinite(n)&&n>=0&&n<=99999999.99?Math.round(n*100):null;
+  }
+  function resolvedSpecialDecisionsR30(prepared){
+    const rs=strategyRecurringState,decisions={};
+    for(const group of window.SoftenStrategyRecurringImport.detectSpecialDeals(prepared)){
+      const d=rs.specialDecisions[group.id];
+      if(!d||!d.mode)throw new Error(`Classifique a possível negociação ${group.id} (${group.seller}).`);
+      decisions[group.id]={mode:d.mode,mrrCents:specialMoneyCentsR30(d.mrrText),commissionCents:specialMoneyCentsR30(d.commissionText)};
+    }
+    return window.SoftenStrategyRecurringImport.applySpecialDecisions(prepared,decisions);
+  }
   function renderStrategyRecurringImport(){
     const status=$('#strategyRecurringStatus'),summary=$('#strategyRecurringSummary'),review=$('#strategyRecurringReview'),btn=$('#strategyRecurringConfirm'),result=$('#strategyRecurringResult');
     if(!status)return;
@@ -4260,14 +4300,19 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
     if($('#strategyRecurringAuditExport'))$('#strategyRecurringAuditExport').hidden=!rs.lastAudit?.length;
     if(!cs.parsed||cs.sourceKey!=='contracted_modules_csv'){
+      renderStrategySpecialReviewR30(null);
       status.textContent='Selecione o CSV Anotação de Venda / Produtos Contratados para preparar o Novo MRR.';
       if(summary)summary.textContent='';if(review)review.innerHTML='';return;
     }
     if(strategyAutomationState.catalogError||strategyAutomationState.peopleError||strategyAutomationState.aliasError){status.textContent='Atualize as migrations V2.63.2 e V2.63.3 antes de importar.';if(summary)summary.textContent='';if(review)review.innerHTML='';return;}
     let prepared;try{prepared=prepareStrategyRecurring();}catch(err){status.textContent='Conclua o mapeamento e a conciliação: '+String(err.message||err);if(summary)summary.textContent='';if(review)review.innerHTML='';return;}
     const t=prepared.summary;
+    renderStrategySpecialReviewR30(prepared);
     status.textContent=rs.busy?'Importação em execução. Não feche esta página até a confirmação do lote.':'Prévia de elegibilidade; registros repetidos no banco serão recusados na confirmação. Não há pagamento de comissão nesta versão.';
-    if(summary)summary.textContent=`${t.total} linhas • ${t.ready} aptas • ${t.ignoredNoGroup} sem grupo • ${t.pendingSeller} vendedor pendente • ${t.pendingProduct} produto ausente • ${t.pendingDate} data inválida • ${t.pendingAmount} valor inválido • ${t.repeatedRows} linhas com conteúdo idêntico (contadas individualmente) • Novo MRR elegível: ${(t.readyMrrCents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}.`;
+    const specialGroupsR30=window.SoftenStrategyRecurringImport.detectSpecialDeals(prepared);
+    let reviewedMrrR30=t.readyMrrCents,unreviewedR30=0;
+    for(const g of specialGroupsR30){const d=rs.specialDecisions[g.id];if(!d?.mode){unreviewedR30++;continue;}if(d.mode==='special'){const cents=specialMoneyCentsR30(d.mrrText);if(cents===null)unreviewedR30++;else reviewedMrrR30+=cents-g.totalCents;}}
+    if(summary)summary.textContent=`${t.total} linhas • ${t.ready} aptas • ${t.ignoredNoGroup} sem grupo • ${t.pendingSeller} vendedor pendente • ${t.pendingProduct} produto ausente • ${t.pendingDate} data inválida • ${t.pendingAmount} valor inválido • ${t.repeatedRows} linhas idênticas (independentes por ocorrência) • MRR pela coluna Vl Anterior: ${(t.readyMrrCents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}${specialGroupsR30.length?` • MRR após revisão R30: ${unreviewedR30?'pendente de '+unreviewedR30+' decisão(ões)':(reviewedMrrR30/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}`:''}.`;
     const examples=prepared.records.filter(x=>x.status!=='ready').slice(0,12);
     if(review)review.innerHTML=examples.length?`<div class="strategy-table-wrap"><table class="strategy-table"><thead><tr><th>Linha do CSV</th><th>Vendedor</th><th>Produto</th><th>Motivo</th></tr></thead><tbody>${examples.map(x=>`<tr><td>${x.line}</td><td>${escapeHtml(x.seller)}</td><td>${escapeHtml(x.product)}</td><td>${escapeHtml(({pendingSeller:'Vendedor não conciliado',pendingProduct:'Produto sem cadastro',pendingDate:'Data inválida',pendingAmount:'MRR inválido'})[x.status]||x.status)}</td></tr>`).join('')}</tbody></table></div><p class="muted">Mostrando até 12 pendências; corrija os dados ou utilize lançamento manual na etapa V2.63.7.</p>`:'<p class="muted">Nenhuma pendência identificada nas linhas com grupo.</p>';
     if(btn)btn.disabled=rs.busy||!t.ready||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess()||!!strategyAutomationState.error;
@@ -4291,7 +4336,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   async function confirmStrategyRecurringImport(){
     if(strategyRecurringState.busy||!state.supabase||!strategyEditAccess()||!strategyPeopleAccess())return toast('Sem permissão para importar receitas.');
     const cs=strategyCsvState,engine=window.SoftenStrategyRecurringImport;
-    let prepared;try{prepared=prepareStrategyRecurring();}catch(err){return toast('Revise os campos e vendedores: '+String(err.message||err));}
+    let prepared;try{prepared=prepareStrategyRecurring();prepared=resolvedSpecialDecisionsR30(prepared);}catch(err){return toast('Revise os campos, vendedores e negociações: '+String(err.message||err));}
     if(!prepared||!prepared.ready.length)return toast('Nenhuma venda recorrente apta neste arquivo.');
     if(strategyCsvPeriodMode==='month'&&!strategyCsvPeriodMonth)return toast('Selecione a competência para importar.');
     if(!window.confirm(`Confirma a importação de ${prepared.ready.length} contratações recorrentes? O Supabase ignorará vendas já registradas e competências fechadas. A operação NÃO gera comissões.`))return;
@@ -4373,6 +4418,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     }
     let prepared;try{prepared=prepareStrategyMerchandise();}catch(err){status.textContent='Revise os campos e a conciliação: '+String(err.message||err);if(summary)summary.textContent='';if(review)review.innerHTML='';return;}
     const t=prepared.summary;
+    renderStrategySpecialReviewR30(prepared);
     status.textContent=ms.busy?'Importação avulsa em andamento. Não feche esta página até confirmar o lote.':'Prévia de elegibilidade. A verificação de duplicidade e competência fechada será feita no Supabase. Não gera MRR, ARR ou comissão.';
     if(summary)summary.textContent=`${t.total} linhas • ${t.ready} aptas • ${t.ignoredNoGroup} sem Squad • ${t.pendingSeller} vendedor pendente • ${t.pendingProduct} produto sem cadastro • ${t.pendingDate} data inválida • ${t.pendingAmount} valor inválido • ${t.pendingId} ID ausente • ${t.pendingQuantity} quantidade inválida • ${t.repeatedRows} linhas repetidas (vendas distintas) • Receita avulsa elegível: ${(t.readyAmountCents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}.`;
     const reasons={pendingSeller:'Vendedor não conciliado',pendingProduct:'Produto não cadastrado',pendingDate:'Data inválida',pendingAmount:'Valor inválido',pendingId:'ID ausente/inválido',pendingQuantity:'Quantidade inválida'};
@@ -4509,7 +4555,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       renderStrategyCsvImporter();return true;
     }
     if(e.target.id==='strategyCsvSource'){
-      strategyRecurringState.notice='';strategyMerchandiseState.notice='';strategySellerSelection.key='';Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
+      strategyRecurringState.notice='';strategyRecurringState.specialDecisions={};strategyRecurringState.specialFileKey='';strategyMerchandiseState.notice='';strategySellerSelection.key='';Object.assign(strategyCsvState,{sourceKey:e.target.value,parsed:null,mapping:{},fileName:'',error:'',busy:false,request:strategyCsvState.request+1});
       strategyCatalogState.sourceKey=e.target.value;strategyCatalogState.notice='';
       strategyCsvWizardStep=1;if($('#strategyCsvFile'))$('#strategyCsvFile').value='';renderStrategyCsvImporter();return true;
     }
@@ -4518,7 +4564,9 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
     if(e.target.dataset.strategyCatalogValue){const id=e.target.dataset.strategyCatalogValue;const draft=strategyCatalogState.drafts[id]||{type:strategyAutomationState.products.find(p=>p.id===id)?.commission_type||'unconfigured'};draft.value=e.target.value;strategyCatalogState.drafts[id]=draft;return true;}
     if(e.target.id==='strategySellerAliasKey'){strategySellerSelection.key=e.target.value;renderStrategySellerReconciliation();return true;}
     if(e.target.id==='strategySellerOnlyPending'){renderStrategySellerReconciliation();return true;}
-    if(e.target.id==='strategyCsvFile'){strategyRecurringState.notice='';strategyMerchandiseState.notice='';strategySellerSelection.key='';await loadStrategyCsvFile(e.target.files?.[0]);return true;}
+    if(e.target.matches('[data-special-mode]')){const id=e.target.dataset.specialMode;strategyRecurringState.specialDecisions[id]={mode:e.target.value};renderStrategyRecurringImport();return true;}
+    if(e.target.matches('[data-special-amount]')){const id=e.target.dataset.specialAmount,kind=e.target.dataset.specialKind;const d=strategyRecurringState.specialDecisions[id]||{mode:'special'};d[kind+'Text']=e.target.value;strategyRecurringState.specialDecisions[id]=d;return true;}
+    if(e.target.id==='strategyCsvFile'){strategyRecurringState.notice='';strategyRecurringState.specialDecisions={};strategyRecurringState.specialFileKey='';strategyMerchandiseState.notice='';strategySellerSelection.key='';await loadStrategyCsvFile(e.target.files?.[0]);return true;}
     const key=e.target.dataset.strategyCsvField;
     if(key){if(e.target.value)strategyCsvState.mapping[key]=e.target.value;else delete strategyCsvState.mapping[key];strategyCsvState.error='';renderStrategyCsvImporter();return true;}
     return false;
