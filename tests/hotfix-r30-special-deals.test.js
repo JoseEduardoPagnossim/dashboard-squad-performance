@@ -34,7 +34,10 @@ test('R30: identifica janela de 60s com milissegundos, mesmo vendedor e 7 digito
   assert.deepEqual(groups[0].lines,[2,3,4]);
   assert.equal(groups[0].totalCents,17000);
   assert.equal(groups[0].seller,'Ana');
+  assert.equal(groups[0].customerPrefix,'1122233');
   assert.ok(!JSON.stringify(groups).includes('11222333'));
+  assert.ok(!JSON.stringify(groups).includes('11.222.333/0001-44'));
+  assert.match(app,/CNPJ usado no agrupamento \(7 primeiros dígitos\)/);
 });
 test('R30: bloqueia toda negociação sem decisão e valida valores manuais',()=>{
   const p=make();

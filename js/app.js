@@ -4259,6 +4259,7 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       const d=rs.specialDecisions[g.id]||{},mode=d.mode||'';
       return `<div class="strategy-special-deal-r30" data-special-group="${g.id}">
         <strong>${escapeHtml(g.seller)} · Squad ${escapeHtml(g.squad)} · ${g.lines.length} módulos</strong>
+        <p class="muted"><strong>CNPJ usado no agrupamento (7 primeiros dígitos): ${escapeHtml(g.customerPrefix)}</strong> · Conferir antes de classificar.</p>
         <p class="muted">Linhas ${g.lines.join(', ')} · Soma de Vl Anterior: <strong>${fmt(g.totalCents)}</strong></p>
         <p class="muted">${g.items.map(i=>`${escapeHtml(i.product)} (${fmt(i.amountCents)})`).join(' · ')}</p>
         <label>Classificação da operação<select data-special-mode="${g.id}">

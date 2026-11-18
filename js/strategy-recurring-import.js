@@ -83,13 +83,13 @@
       if(digits.length<7||moment===null)continue;
       const key=JSON.stringify([digits.slice(0,7),normalize(r.seller),r.squad]);
       if(!candidates.has(key))candidates.set(key,[]);
-      candidates.get(key).push({line:r.line,moment,amountCents:r.amountCents,product:r.product,seller:r.seller,squad:r.squad});
+      candidates.get(key).push({line:r.line,moment,amountCents:r.amountCents,product:r.product,seller:r.seller,squad:r.squad,customerPrefix:digits.slice(0,7)});
     }
     const groups=[];let seq=0;
     for(const items of candidates.values()){
       items.sort((a,b)=>a.moment-b.moment||a.line-b.line);
       let group=[];
-      const flush=()=>{if(group.length>1){groups.push({id:`R30-${String(++seq).padStart(5,'0')}`,lines:group.map(x=>x.line),items:group.map(({line,product,amountCents})=>({line,product,amountCents})),seller:group[0].seller,squad:group[0].squad,totalCents:group.reduce((sum,x)=>sum+x.amountCents,0)});}group=[];};
+      const flush=()=>{if(group.length>1){groups.push({id:`R30-${String(++seq).padStart(5,'0')}`,lines:group.map(x=>x.line),items:group.map(({line,product,amountCents})=>({line,product,amountCents})),seller:group[0].seller,squad:group[0].squad,customerPrefix:group[0].customerPrefix,totalCents:group.reduce((sum,x)=>sum+x.amountCents,0)});}group=[];};
       for(const item of items){if(group.length&&item.moment-group[0].moment>60000)flush();group.push(item);}
       flush();
     }
