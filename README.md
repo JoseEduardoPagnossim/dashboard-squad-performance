@@ -75,3 +75,8 @@ O menu **Como usar** contem busca textual, atalhos e 24 procedimentos detalhados
 - O módulo **Como usar** inclui esses três procedimentos.
 - **Sem migration nova** e sem alteração de cálculo financeiro, regras de bonificação, dados ou fechamento.
 - Publicação: aplicar ZIP incremental sobre a R30.3; executar `npm run check`; publicar no GitHub; atualizar com Ctrl+Shift+R.
+
+
+## Atualização R30.6 — Calendários e período responsivo
+
+Os campos de datas/competências/horários usam seletor visual integrado; o botão **Aplicar análise** permanece visível com zoom e telas pequenas. Consulte `docs/MAPEAMENTO_CONTROLES_R306.md` para inventário, escopo e validação.

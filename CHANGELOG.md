@@ -1,3 +1,11 @@
+## R30.6 — Calendários padronizados e Aplicar análise responsivo (19/11/2026)
+
+- Identifica 17 campos de data, competência e data/hora que ainda utilizavam calendário nativo.
+- Integra seletor de datas visual do sistema preservando os valores e eventos originais dos formulários.
+- Corrige o popover de período global com conteúdo rolável e botão `Aplicar análise` sempre acessível no rodapé.
+- Inclui inventário de outros controles nativos e testes R30.6, sem alterar regras financeiras nem Supabase.
+- Atualiza cache-buster para `2.63.9-r306` e sincroniza testes.
+
 ## R30.5.1 — Qualidade individual compacta após indicadores principais (19/11/2026)
 
 - Painel de notas baixas movido para logo abaixo dos cinco indicadores principais.

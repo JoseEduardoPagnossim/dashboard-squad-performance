@@ -2986,3 +2986,42 @@ html[data-color-mode="light"] .login-screen:before{background-image:linear-gradi
 @media(max-width:1100px){.individual-low-ratings-strip{grid-template-columns:minmax(165px,1fr) minmax(135px,.8fr) minmax(200px,1.2fr)}.individual-low-ratings-month{grid-column:1/-1;border-left:0;border-top:1px solid var(--border);padding:8px 0 0;display:flex;align-items:baseline;gap:12px}}
 @media(max-width:700px){.individual-low-ratings-strip{grid-template-columns:1fr 1fr;gap:12px}.individual-low-ratings-primary{padding-left:10px}.individual-low-ratings-chips{grid-column:1/-1}.individual-low-ratings-month{grid-column:1/-1}.individual-low-rating-chip{max-width:none}}
 @media(max-width:410px){.individual-low-ratings-strip{grid-template-columns:1fr}.individual-low-ratings-primary{border-left:0;padding-left:0}.individual-low-ratings-chips{grid-column:auto}.individual-low-ratings-month{grid-column:auto}}
+
+/* R30.6 — Calendários integrados e período acessível com zoom elevado. */
+.analysis-period-popover:not(.hidden){display:flex;flex-direction:column;max-height:calc(100dvh - 20px)!important;overflow:hidden!important}
+.period-picker-scroll-area{min-height:0;flex:1 1 auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.analysis-period-popover .period-picker-foot{position:relative!important;bottom:auto!important;z-index:3;flex:0 0 auto;min-height:58px;background:var(--panel2);box-shadow:0 -8px 18px rgba(0,0,0,.2);padding:10px 14px;box-sizing:border-box}
+.analysis-period-popover .period-picker-foot button{min-height:38px;white-space:nowrap}
+@media(max-width:760px){.analysis-period-popover:not(.hidden){top:10px!important;bottom:10px!important;max-height:calc(100dvh - 20px)!important}.period-picker-scroll-area{scrollbar-gutter:auto}.analysis-period-popover .period-picker-foot{padding:9px 12px;display:grid;grid-template-columns:1fr 1fr}.analysis-period-popover .period-picker-foot button{width:100%;min-width:0}}
+@media(max-height:650px){.analysis-period-popover:not(.hidden){max-height:calc(100dvh - 12px)!important}.period-picker-scroll-area{overscroll-behavior:contain}.analysis-period-popover .period-picker-foot{min-height:52px}}
+.ds-date-control{position:relative;display:flex;min-width:0;width:100%;align-items:center}
+.ds-date-control .ds-date-source{position:absolute!important;inset:0 auto auto 0!important;width:1px!important;height:1px!important;min-width:0!important;max-width:1px!important;opacity:0!important;pointer-events:none!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important}
+.ds-date-trigger{display:flex;align-items:center;width:100%;min-width:0;min-height:38px;box-sizing:border-box;padding:8px 34px 8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--text);font:inherit;font-size:12px;font-weight:650;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative}
+.ds-date-trigger.is-empty{color:var(--muted)}
+.ds-date-trigger:after{content:'▦';position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:16px}
+.ds-date-trigger:hover,.ds-date-trigger[aria-expanded=true]{border-color:var(--accent)}
+.ds-date-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ds-date-dialog{position:fixed;inset:0;z-index:3000;display:grid;place-items:center;padding:12px;box-sizing:border-box;background:rgba(0,0,0,.62);backdrop-filter:blur(5px)}
+.ds-date-dialog.hidden{display:none!important}
+.ds-date-dialog-head,.ds-date-dialog-body,.ds-date-dialog-foot{width:min(370px,calc(100vw - 24px));box-sizing:border-box;background:var(--panel2)}
+.ds-date-dialog-head{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-bottom:0;border-radius:16px 16px 0 0;padding:14px 16px;color:var(--text)}
+.ds-date-dialog-head strong{font-size:14px}.ds-date-dialog-head button{background:transparent;color:var(--muted);border:0;font-size:22px;cursor:pointer}
+.ds-date-dialog-body{border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 16px;max-height:calc(100dvh - 170px);overflow:auto}
+.ds-date-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;color:var(--text);font-size:12px;font-weight:750}
+.ds-date-nav button{border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);height:34px;width:34px;cursor:pointer;font-size:19px}
+.ds-date-nav select,.ds-date-time select{border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);font:inherit;padding:5px 7px}
+.ds-date-weekdays,.ds-date-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.ds-date-weekdays span{text-align:center;color:var(--muted);font-size:10px;font-weight:800;padding:6px 0}
+.ds-date-days button,.ds-date-months button{height:36px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+.ds-date-days button.selected,.ds-date-months button.selected{background:var(--accent);color:#07101d;font-weight:850}
+.ds-date-days button:hover:not(:disabled):not(.selected),.ds-date-months button:hover:not(:disabled):not(.selected){background:rgba(81,173,255,.14);border-color:var(--border)}
+.ds-date-days button:disabled,.ds-date-months button:disabled{opacity:.24;cursor:not-allowed}
+.ds-date-months{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ds-date-time{display:flex;gap:12px;padding:12px 0}.ds-date-time label{display:grid;gap:4px;flex:1;color:var(--muted);font-size:11px}
+.ds-date-dialog-foot{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border:1px solid var(--border);border-top:0;border-radius:0 0 16px 16px}
+.ds-date-dialog-foot button{padding:9px 14px;min-height:36px;background:var(--panel);border:1px solid var(--border);border-radius:9px;color:var(--text);cursor:pointer;font:inherit;font-size:12px}
+.ds-date-dialog-foot button.primary{background:var(--accent);color:#07101d;font-weight:850}
+@media(max-height:420px){.ds-date-dialog-body{max-height:calc(100dvh - 125px)}.ds-date-days button{height:29px}}
+.ds-date-dialog-panel{display:flex;flex-direction:column;width:min(370px,calc(100vw - 24px));max-height:calc(100dvh - 24px);min-height:0}
+.ds-date-dialog-panel>.ds-date-dialog-head,.ds-date-dialog-panel>.ds-date-dialog-body,.ds-date-dialog-panel>.ds-date-dialog-foot{width:100%;flex-shrink:0}
+.ds-date-dialog-panel>.ds-date-dialog-body{flex:1 1 auto;min-height:0}
