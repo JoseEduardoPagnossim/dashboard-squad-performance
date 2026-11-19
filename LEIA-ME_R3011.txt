@@ -1,0 +1,9 @@
+HOTFIX R30.1.1 - Qualidade GitHub Actions
+
+Aplicacao: extraia o ZIP na raiz do repositorio, mantendo a pasta tests/. Substitua apenas os arquivos de tests/ contidos no pacote. O package.json deve ter assetVersion 2.63.9-r301 (ja ajustado pelo usuario).
+
+Correcao: atualiza testes que exigiam 2.63.9-r30 para 2.63.9-r301. Sem alteracoes em JS de producao, CSS, HTML, banco ou regras financeiras.
+
+Validacao local: npm run validate (OK); npm test (1172 aprovados, 0 falhas).
+
+Commit: test: alinha expectativas de cache-buster com R30.1
