@@ -62,3 +62,7 @@ A imagem comum destina-se a exibicao publica na entrada; **nao envie imagens con
 - `CHANGELOG.md` — historico geral; consulte `docs/` para detalhes por fase
 
 > Esta revisao organiza apenas arquivos historicos da raiz: **nao move scripts, recursos CSS/JS, migrations existentes ou caminhos do GitHub Pages**.
+
+## Ajuda integrada (R30.3)
+
+O menu **Como usar** contem busca textual, atalhos e 24 procedimentos detalhados por area. O guia explica operacao mensal, comercial R30, bonificacao, estrategia, aparencia R30.2, comunicacao e acesso. Consulte tambem `docs/MANUAL_COMO_USAR_R303.md`.

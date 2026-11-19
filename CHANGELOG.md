@@ -1,3 +1,11 @@
+## R30.3 — Manual Como usar ampliado (19/11/2026)
+
+- Amplia o guia integrado com 24 tutoriais passo a passo organizados por operacao, comercial, estrategia e conta/aparencia.
+- Documenta as regras de `Vl Anterior`, revisao condicional R30, auditoria e Squad financeiro dos lideres.
+- Inclui configuracao de imagem institucional independente (R30.2), competencias, custos e conferencias.
+- Sincroniza cache-buster `2.63.9-r303` com testes e `package.json`.
+- Sem alteracoes de banco ou de logica financeira.
+
 ## R30.2 — Imagem institucional comum e organizacao de repositorio (2026-11-19)
 
 - Separa o fundo global de carregamento, entrada e plano de fundo dos banners e temas individuais dos Squads.

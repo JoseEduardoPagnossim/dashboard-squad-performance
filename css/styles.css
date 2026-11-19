@@ -2944,3 +2944,10 @@ html[data-color-mode="light"] .bg-layer:after{background-image:linear-gradient(r
 .global-appearance-field p{font-size:11px;line-height:1.5;color:var(--muted)}
 .global-appearance-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .global-appearance-field>small{display:block;font-size:10px;color:var(--muted)}
+
+/* R30.3: espaco e leitura do manual passo a passo */
+.help-playbook-stack{margin-bottom:18px}
+.help-playbook-stack .help-detail-body ol{padding-left:22px}
+.help-playbook-stack .help-detail-body li{margin:9px 0;line-height:1.7}
+.help-playbook-stack .help-detail summary{min-height:67px}
+@media(max-width:680px){.help-playbook-stack .help-detail-body li{font-size:11px}}
