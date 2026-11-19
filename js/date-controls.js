@@ -52,6 +52,9 @@
     input.parentNode.insertBefore(shell,input);
     shell.appendChild(input);
     shell.appendChild(button);
+    // Os dois alvos (texto e icone) pertencem somente ao trigger personalizado.
+    // O input segue como fonte de valor, mas nunca recebe clique nem abre showPicker().
+    input.setAttribute('aria-hidden','true');
     input.classList.add('ds-date-source');
     input.tabIndex = -1;
     instances.set(input,{button});
@@ -66,7 +69,10 @@
     }
     input.addEventListener('change',()=>sync(input));
     input.addEventListener('input',()=>sync(input));
-    button.addEventListener('click',()=>open(input));
+    button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();open(input)});
+    shell.addEventListener('pointerdown',event=>{
+      if(event.target===input){event.preventDefault();open(input)}
+    },true);
     sync(input);
   }
 
@@ -129,6 +135,7 @@
     hour=(value.split('T')[1] || '').slice(0,2) || format2(now.getHours());
     minute=(value.split('T')[1] || '').slice(3,5) || '00';
     popup.classList.remove('hidden');
+    document.body.classList.add('ds-date-open');
     instances.get(input).button.setAttribute('aria-expanded','true');
     render();
     popup.querySelector('[data-date-action="close"]')?.focus();
@@ -139,6 +146,7 @@
     if (button) button.setAttribute('aria-expanded','false');
     openField=null;
     popup?.classList.add('hidden');
+    document.body.classList.remove('ds-date-open');
     button?.focus();
   }
   function commit(val) {
@@ -167,7 +175,7 @@
       }).join('')}</div>`;
     }
     const times = openField.type==='datetime-local' ? `<div class="ds-date-time"><label>Hora <select data-date-hour>${Array.from({length:24},(_,i)=>`<option value="${format2(i)}" ${hour===format2(i)?'selected':''}>${format2(i)}</option>`).join('')}</select></label><label>Minuto <select data-date-minute>${Array.from({length:60},(_,i)=>`<option value="${format2(i)}" ${minute===format2(i)?'selected':''}>${format2(i)}</option>`).join('')}</select></label></div>` : '';
-    popup.innerHTML=`<div class="ds-date-dialog-panel"><div class="ds-date-dialog-head"><strong>${isMonth?'Selecionar competência':'Selecionar data'}${openField.type==='datetime-local'?' e horário':''}</strong><button type="button" data-date-action="close" aria-label="Fechar calendário">×</button></div><div class="ds-date-dialog-body"><div class="ds-date-nav"><button type="button" data-date-action="prev" aria-label="Mês anterior">‹</button><span>${monthNames[viewMonth-1]} <select data-date-year aria-label="Ano">${Array.from({length:31},(_,i)=>viewYear-15+i).map(y=>`<option value="${y}" ${viewYear===y?'selected':''}>${y}</option>`).join('')}</select></span><button type="button" data-date-action="next" aria-label="Próximo mês">›</button></div>${items}${times}</div><div class="ds-date-dialog-foot"><button type="button" data-date-action="today">Hoje</button>${openField.required?'':'<button type="button" data-date-action="clear">Limpar</button>'}<button type="button" class="primary" data-date-action="apply">Aplicar</button></div></div>`;
+    popup.innerHTML=`<div class="ds-date-dialog-panel"><div class="ds-date-dialog-head"><strong>${isMonth?'Selecionar competência':'Selecionar data'}${openField.type==='datetime-local'?' e horário':''}</strong><button type="button" data-date-action="close" aria-label="Fechar calendário">×</button></div><div class="ds-date-dialog-body"><div class="ds-date-nav"><button type="button" data-date-action="prev" aria-label="Mês anterior">‹</button><span class="ds-date-nav-current"><strong>${monthNames[viewMonth-1]}</strong><input type="number" data-date-year aria-label="Ano" min="1900" max="2100" step="1" value="${viewYear}"></span><button type="button" data-date-action="next" aria-label="Próximo mês">›</button></div>${items}${times}</div><div class="ds-date-dialog-foot"><button type="button" data-date-action="today">Hoje</button>${openField.required?'':'<button type="button" data-date-action="clear">Limpar</button>'}<button type="button" class="primary" data-date-action="apply">Aplicar</button></div></div>`;
   }
   function scan(root=document) {if(root.matches?.(selector))setup(root);root.querySelectorAll?.(selector).forEach(setup)}
   function start(){scan();const observer=new MutationObserver(mutations=>mutations.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)scan(n)})));observer.observe(document.body,{subtree:true,childList:true});}

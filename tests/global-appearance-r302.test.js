@@ -35,7 +35,7 @@ test('R30.2 usa RLS e somente imagem no retorno publico',()=>{
 });
 test('R30.2 README e revisao coerentes',()=>{
  const pkg=JSON.parse(read('package.json'));
- assert.equal(pkg.assetVersion,'2.63.9-r306');
+ assert.equal(pkg.assetVersion,'2.63.9-r3061');
  assert.match(read('README.md'),/R30\.2/);
- assert.match(html,/js\/app\.js\?v=2\.63\.9-r306/);
+ assert.match(html,/js\/app\.js\?v=2\.63\.9-r3061/);
 });

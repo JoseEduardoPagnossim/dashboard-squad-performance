@@ -31,7 +31,7 @@ test('R30.3 cobre pre atendimento, relatorios e perfis',()=>{
  for(const label of ['Pré-atendimento — Squad C','Exportar relatórios e memória de cálculo','Gerenciar usuários, permissões e senha'])assert.ok(html.includes(label),label);
 });
 test('R30.3 sincroniza versao de assets e documentacao',()=>{
- assert.equal(JSON.parse(read('package.json')).assetVersion,'2.63.9-r306');
- assert.ok(html.includes('js/app.js?v=2.63.9-r306'));
+ assert.equal(JSON.parse(read('package.json')).assetVersion,'2.63.9-r3061');
+ assert.ok(html.includes('js/app.js?v=2.63.9-r3061'));
  assert.ok(read('docs/MANUAL_COMO_USAR_R303.md').includes('24 procedimentos'));
 });
