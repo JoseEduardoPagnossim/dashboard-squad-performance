@@ -1,3 +1,11 @@
+## R30.4 — Status oficial, qualidade individual e login institucional (19/11/2026)
+
+- Ranking completo distingue o status oficial da competência do status simulado do recorte.
+- Meu Desempenho mostra, para o técnico selecionado, notas 1, 2 e 3 agregadas por período e competência.
+- Imagem institucional no login recebe camada mais transparente e aviso de configuração indisponível.
+- Manual Como usar atualizado, sem alterações financeiras ou de banco.
+- Cache-buster 2.63.9-r304 atualizado em HTML, package.json e testes.
+
 ## R30.3 — Manual Como usar ampliado (19/11/2026)
 
 - Amplia o guia integrado com 24 tutoriais passo a passo organizados por operacao, comercial, estrategia e conta/aparencia.

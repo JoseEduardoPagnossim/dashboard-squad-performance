@@ -2,7 +2,7 @@
 
 Dashboard interno da Soften Sistemas para indicadores, Squads, metas, importacoes comerciais, bonificacao e auditoria financeira.
 
-> **Versao da aplicacao:** `2.63.9` | **Revisao de assets:** consulte `assetVersion` em `package.json`. R30.2 incorpora a configuracao de imagem institucional independente dos temas dos Squads.
+> **Versao da aplicacao:** `2.63.9` | **Revisao de assets:** consulte `assetVersion` em `package.json`. R30.4 inclui visualizacao de notas baixas no painel pessoal, status oficial e simulado distintos no ranking e ajustes de visibilidade do login.
 
 ## Estrutura do projeto
 
@@ -66,3 +66,12 @@ A imagem comum destina-se a exibicao publica na entrada; **nao envie imagens con
 ## Ajuda integrada (R30.3)
 
 O menu **Como usar** contem busca textual, atalhos e 24 procedimentos detalhados por area. O guia explica operacao mensal, comercial R30, bonificacao, estrategia, aparencia R30.2, comunicacao e acesso. Consulte tambem `docs/MANUAL_COMO_USAR_R303.md`.
+
+## R30.4 — Status, qualidade individual e imagem de login
+
+- **Visão do Squad → Ranking completo:** status oficial utiliza os critérios mensais da competência selecionada; o status de recorte aparece separado como simulação. A pontuação por período permanece indicativa.
+- **Meu Desempenho → Minhas avaliações baixas:** exibe somente os totais do técnico selecionado de notas 1, 2 e 3 no período, mais consolidado mensal; detalhe diário aparece somente quando disponível. Não exibe atendimentos, clientes ou comentários identificáveis.
+- **Aparência:** o fundo institucional comum tem sobreposição mais leve no login, sem utilizar imagens de Squads como substituição. Se a imagem não carregar, verificar a migration `MIGRACAO_V2.63.23_APARENCIA_INSTITUCIONAL_R302.sql` e o retorno da RPC `get_public_global_background`.
+- O módulo **Como usar** inclui esses três procedimentos.
+- **Sem migration nova** e sem alteração de cálculo financeiro, regras de bonificação, dados ou fechamento.
+- Publicação: aplicar ZIP incremental sobre a R30.3; executar `npm run check`; publicar no GitHub; atualizar com Ctrl+Shift+R.

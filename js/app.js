@@ -896,13 +896,13 @@
     const safe=image&&/^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(image)?image:null;
     document.documentElement.style.setProperty('--global-background-img',safe?`url("${safe}")`:'none');
     const img=$('#globalBootArt');if(img){if(safe){img.src=safe;img.classList.remove('hidden');}else{img.removeAttribute('src');img.classList.add('hidden');}}
-    if($('#globalBackgroundStatus'))$('#globalBackgroundStatus').textContent=safe?'Imagem institucional configurada para toda a organização.':'Sem imagem comum: fundo institucional neutro.';
+    if($('#globalBackgroundStatus'))$('#globalBackgroundStatus').textContent=safe?'Imagem institucional configurada para toda a organização.':'Sem imagem comum carregada: verifique a configuração e a migration R30.2.';
   }
   async function loadGlobalAppearance(){
     if(!state.supabase)return;
     try{const {data,error}=await state.supabase.rpc('get_public_global_background',{p_org_slug:PUBLIC_THEME_ORG_SLUG});if(error)throw error;
       globalBackgroundImage=typeof data==='string'?data:null;renderGlobalBackground();
-    }catch(err){console.warn('Imagem institucional indisponivel. Verifique a migration R30.2.',err);renderGlobalBackground();}
+    }catch(err){console.warn('Imagem institucional indisponivel. Verifique a migration R30.2.',err);renderGlobalBackground();if($('#globalBackgroundStatus'))$('#globalBackgroundStatus').textContent='Não foi possível buscar a imagem institucional. Confira a migration R30.2 e a organização.';}
   }
   async function previewGlobalBackgroundFile(event){
     if(!isSuperAdmin())return;
@@ -2446,9 +2446,20 @@
     $('#attGoalPct').textContent=fmtPct(attPct);$('#noteGoalPct').textContent=fmtPct(notePct);$('#attGoalText').textContent=goalLine('atendimentos',t.att,t.goalAtt);$('#noteGoalText').textContent=goalLine('notas',t.notes5,t.goalEval);
     $('#goalOrb').style.background=overallColor(attPct,notePct);$('#goalOrb').style.boxShadow=`0 0 18px ${overallColor(attPct,notePct)}`;const coach=coachText(t,m,attPct,notePct);$('#coachTitle').textContent=coach.title;$('#coachText').textContent=coach.text;
     renderIndividualComparison(period,t);
-    renderStatusAudit(t,m,audit);renderFinanceSummary(t,m);renderGamification(t,m,attPct,notePct);renderChart(period,m,true);renderDaily(period,m,true);renderMiniRankingPeriod(periodRows,t.name);renderFinanceRanking(m,t.name);
+    renderStatusAudit(t,m,audit);renderIndividualLowRatings(period,t);renderFinanceSummary(t,m);renderGamification(t,m,attPct,notePct);renderChart(period,m,true);renderDaily(period,m,true);renderMiniRankingPeriod(periodRows,t.name);renderFinanceRanking(m,t.name);
   }
 
+  // R30.4: dados ja acessiveis ao proprio tecnico; nao consulta notas de outros usuarios.
+  function renderIndividualLowRatings(period,monthly){
+    const target=$('#individualLowRatings');if(!target)return;
+    const counts=[1,2,3].map(n=>Math.max(0,safe(period?.['notes'+n])));
+    const total=counts.reduce((a,b)=>a+b,0);
+    const monthCounts=[1,2,3].map(n=>Math.max(0,safe(monthly?.['notes'+n])));
+    const monthTotal=monthCounts.reduce((a,b)=>a+b,0);
+    const percent=safe(period?.totalEval)>0?fmtPct(total/safe(period.totalEval)):'—';
+    const days=Array.isArray(period?.daily)?period.daily.filter(d=>[1,2,3].some(n=>safe(d?.['notes'+n])>0)).sort((a,b)=>safe(b.day)-safe(a.day)).slice(0,10):[];
+    target.innerHTML=`<div class="section-title"><div><span class="eyebrow">QUALIDADE INDIVIDUAL</span><h3>Minhas avaliações baixas</h3></div><span class="muted">Notas 1, 2 e 3 • período selecionado</span></div><p class="muted">Somente avaliações agregadas do próprio técnico. Não identifica clientes nem atendimentos.</p><div class="individual-low-ratings-grid">${counts.map((count,i)=>`<div class="individual-low-rating-metric"><small>Nota ${i+1}</small><strong>${fmtInt(count)}</strong></div>`).join('')}<div class="individual-low-rating-metric"><small>Total no período</small><strong>${fmtInt(total)}</strong><small>${percent} das avaliações</small></div></div><div class="individual-low-ratings-foot">Competência oficial: <strong>${fmtInt(monthTotal)} notas baixas</strong> (1: ${fmtInt(monthCounts[0])} · 2: ${fmtInt(monthCounts[1])} · 3: ${fmtInt(monthCounts[2])}).</div>${days.length?`<details class="individual-low-rating-days"><summary>Dias com notas baixas no período (${fmtInt(days.length)} exibidos)</summary><div>${days.map(d=>`<span>Dia ${fmtInt(d.day)}: ${[1,2,3].map(n=>`nota ${n}: ${fmtInt(d['notes'+n])}`).join(' · ')}</span>`).join('')}</div></details>`:'<small class="muted">Detalhamento diário indisponível para este recorte; totais agregados permanecem disponíveis.</small>'}`;
+  }
   function technicianStatusAudit(t,m){
     const rules=displayScoreRules(m),criteria=[
       {key:'att',label:'Atendimentos',value:safe(t.att),ref:safe(rules.refAtt),format:v=>fmtNum(v),source:rules.attSource||'Referência do mês'},
@@ -2536,7 +2547,10 @@
     const avgPoints=periodRows.length?meanOf(periodRows,t=>t.periodPoints):0,teamStatus=teamStatusFromTechnicianStatuses(periodRows,{period:true}),aboveCount=teamStatus.aboveCount,ratio=teamStatus.ratio,periodStatus=teamStatus.status||'—';
     const teamResultBox=$('#teamResult')?.closest('.team-result');$('#teamResult').textContent=periodStatus;if(teamResultBox){teamResultBox.classList.toggle('above',periodStatus==='ACIMA');teamResultBox.classList.toggle('below',periodStatus==='ABAIXO');teamResultBox.classList.toggle('neutral',!['ACIMA','ABAIXO'].includes(periodStatus))}$('#teamAtt').textContent=fmtInt(totals.att);$('#teamAttGoal').textContent=fmtInt(periodGoal);$('#teamEval').textContent=fmtInt(totals.eval);$('#teamPct').textContent=fmtPct(totals.evalPct);$('#teamPctGoal').textContent=fmtPct(cfg.teamGoalEvalPct);$('#teamAttBar').style.width=clamp(attProgress*100,0,100)+'%';$('#teamPctBar').style.width=clamp(evalProgress*100,0,100)+'%';$('#teamAttNote').textContent=`${analysisRangeLabel()} • ${fmtPct(attProgress)} da meta proporcional`;$('#teamPctNote').textContent=(totals.evalPct>=cfg.teamGoalEvalPct?`${((totals.evalPct-cfg.teamGoalEvalPct)*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p. acima da meta`:`Faltam ${((cfg.teamGoalEvalPct-totals.evalPct)*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} p.p. para a meta`)+(safe(totals.evaluationExcludedAtt)>0?` • ${fmtInt(totals.evaluationExcludedAtt)} atend. sem avaliação descontados`:'');const fcr=operationalFcrSummary(state.squadCode);if($('#teamFcr'))$('#teamFcr').textContent=fcr.fcr==null?'—':fmtPct(fcr.fcr);if($('#teamFcrNote'))$('#teamFcrNote').textContent=fcr.complete?`${fmtInt(fcr.resolved)} resolvidos • ${fmtInt(fcr.resolveNo)} não resolvidos`:state.operationalFcrError||'Importe Qualidade Completa com Resolve';$('#teamHeroTitle').textContent=`Squad ${state.squadCode} • ${analysisRangeLabel()}`;
     $('#teamAvgPoints').textContent=fmtNum(avgPoints);$('#teamAvgPointsNote').textContent='Pontuação média do período • não define o status da equipe';$('#teamStatusAudit').textContent=teamStatus.count?`${aboveCount} de ${teamStatus.count} técnicos com produção estão ACIMA • ${fmtPct(ratio)} • mínimo 50%`:'Sem técnicos classificados no período';
-    $('#teamLeaderboard').innerHTML=periodRows.map(t=>`<div class="leader-item ${t.periodRank===1?'top1':''}"><div class="place">#${t.periodRank||'—'}</div><div class="name">${escapeHtml(t.name)}${vacationBadgeHtml(t.vacationMonths,{compact:true})}${groupCountBadgeHtml(t.excludeFromGroupCount,{compact:true})}</div><div class="metric"><span>Atend.</span><strong>${fmtInt(t.att)}</strong></div><div class="metric"><span>Notas 5</span><strong>${fmtInt(t.notes5)}</strong></div><div class="metric hide-md"><span>% Aval.</span><strong>${fmtPct(t.evalPct)}</strong></div><div class="metric points"><span>Pontos período*</span><strong>${fmtNum(t.periodPoints)}</strong></div><div><span class="status ${String(t.periodStatus).toUpperCase()==='ACIMA'?'above':'below'}">${escapeHtml(t.periodStatus||'—')}</span></div></div>`).join('')||'<div class="muted">Sem dados no período selecionado.</div>';
+    // R30.4: status oficial da competencia nao pode ser confundido com simulacao do recorte.
+    const officialMonth=currentMonth();
+    const officialByName=new Map((officialMonth?.technicians||[]).map(t=>[nameLinkKey(t.name),t]));
+    $('#teamLeaderboard').innerHTML=periodRows.map(t=>{const official=officialByName.get(nameLinkKey(t.name));const officialStatus=official?technicianStatusAudit(official,officialMonth).status:'';return `<div class="leader-item ${t.periodRank===1?'top1':''}"><div class="place">#${t.periodRank||'—'}</div><div class="name">${escapeHtml(t.name)}${vacationBadgeHtml(t.vacationMonths,{compact:true})}${groupCountBadgeHtml(t.excludeFromGroupCount,{compact:true})}</div><div class="metric"><span>Atend.</span><strong>${fmtInt(t.att)}</strong></div><div class="metric"><span>Notas 5</span><strong>${fmtInt(t.notes5)}</strong></div><div class="metric hide-md"><span>% Aval.</span><strong>${fmtPct(t.evalPct)}</strong></div><div class="metric points"><span>Pontos período*</span><strong>${fmtNum(t.periodPoints)}</strong></div><div class="ranking-dual-status"><span class="status ${officialStatus==='ACIMA'?'above':officialStatus==='ABAIXO'?'below':''}" title="Status oficial da competencia selecionada">${escapeHtml(officialStatus||'—')}</span><small>Oficial ${escapeHtml(officialMonth?`${officialMonth.monthName} ${officialMonth.year}`:'sem competencia')}</small><small title="Recalculado apenas para o intervalo escolhido">Recorte: ${escapeHtml(t.periodStatus||'—')}</small></div></div>`;}).join('')||'<div class="muted">Sem dados no período selecionado.</div>';
     renderQualityFullTrend(state.squadCode);renderTeamHistoricalAnalytics(currentSquad());renderTeamSquadOverview();renderTeamOrgDailyComparison();
   }
   function analysisCalendarDays(start=state.analysisStartDate,end=state.analysisEndDate){

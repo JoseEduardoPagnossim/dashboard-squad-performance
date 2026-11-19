@@ -2951,3 +2951,19 @@ html[data-color-mode="light"] .bg-layer:after{background-image:linear-gradient(r
 .help-playbook-stack .help-detail-body li{margin:9px 0;line-height:1.7}
 .help-playbook-stack .help-detail summary{min-height:67px}
 @media(max-width:680px){.help-playbook-stack .help-detail-body li{font-size:11px}}
+
+/* R30.4: identidade institucional visível e indicadores individuais de qualidade. */
+.login-screen:before{background-image:linear-gradient(90deg,rgba(3,9,17,.66),rgba(3,12,24,.48) 48%,rgba(4,12,22,.62)),var(--global-background-img);background-size:100% 100%,cover;background-position:center,center;background-repeat:no-repeat;opacity:1}
+html[data-color-mode="light"] .login-screen:before{background-image:linear-gradient(90deg,rgba(13,35,55,.53),rgba(23,53,77,.35) 48%,rgba(237,244,250,.56)),var(--global-background-img)!important;opacity:1!important}
+.ranking-dual-status{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-width:115px}
+.ranking-dual-status small{font-size:9px;color:var(--muted);line-height:1.4}
+.ranking-dual-status small:last-child{flex-basis:100%}
+.individual-low-ratings-card{display:grid;gap:12px}
+.individual-low-ratings-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.individual-low-rating-metric{display:flex;flex-direction:column;gap:6px;padding:13px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}
+.individual-low-rating-metric strong{font-size:24px;color:var(--text);font-weight:850}
+.individual-low-rating-metric small,.individual-low-ratings-foot{font-size:11px;color:var(--muted)}
+.individual-low-rating-days summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--accent)}
+.individual-low-rating-days>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.individual-low-rating-days span{font-size:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px}
+@media(max-width:650px){.individual-low-ratings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ranking-dual-status{min-width:90px}}

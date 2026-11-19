@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r303" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r303" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r303" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r303" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r304" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r304" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r304" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r304" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -453,6 +453,8 @@
             <div class="audit-footer" id="statusAuditFooter"></div>
           </article>
 
+          <article class="card individual-low-ratings-card" id="individualLowRatings" aria-live="polite"><div class="section-title"><h3>Minhas avaliações baixas</h3></div></article>
+
           <article class="card finance-summary-card" id="financeSummaryCard">
             <div class="finance-summary-head"><div><span class="eyebrow">BONIFICAÇÃO FINANCEIRA</span><h3 id="financeSummaryTitle">Bonificação estimada</h3><p id="financeSummarySubtitle">Cálculo separado da pontuação e da gamificação.</p></div><div class="finance-total"><small id="financeSummaryState">EM ANDAMENTO</small><strong id="financeSummaryTotal">R$ 0,00</strong><span id="financeVacationBadge" class="finance-vacation hidden">FÉRIAS • 50%</span></div></div>
             <div class="finance-breakdown" id="financeBreakdown"></div>
@@ -527,7 +529,7 @@
               <div id="teamQualityFullChart" class="chart quality-full-trend-chart"></div>
             </article>
 
-            <article class="card leaderboard-card"><div class="section-title"><div><span class="eyebrow">CLASSIFICAÇÃO</span><h3>Ranking completo</h3></div><span class="muted">* Pontuação simulada para o intervalo; não altera a pontuação mensal oficial.</span></div><div id="teamLeaderboard" class="leaderboard"></div></article>
+            <article class="card leaderboard-card"><div class="section-title"><div><span class="eyebrow">CLASSIFICAÇÃO</span><h3>Ranking completo</h3></div><span class="muted">Status oficial = competência mensal; recorte = simulação. *Pontos no período não alteram pontuação mensal.</span></div><div id="teamLeaderboard" class="leaderboard"></div></article>
 
             <section class="team-history-section">
               <div class="history-section-head card">
@@ -1358,6 +1360,9 @@
           </details>
         </div>
 
+<details class="card help-detail help-searchable" data-help-search="status oficial ranking completo recorte simulação acima abaixo divergência meu desempenho"><summary><span class="how-icon blue">◈</span><div><b>Entender status oficial e simulado no Ranking</b><small>Por que o ranking e Meu Desempenho podem mostrar resultados diferentes?</small></div><i>+</i></summary><div class="help-detail-body"><ol><li>Abra <b>Visão do Squad → Ranking completo</b> e selecione o período.</li><li>Leia o <b>Status oficial</b> como classificação da competência mensal, calculada pelos quatro critérios do Squad.</li><li>Leia o <b>Recorte</b> como simulação para o intervalo selecionado. Ele não altera o status financeiro nem a bonificação.</li><li>Abra <b>Meu Desempenho → Por que você está ACIMA/ABAIXO?</b> para ver as referências oficiais.</li></ol><p>Exemplo: o técnico pode ficar ACIMA no recorte e ABAIXO na competência. A situação não indica inconsistência de pontuação.</p></div></details>
+<details class="card help-detail help-searchable" data-help-search="minhas notas baixas avaliações nota 1 nota 2 nota 3 qualidade técnico individual"><summary><span class="how-icon blue">★</span><div><b>Consultar minhas notas baixas</b><small>Contagens individuais de notas 1, 2 e 3</small></div><i>+</i></summary><div class="help-detail-body"><ol><li>Abra <b>Meu Desempenho</b> e defina o período desejado.</li><li>Procure o quadro <b>Minhas avaliações baixas</b>, abaixo da auditoria de status.</li><li>Confira a distribuição das notas 1, 2 e 3 e o percentual sobre as avaliações do período.</li><li>Compare com o total da competência oficial. Quando houver detalhe diário, expanda os dias.</li></ol><p>Os dados são agregados e não revelam cliente, protocolo ou autor da avaliação. Não é possível inferir motivos individuais a partir destas contagens.</p></div></details>
+<details class="card help-detail help-searchable admin-help" data-help-search="imagem institucional comum login carregamento aparencia configurar supabase migration r302"><summary><span class="how-icon blue">▧</span><div><b>Configurar e conferir o fundo institucional do login</b><small>Imagem comum a todos os Squads</small></div><i>+</i></summary><div class="help-detail-body"><ol><li>Confirme a migration de aparência institucional R30.2 no Supabase.</li><li>Em <b>Aparência → Personalizar experiência</b>, escolha uma imagem institucional e clique em <b>Salvar imagem comum</b>.</li><li>Abra o login em janela anônima e confirme que a imagem aparece atrás do formulário.</li><li>Se o fundo permanecer neutro, confira o aviso de imagem institucional e a RPC pública <code>get_public_global_background</code>.</li></ol><p>A imagem do Squad é independente; não deve substituir a institucional no login.</p></div></details>
 <div class="help-section-heading help-searchable" data-help-search="tutorial procedimentos detalhados passo a passo atualizado r303"><span class="eyebrow">MANUAL OPERACIONAL • R30.3</span><h2>Procedimentos detalhados</h2><p>Escolha um assunto, expanda o passo a passo e siga as orientações para o seu perfil. A busca acima encontra termos dentro de cada procedimento. Etapas administrativas não aparecem para técnicos sem acesso.</p></div>
 <div class="help-section-heading help-searchable" data-help-search="Operação mensal e dados"><span class="eyebrow">PROCEDIMENTOS</span><h2>Operação mensal e dados</h2><p>Do arquivo à conferência — sem alterar histórico indevidamente</p></div>
 <div class="help-guide-stack help-playbook-stack">
@@ -3100,55 +3105,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r303"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r303"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r303"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r303"></script>
-  <script src="js/presentation.js?v=2.63.9-r303"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r303"></script>
-  <script src="js/chart-export.js?v=2.63.9-r303"></script>
-  <script src="js/import-engine.js?v=2.63.9-r303"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r303"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r303"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r303"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r303"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r303"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r303"></script>
-  <script src="js/filter-system.js?v=2.63.9-r303"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r303"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r303"></script>
-  <script src="js/design-system.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r303"></script>
-  <script src="js/strategy.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r303"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r304"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r304"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r304"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r304"></script>
+  <script src="js/presentation.js?v=2.63.9-r304"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r304"></script>
+  <script src="js/chart-export.js?v=2.63.9-r304"></script>
+  <script src="js/import-engine.js?v=2.63.9-r304"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r304"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r304"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r304"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r304"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r304"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r304"></script>
+  <script src="js/filter-system.js?v=2.63.9-r304"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r304"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r304"></script>
+  <script src="js/design-system.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r304"></script>
+  <script src="js/strategy.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r304"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r303"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r303"></script>
-<script src="js/app.js?v=2.63.9-r303"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r304"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r304"></script>
+<script src="js/app.js?v=2.63.9-r304"></script>
 </body>
 </html>
