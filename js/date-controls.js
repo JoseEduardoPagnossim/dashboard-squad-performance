@@ -40,6 +40,14 @@
 
   function setup(input) {
     if (instances.has(input) || input.closest('.ds-date-control')) return;
+    // Remove o wrapper legado, cujo icone chamava showPicker() nativo.
+    // O input original permanece inalterado para preservar eventos e valores.
+    const legacyShell = input.closest('.ds-picker-shell');
+    if (legacyShell) {
+      legacyShell.querySelectorAll(':scope > .ds-picker-button').forEach(button => button.remove());
+      legacyShell.parentNode.insertBefore(input, legacyShell);
+      legacyShell.remove();
+    }
     const labelText = (input.closest('label')?.querySelector('span')?.textContent || input.getAttribute('aria-label') || 'Selecionar data').trim();
     const shell = document.createElement('span');
     shell.className = 'ds-date-control';

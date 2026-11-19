@@ -17,4 +17,4 @@ Extraia o conteudo deste ZIP **diretamente na raiz do repositorio**, junto ao `i
 
 Execute `npm run check`; faca commit e push; confira o GitHub Actions; atualize com `Ctrl+Shift+R`.
 
-Se o navegador continuar exibindo um seletor cinza, confira no codigo fonte publicado se `date-controls.js?v=2.63.9-r3061` foi carregado e se `css/styles.css?v=2.63.9-r3061` corresponde a nova revisao.
+Se o navegador continuar exibindo um seletor cinza, confira no codigo fonte publicado se `date-controls.js?v=2.63.9-r3062` foi carregado e se `css/styles.css?v=2.63.9-r3062` corresponde a nova revisao.

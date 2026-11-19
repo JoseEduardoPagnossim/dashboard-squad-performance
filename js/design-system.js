@@ -233,14 +233,11 @@
     input.addEventListener('input',sync);input.addEventListener('change',sync);sync();
   }
 
+  // R30.6.2: datas e competencias sao responsabilidade exclusiva de date-controls.js.
+  // Nao criar botao nativo com showPicker() em paralelo ao calendario Soften.
   function enhancePickerInput(input){
-    if(!input||input.dataset.dsControlReady==='1'||input.classList.contains('native-date-picker'))return;
+    if(!input)return;
     input.dataset.dsControlReady='1';
-    const parent=input.parentNode;if(!parent)return;
-    const shell=document.createElement('span');shell.className='ds-picker-shell';
-    parent.insertBefore(shell,input);shell.appendChild(input);
-    const trigger=document.createElement('button');trigger.type='button';trigger.className='ds-picker-button';trigger.setAttribute('aria-label','Abrir seletor');trigger.innerHTML='▣';shell.appendChild(trigger);
-    trigger.addEventListener('click',()=>{try{if(typeof input.showPicker==='function')input.showPicker();else input.focus()}catch(_){input.focus()}});
   }
 
   function enhanceControl(control){
