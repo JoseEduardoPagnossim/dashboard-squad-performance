@@ -86,6 +86,8 @@
   const DEFAULT_DARK_COLORS = {accent:'#f0a33a',secondary:'#ef5a29',bg:'#080b12',bg2:'#10141e',panel:'rgba(17,22,31,.88)',panel2:'rgba(24,30,42,.92)',text:'#f5f6f8',muted:'#9aa3b1',border:'rgba(255,255,255,.09)',success:'#36c98f',danger:'#f26363',warn:'#f2c14e',shadow:'0 18px 55px rgba(0,0,0,.34)'};
   const DEFAULT_LIGHT_COLORS = {accent:'#d97706',secondary:'#ea580c',bg:'#f3f6fa',bg2:'#f8fafc',panel:'rgba(255,255,255,.94)',panel2:'#ffffff',text:'#0f172a',muted:'#64748b',border:'rgba(148,163,184,.32)',success:'#16815f',danger:'#dc4c4c',warn:'#a16207',shadow:'0 12px 32px rgba(15,23,42,.08)'};
   const DEFAULT_THEME = {fontFamily:DEFAULT_SYSTEM_FONT,soundtrack:DEFAULT_SOUNDTRACK,soundtrackName:DEFAULT_SOUNDTRACK_NAME,soundtrackVolume:.20,favicon:DEFAULT_FAVICON,name:'Brasil em Campo',campaignTitle:'Brasil em Campo',campaignTagline:'Um só time. Uma só meta. Cada atendimento conta.',preset:'brasil',colors:{dark:{accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',success:'#22C55E',danger:'#EF5350',warn:'#F7C948',shadow:'0 18px 55px rgba(0,15,11,.42)'},light:{accent:'#C89F00',secondary:'#087A3E',bg:'#EEF5F0',bg2:'#F7FAF8',panel:'rgba(255,255,255,.96)',panel2:'#FFFFFF',text:'#10261D',muted:'#60766D',border:'rgba(0,121,52,.18)',success:'#168547',danger:'#C93F3C',warn:'#A97800',shadow:'0 12px 32px rgba(15,58,37,.10)'}},accent:'#FFD600',secondary:'#00A859',bg:'#031F18',bg2:'#071D31',panel:'rgba(7,35,29,.91)',panel2:'rgba(9,44,36,.95)',text:'#F8FAF7',muted:'#A9C1B8',border:'rgba(255,214,0,.15)',background:'assets/brasil-em-campo-public.jpg',opacity:.20};
+  let globalBackgroundImage = null; // R30.2: identidade institucional, nao imagem de Squad.
+  let globalBackgroundDraft = undefined;
   const BOOT_FALLBACK_THEME = {fontFamily:DEFAULT_SYSTEM_FONT,name:'Soften Performance Hub',campaignTitle:'Performance Hub',campaignTagline:'Gestão de desempenho',preset:'bootstrap',soundtrack:null,soundtrackName:'',soundtrackVolume:.18,favicon:'assets/soften-logo-sidebar.png',colors:{dark:{...DEFAULT_DARK_COLORS,accent:'#20b7f5',secondary:'#176bd3'},light:{...DEFAULT_LIGHT_COLORS,accent:'#0284c7',secondary:'#2563eb'}},background:null,opacity:.06};
   const PUBLIC_THEME_ORG_SLUG = String(window.APP_CONFIG?.publicOrganizationSlug||'soften-sistemas').trim()||'soften-sistemas';
   const DEMO_USERS = Array.isArray(window.SOFTEN_DEMO_USERS) ? [...window.SOFTEN_DEMO_USERS] : [];
@@ -889,6 +891,35 @@
     if(state.supabase){clearTimeout(themePersistTimer);themePersistTimer=setTimeout(()=>persistThemeToSupabase(codes,normalized).catch(console.error),350)}
   }
 
+  // R30.2: aparencia global independente de squad_themes. A RPC publica expoe apenas a imagem institucional.
+  function renderGlobalBackground(image=globalBackgroundImage){
+    const safe=image&&/^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(image)?image:null;
+    document.documentElement.style.setProperty('--global-background-img',safe?`url("${safe}")`:'none');
+    const img=$('#globalBootArt');if(img){if(safe){img.src=safe;img.classList.remove('hidden');}else{img.removeAttribute('src');img.classList.add('hidden');}}
+    if($('#globalBackgroundStatus'))$('#globalBackgroundStatus').textContent=safe?'Imagem institucional configurada para toda a organização.':'Sem imagem comum: fundo institucional neutro.';
+  }
+  async function loadGlobalAppearance(){
+    if(!state.supabase)return;
+    try{const {data,error}=await state.supabase.rpc('get_public_global_background',{p_org_slug:PUBLIC_THEME_ORG_SLUG});if(error)throw error;
+      globalBackgroundImage=typeof data==='string'?data:null;renderGlobalBackground();
+    }catch(err){console.warn('Imagem institucional indisponivel. Verifique a migration R30.2.',err);renderGlobalBackground();}
+  }
+  async function previewGlobalBackgroundFile(event){
+    if(!isSuperAdmin())return;
+    const file=event.target.files?.[0];if(!file)return;
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024){toast('Envie JPG, PNG ou WEBP de ate 2 MB.');return;}
+    const reader=new FileReader();reader.onload=()=>{globalBackgroundDraft=reader.result;renderGlobalBackground(globalBackgroundDraft);if($('#globalBackgroundStatus'))$('#globalBackgroundStatus').textContent=`Previa: ${file.name}. Clique em Salvar imagem comum para publicar.`;};reader.readAsDataURL(file);
+  }
+  async function saveGlobalBackground(){
+    if(!isSuperAdmin()||!state.user?.organizationId)return toast('Somente administradores podem editar a imagem institucional.');
+    if(globalBackgroundDraft===undefined)return toast('Escolha uma imagem comum primeiro.');
+    if(!state.supabase)return toast('A imagem comum requer Supabase.');
+    const button=$('#saveGlobalBackgroundBtn');if(button)button.disabled=true;
+    try{const {error}=await state.supabase.from('organization_appearance').upsert({organization_id:state.user.organizationId,background_image:globalBackgroundDraft},{onConflict:'organization_id'});if(error)throw error;
+      globalBackgroundImage=globalBackgroundDraft;globalBackgroundDraft=undefined;renderGlobalBackground();toast('Imagem institucional salva para todos os Squads.');
+    }catch(err){console.error(err);toast(`Nao foi possivel salvar imagem comum: ${err.message||err}`);}finally{if(button)button.disabled=false;}
+  }
+  async function removeGlobalBackground(){if(!isSuperAdmin())return;globalBackgroundDraft=null;renderGlobalBackground(null);await saveGlobalBackground();}
   function showBoot(message='Validando sua sessão e carregando os dados...'){
     const el=$('#bootScreen');if(!el)return;el.classList.remove('hidden');if($('#bootMessage'))$('#bootMessage').textContent=message;
   }
@@ -921,7 +952,7 @@
     if((window.APP_CONFIG?.mode||'demo')==='supabase'){
       try{
         if($('#bootMessage'))$('#bootMessage').textContent='Conectando com segurança...';
-        await initSupabase();performanceMark('supabase_library');
+        await initSupabase();performanceMark('supabase_library');await loadGlobalAppearance();
         if($('#bootMessage'))$('#bootMessage').textContent='Validando sua sessão...';
         const {data}=await state.supabase.auth.getSession();performanceMark('session_checked');
         if(state.recoveryMode){if(!cachedBootTheme)await hydratePublicThemeBootstrap();showLogin('Link de recuperação validado. Defina sua nova senha.');openModal('recoveryModal');return;}
@@ -1142,6 +1173,10 @@
     if($('#secondaryColorText'))$('#secondaryColorText').addEventListener('change',e=>applyThemeHexInput('secondary',e.target));
     if($('#chooseBackgroundBtn'))$('#chooseBackgroundBtn').addEventListener('click',()=>$('#backgroundFile')?.click());
     $('#backgroundFile').addEventListener('change',handleBackground);
+    $('#chooseGlobalBackgroundBtn')?.addEventListener('click',()=>$('#globalBackgroundFile')?.click());
+    $('#globalBackgroundFile')?.addEventListener('change',previewGlobalBackgroundFile);
+    $('#saveGlobalBackgroundBtn')?.addEventListener('click',saveGlobalBackground);
+    $('#removeGlobalBackgroundBtn')?.addEventListener('click',removeGlobalBackground);
     if($('#chooseFaviconBtn'))$('#chooseFaviconBtn').addEventListener('click',()=>$('#faviconFile')?.click());
     if($('#faviconFile'))$('#faviconFile').addEventListener('change',handleFavicon);
     if($('#resetFavicon'))$('#resetFavicon').addEventListener('click',resetFavicon);
@@ -8103,8 +8138,8 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
   function setThemeEditStatus(message,pending=true){const el=$('#themeEditStatus');if(!el)return;el.textContent=message;el.classList.toggle('pending',!!pending);el.classList.remove('saved')}
   function markThemeEditorDirty(message='Alterações em pré-visualização. Clique em Salvar tema para confirmar.'){state.themeEditorDirty=true;setThemeEditStatus(message,true)}
   function syncThemeColorText(){const p=themePalette(state.theme,state.colorMode);if($('#accentColorText'))$('#accentColorText').value=String(p.accent||'#f0a33a').toUpperCase();if($('#secondaryColorText'))$('#secondaryColorText').value=String(p.secondary||'#ef5a29').toUpperCase();}
-  function beginThemeEditor(){if(!canEditAppearance())return toast('Selecione um Squad específico ou use Todos os Squads como Administrador.');state.themeEditorSnapshot=clone(normalizeThemePayload(state.theme));state.themeEditorDirty=false;applyTheme(state.theme,{remember:false});syncThemeColorText();if($('#backgroundFileName'))$('#backgroundFileName').textContent=state.theme.background?'Fundo atual carregado':'Sem fundo personalizado';setThemeEditStatus('Nenhuma alteração pendente.',false);openModal('themeModal')}
-  function cancelThemeEditor(){const snapshot=state.themeEditorSnapshot;if(snapshot){state.theme=normalizeThemePayload(snapshot);applyTheme(state.theme,{remember:false});syncChartPreferencePreview()}state.themeEditorSnapshot=null;state.themeEditorDirty=false;if($('#backgroundFile'))$('#backgroundFile').value='';closeModal('themeModal');toast('Alterações do tema descartadas.')}
+  function beginThemeEditor(){renderGlobalBackground();if(!canEditAppearance())return toast('Selecione um Squad específico ou use Todos os Squads como Administrador.');state.themeEditorSnapshot=clone(normalizeThemePayload(state.theme));state.themeEditorDirty=false;applyTheme(state.theme,{remember:false});syncThemeColorText();if($('#backgroundFileName'))$('#backgroundFileName').textContent=state.theme.background?'Fundo atual carregado':'Sem fundo personalizado';setThemeEditStatus('Nenhuma alteração pendente.',false);openModal('themeModal')}
+  function cancelThemeEditor(){globalBackgroundDraft=undefined;renderGlobalBackground();const snapshot=state.themeEditorSnapshot;if(snapshot){state.theme=normalizeThemePayload(snapshot);applyTheme(state.theme,{remember:false});syncChartPreferencePreview()}state.themeEditorSnapshot=null;state.themeEditorDirty=false;if($('#backgroundFile'))$('#backgroundFile').value='';closeModal('themeModal');toast('Alterações do tema descartadas.')}
   function saveThemeEditor(){if(!canEditAppearance())return toast('Você não possui permissão para salvar o tema.');state.theme=normalizeThemePayload({...state.theme,campaignTitle:$('#campaignNameInput')?.value?.trim()||state.theme.campaignTitle,name:$('#campaignNameInput')?.value?.trim()||state.theme.name||'Personalizado',campaignTagline:$('#campaignTaglineInput')?.value?.trim()||'',preset:'custom'});saveTheme();applyTheme(state.theme,{remember:true});state.themeEditorSnapshot=clone(state.theme);state.themeEditorDirty=false;setThemeEditStatus('Tema salvo.',false);closeModal('themeModal');toast(`Tema salvo em ${appearanceScopeLabel()}.`)}
   function applyThemeHexInput(key,input){let value=String(input?.value||'').trim();if(!value.startsWith('#'))value='#'+value;if(!/^#[0-9a-f]{6}$/i.test(value))return setThemeEditStatus('Informe uma cor hexadecimal válida, como #F0A33A.',true);input.value=value.toUpperCase();setThemePaletteColor(key,value);state.theme.name='Personalizado';state.theme.preset='custom';syncThemeColorText();markThemeEditorDirty()}
 
@@ -8146,12 +8181,12 @@ function renderIndicatorLineChart(el,labels,series,{maxValue=null,percent=false,
       }
     }
     const cssArt=art?`url(\"${art}\")`:'none';
-    $$('.hero,.team-hero,.help-hero,.profile-hero,.login-screen,.boot-card,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
+    $$('.hero,.team-hero,.help-hero,.profile-hero,.sound-welcome-card').forEach(el=>el.style.setProperty('--hero-img',cssArt));
     if($('#campaignVisual'))$('#campaignVisual').setAttribute('aria-label',`Campanha ${title}`);
     if($('#campaignTitleDisplay'))$('#campaignTitleDisplay').textContent=title;
     if($('#campaignTaglineDisplay'))$('#campaignTaglineDisplay').textContent=tagline;
     if($('#soundWelcomeTitle'))$('#soundWelcomeTitle').textContent=`Entrar em ${title}`;
-    if($('#bootCampaignLabel'))$('#bootCampaignLabel').textContent=`${title} • ${tagline}`.toUpperCase();
+    /* Boot institucional independente do Squad. */
     if($('#houseMottoTitle'))$('#houseMottoTitle').textContent=title.toUpperCase();
     if($('#houseMottoText'))$('#houseMottoText').textContent=tagline;
   }

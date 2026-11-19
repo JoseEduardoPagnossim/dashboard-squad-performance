@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r301" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r301" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r301" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r301" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r302" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r302" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r302" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r302" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -26,7 +26,7 @@
   <section id="bootScreen" class="boot-screen" aria-live="polite">
     <div class="boot-card">
       <div class="boot-brand boot-brand-logo"><img src="assets/soften-logo-sidebar.png" alt="Soften Sistemas"><div><strong>Performance Hub</strong><span>Gestão de desempenho</span></div></div>
-      <div class="boot-dragon"><img data-theme-art class="hidden" alt="Arte da campanha" decoding="async" fetchpriority="high"></div>
+      <div class="boot-dragon"><img id="globalBootArt" class="hidden" alt="Imagem institucional da Soften" decoding="async" fetchpriority="high"></div>
       <div class="boot-spinner" aria-hidden="true"></div>
       <h1>Preparando seu painel</h1>
       <p id="bootMessage">Validando sua sessão e carregando os dados...</p>
@@ -2823,7 +2823,7 @@
 
   <div id="importModal" class="modal import-modal" aria-hidden="true"><div class="modal-card import-modal-card" role="dialog" aria-modal="true" aria-labelledby="importModalTitle"><div class="import-modal-header"><div class="modal-icon">↑</div><div><span class="eyebrow">DADOS DO PAINEL</span><h2 id="importModalTitle">Central de Importação</h2></div><button class="modal-close" data-close="importModal" aria-label="Fechar Central de Importação">×</button></div><div class="import-modal-body" id="importModalBody"><p id="importMessage">Selecione o CSV operacional ou o CSV de Produto/Empresa.</p><div class="import-progress"><i id="importProgress"></i></div><div class="import-details" id="importDetails"></div><div id="importDropzone" class="import-dropzone" role="button" tabindex="0" aria-label="Arraste um CSV ou clique para escolher"><span class="import-dropzone-icon">⇩</span><div><strong>Arraste o CSV aqui</strong><span>ou clique para escolher um arquivo no computador</span><small id="importDropzoneFile">Nenhum arquivo selecionado</small></div></div><div id="csvScopeBlock" class="csv-scope"><label><span>Squad a importar</span><select id="csvScopeSelect"></select></label><small>Este escopo vale somente para esta importação e não altera o filtro de Squad da tela atrás.</small></div><div id="csvPreparationBlock" class="csv-preparation hidden"><div class="csv-preparation-head"><div><span class="eyebrow">PREPARAR RELATÓRIO</span><strong>Escolha as colunas e trate duplicidades sem editar o CSV</strong><small>As demais colunas do relatório serão ignoradas automaticamente.</small></div><span class="history-chip" id="csvPreparationKind">—</span></div><div class="csv-preparation-map" id="csvPreparationMap"><label><span>Data</span><select id="csvMapDate"></select></label><label><span>Técnico</span><select id="csvMapTechnician"></select></label><label id="csvMapServiceField"><span>Nota Serviço</span><select id="csvMapService"></select></label><label><span>Nota Produto</span><select id="csvMapProduct"></select></label><label><span>Nota Empresa</span><select id="csvMapCompany"></select></label><label id="csvMapGroupField"><span>Grupo <small>opcional</small></span><select id="csvMapGroup"></select></label><label id="csvMapResolveField"><span>Resolve <small>opcional · gera FCR</small></span><select id="csvMapResolve"></select></label></div><div class="csv-dedupe-box"><div class="csv-dedupe-top"><label class="csv-dedupe-toggle"><input id="csvDedupeEnabled" type="checkbox"><span><strong>Deduplicar antes de importar</strong><small>Remove repetições dentro de cada competência usando as chaves selecionadas abaixo.</small></span></label><label class="csv-dedupe-keep"><span>Quando repetir</span><select id="csvDedupeKeep"><option value="first">Manter a primeira ocorrência</option><option value="last">Manter a última ocorrência</option></select></label></div><div id="csvDedupeOptions" class="csv-dedupe-options"><span>Deduplicar por</span><div id="csvDedupeColumns" class="csv-dedupe-columns"></div><small>Você pode marcar uma ou mais colunas, como CNPJ, código do cliente ou razão social. O mesmo cliente pode aparecer novamente em outra competência.</small></div></div><div class="csv-preparation-summary" id="csvPreparationSummary">Selecione as colunas para preparar o relatório.</div><div class="csv-preparation-actions"><button type="button" class="btn primary" id="applyCsvPreparationBtn">Aplicar preparação e continuar</button></div></div><div id="csvPeriodBlock" class="csv-period hidden"><label><span>Mês a importar</span><select id="csvMonthSelect"></select></label><small id="csvPeriodHint">Selecione a competência encontrada no arquivo.</small></div><div id="importPreviewBlock" class="import-preview hidden"><div id="importPreviewSummary" class="import-preview-summary"></div><div id="importRiskBanner" class="import-risk-banner"></div><div id="importValidationList" class="import-validation-list"></div><div class="table-wrap import-comparison-wrap"><table><thead><tr><th>Squad</th><th>Atual</th><th>Novo</th><th>Variação</th><th>Técnicos atual</th><th>Técnicos novo</th><th>Situação</th></tr></thead><tbody id="importComparisonRows"></tbody></table></div></div></div><div class="modal-actions import-modal-footer"><button class="btn secondary" data-close="importModal">Cancelar</button><button class="btn secondary" id="chooseFileBtn">Escolher CSV</button><button class="btn primary hidden" id="confirmCsvImportBtn">Importar mês</button></div></div></div>
 
-  <div id="themeModal" class="modal" aria-hidden="true"><div class="modal-card theme-modal"><button class="modal-close" data-close="themeModal" aria-label="Cancelar personalização">×</button><span class="eyebrow">TEMA DO SQUAD</span><h2>Personalizar experiência</h2><p>As alterações abaixo são pré-visualizadas no painel, mas só serão gravadas no tema quando você clicar em <strong>Salvar tema</strong>.</p><div class="theme-mode-editor"><div><span>Paleta em edição</span><strong>Alterne para ajustar as cores do modo desejado.</strong></div><div class="theme-mode-segmented" role="group" aria-label="Paleta do tema"><button type="button" data-theme-edit-mode="light"><span>☀</span> Claro</button><button type="button" data-theme-edit-mode="dark"><span>☾</span> Escuro</button></div></div><div class="preset-grid"><button class="preset" data-theme="vermithor" type="button"><i class="swatch fire"></i><span>Vermithor</span></button><button class="preset" data-theme="soften" type="button"><i class="swatch soften"></i><span>Soften</span></button><button class="preset" data-theme="neon" type="button"><i class="swatch neon"></i><span>Neon</span></button><button class="preset" data-theme="clean" type="button"><i class="swatch clean"></i><span>Claro</span></button></div><div class="custom-theme"><label><span>Cor principal</span><span class="color-control"><input id="accentColor" type="color" value="#f0a33a" aria-label="Escolher cor principal"><input id="accentColorText" class="color-hex-input" type="text" value="#f0a33a" maxlength="7" spellcheck="false" aria-label="Código hexadecimal da cor principal"></span></label><label><span>Cor secundária</span><span class="color-control"><input id="secondaryColor" type="color" value="#ef5a29" aria-label="Escolher cor secundária"><input id="secondaryColorText" class="color-hex-input" type="text" value="#ef5a29" maxlength="7" spellcheck="false" aria-label="Código hexadecimal da cor secundária"></span></label><label><span>Nome do tema</span><input id="campaignNameInput" type="text"></label><label><span>Frase do tema</span><input id="campaignTaglineInput" type="text"></label><div class="theme-upload-field"><div><span>Imagem de fundo</span><small>JPG, PNG ou WEBP de até 5 MB.</small></div><div class="theme-upload-actions"><button class="btn secondary compact" id="chooseBackgroundBtn" type="button">Escolher imagem</button><small id="backgroundFileName">Nenhuma nova imagem selecionada</small><input id="backgroundFile" type="file" accept="image/*" hidden></div></div><button class="link-btn" id="removeBg" type="button">Remover fundo personalizado</button><div class="favicon-theme-row"><div><span>Favicon do tema</span><small>Ícone exibido na aba do navegador. Prefira uma imagem quadrada.</small></div><div class="favicon-theme-actions"><span class="favicon-preview"><img id="faviconPreview" src="assets/favicon-dragon.png" alt="Prévia do favicon"></span><button class="btn secondary compact" id="chooseFaviconBtn" type="button">Escolher ícone</button><input id="faviconFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button class="link-btn" id="resetFavicon" type="button">Usar ícone padrão</button></div></div><div class="soundtrack-theme-row"><div class="soundtrack-theme-copy"><span>Trilha sonora do tema</span><small>Use MP3, OGG, WAV, M4A ou AAC de até 3 MB. Prefira material original, licenciado ou royalty-free.</small></div><div class="soundtrack-theme-config"><label class="soundtrack-name-field"><span>Nome</span><input id="soundtrackNameInput" type="text" placeholder="Ex.: Fogo & Conquista"></label><div class="soundtrack-buttons"><button class="btn secondary compact" id="chooseSoundtrackBtn" type="button">♫ Escolher áudio</button><input id="soundtrackFile" type="file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/mp4,audio/aac,.mp3,.ogg,.wav,.m4a,.aac" hidden><button class="btn secondary compact" id="previewSoundtrackBtn" type="button">▶ Ouvir trilha</button></div><div class="soundtrack-volume-config"><span>Volume padrão</span><input id="soundtrackDefaultVolume" type="range" min="0" max="100" step="1" value="24"><strong id="soundtrackDefaultVolumeLabel">24%</strong></div><div class="soundtrack-links"><button class="link-btn" id="resetSoundtrack" type="button">Usar trilha original</button><button class="link-btn danger-link" id="removeSoundtrack" type="button">Remover trilha</button></div></div></div></div><div class="theme-editor-footer"><small id="themeEditStatus">Nenhuma alteração pendente.</small><div class="modal-actions"><button class="btn secondary" id="cancelThemeChangesBtn" type="button">Cancelar</button><button class="btn primary" id="saveThemeChangesBtn" type="button">Salvar tema</button></div></div></div></div>
+  <div id="themeModal" class="modal" aria-hidden="true"><div class="modal-card theme-modal"><button class="modal-close" data-close="themeModal" aria-label="Cancelar personalização">×</button><span class="eyebrow">TEMA DO SQUAD</span><h2>Personalizar experiência</h2><p>As alterações abaixo são pré-visualizadas no painel, mas só serão gravadas no tema quando você clicar em <strong>Salvar tema</strong>.</p><div class="theme-mode-editor"><div><span>Paleta em edição</span><strong>Alterne para ajustar as cores do modo desejado.</strong></div><div class="theme-mode-segmented" role="group" aria-label="Paleta do tema"><button type="button" data-theme-edit-mode="light"><span>☀</span> Claro</button><button type="button" data-theme-edit-mode="dark"><span>☾</span> Escuro</button></div></div><div class="preset-grid"><button class="preset" data-theme="vermithor" type="button"><i class="swatch fire"></i><span>Vermithor</span></button><button class="preset" data-theme="soften" type="button"><i class="swatch soften"></i><span>Soften</span></button><button class="preset" data-theme="neon" type="button"><i class="swatch neon"></i><span>Neon</span></button><button class="preset" data-theme="clean" type="button"><i class="swatch clean"></i><span>Claro</span></button></div><div class="custom-theme"><label><span>Cor principal</span><span class="color-control"><input id="accentColor" type="color" value="#f0a33a" aria-label="Escolher cor principal"><input id="accentColorText" class="color-hex-input" type="text" value="#f0a33a" maxlength="7" spellcheck="false" aria-label="Código hexadecimal da cor principal"></span></label><label><span>Cor secundária</span><span class="color-control"><input id="secondaryColor" type="color" value="#ef5a29" aria-label="Escolher cor secundária"><input id="secondaryColorText" class="color-hex-input" type="text" value="#ef5a29" maxlength="7" spellcheck="false" aria-label="Código hexadecimal da cor secundária"></span></label><label><span>Nome do tema</span><input id="campaignNameInput" type="text"></label><label><span>Frase do tema</span><input id="campaignTaglineInput" type="text"></label><section class="global-appearance-field" aria-label="Identidade visual comum a todos os Squads"><strong>Imagem institucional — todos os Squads</strong><p>Usada somente no carregamento, na entrada e como fundo geral do painel. Não substitui a imagem individual dos Squads. JPG, PNG ou WEBP até 2 MB.</p><div class="global-appearance-actions"><input id="globalBackgroundFile" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="btn secondary compact" id="chooseGlobalBackgroundBtn" type="button">Escolher imagem comum</button><button class="btn secondary compact" id="saveGlobalBackgroundBtn" type="button">Salvar imagem comum</button><button class="btn secondary compact" id="removeGlobalBackgroundBtn" type="button">Remover imagem comum</button></div><small id="globalBackgroundStatus">A imagem comum é independente dos temas individuais.</small></section><div class="theme-upload-field"><div><span>Imagem de fundo</span><small>JPG, PNG ou WEBP de até 5 MB.</small></div><div class="theme-upload-actions"><button class="btn secondary compact" id="chooseBackgroundBtn" type="button">Escolher imagem</button><small id="backgroundFileName">Nenhuma nova imagem selecionada</small><input id="backgroundFile" type="file" accept="image/*" hidden></div></div><button class="link-btn" id="removeBg" type="button">Remover fundo personalizado</button><div class="favicon-theme-row"><div><span>Favicon do tema</span><small>Ícone exibido na aba do navegador. Prefira uma imagem quadrada.</small></div><div class="favicon-theme-actions"><span class="favicon-preview"><img id="faviconPreview" src="assets/favicon-dragon.png" alt="Prévia do favicon"></span><button class="btn secondary compact" id="chooseFaviconBtn" type="button">Escolher ícone</button><input id="faviconFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button class="link-btn" id="resetFavicon" type="button">Usar ícone padrão</button></div></div><div class="soundtrack-theme-row"><div class="soundtrack-theme-copy"><span>Trilha sonora do tema</span><small>Use MP3, OGG, WAV, M4A ou AAC de até 3 MB. Prefira material original, licenciado ou royalty-free.</small></div><div class="soundtrack-theme-config"><label class="soundtrack-name-field"><span>Nome</span><input id="soundtrackNameInput" type="text" placeholder="Ex.: Fogo & Conquista"></label><div class="soundtrack-buttons"><button class="btn secondary compact" id="chooseSoundtrackBtn" type="button">♫ Escolher áudio</button><input id="soundtrackFile" type="file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/x-wav,audio/mp4,audio/aac,.mp3,.ogg,.wav,.m4a,.aac" hidden><button class="btn secondary compact" id="previewSoundtrackBtn" type="button">▶ Ouvir trilha</button></div><div class="soundtrack-volume-config"><span>Volume padrão</span><input id="soundtrackDefaultVolume" type="range" min="0" max="100" step="1" value="24"><strong id="soundtrackDefaultVolumeLabel">24%</strong></div><div class="soundtrack-links"><button class="link-btn" id="resetSoundtrack" type="button">Usar trilha original</button><button class="link-btn danger-link" id="removeSoundtrack" type="button">Remover trilha</button></div></div></div></div><div class="theme-editor-footer"><small id="themeEditStatus">Nenhuma alteração pendente.</small><div class="modal-actions"><button class="btn secondary" id="cancelThemeChangesBtn" type="button">Cancelar</button><button class="btn primary" id="saveThemeChangesBtn" type="button">Salvar tema</button></div></div></div></div>
 
 
   <div id="userModal" class="modal" aria-hidden="true" data-static-backdrop="true"><div class="modal-card user-modal"><button class="modal-close" data-close="userModal">×</button><span class="eyebrow">NOVO ACESSO</span><h2>Criar usuário</h2><p id="userModalHint">Defina o acesso e o vínculo com o Squad.</p><form id="createUserForm" class="user-form">
@@ -3014,55 +3014,55 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r301"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r301"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r301"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r301"></script>
-  <script src="js/presentation.js?v=2.63.9-r301"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r301"></script>
-  <script src="js/chart-export.js?v=2.63.9-r301"></script>
-  <script src="js/import-engine.js?v=2.63.9-r301"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r301"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r301"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r301"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r301"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r301"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r301"></script>
-  <script src="js/filter-system.js?v=2.63.9-r301"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r301"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r301"></script>
-  <script src="js/design-system.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r301"></script>
-  <script src="js/strategy.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r301"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r302"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r302"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r302"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r302"></script>
+  <script src="js/presentation.js?v=2.63.9-r302"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r302"></script>
+  <script src="js/chart-export.js?v=2.63.9-r302"></script>
+  <script src="js/import-engine.js?v=2.63.9-r302"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r302"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r302"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r302"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r302"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r302"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r302"></script>
+  <script src="js/filter-system.js?v=2.63.9-r302"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r302"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r302"></script>
+  <script src="js/design-system.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r302"></script>
+  <script src="js/strategy.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r302"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r301"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r301"></script>
-<script src="js/app.js?v=2.63.9-r301"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r302"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r302"></script>
+<script src="js/app.js?v=2.63.9-r302"></script>
 </body>
 </html>

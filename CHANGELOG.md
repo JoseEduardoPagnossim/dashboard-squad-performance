@@ -1,3 +1,12 @@
+## R30.2 — Imagem institucional comum e organizacao de repositorio (2026-11-19)
+
+- Separa o fundo global de carregamento, entrada e plano de fundo dos banners e temas individuais dos Squads.
+- Adiciona upload administrativo independente, persistido por organizacao com RLS, e RPC publica de leitura somente da imagem institucional.
+- Documenta a migration `MIGRACAO_V2.63.23_APARENCIA_INSTITUCIONAL_R302.sql`.
+- Move arquivos historicos soltos da raiz para `docs/releases/legacy-root/`, preservando arquivos de producao.
+- Reestrutura `README.md` como guia atual; preserva README antigo em `docs/releases/README_HISTORICO_ATE_V2638.md`.
+- Padroniza cache-buster r302 no `index.html`, `package.json` e testes.
+
 ## V2.63.9 R4 — Custos operacionais, folha e Bonificação (hotfix)
 - Exclusão auditada de custos operacionais e rateios, com proteção de competências fechadas e lançamentos manuais.
 - Prévia/importação de planilha de folha por competência, com conciliação de pessoas e deduplicação das provisões.

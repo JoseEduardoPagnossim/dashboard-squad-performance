@@ -2930,3 +2930,17 @@ html.modal-open,body.modal-open{overflow:hidden!important}
 #userModal .user-modal,#editUserModal .user-modal{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-bottom:0;}
 #userModal .user-form .modal-actions,#editUserModal .user-form .modal-actions{position:sticky;bottom:0;z-index:3;margin:15px -28px 0;padding:14px 28px max(14px,env(safe-area-inset-bottom));background:var(--panel2,#111722);border-top:1px solid var(--border);flex-wrap:wrap;}
 @media(max-width:560px){#userModal .user-modal,#editUserModal .user-modal{width:100%;padding-left:16px;padding-right:16px;}#userModal .user-form .modal-actions,#editUserModal .user-form .modal-actions{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;}}
+
+/* R30.2: imagem institucional independente do tema do Squad. */
+:root{--global-background-img:none}
+.boot-card:before{background-image:linear-gradient(180deg,rgba(8,13,22,.30),rgba(8,13,22,.96)),var(--global-background-img)}
+.bg-layer:after{background-image:linear-gradient(rgba(8,11,18,.88),rgba(8,11,18,.95)),var(--global-background-img)}
+.login-screen:before{background-image:linear-gradient(90deg,rgba(3,9,17,.92),rgba(3,12,24,.68) 48%,rgba(4,12,22,.82)),var(--global-background-img)}
+html[data-color-mode="light"] .boot-card:before{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.96)),var(--global-background-img)!important}
+html[data-color-mode="light"] .login-screen:before{background-image:linear-gradient(90deg,rgba(13,35,55,.88),rgba(23,53,77,.66) 48%,rgba(237,244,250,.77)),var(--global-background-img)!important}
+html[data-color-mode="light"] .bg-layer:after{background-image:linear-gradient(rgba(248,250,252,.88),rgba(243,246,250,.95)),var(--global-background-img)!important}
+.global-appearance-field{margin:14px 0;padding:14px;border:1px solid var(--border);border-radius:12px;background:color-mix(in srgb,var(--accent) 4%,transparent)}
+.global-appearance-field>strong{display:block;font-size:12px}
+.global-appearance-field p{font-size:11px;line-height:1.5;color:var(--muted)}
+.global-appearance-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.global-appearance-field>small{display:block;font-size:10px;color:var(--muted)}
