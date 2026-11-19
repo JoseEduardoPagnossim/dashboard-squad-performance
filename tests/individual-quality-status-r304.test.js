@@ -29,6 +29,6 @@ test('R30.4: manual e revisao de assets',()=>{
  assert.match(html,/Entender status oficial e simulado no Ranking/);
  assert.match(html,/Consultar minhas notas baixas/);
  assert.match(html,/Configurar e conferir o fundo institucional do login/);
- assert.equal(pkg.assetVersion,'2.63.9-r304');
- assert.match(html,/js\/app\.js\?v=2\.63\.9-r304/);
+ assert.equal(pkg.assetVersion,'2.63.9-r3051');
+ assert.match(html,/js\/app\.js\?v=2\.63\.9-r3051/);
 });

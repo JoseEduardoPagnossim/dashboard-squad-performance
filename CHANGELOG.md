@@ -1,10 +1,25 @@
+## R30.5.1 — Qualidade individual compacta após indicadores principais (19/11/2026)
+
+- Painel de notas baixas movido para logo abaixo dos cinco indicadores principais.
+- Resumo discreto de total, percentual e distribuição 1/2/3; dias recolhidos.
+- Sem mudança de cálculos, regras financeiras, acesso a dados ou Supabase.
+- Cache de CSS e JS em `2.63.9-r3051`.
+
+## R30.5 — Painel compacto para notas baixas no Meu Desempenho (19/11/2026)
+
+- Redesenha a seção **Minhas avaliações baixas** para um painel mais compacto e visualmente mais limpo.
+- Destaca total do período, percentual sobre avaliações recebidas e distribuição entre notas 1, 2 e 3.
+- Mantém o detalhamento diário recolhível e preserva o caráter agregado, sem identificar clientes ou atendimentos.
+- Não altera cálculos, pontuação oficial, status, ranking ou bonificação.
+- Cache-buster atualizado para `2.63.9-r3051` com HTML, package e testes sincronizados.
+
 ## R30.4 — Status oficial, qualidade individual e login institucional (19/11/2026)
 
 - Ranking completo distingue o status oficial da competência do status simulado do recorte.
 - Meu Desempenho mostra, para o técnico selecionado, notas 1, 2 e 3 agregadas por período e competência.
 - Imagem institucional no login recebe camada mais transparente e aviso de configuração indisponível.
 - Manual Como usar atualizado, sem alterações financeiras ou de banco.
-- Cache-buster 2.63.9-r304 atualizado em HTML, package.json e testes.
+- Cache-buster 2.63.9-r3051 atualizado em HTML, package.json e testes.
 
 ## R30.3 — Manual Como usar ampliado (19/11/2026)
 

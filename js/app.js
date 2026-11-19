@@ -2449,16 +2449,21 @@
     renderStatusAudit(t,m,audit);renderIndividualLowRatings(period,t);renderFinanceSummary(t,m);renderGamification(t,m,attPct,notePct);renderChart(period,m,true);renderDaily(period,m,true);renderMiniRankingPeriod(periodRows,t.name);renderFinanceRanking(m,t.name);
   }
 
-  // R30.4: dados ja acessiveis ao proprio tecnico; nao consulta notas de outros usuarios.
+  // R30.5.1: resumo discreto posicionado logo abaixo dos cinco KPIs do tecnico.
+  // Preserva contagens agregadas e nao consulta dados de outros usuarios.
   function renderIndividualLowRatings(period,monthly){
     const target=$('#individualLowRatings');if(!target)return;
     const counts=[1,2,3].map(n=>Math.max(0,safe(period?.['notes'+n])));
     const total=counts.reduce((a,b)=>a+b,0);
     const monthCounts=[1,2,3].map(n=>Math.max(0,safe(monthly?.['notes'+n])));
     const monthTotal=monthCounts.reduce((a,b)=>a+b,0);
-    const percent=safe(period?.totalEval)>0?fmtPct(total/safe(period.totalEval)):'—';
+    const totalEval=Math.max(0,safe(period?.totalEval));
+    const percent=totalEval>0?fmtPct(total/totalEval):'—';
     const days=Array.isArray(period?.daily)?period.daily.filter(d=>[1,2,3].some(n=>safe(d?.['notes'+n])>0)).sort((a,b)=>safe(b.day)-safe(a.day)).slice(0,10):[];
-    target.innerHTML=`<div class="section-title"><div><span class="eyebrow">QUALIDADE INDIVIDUAL</span><h3>Minhas avaliações baixas</h3></div><span class="muted">Notas 1, 2 e 3 • período selecionado</span></div><p class="muted">Somente avaliações agregadas do próprio técnico. Não identifica clientes nem atendimentos.</p><div class="individual-low-ratings-grid">${counts.map((count,i)=>`<div class="individual-low-rating-metric"><small>Nota ${i+1}</small><strong>${fmtInt(count)}</strong></div>`).join('')}<div class="individual-low-rating-metric"><small>Total no período</small><strong>${fmtInt(total)}</strong><small>${percent} das avaliações</small></div></div><div class="individual-low-ratings-foot">Competência oficial: <strong>${fmtInt(monthTotal)} notas baixas</strong> (1: ${fmtInt(monthCounts[0])} · 2: ${fmtInt(monthCounts[1])} · 3: ${fmtInt(monthCounts[2])}).</div>${days.length?`<details class="individual-low-rating-days"><summary>Dias com notas baixas no período (${fmtInt(days.length)} exibidos)</summary><div>${days.map(d=>`<span>Dia ${fmtInt(d.day)}: ${[1,2,3].map(n=>`nota ${n}: ${fmtInt(d['notes'+n])}`).join(' · ')}</span>`).join('')}</div></details>`:'<small class="muted">Detalhamento diário indisponível para este recorte; totais agregados permanecem disponíveis.</small>'}`;
+    const status=total===0?'is-good':'is-attention';
+    const noteChips=counts.map((count,i)=>`<div class="individual-low-rating-chip"><small>Nota ${i+1}</small><strong>${fmtInt(count)}</strong></div>`).join('');
+    const dailyDetail=days.length?`<details class="individual-low-rating-days"><summary>Ver dias com notas baixas (${fmtInt(days.length)})</summary><div>${days.map(d=>`<span><b>Dia ${fmtInt(d.day)}</b><small>${[1,2,3].map(n=>`nota ${n}: ${fmtInt(d['notes'+n])}`).join(' · ')}</small></span>`).join('')}</div></details>`:'<small class="individual-low-ratings-empty">Detalhamento diário indisponível neste recorte.</small>';
+    target.innerHTML=`<div class="individual-low-ratings-strip ${status}"><div class="individual-low-ratings-heading"><span class="eyebrow">QUALIDADE INDIVIDUAL</span><strong>Minhas avaliações baixas</strong><small>Notas 1, 2 e 3</small></div><div class="individual-low-ratings-primary"><strong>${fmtInt(total)}</strong><div><span>no período</span><small>${totalEval>0?`${percent} de ${fmtInt(totalEval)} avaliações`:'Sem avaliações no período'}</small></div></div><div class="individual-low-ratings-chips">${noteChips}</div><div class="individual-low-ratings-month"><span>Competência oficial</span><strong>${fmtInt(monthTotal)} notas baixas</strong></div></div><div class="individual-low-ratings-details">${dailyDetail}<span class="individual-low-ratings-privacy">Somente dados agregados do próprio técnico.</span></div>`;
   }
   function technicianStatusAudit(t,m){
     const rules=displayScoreRules(m),criteria=[
