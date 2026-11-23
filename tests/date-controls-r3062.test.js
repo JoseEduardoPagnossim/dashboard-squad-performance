@@ -23,7 +23,7 @@ test('R30.6.2: date-controls assume os dois alvos e limpa icone legado',()=>{
  assert.match(dates,/open\(input\)/);
 });
 test('R30.6.2: mesma versao em index, testes e package',()=>{
- assert.equal(pkg.assetVersion,'2.63.9-r3062');
- assert.match(html,/js\/date-controls\.js\?v=2\.63\.9-r3062/);
- assert.match(html,/js\/design-system\.js\?v=2\.63\.9-r3062/);
+ assert.equal(pkg.assetVersion,'2.63.9-r307');
+ assert.match(html,/js\/date-controls\.js\?v=2\.63\.9-r307/);
+ assert.match(html,/js\/design-system\.js\?v=2\.63\.9-r307/);
 });

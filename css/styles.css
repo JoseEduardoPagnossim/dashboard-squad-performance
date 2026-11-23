@@ -3046,3 +3046,19 @@ html[data-color-mode="light"] .login-screen:before{background-image:linear-gradi
 .ds-date-dialog .ds-date-time select{width:100%!important;min-width:0!important;box-sizing:border-box!important}
 @media(max-width:450px){.ds-date-dialog>.ds-date-dialog-panel{width:calc(100vw - 18px)!important;max-height:calc(100dvh - 18px)!important}.ds-date-dialog .ds-date-dialog-head{padding:10px 12px!important}.ds-date-dialog .ds-date-dialog-body{padding:8px 12px!important}.ds-date-dialog .ds-date-dialog-foot{padding:9px 12px!important}.ds-date-dialog .ds-date-months{gap:5px!important}.ds-date-dialog .ds-date-months button{height:40px!important}}
 @media(max-height:430px){.ds-date-dialog:not(.hidden){align-items:flex-start!important}.ds-date-dialog>.ds-date-dialog-panel{margin:auto!important;max-height:calc(100dvh - 14px)!important}}
+
+/* R30.7 — prévia de cópia mensal de premissas financeiras */
+.strategy-copy-r307-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 15px;margin:12px 0;border:1px solid var(--border);border-radius:14px;background:var(--panel2)}
+.strategy-copy-r307-toolbar>div{display:grid;gap:5px;max-width:760px}
+.strategy-copy-r307-toolbar strong{font-size:13px}
+.strategy-copy-r307-toolbar small{color:var(--muted);line-height:1.5}
+.strategy-copy-r307-preview{border:1px solid var(--border);border-radius:14px;padding:15px;margin:10px 0 16px;background:var(--panel2)}
+.strategy-copy-r307-option{display:flex;gap:9px;align-items:flex-start;font-size:12px;margin:10px 0}
+.strategy-copy-r307-option input{flex:none}
+.strategy-copy-r307-columns{display:grid;gap:16px;grid-template-columns:1fr;margin:14px 0}
+.strategy-copy-r307-columns section{min-width:0}
+.strategy-copy-r307-columns h5{font-size:13px;margin:0 0 8px}
+.strategy-copy-r307-columns .table-wrap{max-height:310px;overflow:auto}
+.strategy-copy-r307-columns table{min-width:570px}
+.strategy-copy-r307-columns th:first-child,.strategy-copy-r307-columns td:first-child{text-align:center}
+@media(max-width:650px){.strategy-copy-r307-toolbar>button{width:100%}.strategy-copy-r307-preview .strategy-editor-footer{display:flex;flex-direction:column;align-items:stretch;gap:9px}}

@@ -24,8 +24,8 @@ test('R30.6: seletor global rola conteudo com rodape aplicar analise visivel',()
  assert.ok(scrollStart>0&&scrollEnd>scrollStart);
 });
 test('R30.6: assetVersion e formulario de periodo mantidos',()=>{
- assert.equal(pkg.assetVersion,'2.63.9-r3062');
- assert.match(html,/js\/date-controls\.js\?v=2\.63\.9-r3062/);
+ assert.equal(pkg.assetVersion,'2.63.9-r307');
+ assert.match(html,/js\/date-controls\.js\?v=2\.63\.9-r307/);
  assert.match(html,/id="periodPickerApply"/);
  assert.match(html,/id="notificationStartsAtInput" type="datetime-local"/);
 });

@@ -234,3 +234,9 @@ Execute `MIGRACAO_V2.63.3.sql` após V2.63.2: cria produtos por organização/or
 
 ### V2.63.8 — Fechamento financeiro
 Execute `MIGRACAO_V2.63.8.sql` somente após `MIGRACAO_V2.63.7.sql` (backup e homologação obrigatórios). A migration renomeia de forma idempotente a função original `close_strategy_competence(date)` como `close_strategy_competence_core_v2638(date)`, revoga acesso direto ao core e envolve o fechamento em uma reconciliação de bônus e cancelamentos. Detalhes: `docs/CONSOLIDACAO_FINANCEIRA_FECHAMENTO_V2.63.8.md`.
+
+## R30.7 — Cópia de premissas financeiras
+
+A migration `MIGRACAO_V2.63.24_COPIA_PREMISSAS_R307.sql` cria duas RPCs protegidas e uma tabela de auditoria para copiar custos pessoais fixos e despesas operacionais escolhidas da competência imediatamente anterior, somente para competência de destino aberta. Não regrava competências históricas, valores já preenchidos, Bonificação nem comissões. Consulte `docs/COPIA_PREMISSAS_R307.md`.
+
+**Obrigatório:** executar em homologação antes da produção; `npm run check` não testa as transações SQL reais.

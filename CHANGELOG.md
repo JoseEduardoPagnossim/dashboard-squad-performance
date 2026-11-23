@@ -1,3 +1,12 @@
+## R30.7 — Cópia mensal de premissas financeiras (21/11/2026)
+
+- Adiciona prévia para copiar salários, encargos, benefícios e despesas operacionais da competência anterior.
+- Despesas recorrentes ficam pré-selecionadas; itens ocasionais dependem de seleção explícita.
+- Não copia comissões, variáveis, horas extras, provisões nem outros custos pessoais.
+- Respeita registros existentes, competência fechada, permissões e organização; registra auditoria transacional.
+- Recalcula rateio de despesas copiadas com base na competência de destino.
+- Nova migration `MIGRACAO_V2.63.24_COPIA_PREMISSAS_R307.sql`. Cache-buster `2.63.9-r307`.
+
 ## R30.6.2 — Unificacao definitiva do acionador de calendario (19/11/2026)
 
 - Remove do Design System o acionador paralelo para inputs date, month e datetime-local que usava showPicker() nativo.

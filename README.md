@@ -23,7 +23,7 @@ Dashboard interno da Soften Sistemas para indicadores, Squads, metas, importacoe
 A aplicacao e estatica e publicada pelo GitHub Pages. O backend de autenticacao e persistencia usa Supabase. Para uso em producao, configure `js/config.js` conforme o ambiente; nao inclua credenciais de service role no frontend. Verifique as politicas RLS ao publicar migrations.
 
 1. Antes de modificar banco ou processamento financeiro, faca backup do Supabase.
-2. Execute as migrations ainda pendentes **em ordem**, apenas apos revisar o SQL correspondente. A migration mais recente desta entrega e `MIGRACAO_V2.63.23_APARENCIA_INSTITUCIONAL_R302.sql`.
+2. Execute as migrations ainda pendentes **em ordem**, apenas apos revisar o SQL correspondente. A migration mais recente desta entrega e `MIGRACAO_V2.63.24_COPIA_PREMISSAS_R307.sql` (R30.7). Execute em homologação e confira os testes de segurança antes de produção.
 3. Publique os arquivos atualizados preservando os caminhos da aplicacao (`index.html`, `js/`, `css/`, `assets/`).
 4. Atualize `assetVersion` em `package.json` quando alterar as referencias `?v=` do `index.html`; as versoes devem ser identicas.
 5. Confira o GitHub Actions antes de considerar a publicacao concluida. No navegador, use `Ctrl+Shift+R` quando necessario.
@@ -39,6 +39,17 @@ npm test
 ```
 
 O workflow `.github/workflows/quality.yml` executa as mesmas verificacoes a cada push em `main` e em pull requests. `exit code 1` indica falha; examine a primeira ocorrencia `not ok` ou `Falha` nos logs.
+
+## Cópia mensal de premissas (R30.7)
+
+Em **Gestão Estratégica → Premissas → Pessoas e custos pessoais**, selecione uma competência aberta já criada e clique em **Copiar do mês anterior**. A prévia mostra salários, encargos, benefícios e despesas operacionais da competência imediatamente anterior. Selecione os colaboradores e despesas, confira os valores e confirme.
+
+- **Pessoas:** só copia os valores fixos de salários, encargos e benefícios; o FTE e disponibilidade do mês anterior são opcionais, desmarcados por padrão. Comissão/Bonificação variável, extras, provisões e outros custos não são copiados.
+- **Despesas operacionais:** escolha individualmente; marcadas como recorrentes vêm pré-selecionadas. O rateio por FTE/atendimentos é refeito com a base de destino. Rateios manuais exigem cadastro separado. Se faltar base de rateio, a despesa fica como não rateada e deve ser corrigida antes de fechar.
+- **Proteções:** não sobrescreve registros que já existem no destino, não atualiza competência fechada, não altera mês anterior, preserva organização/permissões e registra auditoria.
+- **Banco:** executar `supabase/migrations/MIGRACAO_V2.63.24_COPIA_PREMISSAS_R307.sql` antes de usar os botões. Validações locais não substituem teste dessa RPC em Supabase de homologação.
+
+Consulte `docs/COPIA_PREMISSAS_R307.md` para os procedimentos e cenários de homologação.
 
 ## Identidade visual (R30.2)
 

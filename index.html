@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" as="script" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r3062" />
-  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r3062" />
-  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r3062" />
-  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r3062" />
+  <link rel="stylesheet" href="css/styles.css?v=2.63.9-r307" />
+  <link rel="stylesheet" href="css/design-system.css?v=2.63.9-r307" />
+  <link rel="stylesheet" href="css/presentation.css?v=2.63.9-r307" />
+  <link rel="stylesheet" href="css/strategy.css?v=2.63.9-r307" />
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -1416,7 +1416,10 @@
 <div class="help-guide-stack help-playbook-stack"><details class="card help-detail help-searchable admin-help" data-help-search="gestão estratégica executivo eficiência capacidade produto squad cenários automação indicadores">
       <summary><span class="how-icon blue">↻</span><div><b>Acessar Gestão Estratégica</b><small>Escolher competência e seção</small></div><i>+</i></summary>
       <div class="help-detail-body"><ol><li>Abra <b>Gestão Estratégica</b> no menu administrativo e selecione Squad e competência.</li><li>Escolha entre Resultado Executivo, Eficiência, Capacidade, Resultado, Produto/Squad, Cenários e Automação conforme sua análise.</li><li>Confira a origem e a atualização dos dados antes de interpretar os indicadores.</li><li>Compare períodos equivalentes; utilize os gráficos e diagnósticos como apoio à decisão, não como lançamentos automáticos.</li><li>Exporte os gráficos ou relatórios disponíveis quando precisar compartilhar a análise.</li></ol><div class="help-note"><b>Atenção:</b> Os indicadores estratégicos dependem de fontes operacionais e financeiras já importadas e conciliadas.</div></div>
-    </details><details class="card help-detail help-searchable admin-help" data-help-search="custos salários encargos jornada eficiência capacidade equipe premissas custos pessoal">
+    </details><details class="card help-detail help-searchable admin-help" data-help-search="copiar custos competencia mes anterior salario encargos beneficios operacional recorrente premissas">
+      <summary><span class="how-icon blue">↻</span><div><b>Copiar custos do mês anterior (R30.7)</b><small>Prévia e conferência de custos fixos</small></div><i>+</i></summary>
+      <div class="help-detail-body"><ol><li>Em <b>Gestão Estratégica → Premissas</b>, selecione uma competência aberta já criada.</li><li>Clique em <b>Copiar do mês anterior</b> e confira a origem, os salários, encargos e benefícios.</li><li>Desmarque pessoas que mudaram de função, foram desligadas ou têm custos próprios no destino; registros existentes não são sobrescritos.</li><li>Nas despesas operacionais, selecione apenas as que devem se repetir. O marcador <b>Recorrente</b> é configurável no cadastro e já vem selecionado na prévia.</li><li>Confirme a cópia, revise o FTE, a disponibilidade e o rateio. Lance a Bonificação variável pela sincronização própria e valide os totais antes de fechar.</li></ol><div class="help-note"><b>Proteção:</b> variáveis, horas extras, provisões e outros custos não são copiados. Competências fechadas permanecem imutáveis.</div></div>
+<details class="card help-detail help-searchable admin-help" data-help-search="custos salários encargos jornada eficiência capacidade equipe premissas custos pessoal">
       <summary><span class="how-icon blue">↻</span><div><b>Registrar custos e premissas</b><small>Salários, encargos, capacidade e parâmetros</small></div><i>+</i></summary>
       <div class="help-detail-body"><ol><li>Abra a seção <b>Custos &amp; Eficiência</b> ou <b>Premissas</b> da Gestão Estratégica.</li><li>Confira o mês e o Squad; identifique as pessoas ativas e a jornada configurada.</li><li>Informe ou importe os custos manuais previstos na tela, respeitando a origem de cada componente.</li><li>Valide custos por pessoa, encargos, capacidade disponível e valores financeiros conciliados.</li><li>Confira as mudanças nos indicadores de Eficiência, Capacidade e Resultado antes de salvar ou fechar.</li></ol><div class="help-note"><b>Atenção:</b> A parcela variável da Bonificação deve ser conciliada, não somada uma segunda vez aos custos. O Squad C possui regras próprias de Pré-atendimento.</div></div>
     </details><details class="card help-detail help-searchable admin-help" data-help-search="resultado executivo produto squad matriz concentração cenários premissas simulação revisão">
@@ -2645,6 +2648,20 @@
               <article id="strategyPeopleEditor" class="strategy-placeholder-card">
                 <div class="strategy-section-heading"><div><span class="eyebrow">PESSOAS E CUSTOS PESSOAIS</span><h3>Fotografia da equipe por competência</h3><p>Os técnicos do cadastro operacional podem ser sincronizados sem duplicar métricas. Pré-atendimento, liderança e apoio podem existir somente no Estratégico.</p></div><span id="strategyPeopleEditorMode" class="strategy-mini-badge">Somente leitura</span></div>
                 <div class="strategy-people-sync"><div><strong>Técnicos do operacional</strong><span id="strategyOperationalPeopleSyncStatus">Técnicos ativos são pré-carregados quando a base estratégica está vazia.</span></div><button class="btn secondary" id="strategySyncOperationalPeopleBtn" type="button">↻ Sincronizar técnicos</button></div>
+                <div class="strategy-copy-r307-toolbar">
+                  <div><strong>Reaproveitar custos do mês anterior</strong><small>Copie salários, encargos e benefícios para a competência aberta. Despesas operacionais são selecionadas individualmente; variáveis e provisões não são copiadas.</small></div>
+                  <button class="btn secondary" id="strategyCopyCostsPreviewBtn" type="button">↻ Copiar do mês anterior</button>
+                </div>
+                <div id="strategyCopyCostsPreview" class="strategy-copy-r307-preview hidden" aria-live="polite">
+                  <div class="strategy-section-heading"><div><span class="eyebrow">R30.7 · PRÉVIA SEM GRAVAÇÃO</span><h4>Conferir cópia de premissas financeiras</h4><p id="strategyCopyCostsSummary" class="muted">Carregando a competência anterior...</p></div></div>
+                  <label class="strategy-copy-r307-option"><input id="strategyCopyFte" type="checkbox"><span>Copiar também FTE e disponibilidade do mês anterior (desmarcado por segurança)</span></label>
+                  <div class="strategy-copy-r307-columns">
+                    <section><h5>Pessoas · salários, encargos e benefícios</h5><div class="table-wrap"><table class="strategy-people-table"><thead><tr><th>Copiar</th><th>Pessoa</th><th>Salário</th><th>Encargos</th><th>Benefícios</th><th>Situação</th></tr></thead><tbody id="strategyCopyPeopleRows"></tbody></table></div></section>
+                    <section><h5>Custos operacionais · escolha as despesas</h5><p class="muted">Somente despesas marcadas serão copiadas. Itens recorrentes são pré-selecionados; itens eventuais ficam desmarcados.</p><div class="table-wrap"><table class="strategy-people-table"><thead><tr><th>Copiar</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Situação</th></tr></thead><tbody id="strategyCopyOperationalRows"></tbody></table></div></section>
+                  </div>
+                  <p class="muted">Os valores existentes no destino não serão substituídos. Comissão, remuneração variável, horas extras, provisões e outros custos pessoais ficam fora da cópia.</p>
+                  <div class="strategy-editor-footer"><span id="strategyCopyCostsNotice" class="muted">Revise os colaboradores e as despesas antes de confirmar.</span><div><button class="btn secondary" id="strategyCopyCostsCancelBtn" type="button">Cancelar</button><button class="btn primary" id="strategyCopyCostsConfirmBtn" type="button">Confirmar cópia</button></div></div>
+                </div>
                 <div class="strategy-costs-r4-toolbar">
                   <div><strong>Folha de custos e Bonificação</strong><small>Importe salários, benefícios, encargos e provisões da planilha; consulte a Bonificação oficial sem perder a edição manual.</small></div>
                   <input type="file" id="strategyCostSheetFile" accept=".xlsx,.xls" class="hidden" aria-label="Selecionar planilha Excel de custos">
@@ -2682,9 +2699,10 @@
                   <label><span>Escopo</span><select id="strategyNewOperationalScope"><option value="organization">Geral</option><option value="squad">Squad</option></select></label>
                   <label><span>Squad</span><select id="strategyNewOperationalSquad"></select></label>
                   <label><span>Rateio</span><select id="strategyNewOperationalAllocation"><option value="fte">Por FTE</option><option value="attendance">Por atendimentos</option><option value="direct">Direto</option></select></label>
+                  <label class="strategy-copy-r307-option" title="Despesas recorrentes podem vir pré-selecionadas na cópia do mês anterior"><input id="strategyNewOperationalRecurring" type="checkbox"><span>Despesa recorrente</span></label>
                   <button class="btn secondary" id="strategyAddOperationalCostBtn" type="button">+ Adicionar custo</button>
                 </div>
-                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-operational-table"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Escopo</th><th>Squad</th><th>Rateio</th><th>Total</th><th>Ações</th></tr></thead><tbody id="strategyOperationalRows"><tr><td colspan="7" class="muted">Nenhum custo operacional lançado.</td></tr></tbody></table></div>
+                <div class="table-wrap strategy-people-table-wrap"><table class="strategy-people-table strategy-operational-table"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Escopo</th><th>Squad</th><th>Rateio</th><th>Recorrente</th><th>Total</th><th>Ações</th></tr></thead><tbody id="strategyOperationalRows"><tr><td colspan="9" class="muted">Nenhum custo operacional lançado.</td></tr></tbody></table></div>
                 <div class="strategy-editor-footer"><span class="muted">Ao salvar, os rateios por FTE/atendimentos são recalculados. No fechamento, a fotografia oficial fica congelada no snapshot.</span><button class="btn primary" id="strategySaveOperationalCostsBtn" type="button">Salvar custos operacionais</button></div>
               </article>
             </div>
@@ -3107,56 +3125,56 @@ Ex.: GABRIEL JUNIOR"></textarea><small>Use nomes antigos ou alternativos do CRM.
   <script src="js/audit-utils.js?v=2.29.9"></script>
   <script src="js/demo-users.js"></script>
   <script src="js/default-data.js"></script>
-  <script src="js/business-calendar.js?v=2.63.9-r3062"></script>
-  <script src="js/finance-rules.js?v=2.63.9-r3062"></script>
-  <script src="js/finance-advanced.js?v=2.63.9-r3062"></script>
-  <script src="js/tv-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/presentation.js?v=2.63.9-r3062"></script>
-  <script src="js/chart-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/chart-export.js?v=2.63.9-r3062"></script>
-  <script src="js/import-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/predictive-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/alert-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/settings-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/performance-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/navigation-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/workspace-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/filter-system.js?v=2.63.9-r3062"></script>
-  <script src="js/comparison-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/finance-report-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/design-system.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-access.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-data.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-cost-engine.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-efficiency.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-capacity.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-result.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-product.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-squad-comparison.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-product-concentration.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-product-history.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-insights.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-automation.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-csv-importer.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-product-catalog.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-recurring-import.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-merchandise-import.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-scenarios.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-scenario-insights.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-scenario-history.js?v=2.63.9-r3062"></script>
+  <script src="js/business-calendar.js?v=2.63.9-r307"></script>
+  <script src="js/finance-rules.js?v=2.63.9-r307"></script>
+  <script src="js/finance-advanced.js?v=2.63.9-r307"></script>
+  <script src="js/tv-engine.js?v=2.63.9-r307"></script>
+  <script src="js/presentation.js?v=2.63.9-r307"></script>
+  <script src="js/chart-engine.js?v=2.63.9-r307"></script>
+  <script src="js/chart-export.js?v=2.63.9-r307"></script>
+  <script src="js/import-engine.js?v=2.63.9-r307"></script>
+  <script src="js/predictive-engine.js?v=2.63.9-r307"></script>
+  <script src="js/alert-engine.js?v=2.63.9-r307"></script>
+  <script src="js/settings-engine.js?v=2.63.9-r307"></script>
+  <script src="js/performance-engine.js?v=2.63.9-r307"></script>
+  <script src="js/navigation-engine.js?v=2.63.9-r307"></script>
+  <script src="js/workspace-engine.js?v=2.63.9-r307"></script>
+  <script src="js/filter-system.js?v=2.63.9-r307"></script>
+  <script src="js/comparison-engine.js?v=2.63.9-r307"></script>
+  <script src="js/finance-report-engine.js?v=2.63.9-r307"></script>
+  <script src="js/design-system.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-access.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-data.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-cost-engine.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-efficiency.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-capacity.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-result.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-product.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-squad-comparison.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-product-squad-matrix.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-product-concentration.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-product-diagnostics.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-product-history.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-insights.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-automation.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-csv-importer.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-seller-reconciliation.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-product-catalog.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-recurring-import.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-merchandise-import.js?v=2.63.9-r307"></script>
+  <script src="js/strategy.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-scenarios.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-scenario-insights.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-scenario-history.js?v=2.63.9-r307"></script>
   <script>
     // Compatibilidade herdada da V2.58.0 R5: protege sessões antigas durante a transição de assets.
     window.insightEngine = window.SoftenStrategyInsights;
   </script>
-  <script src="js/strategy-commissions.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-manual-entries.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-financial-close.js?v=2.63.9-r3062"></script>
-  <script src="js/strategy-person-cost-import.js?v=2.63.9-r3062"></script>
-<script src="js/app.js?v=2.63.9-r3062"></script>
-<script src="js/date-controls.js?v=2.63.9-r3062"></script>
+  <script src="js/strategy-commissions.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-manual-entries.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-financial-close.js?v=2.63.9-r307"></script>
+  <script src="js/strategy-person-cost-import.js?v=2.63.9-r307"></script>
+<script src="js/app.js?v=2.63.9-r307"></script>
+<script src="js/date-controls.js?v=2.63.9-r307"></script>
 </body>
 </html>

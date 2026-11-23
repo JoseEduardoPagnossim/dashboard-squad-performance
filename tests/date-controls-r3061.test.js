@@ -19,6 +19,6 @@ test('R30.6.1: modal responsivo isolado e revisao de assets consistente', () => 
   assert.match(css, /\.ds-date-dialog>\.ds-date-dialog-panel/);
   assert.match(css, /max-height:calc\(100dvh - 24px\)!important/);
   assert.match(js, /class="ds-date-nav-current"/);
-  assert.equal(pkg.assetVersion, '2.63.9-r3062');
-  assert.match(html, /js\/date-controls\.js\?v=2\.63\.9-r3062/);
+  assert.equal(pkg.assetVersion, '2.63.9-r307');
+  assert.match(html, /js\/date-controls\.js\?v=2\.63\.9-r307/);
 });
